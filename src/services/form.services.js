@@ -1,4 +1,4 @@
-exports.labels = [ 'Add', 'Remove', 'Update' ]
+exports.labels = [ 'Add', 'Remove', 'Update', 'Reset' ]
 
 // Actions based on Form submit button label
 exports.modelActions = (Model) => ({
@@ -21,5 +21,8 @@ exports.modelActions = (Model) => ({
     if (id !== 0 && !id) throw new Error(`Must specify ID to update.`)
     if (!data || !Object.keys(data)) throw new Error(`Must include data to update.`)
     return Model.update(id, data)
-  }
+  },
+
+  // RESET
+  [exports.labels[3]]: () => Model.create(true)
 })
