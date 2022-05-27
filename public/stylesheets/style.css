@@ -1,9 +1,5 @@
 :root {
-  --fore-color: #FFFAF0;
-  --back-color: #1A2B2B;
-  --secondary-fore-color: #EFDFC0;
-  --secondary-back-color: #193a3a;
-  --universal-margin: 1rem;
+  --universal-margin: 0.5rem;
 }
 
 body {

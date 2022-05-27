@@ -4,6 +4,6 @@ module.exports = {
     integrity: "sha256-u7e5khyithlIdTpu22PHhENmPcRdFiHRjhAuHcs05RI=",
   },
   minicss: {
-    href: "https://cdnjs.cloudflare.com/ajax/libs/mini.css/3.0.1/mini-default.min.css",
+    href: "https://gitcdn.link/repo/Chalarangelo/mini.css/master/dist/mini-dark.css",
   },
 }
