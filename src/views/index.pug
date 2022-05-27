@@ -1,0 +1,9 @@
+extends base
+
+block content
+  h1= title
+
+  h3 Tables: 
+  ul
+    each model in models 
+      li: a(href=baseURL+model)= model
