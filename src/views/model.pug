@@ -2,36 +2,42 @@ extends base
 
 mixin formInputs(schema)
   each val, key in schema
-    label(for=key)= key
-    input(type=val name=key id=key)
+    .input-group
+      label(for=key)= key
+      input(type=val name=key id=key step=(val === 'number' ? "any" : undefined))
 
 mixin idInput()
-  label(for='id') id
-  input#id(type='number' name='id' pattern="\\d+" min="0" step="1")
+  .input-group
+    label(for='id') id
+    input#id(type='number' name='id' pattern="\\d+" min="0" step="1")
 
 
 block content
-  h1= title
+  .container
+    .row
+      h1.col= title
+      a.col.button(href=baseURL) Home
 
   form#editForm(action=postURL method="POST")
     h2 Edit
     +idInput()
     +formInputs(schema)
     br
-    each label in buttons
-      input(type="submit", name="action", value=label)
+    .button-group
+      each label in buttons
+        input.button(type="submit", name="action", value=label, id=`action${label}`)
 
   hr
 
   div
     h2 View
-    table
+    table.striped.hoverable
       thead
         tr
           each key in keys
             th= key
       tbody
         each entry in data
-          tr
+          tr.tableRow(id='row'+entry.id)
             each key in keys
-              td= JSON.stringify(entry[key])
+              td(data-label=key)= JSON.stringify(entry[key])

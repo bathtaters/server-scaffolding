@@ -4,6 +4,6 @@ block content
   h1= title
 
   h3 Tables: 
-  ul
+  .container
     each model in models 
-      li: a(href=baseURL+model)= model
+      .row: a.button(href=baseURL+model)= model
