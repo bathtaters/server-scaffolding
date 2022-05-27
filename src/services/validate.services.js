@@ -22,12 +22,12 @@ function getSchema(key, typeStr, limits, isIn, forceOptional = false) {
 
   // Add validation for optionals/non-optionals
   if (type[4]) {
-    ptr.optional = { options: { nullable: true, checkFalsy: type[1] === 'string' } }
+    ptr.optional = { options: { nullable: true, checkFalsy: type[1] !== 'boolean' } }
   } else {
     ptr.exists = { errorMessage: errorText.exists }
     
     // Skip validation of empty strings (only if empty strings are allowed)
-    if (type[1] === 'string' && limits && (limits.elem || limits) && (limits.elem || limits).min === 0) {
+    if (type[1] === 'string' && (!limits || (!limits.min && !limits.elem) || ((limits.elem || limits).min === 0))) {
       ptr.optional = { options: { checkFalsy: true } }
     }
   }

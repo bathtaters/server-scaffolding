@@ -9,11 +9,10 @@ class AbstractModel {
     this.title = title.toLowerCase()
     this.schema = services.sanitizeSchemaData(schema)
 
-    if (!getDb()) {
-      return openDb().then(() => this.create())
-    }
-
-    return this.create()
+    this.isInitialized = new Promise(async (res, rej) => {
+      if (!getDb()) { await openDb() }
+      this.create().then(() => res(true)).catch(rej)
+    })
   }
 
   create(overwrite = false) {

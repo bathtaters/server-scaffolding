@@ -1,30 +1,34 @@
+// Dependencies
+require('dotenv').config()
 const express = require('express')
 const path = require('path')
 const createError = require('http-errors')
 const cookieParser = require('cookie-parser')
-
-const initServer = require('./services/init.services')
 const logger = require('./config/log.adapter')
-const errorMw = require('./middleware/error.middleware')
-const port = require('./config/meta').port
-
-const baseRouter = require('./routes/base.routes')
-
+const meta = require('./config/meta')
+ 
+// Basics
 const server = express()
-// app.set('views', path.join(__dirname, 'views'))
-// app.set('view engine', 'pug')
+require('./services/init.services')(server)
+server.set('views', path.join(__dirname, 'views'))
+server.set('view engine', 'pug')
 
-server.use(logger.middleware)
+// Middleware
 server.use(express.json())
 server.use(express.urlencoded({ extended: false }))
 server.use(cookieParser())
-// server.use(express.static(path.join(__dirname, '..', 'public')));
+server.use(express.static(path.join(__dirname, '..', 'public')));
+server.use(require('./middleware/log.middleware'))
+server.use(require('./middleware/unescape.middleware'))
 
-server.use('/', baseRouter)
+// Routes
+server.use(`/api/v${meta.apiVersion}`, require('./routes/api.routes'))
+server.use(`/${meta.protectedPrefix}`, require('./routes/gui.routes'))
 
+// Errors
 server.use((_,__,next) => { next(createError(404)) })
-server.use(errorMw)
+server.use(require('./middleware/error.middleware'))
 
-initServer()
-
+// Start server
+const port = require('./config/meta').port
 server.listen(port, () => logger.info(`Listening on port ${port}`));

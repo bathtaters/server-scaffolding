@@ -15,10 +15,10 @@ const deepUnescape = (input) => {
   return input
 }
 
-// Add deepUnescape to run on sendAndLog args (must be placed after 'logger.middleware')
+// Add deepUnescape to run on send args (must be placed after 'logger.middleware')
 const unescapeMiddleware = (_, res, next) => {
-  res._oldSender = res.sendAndLog
-  res.sendAndLog = (...args) => res._oldSender(...deepUnescape(args))
+  res.sendUnescaped = res.send
+  res.send = (...args) => res.sendUnescaped(...deepUnescape(args))
   next()
 }
 

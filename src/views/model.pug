@@ -1,0 +1,37 @@
+extends base
+
+mixin formInputs(schema)
+  each val, key in schema
+    label(for=key)= key
+    input(type=val name=key id=key)
+
+mixin idInput()
+  label(for='id') id
+  input#id(type='number' name='id' pattern="\\d+" min="0" step="1")
+
+
+block content
+  h1= title
+
+  form#editForm(action=postURL method="POST")
+    h2 Edit
+    +idInput()
+    +formInputs(schema)
+    br
+    each label in buttons
+      input(type="submit", name="action", value=label)
+
+  hr
+
+  div
+    h2 View
+    table
+      thead
+        tr
+          each key in keys
+            th= key
+      tbody
+        each entry in data
+          tr
+            each key in keys
+              td= JSON.stringify(entry[key])
