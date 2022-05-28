@@ -5,7 +5,7 @@ exports.modelActions = (Model) => ({
 
   // ADD
   [exports.labels[0]]: async ({ id, ...data }) => {
-    if (!data || !Object.keys(data)) throw new Error(`Must include data to add.`)
+    if (!data || !Object.keys(data).length) throw new Error(`Must include data to add.`)
     const newId = await Model.add(data)
     if (!newId) throw new Error(`New entry was not created.`)
   },
@@ -13,7 +13,7 @@ exports.modelActions = (Model) => ({
   // UPDATE
   [exports.labels[1]]: ({ id, ...data }) => {
     if (id !== 0 && !id) throw new Error(`Must specify ID to update.`)
-    if (!data || !Object.keys(data)) throw new Error(`Must include data to update.`)
+    if (!data || !Object.keys(data).length) throw new Error(`Must include data to update.`)
     return Model.update(id, data)
   },
 
