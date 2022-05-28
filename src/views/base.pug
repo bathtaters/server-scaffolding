@@ -14,10 +14,13 @@ html
     link(rel='stylesheet', href=cdn.minicss.href)
     link(rel='stylesheet', href='/stylesheets/style.css')
     
+    
+  body
+    block content
+
     script(
       src=cdn.jquery.src,
       integrity=cdn.jquery.integrity,
       crossorigin="anonymous"
     )
-  body
-    block content
+    block scripts
