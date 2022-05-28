@@ -9,10 +9,10 @@ mixin formInputs(schema)
       label(for=key)= key
       input(type=val name=key id=key step=(val === 'number' ? "any" : undefined))
 
-mixin idInput()
+mixin idInput(key)
   .input-group
-    label(for='id') id
-    input#id(type='number' name='id' pattern="\\d+" min="0" step="1")
+    label(for=key)= key
+    input(type='number' id=key name=key pattern="\\d+" min="0" step="1")
 
 
 block content
@@ -26,13 +26,17 @@ block content
       .row
         h2.col Edit
         input.col.button(type="reset" value="Clear")
-    +idInput()
+    +idInput('id')
     +formInputs(schema)
+
     br
     .button-group
       each label in buttons
         input.button(type="submit", name="action", value=label, id=`action${label}`)
-
+      .input-group    
+        +idInput('swapId')
+        input.button(type="button", name="action", value="Swap", id=`actionSwap`)
+        
   hr
 
   div

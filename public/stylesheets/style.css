@@ -15,3 +15,7 @@ table:not(.horizontal) thead, table:not(.horizontal) tbody {
 form .button {
   background-color: var(--input-back-color);
 }
+
+/* Style Swap section */
+input#swapId { width: 4.5rem; }
+.button-group > .input-group { display: flex; }
