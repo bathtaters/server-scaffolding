@@ -10,3 +10,8 @@ body {
 table:not(.horizontal) thead, table:not(.horizontal) tbody {
   max-width: 99%;
 }
+
+/* Fix form button styling */
+form .button {
+  background-color: var(--input-back-color);
+}
