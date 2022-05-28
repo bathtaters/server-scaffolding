@@ -9,7 +9,6 @@ const meta = require('./config/meta')
  
 // Basics
 const server = express()
-require('./services/init.services')(server)
 server.set('views', path.join(__dirname, 'views'))
 server.set('view engine', 'pug')
 
@@ -31,4 +30,6 @@ server.use(require('./middleware/error.middleware'))
 
 // Start server
 const port = require('./config/meta').port
-server.listen(port, () => logger.info(`Listening on port ${port}`));
+require('./services/init.services')(server).then(() => 
+  server.listen(port, () => logger.info(`Listening on port ${port}`))
+)
