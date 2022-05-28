@@ -11,7 +11,7 @@ const formatErr = err => err.stack || `${err.name || 'Error'} <${getCode(err)}>:
 function handleError(err, req, res, _) {
   if (!req.error) req.error = err
   
-  logger.error('Request "'+req.originalUrl+'" encountered:', formatErr(req.error))
+  logger.error(`${new Date().toISOString()}: ${req.originalUrl} - ${formatErr(req.error)}`)
 
   req.error.status = getCode(req.error)
   res.status(req.error.status)
