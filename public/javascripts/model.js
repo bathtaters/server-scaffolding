@@ -14,13 +14,11 @@ $( 'tr.tableRow' ).click(function() {
 
 /* Swap two IDs */
 $( '#actionSwap' ).click(function() {
-  console.log('POST', $( 'form#editForm' ).attr('action').replace('/form', '/swap'), { id: $( 'input#id' ).val(), swap: $( 'input#swapId' ).val() })
   $.ajax({
     type:    "POST",
     url:     $( 'form#editForm' ).attr('action').replace('/form', '/swap'),
     data:    { id: $( 'input#id' ).val(), swap: $( 'input#swapId' ).val() },
     success: function(data) {
-        console.log('RES',data)
         if (!data.success) { window.alert('Error performing swap: '+(data.error || 'Unknown error')); }
         else { window.location.reload(); }
       },
