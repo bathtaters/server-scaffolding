@@ -18,7 +18,7 @@ server.use(express.json())
 server.use(express.urlencoded({ extended: false }))
 server.use(cookieParser())
 server.use(express.static(path.join(__dirname, '..', 'public')));
-server.use(require('./middleware/log.middleware'))
+server.use(require('morgan')(process.env.MORGAN_FMT || 'short'),)
 server.use(require('./middleware/unescape.middleware'))
 
 // Routes
