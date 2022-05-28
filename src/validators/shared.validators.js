@@ -1,8 +1,9 @@
 const { checkSchema } = require('express-validator')
+const logger = require('../config/log.adapter')
 const checkValidation = require('../middleware/validate.middleware')
 const { getSchemaFromCfg } = require('../services/validate.services')
-const validCfg = require('../config/validation')
 const { filterDupes } = require('../utils/validate.utils')
+const validCfg = require('../config/validation')
 
 // Validate by config/validation[route]
 //  params/body are [...keys]|{ inKey: validKey }|'all'|falsy
@@ -53,7 +54,7 @@ function getSchemaAdapter(route, keys, optionalBody) {
   let renamedSchema = {}, missing = Object.keys(schema)
   Object.entries(keysDict).forEach((([newKey, oldKey]) => {
     if (newKey in renamedSchema)
-      return console.warn(`Duplicate validation schema ID in ${route}: ${oldKey} =/=> ${newKey}`)
+      return logger.warn(`Duplicate validation schema ID in ${route}: ${oldKey} =/=> ${newKey}`)
     
     renamedSchema[newKey] = schema[oldKey]
 
