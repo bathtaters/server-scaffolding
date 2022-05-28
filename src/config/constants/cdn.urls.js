@@ -1,7 +1,7 @@
 module.exports = {
   jquery: {
-    src: "https://code.jquery.com/jquery-3.6.0.slim.min.js",
-    integrity: "sha256-u7e5khyithlIdTpu22PHhENmPcRdFiHRjhAuHcs05RI=",
+    src: "https://code.jquery.com/jquery-3.6.0.min.js",
+    integrity: "sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=",
   },
   minicss: {
     href: "https://gitcdn.link/repo/Chalarangelo/mini.css/master/dist/mini-dark.css",
