@@ -2,8 +2,10 @@ const { checkSchema } = require('express-validator')
 const checkValidation = require('../middleware/validate.middleware')
 const { getSchemaFromCfg } = require('../services/validate.services')
 const validCfg = require('../config/validation')
+const { filterDupes } = require('../utils/validate.utils')
 
 // Validate by config/validation[route]
+//  params/body are [...keys]|{ inKey: validKey }|'all'|falsy
 //  optionalBody = make all body keys optional, unless body key is in params
 //  also removes any keys in params from body
 exports.byRoute = (route) => (params, body = [], optionalBody = false) => 
@@ -23,22 +25,43 @@ function getSchemaAdapter(route, keys, optionalBody) {
   })
 
   // Build list of keys (combining unique)
-  const keyList = {}
+  let keyList = {}, keysDict = {}
   Object.keys(keys).forEach(inType => {
     if (!keys[inType]) return
 
-    if (!Array.isArray(keys[inType])) keys[inType] = [keys[inType]]
+    if (typeof keys[inType] !== 'object') keys[inType] = [keys[inType]]
+    else if (!Array.isArray(keys[inType])) {
+      keysDict = { ...keysDict, ...keys[inType] }
+      keys[inType] = filterDupes(Object.values(keys[inType]))
+    }
 
-    keys[inType].forEach(key => {
+    keys[inType].forEach((key) => {
       if(keyList[key]) keyList[key].push(inType)
       else keyList[key] = [inType]
     })
   })
 
   // Call getValidation on each entry in keyList to create validationSchema
-  return Object.entries(keyList).reduce((valid, [key, isIn]) =>
+  const schema = Object.entries(keyList).reduce((valid, [key, isIn]) =>
     Object.assign(valid,
       getSchemaFromCfg(route, key, isIn, optionalBody)
     ),
   {})
+  if (!Object.keys(keysDict).length) return schema
+
+  // Re-Assign validation names based on input
+  let renamedSchema = {}, missing = Object.keys(schema)
+  Object.entries(keysDict).forEach((([newKey, oldKey]) => {
+    if (newKey in renamedSchema)
+      return console.warn(`Duplicate validation schema ID in ${route}: ${oldKey} =/=> ${newKey}`)
+    
+    renamedSchema[newKey] = schema[oldKey]
+
+    const oldIdx = missing.indexOf(oldKey)
+    if (oldIdx >= 0) missing.splice(oldIdx, 1)
+  }))
+
+  // Copy any missed schema
+  missing.forEach((key) => { renamedSchema[key] = schema[key] })
+  return renamedSchema
 }

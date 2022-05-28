@@ -1,6 +1,8 @@
 const { getTypeArray, escapedLength } = require('./validate.utils')
 const { escape } = require('validator').default
 
+it.todo('arrayFilterDupes')
+
 // Check getTypeArray (test*[]? => [test*[]?, test, *, [], ?])
 describe('getTypeArray', () => {
   it('nothing', () => {

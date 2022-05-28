@@ -1,3 +1,6 @@
+// Filter out duplicates from array
+exports.filterDupes = (arr) => arr.filter((val, idx) => !arr.slice(0,idx).includes(val))
+
 // Decode validation types to [fullStr, typeStr, leaveWhiteSpace (*), isArray ([]), isOptional (?)]
 const typeRegex = /^([^[?*]+)(\*)?(\[\])?(\?)?$/
 exports.getTypeArray = (typeStr) => typeStr && typeStr.match(typeRegex)
