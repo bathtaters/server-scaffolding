@@ -21,7 +21,7 @@ server.use(require('morgan')(process.env.MORGAN_FMT || 'short'),)
 server.use(require('./middleware/unescape.middleware'))
 
 // Routes
-server.use(`/api/v${meta.apiVersion}`, require('./routes/api.routes'))
+server.use('/api', require('./routes/api.routes'))
 server.use(`/${meta.protectedPrefix}`, require('./routes/gui.routes'))
 
 // Errors
@@ -29,7 +29,6 @@ server.use((_,__,next) => { next(createError(404)) })
 server.use(require('./middleware/error.middleware'))
 
 // Start server
-const port = require('./config/meta').port
 require('./services/init.services')(server).then(() => 
-  server.listen(port, () => logger.info(`Listening on port ${port}`))
+  server.listen(meta.port, () => logger.info(`Listening on port ${meta.port}`))
 )

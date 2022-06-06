@@ -7,7 +7,6 @@ module.exports = {
   version: pkg.version || '0',
   protectedPrefix: 'admin',
   port: process.env.port || +pkgCfg.port || 8080,
-  apiVersion: (pkg.version || '1').split('.',1)[0],
   rootPath: join(__dirname,'..','..'), // Update if this file moves
   dbPath: join(__dirname,'database.db'), // Update if this file moves
 }

@@ -1,5 +1,5 @@
 const { getKeys, getSchema } = require('../utils/gui.utils')
-const { apiVersion, protectedPrefix } = require('../config/meta')
+const { protectedPrefix } = require('../config/meta')
 const { labels } = require('../services/form.services')
 const models = Object.keys(require('../models/all'))
 
@@ -18,7 +18,7 @@ exports.modelDashboard = (Model, view = 'model') =>
         schema: getSchema(Model.schema),
         keys: getKeys(Model.schema),
         baseURL: `/${protectedPrefix}/dashboard/`,
-        postURL: `/api/v${apiVersion}/${Model.title}/form`,
+        postURL: `/api/${Model.title}/form`,
         buttons: labels,
         data,
       })
