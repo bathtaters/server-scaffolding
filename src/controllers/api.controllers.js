@@ -37,7 +37,7 @@ exports.create = (Model) => function (req,res,next) {
 
 exports.read = (Model) => function (req,res,next) {
   return Model.get(req.params.id).then((data) =>
-    data ? res.send(data) : next(new Error(`No entry exists at ID ${req.params.id}.`))
+    data ? res.send(data) : next(new Error(`No entry exists at ID ${req.params.id || '<All>'}.`))
   ).catch(next)
 }
 
