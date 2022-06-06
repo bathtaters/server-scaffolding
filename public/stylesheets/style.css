@@ -3,7 +3,14 @@
 }
 
 body {
+  height: 100%;
+  width: 100%;
+}
+
+#pageContainer {
+  max-width: 1024px;
   padding: 1rem;
+  margin: auto;
 }
 
 /* Fix table styling */

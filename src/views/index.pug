@@ -3,7 +3,7 @@ extends base
 block content
   h1= title
 
-  h3 Tables: 
-  .container
+  .container: .row
+    h3.col Tables: 
     each model in models 
-      .row: a.button(href=baseURL+model)= model
+      .col: a.button(href=baseURL+model)= model
