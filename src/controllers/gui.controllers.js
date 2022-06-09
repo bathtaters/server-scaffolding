@@ -21,7 +21,7 @@ exports.loginPage = [
 
 exports.dashboardHome = [
   checkAuth(`/${protectedPrefix}${urls.login}`, 'gui'),
-  (req, res) => res.render('index', {
+  (req, res) => res.render('dashboard', {
     title: 'Home',
     user: req.user.username,
     isAdmin: hasAccess(req.user.access, 'admin'),

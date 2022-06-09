@@ -1,6 +1,6 @@
 const session = require('express-session')
 const SQLiteStore = require('connect-sqlite3')(session)
-const { saveLoginMs } = require('../config/users.cfg')
+const { saveLoginMs } = require('../config/constants/users.cfg')
 const { protectedPrefix, dbDir } = require('../config/meta')
 
 exports.sessionOptions = {

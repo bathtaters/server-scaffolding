@@ -4,7 +4,7 @@ const schemaSpy = jest.spyOn(services, 'getSchema')
 const warnSpy = jest.spyOn(console, 'warn')
 
 // Mock Config
-jest.mock('../config/validation', () => ({
+jest.mock('../config/validation.cfg', () => ({
   types:  { setA: { a: 'type1', b: 'type2' }, setB: { c: 'type3', d: 'type4' }, },
   limits: { setA: { a: 'lims1', b: 'lims2' }, setB: { c: 'lims3' }, },
 }))

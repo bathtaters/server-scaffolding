@@ -1,4 +1,4 @@
-const { access, accessMax } = require('../config/users.cfg')
+const { access, accessMax } = require('../config/constants/users.cfg')
 
 const noAccess = Object.keys(access).find((key) => !access[key])
 

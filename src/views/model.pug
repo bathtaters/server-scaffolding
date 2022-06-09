@@ -1,10 +1,9 @@
 extends base
 
-include formMixins.pug
+include form.mixins.pug
 
 block scripts
-  script(src="/javascripts/model.js")
-
+  script(src="/javascripts/model.client.js")
 
 block content
   form#editForm(action=postURL method="POST")

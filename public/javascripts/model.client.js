@@ -8,7 +8,7 @@ $( 'input#actionReset' ).click(function(ev) {
 /* Select row for editing */
 $( 'tr.tableRow' ).click(function() {
   $(this).children('td').each(function() {
-    $( '#'+$(this).attr('data-label') ).val($(this).text());
+    $( '#'+$(this).attr('data-key') ).val($(this).text());
   });
 });
 

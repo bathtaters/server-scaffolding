@@ -1,5 +1,5 @@
 const Model = require('./AbstractModel')
-const { defaultAccess, initialAccess } = require('../config/users.cfg')
+const { defaultAccess, initialAccess } = require('../config/constants/users.cfg')
 const { formatGet, formatNew } = require('../services/users.services')
 const { generateToken, encodePassword, testPassword } = require('../utils/auth.utils')
 

@@ -1,6 +1,6 @@
 const hat = require('hat')
 const crypto = require('crypto')
-const { encode } = require('../config/users.cfg')
+const { encode } = require('../config/constants/users.cfg')
 
 exports.generateToken = () => hat()
 

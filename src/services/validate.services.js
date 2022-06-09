@@ -1,5 +1,5 @@
 const logger = require('../config/log.adapter')
-const validCfg = require('../config/validation')
+const validCfg = require('../config/constants/validation.cfg')
 const errorText = require("../config/constants/validate.messages")
 const { getTypeArray, dateOptions, escapedLength } = require('../utils/validate.utils')
 

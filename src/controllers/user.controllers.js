@@ -1,7 +1,7 @@
 const Users = require('../models/_Users')
 const logger = require('../config/log.adapter')
 const { protectedPrefix, urls } = require('../config/meta')
-const { access, tableFields } = require('../config/users.cfg')
+const { access, tableFields } = require('../config/constants/users.cfg')
 const { login, logout, checkAuth } = require('../middleware/auth.middleware')
 const { labels } = require('../services/form.services')
 const { formatUsers, formatFormData } = require('../services/users.services')
