@@ -9,6 +9,7 @@ class Users extends Model {
   constructor() {
     super('_users', {
       id: "TEXT PRIMARY KEY", // API Token
+      token: "TEXT",
       username: "TEXT",
       access: "INTEGER",
       key: "TEXT",
@@ -17,8 +18,8 @@ class Users extends Model {
     })
   }
 
-  get(id) {
-    return super.get(id).then((user) =>
+  get(id, idKey = 'id') {
+    return super.get(id, idKey).then((user) =>
       !id && Array.isArray(user) ? user.map(formatGet) :
       !user ? user : formatGet(user)
     )
@@ -36,9 +37,8 @@ class Users extends Model {
     return super.update(id, data)
   }
 
-  regenID(currId) {
-    const id = generateToken()
-    return super.update(currId, { id }).then((ret) => ret ? ({ ...ret, id }) : ret)
+  regenToken(id) {
+    return super.update(id, { token: generateToken() })
   }
 
   async checkPassword(username, password) {

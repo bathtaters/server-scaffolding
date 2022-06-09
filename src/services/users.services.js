@@ -4,6 +4,7 @@ const { generateToken, encodePassword } = require('../utils/auth.utils')
 exports.formatNew = ({ username, password, access, urls }) => {
   const userObj = password ? encodePassword(password) : {}
   userObj.id = generateToken()
+  userObj.token = generateToken()
   userObj.username = username
   userObj.access = typeof access === 'number' ? access : accessInt(access)
   if (urls && urls !== '*') userObj.urls = urls
@@ -11,8 +12,8 @@ exports.formatNew = ({ username, password, access, urls }) => {
 }
 
 
-exports.formatGet = ({ id, username, access, urls, key }) => ({
-  id, username, access,
+exports.formatGet = ({ id, token, username, access, urls, key }) => ({
+  id, token, username, access,
   password: Boolean(key),
   urls: urls || '"*"',
 })

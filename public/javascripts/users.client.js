@@ -5,18 +5,23 @@ $( 'input#actionReset' ).click(function(ev) {
   }
 });
 
+/* Reset hidden fields on 'clear' */
+$( 'input#clearForm' ).click(function() { $( 'input[type="hidden"]' ).val(""); });
+
 /* Select row for editing */
 $( 'tr.tableRow' ).click(function() {
+  $( 'input#id' ).val( $(this).attr('id') );
+
   $(this).children('td').each(function() {
-    var key = '#'+$(this).attr('data-key')
+    var key = '#'+$(this).attr('data-key');
     if (key !== '#access') {
       return $( key ).val($(this).text());
     }
 
-    $( 'input.accessChecks' ).prop('checked', false)
+    $( 'input.accessChecks' ).prop('checked', false);
 
     $(this).text().split('/').forEach(function(accessType) {
-      $( 'input#'+accessType ).prop('checked', true)
+      $( 'input#'+accessType ).prop('checked', true);
     });
 
   });
@@ -24,22 +29,22 @@ $( 'tr.tableRow' ).click(function() {
 
 /* Auto-select checks */
 $( 'input.accessChecks' ).change(function() {
-  if (!$(this).prop('checked')) return
+  if (!$(this).prop('checked')) return;
 
-  if ($(this).attr('id') === 'none') {
-    $( 'input.accessChecks' ).not( "#none" ).prop('checked', false)
+  if ($(this).attr('id') === "none") {
+    $( 'input.accessChecks' ).not( '#none' ).prop('checked', false);
   } else {
-    $( 'input#none' ).prop('checked', false)
+    $( 'input#none' ).prop('checked', false);
   }
-})
+});
 
 /* Regenerate API ID */
 $( '#actionRegen' ).click(function() {
-  var apiId = $( 'input#id' ).val()
-  if (!apiId) return window.alert('Select a row to update...')
+  var apiId = $( 'input#id' ).val();
+  if (!apiId) return window.alert('Select a row to update...');
   $.ajax({
     type:    "POST",
-    url:     $( 'form#editForm' ).attr('action').replace('/form', '/regenID'),
+    url:     $( 'form#editForm' ).attr('action').replace('/form', '/regenToken'),
     data:    { id: apiId },
     success: function(data) {
         if (!data.success) { window.alert('Error regenerating API ID: '+(data.error || 'Unknown error')); }

@@ -1,5 +1,4 @@
 const Users = require('../models/_Users')
-const logger = require('../config/log.adapter')
 const { protectedPrefix, urls } = require('../config/meta')
 const { access, tableFields } = require('../config/constants/users.cfg')
 const { login, logout, checkAuth } = require('../middleware/auth.middleware')
@@ -35,14 +34,4 @@ exports.form = form(Users, {
 })
 
 
-exports.regenToken = (req,res,next) => Users.regenID(req.body.id)
-  .then((result) => {
-    if (req.user.id !== req.body.id) return res.send(result)
-    
-    // When user is updating their own ID, reflect change in passport session
-    return req.logIn(result, (err) => {
-      if (err) return next(err)
-      logger.info(' > Updated current user ID')
-      res.send(result)
-    })
-  }).catch(next)
+exports.regenToken = (req,res,next) => Users.regenToken(req.body.id).then(res.send).catch(next)

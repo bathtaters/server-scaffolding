@@ -10,21 +10,21 @@ block content
     fieldset
       legend.row
         h2 Edit
-        input.small.button.button-group(type="reset" value="Clear")
+        input.small.button.button-group#clearForm(type="reset" value="Clear")
 
       .row
         .col-sm
-          +formInput('username', 'text')
-          +formInput('password', 'password')
-          +formInput('confirm', 'password')
+          +formInput('username', 'text', tableFields.username)
+          +formInput('password', 'password', tableFields.password)
+          +formInput('confirm', 'password', tableFields.confirm)
         
         .col-sm
-          +buttonInput('id', 'readonly', 'Regen', 'API ID')
-
-          +checkboxes('access', accessLevels)
+          +buttonInput('token', 'readonly', 'Regen', tableFields.token)
+          +formInput('id', 'hidden')
+          +checkboxes('access', accessLevels, tableFields.access)
 
       .row: .col-sm
-        +formInput('urls', '2', 'URLs')
+        +formInput('urls', '2', tableFields.urls)
 
       +buttonRow(buttons)
       
@@ -39,6 +39,6 @@ block content
           th= val
     tbody
       each user in users
-        tr.tableRow(id='row'+user.id)
+        tr.tableRow(id=user.id)
           each val, key in tableFields
             td(data-label=val data-key=key)= user[key]
