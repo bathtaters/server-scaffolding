@@ -1,18 +1,18 @@
 const sqlite = require('sqlite3').verbose()
-const debug = require('./log.adapter').debug
+const logger = require('./log.adapter')
 const location = require('./meta').dbPath
 
 let db
 
 function openDb(temp = false) {
   return new Promise((res,rej) => {
-    if (db) return debug('Already connected to db') || res(db)
+    if (db) return logger.debug('Already connected to db') || res(db)
     db = new sqlite.Database(temp ? ':memory:' : location, (err) => {
       if (err) {
-        debug('Unable to connect to database:', err)
+        logger.error('Unable to connect to database:', err)
         return rej(err)
       }
-      debug('Connected to database.')
+      logger.info('Connected to database.')
       return res(db)
     })
   })
@@ -20,14 +20,14 @@ function openDb(temp = false) {
 
 function closeDb() {
   return new Promise((res,rej) => {
-    if (!db) return debug('Already closed db') || res()
+    if (!db) return logger.debug('Already closed db') || res()
     db.close((err) => {
       if (err) {
-        debug('Unable to close database:', err)
+        logger.error('Unable to close database:', err)
         return rej(err)
       }
       db = null
-      debug('Closed database.')
+      logger.info('Closed database.')
       return res()
     })
   })

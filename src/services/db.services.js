@@ -1,8 +1,10 @@
+const logger = require('../config/log.adapter')
+
 function exec(db, sql) {
   return new Promise((res,rej) => {
     db.exec('BEGIN TRANSACTION; '+sql+'; COMMIT;', (err) => {
       if (err) {
-        debug('Error executing transaction, rolling back.')
+        logger.error('Error executing transaction, rolling back.')
         return db.run('ROLLBACK', rbErr => rej(rbErr || err))
       }
       return res()
