@@ -1,0 +1,22 @@
+const hat = require('hat')
+const crypto = require('crypto')
+const { encode } = require('../config/users.cfg')
+
+exports.generateToken = () => hat()
+
+exports.encodePassword = (password) => {
+  const salt = crypto.randomBytes(32).toString('base64')
+  return { salt,
+    key: crypto.pbkdf2Sync(password, salt, encode.iters, encode.keylen, encode.digest).toString('base64')
+  }
+}
+
+exports.testPassword = (password) => (userData) => {
+  if (!userData || !userData.id) return { fail: 'User not found' }
+  if (!userData.key) return { fail: 'Password not set' }
+
+  return crypto.timingSafeEqual(
+    Buffer.from(userData.key, 'base64'),
+    crypto.pbkdf2Sync(password, userData.salt, encode.iters, encode.keylen, encode.digest)
+  ) ? userData : { fail: 'Incorrect password' }
+}

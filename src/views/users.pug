@@ -1,0 +1,44 @@
+extends base
+
+include formMixins.pug
+
+block scripts
+  script(src="/javascripts/users.client.js")
+
+block content
+  form#editForm(action=postURL method="POST")
+    fieldset
+      legend.row
+        h2 Edit
+        input.small.button.button-group(type="reset" value="Clear")
+
+      .row
+        .col-sm
+          +formInput('username', 'text')
+          +formInput('password', 'password')
+          +formInput('confirm', 'password')
+        
+        .col-sm
+          +buttonInput('id', 'readonly', 'Regen', 'API ID')
+
+          +checkboxes('access', accessLevels)
+
+      .row: .col-sm
+        +formInput('urls', '2', 'URLs')
+
+      +buttonRow(buttons)
+      
+        
+  hr
+
+  table.striped.hoverable
+    caption Users
+    thead
+      tr
+        each val in tableFields
+          th= val
+    tbody
+      each user in users
+        tr.tableRow(id='row'+user.id)
+          each val, key in tableFields
+            td(data-label=val data-key=key)= user[key]

@@ -3,7 +3,6 @@ require('dotenv').config()
 const express = require('express')
 const path = require('path')
 const createError = require('http-errors')
-const cookieParser = require('cookie-parser')
 const logger = require('./config/log.adapter')
 const meta = require('./config/meta')
  
@@ -15,14 +14,17 @@ server.set('view engine', 'pug')
 // Middleware
 server.use(express.json())
 server.use(express.urlencoded({ extended: false }))
-server.use(cookieParser())
 server.use(express.static(path.join(__dirname, '..', 'public')));
-server.use(require('morgan')(process.env.MORGAN_FMT || 'short'),)
+server.use(require('morgan')(process.env.MORGAN_FMT || 'short'))
 server.use(require('./middleware/unescape.middleware'))
 
-// Routes
+// API Routes
 server.use('/api', require('./routes/api.routes'))
+
+// GUI Routes
+server.use(require('./middleware/auth.middleware').initAuth())
 server.use(`/${meta.protectedPrefix}`, require('./routes/gui.routes'))
+server.use(`/${meta.protectedPrefix}/users`, require('./routes/user.routes'))
 
 // Errors
 server.use((_,__,next) => { next(createError(404)) })
