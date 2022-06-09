@@ -3,5 +3,7 @@ extends base
 block content
   .container
     h2= header
+    if error.status
+      h5: i.small &nbsp;Error code: #{error.status}
     p= error.message
     a.button(href="..") Back
