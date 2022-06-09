@@ -11,13 +11,13 @@ const logLevel = getLogLevel(process.env.LOG_LEVEL, getLogLevel('info'))
 module.exports = logOrder.reduce((logFuncs, { name, func }, idx) => {
   logFuncs[name] = logLevel < idx ? () => {} : func
   return logFuncs
-}, {})
+}, { logLevel: logOrder[logLevel] ? logOrder[logLevel].name : logLevel })
 
 module.exports.info(`Log level set to ${logOrder[logLevel].name} (${logLevel} of ${logOrder.length - 1})`)
 
 
 // Get Log Level from number or log name
-function getLogLevel(logLevel, defaultLevel = 100) {
+function getLogLevel(logLevel, defaultLevel) {
   if (!isNaN(logLevel)) logLevel = +logLevel
   else if (typeof logLevel === 'string') logLevel = logOrder.findIndex(({ name }) => name == logLevel.toLowerCase())
   if (typeof logLevel !== 'number' || logLevel < 0) logLevel = defaultLevel

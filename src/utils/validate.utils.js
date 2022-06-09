@@ -12,6 +12,21 @@ exports.dateOptions = {
   time: { strict: strictDates, strictSeparator: strictDates },
 }
 
+// Recursively unescape strings using 'unescaper'
+const unescaper = require('validator').default.unescape
+exports.deepUnescape = (input) => {
+  if (typeof input === 'string') return unescaper(input)
+  
+  if (Array.isArray(input)) return input.map(exports.deepUnescape)
+  
+  if (input && typeof input === 'object')
+    Object.keys(input).forEach((key) => {
+      input[key] = exports.deepUnescape(input[key])
+    })
+
+  return input
+}
+
 // Count escaped string (each escaped char counts as 1)
 const ESC_START = '&', ESC_END = ';', ESC_MAX_INT_LEN = 5 // Escaping params
 exports.escapedLength = ({ options, errorMessage }) => ({
