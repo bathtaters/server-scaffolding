@@ -1,13 +1,15 @@
 const { openDb, getDb } = require('../config/db')
 const services = require('../services/db.services')
+const validateDefaults = require('../config/constants/validation.cfg').defaults
 
 class AbstractModel {
 
-  constructor(title, schema) {
+  constructor(title, schema, defaults) {
     if (!schema.id) schema.id = 'INTEGER PRIMARY KEY'
 
     this.title = title.toLowerCase()
     this.schema = services.sanitizeSchemaData(schema)
+    this.defaults = defaults != null ? defaults : validateDefaults[title]
 
     this.isInitialized = new Promise(async (res, rej) => {
       if (!getDb()) { await openDb() }
@@ -33,6 +35,8 @@ class AbstractModel {
     
   add(data) {
     data = services.sanitizeSchemaData(data, this.schema)
+    if (this.defaults) data = { ...this.defaults, ...data }
+    
     const keys = Object.keys(data)
     if (!keys.length) return Promise.reject(new Error('No valid data provided'))
   

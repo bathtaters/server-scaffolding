@@ -15,7 +15,7 @@ class Users extends Model {
       key: "TEXT",
       salt: "TEXT",
       cors: "TEXT",
-    })
+    }, false) // false = skip auto-assign defaults
   }
 
   get(id, idKey = 'id') {
