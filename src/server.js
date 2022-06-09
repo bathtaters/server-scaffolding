@@ -24,7 +24,7 @@ server.use('/api', require('./routes/api.routes'))
 
 // GUI Routes
 server.use(`/${meta.protectedPrefix}`, require('./routes/gui.routes'))
-server.use(`/${meta.protectedPrefix}${meta.urls.users}`, require('./routes/user.routes'))
+server.use(`/${meta.protectedPrefix}${meta.urls.users}`, require('./routes/users.routes'))
 
 // Errors
 server.use((_,__,next) => { next(createError(404)) })

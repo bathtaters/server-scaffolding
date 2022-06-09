@@ -1,6 +1,6 @@
 const router = require('express').Router()
-const controllers = require('../controllers/user.controllers')
-const validate = require('../validators/user.validators')
+const controllers = require('../controllers/users.controllers')
+const validate = require('../validators/users.validators')
 
 router.post('/login',      validate.login, controllers.login)
 router.get( '/logout',                     controllers.logout)
