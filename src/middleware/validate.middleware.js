@@ -6,7 +6,7 @@ const errorFormatter = ({ param, msg, value }) =>  `${param} ${msg}: ${JSON.stri
 const checkValidation = (req, _, next) => {
   const validErrors = validationResult(req)
   if (!validErrors.isEmpty())
-    next({ 
+    return next({ 
       message: validErrors.formatWith(errorFormatter).array().join(', '),
       stack:
         '\n  Request data:' +
