@@ -1,7 +1,7 @@
 const Model = require('./AbstractModel')
-const { defaultAccess, initialAccess } = require('../config/constants/users.cfg')
-const { formatGet, formatNew } = require('../services/users.services')
-const { generateToken, encodePassword, testPassword } = require('../utils/auth.utils')
+const { initialAccess } = require('../config/constants/users.cfg')
+const { addAdapter, getAdapter, setAdapter } = require('../services/users.services')
+const { generateToken, testPassword } = require('../utils/auth.utils')
 const logger = require('../config/log.adapter')
 
 
@@ -20,21 +20,20 @@ class Users extends Model {
 
   get(id, idKey = 'id') {
     return super.get(id, idKey).then((user) =>
-      !id && Array.isArray(user) ? user.map(formatGet) :
-      !user ? user : formatGet(user)
+      !id && Array.isArray(user) ? user.map(getAdapter) :
+      !user ? user : getAdapter(user)
     )
   }
 
-  async add({ username, password, access = defaultAccess, urls }) {
-    const test = await this.validUsername(username)
-    if (test) throw new Error(`Cannot add ${username.trim() || 'user'}: ${test}`)
+  async add(data) {
+    const test = await this.validUsername(data.username)
+    if (test) throw new Error(`Cannot add ${data.username.trim() || 'user'}: ${test}`)
 
-    return super.add(formatNew({ username, password, access, urls }))
+    return super.add(addAdapter(data))
   }
 
   update(id, data) {
-    if (data.password) data = { ...data, ...encodePassword(data.password) }
-    return super.update(id, data)
+    return super.update(id, setAdapter(data))
   }
 
   regenToken(id) {

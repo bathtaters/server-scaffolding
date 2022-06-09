@@ -2,6 +2,11 @@
 module.exports = {
   // Default values
   defaults: {
+    _users: {
+      username: "user",
+      access: require('./users.cfg').defaultAccess,
+      urls: '*',
+    },
     base: {
       id: 0,
       data: "DEFAULT VALUE",
@@ -12,14 +17,18 @@ module.exports = {
       number: -1,
       comment: "",
     },
-    _users: {
-      username: "New User",
-      access: 0,
-    },
   },
 
   // Num/Char limits
   limits: {
+    _users: {
+      id: { min: 32, max: 32 },
+      username: { min: 2, max: 255 },
+      password: { min: 8, max: 128 },
+      token: { min: 32, max: 32 },
+      access: { elem: { max: 5 }, array: { max: Object.keys(require('./users.cfg').access).length } },
+      urls: { min: 0, max: 2048 },
+    },
     base: {
       data: { min: 0, max: 1000 },
     },
@@ -28,21 +37,21 @@ module.exports = {
       number: { min: -999, max: 999 },
       comment: { min: 0, max: 1000 },
     },
-    _users: {
-      username: { min: 2, max: 255 },
-      password: { min: 8, max: 128 },
-      key: { min: 0, max: 88 },
-      salt: { min: 44, max: 44 },
-      token: { min: 32, max: 32 },
-      access: { min: 0, max: require('./users.cfg').accessMax },
-    },
   },
 
   // Data types
-  //  Values: string|uuid|b64|date|datetime|boolean|int|float|object|any
+  //  Values: string|uuid|b64(url)|hex|date|datetime|boolean|int|float|object|any
   //  Suffix: [] = array of, ? = optional
   //  string* = allow symbols/spaces
   types: {
+    _users: {
+      id: "hex",
+      username: "string",
+      password: "string",
+      token: "hex",
+      access: "string[]?",
+      urls: "string*",
+    },
     base: {
       id: "int",
       data: "string*",
@@ -52,15 +61,6 @@ module.exports = {
       name: "string",
       number: "float",
       comment: "string*?",
-    },
-    _users: {
-      id: "b64",
-      username: "string",
-      password: "string?",
-      access: "int",
-      key: "b64?",
-      salt: "b64?",
-      urls: "string*[]?",
     },
   }
 }

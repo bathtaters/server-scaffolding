@@ -1,16 +1,13 @@
 const router = require('express').Router()
+const models = require('../models/all')
 const controllers = require('../controllers/gui.controllers')
-const swapControl = require('../controllers/api.controllers').swap
-const swapValidate = require('../validators/api.validators').swap
+const validate = require('../validators/gui.validators')
 const { urls } = require('../config/meta')
 
-const models = require('../models/all')
-
 Object.entries(models).forEach(([name, Model]) => {
-  router.get( `${urls.base}${name}`,      controllers.modelDashboard(Model))
-  // GUI API methods (Use GUI creds instead of API token)
-  router.post(`${urls.base}${name}/form`, controllers.form(Model))
-  router.post(`${urls.base}${name}/swap`, swapValidate(name), swapControl(Model))
+  router.post(`${urls.base}${name}/form`, validate.all(name),  controllers.form(Model))
+  router.post(`${urls.base}${name}/swap`, validate.swap(name), controllers.swap(Model))
+  router.get( `${urls.base}${name}`,                           controllers.modelDashboard(Model))
 })
 
 router.get(urls.base, controllers.dashboardHome)

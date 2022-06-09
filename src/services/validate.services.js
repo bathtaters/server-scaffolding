@@ -60,7 +60,16 @@ function getSchema(key, typeStr, limits, isIn, forceOptional = false) {
 
   // Set type-specific validators/sanitizers
   switch (type[1]) {
-    case 'uuid': ptr.isUUID = { options: 4, errorMessage: errorText.uuid } // pass to string
+    case 'b64': 
+    case 'b64url': // pass to string
+      ptr.isBase64 = { options: { urlSafe: type[1] === 'b64url' }, errorMessage: errorText.b64 }
+    case 'uuid': // pass to string
+      if (!ptr.isBase64)
+        ptr.isUUID = { options: 4, errorMessage: errorText.uuid }
+    case 'hex': // pass to string
+      if (!ptr.isBase64 && !ptr.isUUID)
+        ptr.isHexadecimal = { errorMessage: errorText.hex }
+
     case 'string':
       ptr.isString = { errorMessage: errorText.string }
       if (!type[2]) { 

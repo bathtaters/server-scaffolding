@@ -1,42 +1,51 @@
-const { accessArray, accessInt } = require('../utils/access.utils')
+const { accessArray, accessInt, decodeCors, encodeCors } = require('../utils/users.utils')
 const { generateToken, encodePassword } = require('../utils/auth.utils')
+const userDef = require('../config/constants/validation.cfg').defaults._users
 
-exports.formatNew = ({ username, password, access, urls }) => {
-  const userObj = password ? encodePassword(password) : {}
-  userObj.id = generateToken()
-  userObj.token = generateToken()
-  userObj.username = username
-  userObj.access = typeof access === 'number' ? access : accessInt(access)
-  if (urls && urls !== '*') userObj.urls = urls
-  return userObj
-}
-
-
-exports.formatGet = ({ id, token, username, access, urls, key }) => ({
+exports.getAdapter = ({ id, token, username, access, urls, key }) => ({
   id, token, username, access,
   password: Boolean(key),
-  urls: urls || '"*"',
+  urls: decodeCors(urls),
 })
 
+exports.setAdapter = (data) => {
+  if ('access' in data) data.access = accessInt(data.access)
+  if ('urls' in data) data.urls = encodeCors(data.urls)
+  if (data.password) {
+    const { key, salt } = encodePassword(data.password)
+    data.key = key
+    data.salt = salt
+    delete data.password
+  }
+  return data
+}
 
-exports.formatUsers = (users) => !users ? [] : users.map((usr) => {
+exports.addAdapter = ({
+  username = userDef.username,
+  access = userDef.access,
+  urls = userDef.urls,
+  password,
+}) => exports.setAdapter({
+  id: generateToken(),
+  token: generateToken(),
+  username, access, password, urls
+})
+
+exports.guiAdapter = (users) => !users ? [] : users.map((usr) => {
   usr.access = accessArray(usr.access).join('/')
-  usr.urls = usr.urls === '"*"' ? '*' : usr.urls
   return usr
 })
 
+exports.preValidateAdapter = (formData) => {
+  if (formData.access && typeof formData.access === 'string') formData.access = [formData.access]
+}
 
-exports.formatFormData = (formData, action) => {
-  if ('access' in formData) formData.access = accessInt(formData.access)
-  
-  if ('urls' in formData) formData.urls = formData.urls === '*' ? null : formData.urls
-
+exports.confirmPassword = (formData, action) => {
   if ((action === 'Add' || action === 'Update') && 'password' in formData) {
     if (!('confirm' in formData)) throw new Error('Must confirm password')
     if (formData.password !== formData.confirm) throw new Error('Passwords don\'t match')
   }
 
   delete formData.confirm
-
   return formData
 }

@@ -233,6 +233,7 @@ describe('getSchema', () => {
       expect(result.test).toHaveProperty('trim', true)
       expect(result.test).toHaveProperty('escape', true)
     })
+    it.todo('b64')
     it('string', () => {
       const result = services.getSchema('test','string',null,['isIn'],false)
       expect(result.test).toHaveProperty('isString', {errorMessage: expect.any(String)})
