@@ -1,11 +1,16 @@
 const logger = require('../config/log.adapter')
 const meta = require('../config/meta')
-const cdnUrls = require('../config/constants/cdn.urls')
+const { varName } = require('../utils/gui.utils')
 const { getDb, openDb } = require('../config/db')
 const models = require('../models/all')
 
 async function initServer(server) {
-  server.locals.cdn = cdnUrls // Pass to views
+  // Setup view vars
+  server.locals.varName = varName
+  server.locals.urls = {}
+  Object.entries(meta.urls).forEach(([name, url]) => {
+    server.locals.urls[name] = typeof url === 'string' ? '/' + meta.protectedPrefix + url : url
+  })
 
   // Setup DB & init Models
   if (!getDb()) await openDb()
