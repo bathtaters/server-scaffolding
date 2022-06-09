@@ -2,15 +2,15 @@ const { accessArray, accessInt, decodeCors, encodeCors } = require('../utils/use
 const { generateToken, encodePassword } = require('../utils/auth.utils')
 const userDef = require('../config/constants/validation.cfg').defaults._users
 
-exports.getAdapter = ({ id, token, username, access, urls, key }) => ({
+exports.getAdapter = ({ id, token, username, access, cors, key }) => ({
   id, token, username, access,
   password: Boolean(key),
-  urls: decodeCors(urls),
+  cors: decodeCors(cors),
 })
 
 exports.setAdapter = (data) => {
   if ('access' in data) data.access = accessInt(data.access)
-  if ('urls' in data) data.urls = encodeCors(data.urls)
+  if ('cors' in data) data.cors = encodeCors(data.cors)
   if (data.password) {
     const { key, salt } = encodePassword(data.password)
     data.key = key
@@ -23,12 +23,12 @@ exports.setAdapter = (data) => {
 exports.addAdapter = ({
   username = userDef.username,
   access = userDef.access,
-  urls = userDef.urls,
+  cors = userDef.cors,
   password,
 }) => exports.setAdapter({
   id: generateToken(),
   token: generateToken(),
-  username, access, password, urls
+  username, access, password, cors
 })
 
 exports.guiAdapter = (users) => !users ? [] : users.map((usr) => {

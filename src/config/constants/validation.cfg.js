@@ -5,7 +5,7 @@ module.exports = {
     _users: {
       username: "user",
       access: require('./users.cfg').defaultAccess,
-      urls: '*',
+      cors: '*',
     },
     base: {
       id: 0,
@@ -27,7 +27,7 @@ module.exports = {
       password: { min: 8, max: 128 },
       token: { min: 32, max: 32 },
       access: { elem: { max: 5 }, array: { max: Object.keys(require('./users.cfg').access).length } },
-      urls: { min: 0, max: 2048 },
+      cors: { min: 0, max: 2048 },
     },
     base: {
       data: { min: 0, max: 1000 },
@@ -50,7 +50,7 @@ module.exports = {
       password: "string",
       token: "hex",
       access: "string[]?",
-      urls: "string*",
+      cors: "string*",
     },
     base: {
       id: "int",

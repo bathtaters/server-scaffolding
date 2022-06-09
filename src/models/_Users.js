@@ -14,7 +14,7 @@ class Users extends Model {
       access: "INTEGER",
       key: "TEXT",
       salt: "TEXT",
-      urls: "TEXT",
+      cors: "TEXT",
     })
   }
 

@@ -8,7 +8,7 @@ module.exports = {
   defaultAccess: [ 'api', 'gui' ],
   initialAccess: [ 'gui', 'admin' ],
 
-  tableFields: { username: 'Username', access: 'Access', token: 'API Token', urls: 'CORS URLs' },
+  tableFields: { username: 'Username', access: 'Access', token: 'API Token', cors: 'CORS Origin' },
   
   encode: { iters: 1049, keylen: 64, digest: 'sha512' },
 
