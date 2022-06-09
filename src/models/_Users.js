@@ -2,6 +2,7 @@ const Model = require('./AbstractModel')
 const { defaultAccess, initialAccess } = require('../config/constants/users.cfg')
 const { formatGet, formatNew } = require('../services/users.services')
 const { generateToken, encodePassword, testPassword } = require('../utils/auth.utils')
+const logger = require('../config/log.adapter')
 
 
 class Users extends Model {
@@ -43,7 +44,9 @@ class Users extends Model {
   async checkPassword(username, password) {
     const users = await this.count()
     if (!users)
-      return this.add({ username, password, access: initialAccess }).then((id) => id && this.get(id))
+      return this.add({ username, password, access: initialAccess })
+        .then((id) => id && this.get(id))
+        .then((data) => logger.info(' > Created initial user: '+data.username) || data)
 
     return super.get(username, 'username').then(testPassword(password))
   }
