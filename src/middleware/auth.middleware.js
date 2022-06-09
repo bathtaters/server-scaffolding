@@ -3,7 +3,7 @@ const passport = require('passport')
 const LocalStrategy = require('passport-local').Strategy
 
 const Users = require('../models/_Users')
-const { hasAccess } = require('../utils/access.utils')
+const { hasAccess } = require('../utils/users.utils')
 const { authorizeUser, storeUser, loadUser, sessionOptions } = require('../services/auth.services')
 
 

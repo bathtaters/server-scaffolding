@@ -2,7 +2,7 @@ const Users = require('../models/_Users')
 const { modelActions, filterFormData, labels } = require('../services/form.services')
 const { checkAuth, forwardOnAuth } = require('../middleware/auth.middleware')
 const { getTableFields, varName, getSchema } = require('../utils/gui.utils')
-const { hasAccess } = require('../utils/access.utils')
+const { hasAccess } = require('../utils/users.utils')
 const { protectedPrefix, urls } = require('../config/meta')
 
 const models = Object.keys(require('../models/all'))
@@ -77,3 +77,5 @@ exports.form = (Model, { accessLevel = 'gui', redirectURL = '', mutateData = () 
     exports.error(`${varName(Model.title)} Form Error`)
   ]
 }
+
+exports.swap = require('./api.controllers').swap
