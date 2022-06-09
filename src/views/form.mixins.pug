@@ -6,6 +6,7 @@ mixin typedInp(key, inpType, classes)
       step=(inpType === 'number' ? "any" : inpType === 'id' ? "1" : undefined)
       pattern=(inpType === 'number' || inpType === 'id' ? "\\d+" : undefined)
       min=(inpType === 'id' ? "0" : undefined)
+      autocomplete=(inpType === 'password' ? 'new-password' : key === 'username' ? 'username' : undefined)
     )
   else
     textarea(name=key id=key class=classes rows=inpType)
