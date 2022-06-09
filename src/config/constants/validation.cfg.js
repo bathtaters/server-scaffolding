@@ -8,14 +8,11 @@ module.exports = {
       cors: '*',
     },
     base: {
-      id: 0,
       data: "DEFAULT VALUE",
     },
     test: {
-      id: 0,
       name: "None",
       number: -1,
-      comment: "",
     },
   },
 
