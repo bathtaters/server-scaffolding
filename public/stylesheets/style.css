@@ -50,6 +50,7 @@ button, .button, [role="button"],
 [type="button"], [type="submit"], [type="reset"] {
   text-align: center;
 }
+.small { font-size: 0.9em; }
 
 /* Allow header alignment */
 header { display: flex; }
