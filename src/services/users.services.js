@@ -11,6 +11,7 @@ exports.getAdapter = ({ id, token, username, access, cors, key }) => ({
 exports.setAdapter = (data) => {
   if ('access' in data) data.access = accessInt(data.access)
   if ('cors' in data) data.cors = encodeCors(data.cors)
+  if ('username' in data) data.username = data.username.toLowerCase()
   if (data.password) {
     const { key, salt } = encodePassword(data.password)
     data.key = key

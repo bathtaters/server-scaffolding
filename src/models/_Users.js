@@ -47,7 +47,7 @@ class Users extends Model {
         .then((id) => id && this.get(id))
         .then((data) => logger.info(' > Created initial user: '+data.username) || data)
 
-    return super.get(username, 'username').then(testPassword(password))
+    return super.get(username.toLowerCase(), 'username').then(testPassword(password))
   }
 
   validUsername(username) {
