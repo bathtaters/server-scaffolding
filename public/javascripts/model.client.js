@@ -5,6 +5,9 @@ $( 'input#actionReset' ).click(function(ev) {
   }
 });
 
+/* Reset hidden fields on 'clear' */
+$( 'input#clearForm' ).click(function() { $( 'input[type="hidden"]' ).val(""); });
+
 /* Select row for editing */
 $( 'tr.tableRow' ).click(function() {
   $(this).children('td').each(function() {

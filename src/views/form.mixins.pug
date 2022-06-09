@@ -11,9 +11,12 @@ mixin typedInp(key, inpType, classes)
     textarea(name=key id=key class=classes rows=inpType)
 
 mixin formInput(key, inpType, label, classes)
-  .input-group.vertical
-    label(for=key)= label || varName(key)
-    +typedInp(key, inpType, classes)
+  if inpType === 'hidden'
+    +typedInp(key, inpType, "hidden")
+  else
+    .input-group.vertical
+      label(for=key)= label || varName(key)
+      +typedInp(key, inpType, classes)
 
 mixin checkboxes(key, options, label)
   fieldset.input-group.vertical

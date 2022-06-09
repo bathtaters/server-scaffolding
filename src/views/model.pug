@@ -10,7 +10,7 @@ block content
     fieldset
       legend.row
         h2 Edit
-        input.small.button.button-group(type="reset" value="Clear")
+        input.small.button.button-group#clearForm(type="reset" value="Clear")
 
       .row
         .col-sm
@@ -35,6 +35,6 @@ block content
           th= val
     tbody
       each entry in data
-        tr.tableRow(id='row'+entry.id)
+        tr.tableRow
           each val, key in tableFields
             td(data-label=val data-key=key)= entry[key]
