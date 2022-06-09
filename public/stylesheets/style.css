@@ -2,9 +2,10 @@
   --universal-margin: 0.5rem;
 }
 
-body {
+html, body {
   height: 100%;
   width: 100%;
+  min-width: 300px;
 }
 
 #pageContainer {
@@ -17,12 +18,43 @@ body {
 table:not(.horizontal) thead, table:not(.horizontal) tbody {
   max-width: 99%;
 }
+tr.tableRow { cursor: pointer; }
 
-/* Fix form button styling */
-form .button {
-  background-color: var(--input-back-color);
+/* Fix 'buttonInput' mixin style */
+.button-group > .input-group { display: flex; }
+.button-input > .button-group > input:not([type="button"]):not([type="submit"]):not([type="reset"]),
+.button-input > .button-group > textarea, .button-input > .button-group > select {
+  flex-grow: 1;
+  margin: 0;
+}
+.button-input > .button-group > input[type="button"],
+.button-input > .button-group > input[type="submit"],
+.button-input > .button-group > input[type="reset"],
+.button-input > .button-group > button {
+  max-width: max-content;
+}
+@media screen and (max-width: 767px) {
+  .button-input > .button-group > input[type="button"],
+  .button-input > .button-group > input[type="submit"],
+  .button-input > .button-group > input[type="reset"],
+  .button-input > .button-group > button {
+    max-width: initial;
+  }
 }
 
-/* Style Swap section */
-input#swapId { width: 4.5rem; }
-.button-group > .input-group { display: flex; }
+/* Fix lone card styling */
+.card.center { margin: auto; }
+
+/* Fix button styling */
+button, .button, [role="button"],
+[type="button"], [type="submit"], [type="reset"] {
+  text-align: center;
+}
+
+/* Allow header alignment */
+header { display: flex; }
+header > .spacer { flex-grow: 1; }
+
+/* Random styles */
+.align-self-center { align-self: center;  }
+.dim { opacity: 0.6;}
