@@ -1,0 +1,36 @@
+mixin typedInp(key, inpType, classes)
+  if isNaN(inpType)
+    input(
+      name=key id=key class=classes readonly=(inpType === 'readonly')
+      type=(inpType === 'id' ? "number" : inpType === 'readonly' ? "text" : inpType)
+      step=(inpType === 'number' ? "any" : inpType === 'id' ? "1" : undefined)
+      pattern=(inpType === 'number' || inpType === 'id' ? "\\d+" : undefined)
+      min=(inpType === 'id' ? "0" : undefined)
+    )
+  else
+    textarea(name=key id=key class=classes rows=inpType)
+
+mixin formInput(key, inpType, label, classes)
+  .input-group.vertical
+    label(for=key)= label || varName(key)
+    +typedInp(key, inpType, classes)
+
+mixin checkboxes(key, options, label)
+  fieldset.input-group.vertical
+    legend= label || varName(key)
+    each item in options
+      .input-group
+        input.accessChecks(type='checkbox' name=key id=item value=item)
+        label(for=item)= item
+
+mixin buttonInput(key, inpType, button, label, buttonKey = 'action')
+  .input-group.vertical.button-input
+    label(for=key)= label || varName(key)
+    .button-group
+      +typedInp(key, inpType)
+      input.button(type='button' name=buttonKey id=buttonKey+button value=button)
+
+mixin buttonRow(buttons, key = 'action', buttonType = 'submit')
+  .row.button-group
+    each action in buttons
+      input.inverse.large(type=buttonType name=key id=key+action value=action)

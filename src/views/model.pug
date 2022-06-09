@@ -1,53 +1,41 @@
 extends base
 
+include formMixins.pug
+
 block scripts
   script(src="/javascripts/model.js")
 
-mixin formInputs(schema)
-  each val, key in schema
-    .input-group
-      label(for=key)= key
-      input(type=val name=key id=key step=(val === 'number' ? "any" : undefined))
-
-mixin idInput(key)
-  .input-group
-    label(for=key)= key
-    input(type='number' id=key name=key pattern="\\d+" min="0" step="1")
-
 
 block content
-  .container
-    .row
-      h1.col= title
-      a.col.button(href=baseURL) Home
-
   form#editForm(action=postURL method="POST")
-    .container
-      .row
-        h2.col Edit
-        input.col.button(type="reset" value="Clear")
-    +idInput('id')
-    +formInputs(schema)
+    fieldset
+      legend.row
+        h2 Edit
+        input.small.button.button-group(type="reset" value="Clear")
 
-    br
-    .button-group
-      each label in buttons
-        input.button(type="submit", name="action", value=label, id=`action${label}`)
-      .input-group    
-        +idInput('swapId')
-        input.button(type="button", name="action", value="Swap", id=`actionSwap`)
+      .row
+        .col-sm
+          +formInput('id', 'id', 'ID', 'button-group')
+        .col-sm
+          +buttonInput('swapId', 'id', 'Swap', 'Swap ID')
+
+      .row
+        each val, key in schema
+          .col-sm
+            +formInput(key, val)
+
+      +buttonRow(buttons)
         
   hr
 
-  div
-    h2 View
-    table.striped.hoverable
-      thead
-        tr
-          each key in keys
-            th= key
-      tbody
-        each entry in data
-          tr.tableRow(id='row'+entry.id)
-            each key in keys
-              td(data-label=key)= entry[key]
+  table.striped.hoverable
+    caption= title + " Table"
+    thead
+      tr
+        each val in tableFields
+          th= val
+    tbody
+      each entry in data
+        tr.tableRow(id='row'+entry.id)
+          each val, key in tableFields
+            td(data-label=val data-key=key)= entry[key]
