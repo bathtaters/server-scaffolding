@@ -1,9 +1,8 @@
 extends base
 
 block content
-  h1= title
-
-  .container: .row
-    h3.col Tables: 
-    each model in models 
-      .col: a.button(href=baseURL+model)= model
+  .container: .row: .col-sm
+    h3 Database Tables
+    .row
+      each model in models 
+        a.col-sm.large.button(href=urls.base+model)= varName(model)

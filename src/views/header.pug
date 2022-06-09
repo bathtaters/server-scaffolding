@@ -1,0 +1,9 @@
+header
+  span.logo= title
+  if !isHome
+    a.button(href=urls.base) Home
+  if isAdmin
+    a.button(href=urls.users) Users
+  .spacer
+  i.align-self-center.dim= user
+  a.button(href=urls.logout) Logout
