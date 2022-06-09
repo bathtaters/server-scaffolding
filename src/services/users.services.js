@@ -1,4 +1,4 @@
-const { accessArray, accessInt, decodeCors, encodeCors } = require('../utils/users.utils')
+const { accessArray, accessInt, decodeCors, encodeCors, displayCors } = require('../utils/users.utils')
 const { generateToken, encodePassword } = require('../utils/auth.utils')
 const userDef = require('../config/constants/validation.cfg').defaults._users
 
@@ -34,6 +34,7 @@ exports.addAdapter = ({
 
 exports.guiAdapter = (users) => !users ? [] : users.map((usr) => {
   usr.access = accessArray(usr.access).join('/')
+  usr.cors = displayCors(usr.cors)
   return usr
 })
 

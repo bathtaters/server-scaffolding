@@ -5,6 +5,7 @@ const logger = require('../config/log.adapter')
 // Access is a Bit-map stored as an Int, retrieved as an array
 
 const { access, accessMax } = require('../config/constants/users.cfg')
+const { deepUnescape } = require('./validate.utils')
 
 const noAccess = Object.keys(access).find((key) => !access[key])
 
@@ -53,7 +54,8 @@ exports.decodeCors = (cors) => {
   if (cors == null) return undefined
   if (cors === "0" || cors === "1") return Boolean(+cors)
   if (cors === "true" || cors === "false") return cors === "true"
-  if (regEx.canParse(cors)) return regEx.parse(cors)
+  const unescCors = deepUnescape(cors)
+  if (regEx.canParse(unescCors)) return regEx.parse(unescCors)
   return isJSON.test(cors) ? JSON.parse(cors) : cors
 }
 
@@ -62,5 +64,14 @@ exports.encodeCors = (cors) => {
   if (regEx.canString(cors)) return regEx.stringify(cors)
   if (cors === "true" || cors === "false") return cors
   if (!isNaN(cors)) return JSON.stringify(Boolean(+cors))
-  return Array.isArray(cors) ? JSON.stringify(cors) : cors
+  if (Array.isArray(cors)) return JSON.stringify(cors)
+  if (cors.includes(',')) return JSON.stringify(cors.split(/\s*,\s*/))
+  return cors
+}
+
+exports.displayCors = (cors) => {
+  if (!cors) return cors
+  if (Array.isArray(cors)) return cors.join(', ')
+  if (regEx.canString(cors)) return regEx.stringify(cors)
+  return cors
 }
