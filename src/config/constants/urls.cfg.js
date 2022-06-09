@@ -8,4 +8,9 @@ module.exports = {
     // href: "/stylesheets/mini-dark.min.css", // Local copy
     href: "https://cdnjs.cloudflare.com/ajax/libs/mini.css/2.3.7/mini-dark.css",
   },
+
+  login: '/login/',
+  base: '/dashboard/',
+  users: '/users/',
+  logout: '/users/logout/',
 }
