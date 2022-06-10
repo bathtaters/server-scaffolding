@@ -16,6 +16,7 @@ server.use(express.json())
 server.use(express.urlencoded({ extended: false }))
 server.use(express.static(path.join(__dirname, '..', 'public')));
 server.use(require('morgan')(process.env.MORGAN_FMT || 'short'))
+server.use('/api', require('./middleware/cors.middleware'))
 server.use(`/${meta.protectedPrefix}`, require('./middleware/auth.middleware').initAuth())
 server.use(require('./middleware/common.middleware'))
 

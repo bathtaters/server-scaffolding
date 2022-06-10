@@ -18,6 +18,8 @@ module.exports = {
 
   saveLoginMs: 5 * 24 * 60 * 60 * 1000,
 
+  apiToken: { header: "Authorization", matchToken: /^Bearer (.+)$/ },
+
   tooltips: {
     password: `Must be at least ${limits.password.min} characters.`,
     confirm: 'Must match Password.',
