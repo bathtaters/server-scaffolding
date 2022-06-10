@@ -1,5 +1,8 @@
 extends base
 
+block scripts
+  script(src="/javascripts/togglePassword.js")
+
 block content
   .row
 
@@ -20,6 +23,7 @@ block content
               type="password" placeholder="Enter Password" name="password"
               autocomplete=(isUser ? "current-password" : "new-password")
             )
+            button.toggle-password.small(type="button")
 
           .button-group
             input.button(type="submit" value=(isUser ? "Login" : "Create"))

@@ -8,6 +8,8 @@ mixin typedInp(key, inpType, classes)
       min=(inpType === 'id' ? "0" : undefined)
       autocomplete=(inpType === 'password' ? 'new-password' : key === 'username' ? 'username' : undefined)
     )
+    if (inpType === 'password')
+      button.toggle-password.small(type="button")
   else
     textarea(name=key id=key class=classes rows=inpType)
 
