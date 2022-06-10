@@ -1,10 +1,12 @@
 // Validation Config Vars
+const userCfg = require('./users.cfg')
+
 module.exports = {
   // Default values
   defaults: {
     _users: {
       username: "user",
-      access: require('./users.cfg').defaultAccess,
+      access: userCfg.defaultAccess,
       cors: '*',
     },
     base: {
@@ -20,11 +22,10 @@ module.exports = {
   limits: {
     _users: {
       id: { min: 32, max: 32 },
-      username: { min: 2, max: 255 },
-      password: { min: 8, max: 128 },
       token: { min: 32, max: 32 },
-      access: { elem: { max: 5 }, array: { max: Object.keys(require('./users.cfg').access).length } },
+      access: { elem: { max: 5 }, array: { max: Object.keys(userCfg.access).length } },
       cors: { min: 0, max: 2048 },
+      ...userCfg.limits
     },
     base: {
       data: { min: 0, max: 1000 },
