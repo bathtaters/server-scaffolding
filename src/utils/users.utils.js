@@ -52,8 +52,8 @@ const regEx = {
 
 exports.decodeCors = (cors) => {
   if (cors == null) return undefined
-  if (cors === "0" || cors === "1") return Boolean(+cors)
   if (cors === "true" || cors === "false") return cors === "true"
+  if (cors === "0" || cors === "1" || cors === 0 || cors === 1) return Boolean(+cors)
   const unescCors = deepUnescape(cors)
   if (regEx.canParse(unescCors)) return regEx.parse(unescCors)
   return isJSON.test(cors) ? JSON.parse(cors) : cors
@@ -61,10 +61,10 @@ exports.decodeCors = (cors) => {
 
 exports.encodeCors = (cors) => {
   if (cors == null) return undefined
+  if (Array.isArray(cors)) return JSON.stringify(cors)
   if (regEx.canString(cors)) return regEx.stringify(cors)
   if (cors === "true" || cors === "false") return cors
-  if (!isNaN(cors)) return JSON.stringify(Boolean(+cors))
-  if (Array.isArray(cors)) return JSON.stringify(cors)
+  if (cors === "0" || cors === "1" || cors === 0 || cors === 1) return JSON.stringify(Boolean(+cors))
   if (cors.includes(',')) return JSON.stringify(cors.split(/\s*,\s*/))
   return cors
 }
@@ -75,3 +75,5 @@ exports.displayCors = (cors) => {
   if (regEx.canString(cors)) return regEx.stringify(cors)
   return cors
 }
+
+exports.isRegEx = regEx.canString
