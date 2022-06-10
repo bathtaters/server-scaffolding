@@ -1,4 +1,4 @@
-const Model = require('./AbstractModel')
+const Model = require('./_Model')
 
 class Base extends Model {
   constructor() {

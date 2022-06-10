@@ -1,4 +1,4 @@
-const Model = require('./AbstractModel')
+const Model = require('./_Model')
 const { initialAccess } = require('../config/constants/users.cfg')
 const { addAdapter, getAdapter, setAdapter } = require('../services/users.services')
 const { generateToken, testPassword } = require('../utils/auth.utils')

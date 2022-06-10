@@ -3,7 +3,7 @@ const services = require('../services/db.services')
 const validateDefaults = require('../config/constants/validation.cfg').defaults
 const errors = require('../config/constants/error.messages')
 
-class AbstractModel {
+class Model {
 
   constructor(title, schema, defaults) {
     if (!schema.id) schema.id = 'INTEGER PRIMARY KEY'
@@ -75,4 +75,4 @@ class AbstractModel {
   }
 }
 
-module.exports = AbstractModel
+module.exports = Model
