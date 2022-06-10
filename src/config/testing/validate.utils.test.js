@@ -1,4 +1,4 @@
-const { getTypeArray, escapedLength } = require('./validate.utils')
+const { getTypeArray, escapedLength } = require('../../utils/validate.utils')
 const { escape } = require('validator').default
 
 it.todo('arrayFilterDupes')

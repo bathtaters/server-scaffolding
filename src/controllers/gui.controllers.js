@@ -6,7 +6,7 @@ const { hasAccess } = require('../utils/users.utils')
 const { protectedPrefix, urls } = require('../config/meta')
 const errors = require('../config/constants/error.messages')
 
-const models = Object.keys(require('../models/all'))
+const models = Object.keys(require('../models/_all'))
 
 exports.loginPage = [
   forwardOnAuth(`/${protectedPrefix}${urls.base}`, 'gui'),

@@ -1,5 +1,5 @@
 const router = require('express').Router()
-const models = require('../models/all')
+const models = require('../models/_all')
 const controllers = require('../controllers/gui.controllers')
 const validate = require('../validators/gui.validators')
 const { urls } = require('../config/meta')

@@ -2,7 +2,7 @@ const logger = require('../config/log.adapter')
 const meta = require('../config/meta')
 const { varName } = require('../utils/gui.utils')
 const { getDb, openDb } = require('../config/db')
-const models = require('../models/all')
+const models = require('../models/_all')
 
 async function initServer(server) {
   // Setup view vars
