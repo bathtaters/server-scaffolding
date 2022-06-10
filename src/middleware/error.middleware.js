@@ -2,7 +2,7 @@ const logger = require('../config/log.adapter')
 const { protectedPrefix } = require('../config/meta')
 
 // Error string formatting
-const defaultError = require('../config/constants/error.messages').defaultError
+const defaultError = require('../config/constants/error.messages').unknown()
 const getMsg  = err => (err && err.message) || defaultError.message
 const getCode = err => (err && err.status)  || defaultError.status
 
@@ -16,11 +16,6 @@ function handleError(err, req, res, _) {
   req.error.status = getCode(req.error)
   res.status(req.error.status)
 
-  // Handle error for View
-  if (req.method === 'GET' && req.originalUrl.includes(protectedPrefix))
-    return res.render('error', { message: getMsg(req.error), error: req.error })
-
-  // Handle error for API
   return res.send({ error: getMsg(req.error) })
 }
 
