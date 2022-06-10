@@ -1,6 +1,7 @@
 const { accessArray, accessInt, decodeCors, encodeCors, displayCors, isRegEx } = require('../utils/users.utils')
 const { generateToken, encodePassword } = require('../utils/auth.utils')
 const userDef = require('../config/constants/validation.cfg').defaults._users
+const errors = require('../config/constants/error.messages')
 
 exports.getAdapter = ({ id, token, username, access, cors, key }) => ({
   id, token, username, access,
@@ -46,8 +47,8 @@ exports.preValidateAdapter = (formData) => {
 
 exports.confirmPassword = (formData, action) => {
   if ((action === 'Add' || action === 'Update') && 'password' in formData) {
-    if (!('confirm' in formData)) throw new Error('Must confirm password')
-    if (formData.password !== formData.confirm) throw new Error('Passwords don\'t match')
+    if (!('confirm' in formData)) throw errors.noConfirm()
+    if (formData.password !== formData.confirm) throw errors.badConfirm()
   }
 
   delete formData.confirm

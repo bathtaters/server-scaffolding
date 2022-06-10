@@ -2,7 +2,7 @@
 require('dotenv').config()
 const express = require('express')
 const path = require('path')
-const createError = require('http-errors')
+const errorMissing = require('./config/constants/error.messages').missing
 const logger = require('./config/log.adapter')
 const meta = require('./config/meta')
  
@@ -28,7 +28,7 @@ server.use(`/${meta.protectedPrefix}`, require('./routes/gui.routes'))
 server.use(`/${meta.protectedPrefix}${meta.urls.users}`, require('./routes/users.routes'))
 
 // Errors
-server.use((_,__,next) => { next(createError(404)) })
+server.use((_,__,next) => next(errorMissing()))
 server.use(require('./middleware/error.middleware'))
 
 // Start server

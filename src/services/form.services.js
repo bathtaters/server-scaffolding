@@ -1,3 +1,5 @@
+const errors = require('../config/constants/error.messages')
+
 exports.labels = [ 'Add', 'Update', 'Remove', 'Reset' ]
 
 // Actions based on Form submit button label
@@ -5,21 +7,21 @@ exports.modelActions = (Model) => ({
 
   // ADD
   [exports.labels[0]]: async ({ id, ...data }) => {
-    if (!data || !Object.keys(data).length) throw new Error(`Must include data to add.`)
+    if (!data || !Object.keys(data).length) throw errors.noData()
     const newId = await Model.add(data)
-    if (!newId) throw new Error(`New entry was not created.`)
+    if (!newId) throw errors.noAdd()
   },
 
   // UPDATE
   [exports.labels[1]]: ({ id, ...data }) => {
-    if (id !== 0 && !id) throw new Error(`Must specify ID to update.`)
-    if (!data || !Object.keys(data).length) throw new Error(`Must include data to update.`)
+    if (id !== 0 && !id) throw errors.noID()
+    if (!data || !Object.keys(data).length) throw errors.noData()
     return Model.update(id, data)
   },
 
   // REMOVE
   [exports.labels[2]]: ({ id }) => {
-    if (id !== 0 && !id) throw new Error(`Must specify ID to remove.`)
+    if (id !== 0 && !id) throw errors.noID()
     return Model.remove(id)
   },
 

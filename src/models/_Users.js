@@ -2,6 +2,7 @@ const Model = require('./AbstractModel')
 const { initialAccess } = require('../config/constants/users.cfg')
 const { addAdapter, getAdapter, setAdapter } = require('../services/users.services')
 const { generateToken, testPassword } = require('../utils/auth.utils')
+const errors = require('../config/constants/error.messages')
 const logger = require('../config/log.adapter')
 
 
@@ -27,7 +28,7 @@ class Users extends Model {
 
   async add(data) {
     const test = await this.validUsername(data.username)
-    if (test) throw new Error(`Cannot add ${data.username.trim() || 'user'}: ${test}`)
+    if (test) throw errors.badUsername(data.username.trim(), test)
 
     return super.add(addAdapter(data))
   }
@@ -52,6 +53,7 @@ class Users extends Model {
 
   validUsername(username) {
     if (/[^a-zA-Z0-9_-]/.test(username)) return 'Cannot contain spaces or symbols (Besides underscore & hyphen)'
+    username = username.toLowerCase()
     return super.get().then((users) => users.every((user) => user.username !== username) ? 0 : 'Username already exists')
   }
 }

@@ -2,15 +2,15 @@ const logger = require('../config/log.adapter')
 const validCfg = require('../config/constants/validation.cfg')
 const errorText = require("../config/constants/validate.messages")
 const { getTypeArray, dateOptions, escapedLength } = require('../utils/validate.utils')
-
+const errors = require('../config/constants/error.messages')
 
 // Generate Schema object based on input
 function getSchema(key, typeStr, limits, isIn, forceOptional = false) {
-  if (!isIn || !isIn.length) throw new Error(errorText.missingIn(key))
+  if (!isIn || !isIn.length) throw errors.internalValidate(errorText.missingIn(key))
 
   // Get type from typeStr
   const type = getTypeArray(typeStr)
-  if (!type || !type[0]) throw new Error(errorText.missing(key, typeStr))
+  if (!type || !type[0]) throw errors.internalValidate(errorText.missing(key, typeStr))
   if (forceOptional) type[4] = '?'
   if (type[2] && type[1] !== 'string') logger.warn('* is ignored w/ non-string type: ', type[0])
 

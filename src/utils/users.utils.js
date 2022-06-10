@@ -1,3 +1,4 @@
+const errors = require('../config/constants/error.messages')
 const logger = require('../config/log.adapter')
 
 
@@ -18,7 +19,7 @@ exports.accessInt = (accessArray) => {
   if (!Array.isArray(accessArray)) accessArray = [accessArray]
   
   return accessArray.reduce((int, key) => {
-    if (!(key in access)) throw new Error("Invalid access type: "+key)
+    if (!(key in access)) throw errors.badAccess(key, 'key')
     return int | access[key]
   }, 0)
 }
@@ -27,7 +28,7 @@ exports.accessArray = (accessInt) => {
   if (!accessInt) return [noAccess]
   if (typeof accessInt === 'string' && !isNaN(accessInt)) accessInt = +accessInt
   if (typeof accessInt !== 'number' || accessInt < 0 || accessInt > accessMax)
-    throw new Error("Invalid access int: "+accessInt)
+    throw errors.badAccess(accessInt, 'int')
   
   const array = Object.keys(access).filter((key) => access[key] & accessInt)
   return array.length === 0 ? [noAccess] : array

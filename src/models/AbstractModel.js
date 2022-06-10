@@ -1,6 +1,7 @@
 const { openDb, getDb } = require('../config/db')
 const services = require('../services/db.services')
 const validateDefaults = require('../config/constants/validation.cfg').defaults
+const errors = require('../config/constants/error.messages')
 
 class AbstractModel {
 
@@ -38,7 +39,7 @@ class AbstractModel {
     if (this.defaults) data = { ...this.defaults, ...data }
     
     const keys = Object.keys(data)
-    if (!keys.length) return Promise.reject(new Error('No valid data provided'))
+    if (!keys.length) return Promise.reject(errors.noData())
   
     return services.get(getDb(), 
       `INSERT INTO ${this.title}(${ keys.join(', ') }) VALUES(${ keys.map(()=>'?').join(', ') }) RETURNING id`,
@@ -47,14 +48,14 @@ class AbstractModel {
   }
     
   update(id, data, idKey = 'id') {
-    if (!id) return Promise.reject(new Error('No ID provided'))
+    if (!id) return Promise.reject(errors.noID())
 
     data = services.sanitizeSchemaData(data, this.schema)
     const keys = Object.keys(data)
-    if (!keys.length) return Promise.reject(new Error('No valid data provided'))
+    if (!keys.length) return Promise.reject(errors.noData())
 
     return this.count(id, idKey).then((exists) => {
-      if (!exists) throw new Error('ID not found: '+id)
+      if (!exists) throw errors.noEntry(id)
 
       return services.run(getDb(), 
         `UPDATE ${this.title} SET ${ keys.map(k => k+' = ?').join(', ') } WHERE ${idKey} = ?`,
@@ -64,10 +65,10 @@ class AbstractModel {
   }
   
   remove(id, idKey = 'id') {
-    if (!id) return Promise.reject(new Error('No ID provided'))
+    if (!id) return Promise.reject(errors.noID())
 
     return this.count(id, idKey).then((exists) => {
-      if (!exists) throw new Error('ID not found: '+id)
+      if (!exists) throw errors.noEntry(id)
       
       return services.run(getDb(), `DELETE FROM ${this.title} WHERE ${idKey} = ?`, [id])
     }).then(() => ({ success: true }))

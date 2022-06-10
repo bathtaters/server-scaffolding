@@ -4,6 +4,7 @@ const { checkAuth, forwardOnAuth } = require('../middleware/auth.middleware')
 const { getTableFields, varName, getSchema } = require('../utils/gui.utils')
 const { hasAccess } = require('../utils/users.utils')
 const { protectedPrefix, urls } = require('../config/meta')
+const errors = require('../config/constants/error.messages')
 
 const models = Object.keys(require('../models/all'))
 
@@ -65,7 +66,7 @@ exports.form = (Model, { accessLevel = 'gui', redirectURL = '', mutateData = () 
       const { action, ...formData } = filterFormData(req.body)
 
       if (!action || !Object.keys(formActions).includes(action))
-        return next(new Error(`${action ? 'Invalid' : 'No'} action specified.`))
+        return next(errors.badAction(action))
       
       try { mutateData(formData, action) }
       catch (err) { return next(err) }
