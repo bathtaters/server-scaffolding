@@ -14,17 +14,17 @@ block content
 
       .row
         .col-sm
-          +formInput('username', 'text', tableFields.username)
-          +formInput('password', 'password', tableFields.password)
-          +formInput('confirm', 'password', tableFields.confirm)
+          +formInput('username', 'text', tableFields.username, '', tooltips.username)
+          +formInput('password', 'password', tableFields.password, '', tooltips.password)
+          +formInput('confirm', 'password', tableFields.confirm, '', tooltips.confirm)
         
         .col-sm
-          +buttonInput('token', 'readonly', 'Regen', tableFields.token)
+          +buttonInput('token', 'readonly', 'Regen', tableFields.token, tooltips.token)
           +formInput('id', 'hidden')
           +checkboxes('access', accessLevels, tableFields.access)
 
       .row: .col-sm
-        +formInput('cors', '2', tableFields.cors)
+        +formInput('cors', '2', tableFields.cors, '', tooltips.cors)
 
       +buttonRow(buttons)
       
@@ -41,4 +41,5 @@ block content
       each user in users
         tr.tableRow(id=user.id)
           each val, key in tableFields
-            td(data-label=val data-key=key)= user[key]
+            -var rowCls = key !== 'cors' ? '' : user.regExCors ? 'cors-regex' : user.arrayCors ? 'cors-array' : ''
+            td(data-label=val data-key=key class=rowCls)= user[key]

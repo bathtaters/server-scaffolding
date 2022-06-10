@@ -1,6 +1,6 @@
 const Users = require('../models/_Users')
 const { protectedPrefix, urls } = require('../config/meta')
-const { access, tableFields } = require('../config/constants/users.cfg')
+const { access, tableFields, tooltips } = require('../config/constants/users.cfg')
 const { login, logout, checkAuth } = require('../middleware/auth.middleware')
 const { labels } = require('../services/form.services')
 const { guiAdapter, confirmPassword } = require('../services/users.services')
@@ -18,10 +18,9 @@ exports.userTable = [
       title: 'Users',
       user: req.user.username,
       postURL: `/${protectedPrefix}${urls.users}form/`,
-      users,
+      users, tableFields, tooltips,
       buttons: labels,
       accessLevels: Object.keys(access),
-      tableFields,
     })
   },
 ]

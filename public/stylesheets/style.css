@@ -57,5 +57,7 @@ header { display: flex; }
 header > .spacer { flex-grow: 1; }
 
 /* Random styles */
+.cors-regex { color: lightcoral; }
+.cors-array { color: lightskyblue; }
 .align-self-center { align-self: center;  }
 .dim { opacity: 0.6;}

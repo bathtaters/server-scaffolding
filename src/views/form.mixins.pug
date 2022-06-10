@@ -11,12 +11,12 @@ mixin typedInp(key, inpType, classes)
   else
     textarea(name=key id=key class=classes rows=inpType)
 
-mixin formInput(key, inpType, label, classes)
+mixin formInput(key, inpType, label, classes, tooltip)
   if inpType === 'hidden'
     +typedInp(key, inpType, "hidden")
   else
     .input-group.vertical
-      label(for=key)= label || varName(key)
+      label(for=key aria-label=tooltip class=(tooltip ? 'tooltip' : ''))= label || varName(key)
       +typedInp(key, inpType, classes)
 
 mixin checkboxes(key, options, label)
@@ -27,9 +27,9 @@ mixin checkboxes(key, options, label)
         input.accessChecks(type='checkbox' name=key id=item value=item)
         label(for=item)= item
 
-mixin buttonInput(key, inpType, button, label, buttonKey = 'action')
+mixin buttonInput(key, inpType, button, label, tooltip, buttonKey = 'action')
   .input-group.vertical.button-input
-    label(for=key)= label || varName(key)
+    label(for=key aria-label=tooltip class=(tooltip ? 'tooltip' : ''))= label || varName(key)
     .button-group
       +typedInp(key, inpType)
       input.button(type='button' name=buttonKey id=buttonKey+button value=button)
