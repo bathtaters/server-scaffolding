@@ -10,7 +10,7 @@ Built on ***SQLite3*** database w/ basic **CRUD** API & simple **web GUI**.
 ### Add a DB Model
  1. Copy `models/Base.js` as a starting point.
  2. Add entries in `config/constants/validation.cfg.js` to define input validation.
- 3. Add to `models/all.js` to connect to API/GUI automtically.
+ 3. Add to `models/_all.js` to connect to API/GUI automtically.
 
 ---
 
@@ -56,11 +56,8 @@ DB_DIR=/var/db/sqlite3/my-server/
 ---
 
 ### *TO DO:*
- - Add **validation** to GUI & User routes
- - Add **CORS** support
- - Use **API Tokens**
- - Create custom **errors** with status codes
  - Add unit **testing**
+ - Add API endpoint **testing**
 
 ---
 
