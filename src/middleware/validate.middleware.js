@@ -1,6 +1,8 @@
 const { validationResult } = require('express-validator')
+const { mask } = require('../utils/gui.utils')
+const masked = require('../config/constants/validation.cfg').mask || []
 
-const errorFormatter = ({ param, msg, value }) =>  `${param} ${msg}: ${JSON.stringify(value)}`
+const errorFormatter = ({ param, msg, value }) =>  `${param} ${msg}: ${masked.includes(param) ? mask(value) : JSON.stringify(value)}`
 
 // Test validation middleware (Run after running other validators)
 const checkValidation = (req, _, next) => {

@@ -25,3 +25,23 @@ exports.getSchema = (schema) => Object.entries(schema || {}).reduce((res, [key, 
     [key]: (sql2html.find(([re]) => re.test(val)) || {1:val})[1]
   })
 , {})
+
+const MASK_CHAR = '*'
+exports.mask = (value) => {
+  // Recursively mask
+  if (Array.isArray(value))
+    return value.map(mask)
+  if (value && typeof value === 'object')
+    return Object.entries(value).reduce((obj,[key,val]) => ({ ...obj, [key]: mask(val) }), {})
+
+  // Mask literals
+  switch (typeof value) {
+    case 'number':
+    case 'bigint': value = value.toString()
+    case 'string': return MASK_CHAR.repeat(value.length)
+    case 'object':
+    case 'undefined': return String(value)
+  }
+  // Mask others (bool, func, symbol)
+  return `[${typeof value}]`
+}

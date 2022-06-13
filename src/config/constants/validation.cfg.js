@@ -2,6 +2,8 @@
 const userCfg = require('./users.cfg')
 
 module.exports = {
+  // Mask values when reporting errors for these values
+  mask: [ 'password', 'confirm' ],
   // Default values
   defaults: {
     _users: {
