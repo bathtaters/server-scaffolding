@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node ./src/server.js",
     "inspect": "node --inspect ./src/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest ./src/config/testing/"
   },
   "keywords": [],
   "author": "",
@@ -25,5 +25,9 @@
     "passport-local": "^1.0.0",
     "pug": "^3.0.2",
     "sqlite3": "^5.0.8"
+  },
+  "devDependencies": {
+    "@types/jest": "^28.1.1",
+    "jest": "^28.1.1"
   }
 }
