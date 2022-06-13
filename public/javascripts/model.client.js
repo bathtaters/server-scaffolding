@@ -1,3 +1,5 @@
+/// <reference path="./jquery-3.6.0.min.js" />
+
 /* Table reset confirmation */
 $( 'input#actionReset' ).click(function(ev) {
   if(!window.confirm('Are you sure you want to erase the entire table?')) {

@@ -1,3 +1,4 @@
+/// <reference path="./jquery-3.6.0.min.js" />
 
 $(function() {
   $('button.toggle-password').text('Show').attr('aria-label', 'Show password as plain text.');

@@ -1,3 +1,5 @@
+/// <reference path="./jquery-3.6.0.min.js" />
+
 /* Table reset confirmation */
 $( 'input#actionReset' ).click(function(ev) {
   if(!window.confirm('WARNING! This will remove all users and log you out, are you sure you want to do this?')) {
