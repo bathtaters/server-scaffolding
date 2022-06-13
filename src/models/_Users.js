@@ -7,17 +7,8 @@ const logger = require('../config/log.adapter')
 
 
 class Users extends Model {
-  constructor() {
-    super('_users', {
-      id: "TEXT PRIMARY KEY", // API Token
-      token: "TEXT",
-      username: "TEXT",
-      access: "INTEGER",
-      key: "TEXT",
-      salt: "TEXT",
-      cors: "TEXT",
-    }, false) // false = skip auto-assign defaults
-  }
+  constructor() { super('_users', { defaults: false }) }
+  // { defaults: false } = don't auto-set defaults
 
   get(id, idKey = 'id') {
     return super.get(id, idKey).then((user) =>
