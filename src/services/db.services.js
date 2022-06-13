@@ -38,8 +38,4 @@ function reset(db, schema, force) {
   return exec(db, drops.concat(creates).join('; '))
 }
 
-const sanitizeSchemaData = (data, schema=null) => Object.keys(data).reduce((obj,key) =>
-  !schema || Object.keys(schema).includes(key) ? Object.assign(obj, { [key.toLowerCase()]: data[key] }) : obj
-, {})
-
-module.exports = { exec, all, run, get, reset, sanitizeSchemaData }
+module.exports = { exec, all, run, get, reset }
