@@ -129,9 +129,29 @@ describe('byRoute', () => {
     )
     expect(schemaCfgSpy).toBeCalledTimes(2)
   })
+  it('normalizes input objects to value arrays', () => {
+    shared.byRoute('routeB')({ c1: 'c', c2: 'c' },{ c3: 'c', d: 'd' },'opt')
+    expect(schemaCfgSpy).toHaveBeenNthCalledWith(1,
+      expect.anything(),
+      'c',
+      ['params', 'body'],
+      expect.anything(),
+    )
+    expect(schemaCfgSpy).toHaveBeenNthCalledWith(2,
+      expect.anything(),
+      'd',
+      ['body'],
+      expect.anything(),
+    )
+    expect(schemaCfgSpy).toBeCalledTimes(2)
+  })
   
   it('builds object of results', () => {
     expect(shared.byRoute('routeA')(['a'],['a','b'],'opt'))
       .toEqual([{ a: true, b: true }, checkValidation])
+  })
+  it('results are renamed using input object keys', () => {
+    expect(shared.byRoute('routeB')({ c1: 'c', c2: 'c' },{ c3: 'c', d: 'd' },'opt'))
+      .toEqual([{ c1: true, c2: true, c3: true, d: true }, checkValidation])
   })
 })

@@ -17,9 +17,12 @@ const unescaper = require('validator').default.unescape
 exports.deepUnescape = (input) => {
   if (typeof input === 'string') return unescaper(input)
   
-  if (Array.isArray(input)) return input.map(exports.deepUnescape)
+  if (Array.isArray(input))
+    input.forEach((val, idx) => {
+      input[idx] = exports.deepUnescape(val)
+    })
   
-  if (input && typeof input === 'object')
+  else if (input && typeof input === 'object')
     Object.keys(input).forEach((key) => {
       input[key] = exports.deepUnescape(input[key])
     })

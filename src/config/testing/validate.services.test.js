@@ -1,7 +1,8 @@
 // Imports/Spies/Mocks
+const logger = require('../log.adapter')
+const warnSpy = jest.spyOn(logger, 'warn')
 const services = require('../../services/validate.services')
 const schemaSpy = jest.spyOn(services, 'getSchema')
-const warnSpy = jest.spyOn(console, 'warn')
 
 // Mock Config
 jest.mock('../constants/validation.cfg', () => ({
@@ -178,11 +179,11 @@ describe('getSchema', () => {
     })
     it('optional fields', () => {
       expect(services.getSchema('test','any',null,['isIn'],true).test)
-        .toHaveProperty('optional', {options: {nullable: true, checkFalsy: false}})
+        .toHaveProperty('optional', {options: {nullable: true, checkFalsy: true}})
       expect(services.getSchema('test','any?',null,['isIn'],true).test)
-        .toHaveProperty('optional', {options: {nullable: true, checkFalsy: false}})
+        .toHaveProperty('optional', {options: {nullable: true, checkFalsy: true}})
       expect(services.getSchema('test','any?',null,['isIn'],false).test)
-        .toHaveProperty('optional', {options: {nullable: true, checkFalsy: false}})
+        .toHaveProperty('optional', {options: {nullable: true, checkFalsy: true}})
     })
     it('string optionals', () => {
       expect(services.getSchema('test','string',null,['isIn'],true).test)
@@ -233,7 +234,30 @@ describe('getSchema', () => {
       expect(result.test).toHaveProperty('trim', true)
       expect(result.test).toHaveProperty('escape', true)
     })
-    it.todo('b64')
+    it('b64', () => {
+      const result = services.getSchema('test','b64',null,['isIn'],false)
+      expect(result.test).toHaveProperty('isBase64', {options: { urlSafe: false }, errorMessage: expect.any(String)})
+      expect(result.test).toHaveProperty('isString', {errorMessage: expect.any(String)})
+      expect(result.test).toHaveProperty('stripLow', true)
+      expect(result.test).toHaveProperty('trim', true)
+      expect(result.test).toHaveProperty('escape', true)
+    })
+    it('b64url', () => {
+      const result = services.getSchema('test','b64url',null,['isIn'],false)
+      expect(result.test).toHaveProperty('isBase64', {options: { urlSafe: true }, errorMessage: expect.any(String)})
+      expect(result.test).toHaveProperty('isString', {errorMessage: expect.any(String)})
+      expect(result.test).toHaveProperty('stripLow', true)
+      expect(result.test).toHaveProperty('trim', true)
+      expect(result.test).toHaveProperty('escape', true)
+    })
+    it('hex', () => {
+      const result = services.getSchema('test','hex',null,['isIn'],false)
+      expect(result.test).toHaveProperty('isHexadecimal', {errorMessage: expect.any(String)})
+      expect(result.test).toHaveProperty('isString', {errorMessage: expect.any(String)})
+      expect(result.test).toHaveProperty('stripLow', true)
+      expect(result.test).toHaveProperty('trim', true)
+      expect(result.test).toHaveProperty('escape', true)
+    })
     it('string', () => {
       const result = services.getSchema('test','string',null,['isIn'],false)
       expect(result.test).toHaveProperty('isString', {errorMessage: expect.any(String)})
@@ -302,10 +326,10 @@ describe('getSchema', () => {
 
     it('array has optional props', () => {
       let result = services.getSchema('test','any[]?',null,['isIn'],false)
-      expect(result.test).toHaveProperty('optional', {options: {nullable: true, checkFalsy: false}})
+      expect(result.test).toHaveProperty('optional', {options: {nullable: true, checkFalsy: true}})
       expect(result.test).not.toHaveProperty('exists')
       result = services.getSchema('test','any[]',null,['isIn'],true)
-      expect(result.test).toHaveProperty('optional', {options: {nullable: true, checkFalsy: false}})
+      expect(result.test).toHaveProperty('optional', {options: {nullable: true, checkFalsy: true}})
       expect(result.test).not.toHaveProperty('exists')
     })
     it('array has non-optional props', () => {
@@ -357,6 +381,16 @@ describe('getSchema', () => {
     })
   })
 
+  describe('specifics', () => {
+    it('boolean + optional', () => {
+      expect(services.getSchema('test','boolean',null,['isIn'],true).test)
+        .toHaveProperty('optional', {options: {nullable: true, checkFalsy: false}})
+      expect(services.getSchema('test','boolean?',null,['isIn'],true).test)
+        .toHaveProperty('optional', {options: {nullable: true, checkFalsy: false}})
+      expect(services.getSchema('test','boolean?',null,['isIn'],false).test)
+        .toHaveProperty('optional', {options: {nullable: true, checkFalsy: false}})
+    })
+  })
 
   describe('errors', () => {
     it('errorMessage on key', () => {

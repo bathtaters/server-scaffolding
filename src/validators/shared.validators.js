@@ -53,9 +53,6 @@ function getSchemaAdapter(route, keys, optionalBody) {
   // Re-Assign validation names based on input
   let renamedSchema = {}, missing = Object.keys(schema)
   Object.entries(keysDict).forEach((([newKey, oldKey]) => {
-    if (newKey in renamedSchema)
-      return logger.warn(`Duplicate validation schema ID in ${route}: ${oldKey} =/=> ${newKey}`)
-    
     renamedSchema[newKey] = schema[oldKey]
 
     const oldIdx = missing.indexOf(oldKey)
