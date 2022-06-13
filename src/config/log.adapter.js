@@ -13,7 +13,8 @@ module.exports = logOrder.reduce((logFuncs, { name, func }, idx) => {
   return logFuncs
 }, { logLevel: logOrder[logLevel] ? logOrder[logLevel].name : logLevel })
 
-module.exports.info(`Log level set to ${logOrder[logLevel].name} (${logLevel} of ${logOrder.length - 1})`)
+if (process.env.NODE_ENV !== 'test')
+  module.exports.info(`Log level set to ${logOrder[logLevel].name} (${logLevel} of ${logOrder.length - 1})`)
 
 
 // Get Log Level from number or log name
