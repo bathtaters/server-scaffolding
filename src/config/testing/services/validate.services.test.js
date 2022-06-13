@@ -1,11 +1,11 @@
 // Imports/Spies/Mocks
-const logger = require('../log.adapter')
+const logger = require('../../log.adapter')
 const warnSpy = jest.spyOn(logger, 'warn')
-const services = require('../../services/validate.services')
+const services = require('../../../services/validate.services')
 const schemaSpy = jest.spyOn(services, 'getSchema')
 
 // Mock Config
-jest.mock('../constants/validation.cfg', () => ({
+jest.mock('../../constants/validation.cfg', () => ({
   types:  { setA: { a: 'type1', b: 'type2' }, setB: { c: 'type3', d: 'type4' }, },
   limits: { setA: { a: 'lims1', b: 'lims2' }, setB: { c: 'lims3' }, },
 }))
