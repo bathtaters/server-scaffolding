@@ -17,7 +17,7 @@ module.exports = {
 
   // CRUD Errors
   noID: () => createError(400, "No ID provided."),
-  noData: () => createError(400, "No data provided."),
+  noData: (missingField) => createError(400, `No ${missingField || 'data'} provided.`),
   noEntry: (id) => createError(400, `No entry exists at ID ${id || ''}.`),
   noAdd: () => createError(502, "New entry was not created."),
   
