@@ -40,6 +40,23 @@ $( 'input.accessChecks' ).change(function() {
   }
 });
 
+/* Require username to do anything */
+$(function() { $( 'input#username' ).attr('required', true); })
+
+/* Update password/confirm fields on each change */
+$( 'input#confirm, input#password' ).on('input', function() {
+  var confirm = $( 'input#confirm' );
+  var confirmVal = confirm.val();
+  var pwordVal = $( 'input#password' ).val();
+
+  confirm.attr('required', !!pwordVal);
+  
+  if (!confirmVal || confirmVal === pwordVal) {
+    return confirm.removeClass('invalid');
+  }
+  confirm.addClass('invalid');
+});
+
 /* Regenerate API ID */
 $( '#actionRegen' ).click(function() {
   var idElem = $( '#primary-key input' );

@@ -67,7 +67,22 @@ button.toggle-password.small {
   padding: 0px;
 }
 
+/* Style invalid input fields */
+input.invalid:not([type="button"]):not([type="submit"]):not([type="reset"]),
+input.invalid:not([type="button"]):not([type="submit"]):not([type="reset"]):focus,
+input.invalid:not([type="button"]):not([type="submit"]):not([type="reset"]):focus-visible,
+textarea.invalid, textarea.invalid:focus, textarea.invalid:focus-visible, select.invalid,
+input:invalid:not([type="button"]):not([type="submit"]):not([type="reset"]),
+input:invalid:not([type="button"]):not([type="submit"]):not([type="reset"]):focus,
+input:invalid:not([type="button"]):not([type="submit"]):not([type="reset"]):focus-visible,
+textarea:invalid, textarea:invalid:focus, textarea:invalid:focus-visible, select:invalid {
+  border-color: #d32f2f;
+  outline-color: #d32f2f;
+  box-shadow: none;
+}
+
 /* Random styles */
+.valid { border-color: #d32f2f; box-shadow: none; }
 .cors-regex { color: lightcoral; }
 .cors-array { color: lightskyblue; }
 .align-self-center { align-self: center;  }

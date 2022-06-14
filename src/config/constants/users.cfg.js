@@ -6,6 +6,7 @@ const limits = {
   username: { min: 2, max: 255 },
   password: { min: 8, max: 128 },
 }
+limits.confirm = limits.password
 
 module.exports = {
   access, accessMax, limits,
