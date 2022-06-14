@@ -17,8 +17,8 @@ exports.setAdapter = (data) => {
     const { key, salt } = encodePassword(data.password)
     data.key = key
     data.salt = salt
-    delete data.password
   }
+  delete data.password
   return data
 }
 
@@ -43,6 +43,12 @@ exports.guiAdapter = (users) => !users ? [] : users.map((usr) => {
 
 exports.preValidateAdapter = (formData) => {
   if (formData.access && typeof formData.access === 'string') formData.access = [formData.access]
+}
+
+exports.schemaAdapter = (schema) => {
+  delete schema.password
+  schema = { ...schema, key: 'TEXT', salt: 'TEXT' }
+  return schema
 }
 
 exports.confirmPassword = (formData, action) => {
