@@ -1,24 +1,27 @@
 /// <reference path="./jquery-3.6.0.min.js" />
 
 /* Table reset confirmation */
-$( 'input#actionReset' ).click(function(ev) {
+$( 'input#actionReset' ).on('click', function(ev) {
   if(!window.confirm('WARNING! This will remove all users and log you out, are you sure you want to do this?')) {
     ev.preventDefault();
   }
 });
 
 /* Reset hidden fields on 'clear' */
-$( 'input#clearForm' ).click(function() { $( 'input[type="hidden"]' ).val(""); });
+$( 'input#clearForm' ).on('click', function() { $( 'input[type="hidden"]' ).val(""); });
 
 /* Select row for editing */
-$( 'tr.tableRow' ).click(function() {
+$( 'tr.tableRow' ).on('click', function() {
   $( 'input#'+$(this).attr('data-key') ).val( $(this).attr('data-val') );
 
   $(this).children('td').each(function() {
     var key = '#'+$(this).attr('data-key');
-    if (key === '#password' || key === '#confirm') { return false; }
+    
+    if (key === '#password' || key === '#confirm') { return true; }
+
     if (key !== '#access') {
-      return $( key ).val($(this).text());
+      $( key ).val($(this).text());
+      return true;
     }
 
     $( 'input.accessChecks' ).prop('checked', false);
@@ -30,8 +33,8 @@ $( 'tr.tableRow' ).click(function() {
   });
 });
 
-/* Auto-select checks */
-$( 'input.accessChecks' ).change(function() {
+/* Auto-select checkboxes */
+$( 'input.accessChecks' ).on('input', function() {
   if (!$(this).prop('checked')) return;
 
   if ($(this).attr('id') === "none") {
@@ -45,6 +48,7 @@ $( 'input.accessChecks' ).change(function() {
 $(function() { $( 'input#username' ).attr('required', true); })
 
 /* Update password/confirm fields on each change */
+$( 'input#clearForm' ).on('click', function() { $( 'input#confirm' ).removeClass('invalid').attr('required', false); });
 $( 'input#confirm, input#password' ).on('input', function() {
   var confirm = $( 'input#confirm' );
   var confirmVal = confirm.val();

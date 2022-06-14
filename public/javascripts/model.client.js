@@ -1,24 +1,24 @@
 /// <reference path="./jquery-3.6.0.min.js" />
 
 /* Table reset confirmation */
-$( 'input#actionReset' ).click(function(ev) {
+$( 'input#actionReset' ).on('click', function(ev) {
   if(!window.confirm('Are you sure you want to erase the entire table?')) {
     ev.preventDefault();
   }
 });
 
 /* Reset hidden fields on 'clear' */
-$( 'input#clearForm' ).click(function() { $( 'input[type="hidden"]' ).val(""); });
+$( 'input#clearForm' ).on('click', function() { $( 'input[type="hidden"]' ).val(""); });
 
 /* Select row for editing */
-$( 'tr.tableRow' ).click(function() {
+$( 'tr.tableRow' ).on('click', function() {
   $(this).children('td').each(function() {
     $( '#'+$(this).attr('data-key') ).val($(this).text());
   });
 });
 
 /* Swap two IDs */
-$( '#actionSwap' ).click(function() {
+$( '#actionSwap' ).on('click', function() {
   var sendData = { swap: $( 'input#swapId' ).val() };
   var idElem = $( '#primary-key input' );
   var idVal = idElem.val();
