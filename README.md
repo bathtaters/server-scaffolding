@@ -45,10 +45,17 @@ Built on ***SQLite3*** database w/ basic **CRUD** API & simple **web GUI**.
 
 ### .env Variables
 ```
+<<<<<<< HEAD
 NODE_ENV=[development]|production|test
 port=[8080]
 MORGAN_CONSOLE=combined|common|dev|[short]|tiny
 MORGAN_FILE=combined|[common]|dev|short|tiny
+=======
+NODE_ENV=[development]|production
+port=8080
+MORGAN_CONSOLE=combined|common|dev|short|tiny
+MORGAN_FILE=combined|common|dev|short|tiny
+>>>>>>> 054c3b2b6698bbde55fcf2af9595327f2770ac77
 LOG_CONSOLE=debug|[info]|log|warn|error
 LOG_FILE=debug|info|log|[warn]|error
 SESSION_SECRET=[secret]
