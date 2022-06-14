@@ -16,6 +16,7 @@ $( 'tr.tableRow' ).click(function() {
 
   $(this).children('td').each(function() {
     var key = '#'+$(this).attr('data-key');
+    if (key === '#password' || key === '#confirm') { return false; }
     if (key !== '#access') {
       return $( key ).val($(this).text());
     }
