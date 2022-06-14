@@ -10,8 +10,8 @@ class Users extends Model {
   constructor() { super('_users', { defaults: false }) }
   // { defaults: false } = don't auto-set defaults
 
-  get(id, idKey = 'id') {
-    return super.get(id, idKey).then((user) =>
+  get(id, idKey) {
+    return super.get(id, idKey || this.primaryId).then((user) =>
       !id && Array.isArray(user) ? user.map(getAdapter) :
       !user ? user : getAdapter(user)
     )
@@ -21,7 +21,7 @@ class Users extends Model {
     const test = await this.validUsername(data.username)
     if (test) throw errors.badUsername(data.username.trim(), test)
 
-    return super.add(addAdapter(data))
+    return super.add(addAdapter(data, this.primaryId))
   }
 
   update(id, data) {

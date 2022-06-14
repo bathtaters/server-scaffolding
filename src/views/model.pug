@@ -13,15 +13,15 @@ block content
         input.small.button.button-group#clearForm(type="reset" value="Clear")
 
       .row
+        .col-sm#primary-key
+          +formInput(idKey, 'readonly', limits[idKey], defaults[idKey], tableFields[idKey], 'button-group')
         .col-sm
-          +formInput('id', 'id', 'ID', 'button-group')
-        .col-sm
-          +buttonInput('swapId', 'id', 'Swap', 'Swap ID')
+          +buttonInput('swapId', 'id', 'Swap', limits[idKey], defaults[idKey])
 
       .row
         each val, key in schema
           .col-sm
-            +formInput(key, val)
+            +formInput(key, val, limits[key], defaults[key], tableFields[key])
 
       +buttonRow(buttons)
         
@@ -37,4 +37,4 @@ block content
       each entry in data
         tr.tableRow
           each val, key in tableFields
-            td(data-label=val data-key=key)= entry[key]
+            td(data-label=val data-key=key)= entry[key.toLowerCase()]

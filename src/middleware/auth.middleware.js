@@ -9,7 +9,7 @@ const { authorizeUser, storeUser, loadUser, sessionOptions } = require('../servi
 
 exports.initAuth = () => {
   passport.use(new LocalStrategy(authorizeUser(Users)))
-  passport.serializeUser(storeUser)
+  passport.serializeUser(storeUser(Users))
   passport.deserializeUser(loadUser(Users))
 
   return [

@@ -12,7 +12,7 @@ exports.encodePassword = (password) => {
 }
 
 exports.testPassword = (password) => (userData) => {
-  if (!userData || !userData.id) return { fail: 'User not found' }
+  if (!userData || !Object.keys(userData).length) return { fail: 'User not found' }
   if (!userData.key) return { fail: 'Password not set' }
 
   return crypto.timingSafeEqual(

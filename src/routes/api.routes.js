@@ -4,12 +4,12 @@ const validate = require('../validators/api.validators')
 const controllers = require('../controllers/api.controllers')
 
 Object.entries(models).forEach(([name, Model]) => {
-  router.post(  `/${name}/swap`, validate.swap(name),   controllers.swap(Model))   // Swap IDs
-  router.post(  `/${name}`,      validate.all(name),    controllers.create(Model)) // Create
-  router.get(   `/${name}`,                             controllers.read(Model))   // Read (all)
-  router.get(   `/${name}/:id`,  validate.idOnly(name), controllers.read(Model))   // Read (one)
-  router.put(   `/${name}/:id`,  validate.idAll(name),  controllers.update(Model)) // Update
-  router.delete(`/${name}/:id`,  validate.idOnly(name), controllers.delete(Model)) // Delete
+  router.post(  `/${name}/swap`, validate.swap(name, Model.primaryId),   controllers.swap(Model))   // Swap IDs
+  router.post(  `/${name}`,      validate.all(name, Model.primaryId),    controllers.create(Model)) // Create
+  router.get(   `/${name}`,                                              controllers.read(Model))   // Read (all)
+  router.get(   `/${name}/:id`,  validate.idOnly(name, Model.primaryId), controllers.read(Model))   // Read (one)
+  router.put(   `/${name}/:id`,  validate.idAll(name, Model.primaryId),  controllers.update(Model)) // Update
+  router.delete(`/${name}/:id`,  validate.idOnly(name, Model.primaryId), controllers.delete(Model)) // Delete
 })
 
 module.exports = router

@@ -16,30 +16,40 @@ exports.update = (Model) => async function (req,res,next) {
   if (!req.body || !Object.keys(req.body).length) return next(errors.noData())
   
   const entry = await Model.get(req.params.id).catch(next)
-  if (!entry || !entry.id) return next(errors.noEntry(req.params.id))
+  if (!entry || !entry[Model.primaryId]) return next(errors.noEntry(req.params.id))
 
-  return Model.update(entry.id, req.body).then(() => res.send({ success: true })).catch(next)
+  return Model.update(entry[Model.primaryId], req.body).then(() => res.send({ success: true })).catch(next)
 }
 
 exports.delete = (Model) => async function (req,res,next) {
   if (req.params.id == null) return next(errors.noID())
 
   const entry = await Model.get(req.params.id).catch(next)
-  if (!entry || !entry.id) return next(errors.noEntry(req.params.id))
+  if (!entry || !entry[Model.primaryId]) return next(errors.noEntry(req.params.id))
 
   return Model.remove(req.params.id).then(() => res.send({ success: true })).catch(next)
 }
 
 const TEMP_ID = -11
 exports.swap = (Model) => async function (req,res,next) {
-  if (req.body.id == null || req.body.swap == null) return next(errors.noID())
+  if (req.body[Model.primaryId] == null || req.body.swap == null) return next(errors.noID())
   
-  const entryA = await Model.get(req.body.id).then((r) => r && r.id).catch(next)
-  const entryB = await Model.get(req.body.swap).then((r) => r && r.id).catch(next)
-  if (!entryA || !entryB) return next(errors.noEntry(`${req.body.id} or ${req.body.swap}`))
+  const resultId = Model.primaryId.toLowerCase()
+  try {
+    const entryA = await Model.get(req.body[Model.primaryId]).then((r) => r && r[resultId])
+    const entryB = await Model.get(req.body.swap).then((r) => (r && r[resultId]))
 
-  await Model.update(entryA,  { id: TEMP_ID }).catch(next)
-  await Model.update(entryB,  { id: entryA  }).catch(next)
-  await Model.update(TEMP_ID, { id: entryB  }).catch(next)
+    if (entryA == null) return next(errors.noEntry(req.body[Model.primaryId]))
+
+    // ID change
+    if (entryB == null) return Model.update(entryA,  { [Model.primaryId]: req.body.swap  }).then(res.send).catch(next)
+
+    // ID swap
+    await Model.update(entryB,  { [Model.primaryId]: TEMP_ID })
+    await Model.update(entryA,  { [Model.primaryId]: entryB  })
+    await Model.update(TEMP_ID, { [Model.primaryId]: entryA  })
+  }
+  catch (err) { return next(err) }
+
   return res.send({ success: true })
 }

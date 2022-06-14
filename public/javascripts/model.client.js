@@ -19,10 +19,16 @@ $( 'tr.tableRow' ).click(function() {
 
 /* Swap two IDs */
 $( '#actionSwap' ).click(function() {
+  var sendData = { swap: $( 'input#swapId' ).val() };
+  var idElem = $( '#primary-key input' );
+  var idVal = idElem.val();
+  if (!idVal || !sendData.swap) { return window.alert('Must enter Main ID & Swap IDs to swap.'); }
+  sendData[idElem.attr('id')] = idVal;
+
   $.ajax({
     type:    "POST",
     url:     $( 'form#editForm' ).attr('action').replace('/form', '/swap'),
-    data:    { id: $( 'input#id' ).val(), swap: $( 'input#swapId' ).val() },
+    data:    sendData,
     success: function(data) {
         if (!data.success) { window.alert('Error performing swap: '+(data.error || 'Unknown error')); }
         else { window.location.reload(); }

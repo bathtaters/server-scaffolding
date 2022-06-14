@@ -1,8 +1,16 @@
 const validateTypes = require('../config/constants/validation.cfg').types
 const { getTypeArray } = require('./validate.utils')
 
+exports.hasDupes = (array) => array.some((val, idx) => array.slice(0, idx).includes(val))
+
+exports.extractId = (data, idKey) => {
+  const id = data[idKey]
+  delete data[idKey]
+  return [id, data]
+}
+
 exports.sanitizeSchemaData = (data, schema=null) => Object.keys(data).reduce((obj,key) =>
-  !schema || Object.keys(schema).includes(key) ? Object.assign(obj, { [key.toLowerCase()]: data[key] }) : obj
+  !schema || Object.keys(schema).includes(key) ? Object.assign(obj, { [key]: data[key] }) : obj
 , {})
 
 exports.schemaFromValidate = (modelName, idKey) => {

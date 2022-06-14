@@ -1,20 +1,22 @@
 const { openDb, getDb } = require('../config/db')
 const services = require('../services/db.services')
-const { sanitizeSchemaData, schemaFromValidate } = require('../utils/db.utils')
-const validateDefaults = require('../config/constants/validation.cfg').defaults
+const { sanitizeSchemaData, schemaFromValidate, hasDupes } = require('../utils/db.utils')
+const { defaults: validateDefaults, limits: validateLimits } = require('../config/constants/validation.cfg')
 const errors = require('../config/constants/error.messages')
 
 class Model {
 
-  constructor(title, { defaults, schema, primaryId = 'id' } = {}) {
+  constructor(title, { schema, defaults, limits, primaryId = 'id' } = {}) {
     if (!schema) schema = schemaFromValidate(title, primaryId)
     if (!schema) throw new Error(`Schema for ${title} not provided and does not exist in validation.json.`)
+    if (hasDupes(Object.keys(schema).map((k) => k.toLowerCase()))) throw new Error(`Schema for ${title} contains duplicate key names: ${Object.keys(schema).join(', ')}`)
 
     if (!schema[primaryId]) schema[primaryId] = 'INTEGER PRIMARY KEY'
 
-    this.title = title.toLowerCase()
+    this.title = title
     this.schema = sanitizeSchemaData(schema)
-    this.defaults = defaults != null ? defaults : validateDefaults[title] 
+    this.defaults = defaults != null ? defaults : validateDefaults[title]
+    this.limits = limits != null ? limits : validateLimits[title]
     this.primaryId = primaryId
 
     this.isInitialized = new Promise(async (res, rej) => {
@@ -28,34 +30,36 @@ class Model {
   }
     
   get(id = null, idKey = null) {
-    if (!id) return services.all(getDb(), `SELECT * FROM ${this.title}`)
+    if (id == null) return services.all(getDb(), `SELECT * FROM ${this.title}`)
     return services.get(getDb(), `SELECT * FROM ${this.title} WHERE ${idKey || this.primaryId} = ?`, [id])
   }
 
   count(id = null, idKey = null) {
     return services.get(getDb(),
-      `SELECT COUNT(*) cnt FROM ${this.title}${id ? ` WHERE ${idKey || this.primaryId} = ?` : ''}`,
-      id ? [id] : []
+      `SELECT COUNT(*) cnt FROM ${this.title}${id != null ? ` WHERE ${idKey || this.primaryId} = ?` : ''}`,
+      id != null ? [id] : []
     ).then((count) => count && count.cnt)
   }
     
-  add(data) {
-    data = services.sanitizeSchemaData(data, this.schema)
+  add(data, returnField) {
+    data = sanitizeSchemaData(data, this.schema)
     if (this.defaults) data = { ...this.defaults, ...data }
     
     const keys = Object.keys(data)
     if (!keys.length) return Promise.reject(errors.noData())
+
+    if (!returnField) returnField = this.primaryId.toLowerCase()
   
     return services.get(getDb(), 
-      `INSERT INTO ${this.title}(${ keys.join(', ') }) VALUES(${ keys.map(()=>'?').join(', ') }) RETURNING id`,
+      `INSERT INTO ${this.title}(${ keys.join(', ') }) VALUES(${ keys.map(()=>'?').join(', ') }) RETURNING ${returnField}`,
       Object.values(data)
-    ).then((row) => row && row[this.primaryId])
+    ).then((row) => row && row[returnField])
   }
     
   update(id, data, idKey = null) {
-    if (!id) return Promise.reject(errors.noID())
+    if (id == null) return Promise.reject(errors.noID())
 
-    data = services.sanitizeSchemaData(data, this.schema)
+    data = sanitizeSchemaData(data, this.schema)
     const keys = Object.keys(data)
     if (!keys.length) return Promise.reject(errors.noData())
 
@@ -70,7 +74,7 @@ class Model {
   }
   
   remove(id, idKey = null) {
-    if (!id) return Promise.reject(errors.noID())
+    if (id == null) return Promise.reject(errors.noID())
 
     return this.count(id, idKey || this.primaryId).then((exists) => {
       if (!exists) throw errors.noEntry(id)

@@ -1,11 +1,15 @@
-mixin typedInp(key, inpType, classes)
+mixin typedInp(key, inpType, limits, defaultValue, classes)
   if isNaN(inpType)
     input(
       name=key id=key class=classes readonly=(inpType === 'readonly')
+      value=defaultValue
       type=(inpType === 'id' ? "number" : inpType === 'readonly' ? "text" : inpType)
       step=(inpType === 'number' ? "any" : inpType === 'id' ? "1" : undefined)
       pattern=(inpType === 'number' || inpType === 'id' ? "\\d+" : undefined)
-      min=(inpType === 'id' ? "0" : undefined)
+      min=(limits && (inpType === 'number' || inpType === 'id') ? limits.min : inpType === 'id' ? "0" : undefined)
+      max=(limits && (inpType === 'number' || inpType === 'id') ? limits.max : undefined)
+      minLength=(limits && (inpType === 'text' || inpType === 'password') ? limits.min : undefined)
+      maxLength=(limits && (inpType === 'text' || inpType === 'password') ? limits.max : undefined)
       autocomplete=(inpType === 'password' ? 'new-password' : key === 'username' ? 'username' : undefined)
     )
     if (inpType === 'password')
@@ -13,13 +17,13 @@ mixin typedInp(key, inpType, classes)
   else
     textarea(name=key id=key class=classes rows=inpType)
 
-mixin formInput(key, inpType, label, classes, tooltip)
+mixin formInput(key, inpType, limits, defaultValue, label, classes, tooltip)
   if inpType === 'hidden'
-    +typedInp(key, inpType, "hidden")
+    +typedInp(key, inpType, null, defaultValue, "hidden")
   else
     .input-group.vertical
       label(for=key aria-label=tooltip class=(tooltip ? 'tooltip' : ''))= label || varName(key)
-      +typedInp(key, inpType, classes)
+      +typedInp(key, inpType, limits, defaultValue, classes)
 
 mixin checkboxes(key, options, label)
   fieldset.input-group.vertical
@@ -29,11 +33,11 @@ mixin checkboxes(key, options, label)
         input.accessChecks(type='checkbox' name=key id=item value=item)
         label(for=item)= item
 
-mixin buttonInput(key, inpType, button, label, tooltip, buttonKey = 'action')
+mixin buttonInput(key, inpType, button, limits, defaultValue, label, tooltip, buttonKey = 'action')
   .input-group.vertical.button-input
     label(for=key aria-label=tooltip class=(tooltip ? 'tooltip' : ''))= label || varName(key)
     .button-group
-      +typedInp(key, inpType)
+      +typedInp(key, inpType, limits, defaultValue)
       input.button(type='button' name=buttonKey id=buttonKey+button value=button)
 
 mixin buttonRow(buttons, key = 'action', buttonType = 'submit')

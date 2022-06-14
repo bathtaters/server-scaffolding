@@ -27,8 +27,8 @@ exports.addAdapter = ({
   access = userDef.access,
   cors = userDef.cors,
   password,
-}) => exports.setAdapter({
-  id: generateToken(),
+}, idKey = 'id') => exports.setAdapter({
+  [idKey]: generateToken(),
   token: generateToken(),
   username, access, password, cors
 })

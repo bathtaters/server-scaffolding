@@ -12,7 +12,7 @@ $( 'input#clearForm' ).click(function() { $( 'input[type="hidden"]' ).val(""); }
 
 /* Select row for editing */
 $( 'tr.tableRow' ).click(function() {
-  $( 'input#id' ).val( $(this).attr('id') );
+  $( 'input#'+$(this).attr('data-key') ).val( $(this).attr('data-val') );
 
   $(this).children('td').each(function() {
     var key = '#'+$(this).attr('data-key');
@@ -42,12 +42,17 @@ $( 'input.accessChecks' ).change(function() {
 
 /* Regenerate API ID */
 $( '#actionRegen' ).click(function() {
-  var apiId = $( 'input#id' ).val();
-  if (!apiId) return window.alert('Select a row to update...');
+  var idElem = $( '#primary-key input' );
+  var idVal = idElem.val();
+  if (!idVal) return window.alert('Select a row to update...');
+
+  var sendData = {};
+  sendData[idElem.attr('id')] = idVal;
+
   $.ajax({
     type:    "POST",
     url:     $( 'form#editForm' ).attr('action').replace('/form', '/regenToken'),
-    data:    { id: apiId },
+    data:    sendData,
     success: function(data) {
         if (!data.success) { window.alert('Error regenerating API ID: '+(data.error || 'Unknown error')); }
         else { window.location.reload(); }

@@ -9,18 +9,26 @@ const { form } = require('./gui.controllers')
 exports.login  = login(`/${protectedPrefix}${urls.base}`, `/${protectedPrefix}${urls.login}`)
 exports.logout = logout(`/${protectedPrefix}${urls.login}`)
 
-
+const staticUserTableParams = {
+  title: 'Users',
+  tooltips,
+  tableFields,
+  idKey: Users.primaryId,
+  buttons: labels,
+  accessLevels: Object.keys(access),
+  limits: Users.limits || {},
+  defaults: Users.defaults || {},
+  postURL: `/${protectedPrefix}${urls.users}form/`,
+}
 exports.userTable = [
   checkAuth(`/${protectedPrefix}${urls.login}`, 'admin'),
   async (req, res) => {
     const users = await Users.get().then(guiAdapter)
     return res.render('users', {
-      title: 'Users',
+      ...staticUserTableParams,
+      users,
       user: req.user.username,
-      postURL: `/${protectedPrefix}${urls.users}form/`,
-      users, tableFields, tooltips,
-      buttons: labels,
-      accessLevels: Object.keys(access),
+      
     })
   },
 ]
@@ -33,4 +41,4 @@ exports.form = form(Users, {
 })
 
 
-exports.regenToken = (req,res,next) => Users.regenToken(req.body.id).then(res.send).catch(next)
+exports.regenToken = (req,res,next) => Users.regenToken(req.body[Users.primaryId]).then(res.send).catch(next)

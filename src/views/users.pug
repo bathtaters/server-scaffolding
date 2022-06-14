@@ -15,17 +15,17 @@ block content
 
       .row
         .col-sm
-          +formInput('username', 'text', tableFields.username, '', tooltips.username)
-          +formInput('password', 'password', tableFields.password, '', tooltips.password)
-          +formInput('confirm', 'password', tableFields.confirm, '', tooltips.confirm)
+          each val, key in { username: 'text', password: 'password', confirm: 'password' }
+            +formInput(key, val, limits[key], defaults[key], tableFields[key], '', tooltips[key])
         
         .col-sm
-          +buttonInput('token', 'readonly', 'Regen', tableFields.token, tooltips.token)
-          +formInput('id', 'hidden')
+          +buttonInput('token', 'readonly', 'Regen', limits.token, defaults.token, tableFields.token, tooltips.token)
           +checkboxes('access', accessLevels, tableFields.access)
+          span#primary-key
+            +formInput(idKey, 'hidden')
 
       .row: .col-sm
-        +formInput('cors', '2', tableFields.cors, '', tooltips.cors)
+        +formInput('cors', '2', limits.cors, defaults.cors, tableFields.cors, '', tooltips.cors)
 
       +buttonRow(buttons)
       
@@ -40,7 +40,7 @@ block content
           th= val
     tbody
       each user in users
-        tr.tableRow(id=user.id)
+        tr.tableRow(data-key=idKey data-val=user[idKey])
           each val, key in tableFields
             -var rowCls = key !== 'cors' ? '' : user.regExCors ? 'cors-regex' : user.arrayCors ? 'cors-array' : ''
             td(data-label=val data-key=key class=rowCls)= user[key]

@@ -39,10 +39,13 @@ exports.modelDashboard = (Model, view = 'model') => [
       user: req.user.username,
       isAdmin: hasAccess(req.user.access, 'admin'),
       postURL: `/${protectedPrefix}${urls.base}${Model.title}/form/`,
+      idKey: Model.primaryId,
       data,
       buttons: labels,
-      schema: getSchema(Model.schema),
-      tableFields: getTableFields(Model.schema),
+      schema: getSchema(Model.schema, Model.primaryId),
+      tableFields: getTableFields(Model.schema, Model.primaryId),
+      limits: Model.limits || {},
+      defaults: Model.defaults || {},
     })
   ).catch(next),
 ]
@@ -53,6 +56,7 @@ exports.error = (header) => (error, req, res, _) =>
     title: '',
     user: req.user && req.user.username,
     isAdmin: req.user && hasAccess(req.user.access, 'admin'),
+    showStack: process.env.NODE_ENV === 'development',
     header, error,
   })
 

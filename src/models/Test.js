@@ -1,7 +1,7 @@
 const Model = require('./_Model')
 
 class Test extends Model {
-  constructor() { super('test') }
+  constructor() { super('test', { primaryId: 'testId' }) }
 }
 
 module.exports = new Test()
