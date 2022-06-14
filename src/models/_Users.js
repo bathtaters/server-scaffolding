@@ -1,14 +1,17 @@
 const Model = require('./_Model')
 const { initialAccess } = require('../config/constants/users.cfg')
-const { addAdapter, getAdapter, setAdapter } = require('../services/users.services')
+const { passwordAccess } = require('../utils/users.utils')
+const { addAdapter, getAdapter, setAdapter, schemaAdapter } = require('../services/users.services')
 const { generateToken, testPassword } = require('../utils/auth.utils')
 const errors = require('../config/constants/error.messages')
 const logger = require('../config/log.adapter')
 
 
 class Users extends Model {
-  constructor() { super('_users', { defaults: false }) }
-  // { defaults: false } = don't auto-set defaults
+  constructor() { 
+    super('_users', { schema: schemaAdapter, defaults: false })
+    // { defaults: false } = ignore default values
+  }
 
   get(id, idKey) {
     return super.get(id, idKey || this.primaryId).then((user) =>
@@ -21,11 +24,20 @@ class Users extends Model {
     const test = await this.validUsername(data.username)
     if (test) throw errors.badUsername(data.username.trim(), test)
 
-    return super.add(addAdapter(data, this.primaryId))
+    const newData = addAdapter(data, this.primaryId)
+    if ((passwordAccess & newData.access) && !newData.key) throw errors.noData('password for GUI access')
+
+    return super.add(newData)
   }
 
-  update(id, data) {
-    return super.update(id, setAdapter(data))
+  async update(id, data) {
+    const newData = setAdapter(data)
+    
+    if ((passwordAccess & newData.access) && !newData.key) {
+      const current = await this.get(id)
+      if (!current.password && !(passwordAccess & current.access)) throw errors.noData('password for GUI access')
+    }
+    return super.update(id, newData)
   }
 
   regenToken(id) {
