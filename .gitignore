@@ -2,16 +2,21 @@
 /node_modules
 
 # environments
-.env
+.env*
 
 # credentials
 credentials.json
 
 # database
+.db
 *.db
 
 # testing
 /coverage
+
+# logs
+.logs
+*.log
 
 # misc
 package-lock.json
