@@ -6,17 +6,25 @@ const { generateToken, testPassword } = require('../utils/auth.utils')
 const errors = require('../config/constants/error.messages')
 const logger = require('../config/log.adapter')
 
-
+const validTimestamps = [ 'api', 'gui' ]
 class Users extends Model {
   constructor() { 
     super('_users', { schema: schemaAdapter, defaults: false })
     // { defaults: false } = ignore default values
   }
 
-  get(id, idKey) {
-    return super.get(id, idKey || this.primaryId).then((user) =>
-      !id && Array.isArray(user) ? user.map(getAdapter) :
-      !user ? user : getAdapter(user)
+  get(id, idKey, updateTimestamp = null) {
+    if (updateTimestamp && !validTimestamps.includes(updateTimestamp)) logger.warn(`Ignoring request to update invalid '${updateTimestamp}Timestamp': ${id}`)
+
+    return super.get(id, idKey || this.primaryId).then((user) => {
+      if (!id && Array.isArray(user)) return user.map(getAdapter)
+      if (!user) return user
+
+      if (updateTimestamp && user[this.primaryId])
+        super.update(user[this.primaryId], { [`${updateTimestamp}Time`]: new Date().toJSON() })
+
+      return getAdapter(user)
+    }
     )
   }
 

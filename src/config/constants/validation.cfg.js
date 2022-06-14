@@ -49,6 +49,8 @@ module.exports = {
       token: "hex",
       access: "string[]?",
       cors: "string*",
+      guiTime: "datetime?",
+      apiTime: "datetime?",
     },
     base: {
       id: "int",

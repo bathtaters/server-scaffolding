@@ -17,6 +17,7 @@ async function getCors(req, callback) {
 
   if (!hasAccess(user.access, 'api')) return callback(errors.noAccess())
 
+  Users.get(user.id, null, 'api')
   return callback(null, {
     credentials: true,
     methods: ['GET','POST','PUT','DELETE'],

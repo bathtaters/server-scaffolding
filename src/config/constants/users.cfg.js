@@ -14,7 +14,7 @@ module.exports = {
   initialAccess: [ 'gui', 'admin' ],
   requirePassword: [ 'gui', 'admin' ],
 
-  tableFields: { username: 'Username', access: 'Access', password: 'Password', token: 'API Token', cors: 'CORS Origin' },
+  tableFields: { username: 'Username', access: 'Access', password: 'Password', token: 'API Token', cors: 'CORS Origin', guiTime: 'GUI Access', apiTime: 'API Access' },
   
   encode: { iters: 1049, keylen: 64, digest: 'sha512' },
 

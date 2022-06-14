@@ -19,6 +19,6 @@ exports.authorizeUser = (Model) => (username, password, done) =>
   }).catch(done)
 
 exports.storeUser = (Model) => (user, done) => done(null, user[Model.primaryId])
-exports.loadUser = (Model) => (id, done) => Model.get(id).then((user) =>
+exports.loadUser = (Model) => (id, done) => Model.get(id, null, 'gui').then((user) =>
   done(null, user || false, user ? undefined : { message: 'User not found' })
 ).catch(done)

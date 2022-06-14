@@ -3,8 +3,8 @@ const { generateToken, encodePassword } = require('../utils/auth.utils')
 const userDef = require('../config/constants/validation.cfg').defaults._users
 const errors = require('../config/constants/error.messages')
 
-exports.getAdapter = ({ id, token, username, access, cors, key }) => ({
-  id, token, username, access,
+exports.getAdapter = ({ id, token, username, access, cors, key, guiTime, apiTime }) => ({
+  id, token, username, access, guiTime, apiTime,
   password: Boolean(key),
   cors: decodeCors(cors),
 })
@@ -38,6 +38,8 @@ exports.guiAdapter = (users) => !users ? [] : users.map((usr) => {
   usr.arrayCors = Array.isArray(usr.cors)
   usr.regExCors = isRegEx(usr.cors)
   usr.cors = displayCors(usr.cors)
+  usr.guiTime = usr.guiTime ? new Date(usr.guiTime).toLocaleString() : ''
+  usr.apiTime = usr.apiTime ? new Date(usr.apiTime).toLocaleString() : ''
   return usr
 })
 
