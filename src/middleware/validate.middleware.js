@@ -1,6 +1,6 @@
 const { validationResult } = require('express-validator')
 const { mask } = require('../utils/gui.utils')
-const masked = require('../config/constants/validation.cfg').mask || []
+const masked = require('../config/constants/gui.cfg').mask || []
 
 const errorFormatter = ({ param, msg, value }) =>  `${param} ${msg}: ${masked.includes(param) ? mask(value) : JSON.stringify(value)}`
 
