@@ -8,6 +8,8 @@ class Model {
 
   constructor(title, { schema, defaults, limits, primaryId = 'id' } = {}) {
     if (!schema) schema = schemaFromValidate(title, primaryId)
+    if (typeof schema === 'function') schema = schema(schemaFromValidate(title, primaryId), title, primaryId)
+
     if (!schema) throw new Error(`Schema for ${title} not provided and does not exist in validation.json.`)
     if (hasDupes(Object.keys(schema).map((k) => k.toLowerCase()))) throw new Error(`Schema for ${title} contains duplicate key names: ${Object.keys(schema).join(', ')}`)
 
