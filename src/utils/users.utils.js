@@ -5,7 +5,7 @@ const logger = require('../config/log.adapter')
 /* ---- ACCESS ADAPTERS ---- */
 // Access is a Bit-map stored as an Int, retrieved as an array
 
-const { access, accessMax } = require('../config/constants/users.cfg')
+const { access, accessMax, requirePassword } = require('../config/constants/users.cfg')
 const { deepUnescape } = require('./validate.utils')
 
 const noAccess = Object.keys(access).find((key) => !access[key])
@@ -35,6 +35,8 @@ exports.accessArray = (accessInt) => {
 }
 
 exports.hasAccess = (accessInt, accessStr) => (access[accessStr] || 0) & (accessInt || 0)
+
+exports.passwordAccess = exports.accessInt(requirePassword)
 
 
 /* ---- CORS ADAPTERS ---- */
