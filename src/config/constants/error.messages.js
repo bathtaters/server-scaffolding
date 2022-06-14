@@ -12,6 +12,7 @@ const createError = require('http-errors')
 module.exports = {
   // Basic Errors
   unknown: () => createError(500, "Unknown server error.") ,
+  shutdown: () => createError(503, "Server is currently shutting down.", { headers: { "retry-after": 3 * 60 } }) ,
   missing: () => createError(404, "Resource not found."),
   test: () => createError(418, "API is not a Teapot."),
 
