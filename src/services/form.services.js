@@ -17,7 +17,7 @@ exports.modelActions = (Model) => ({
   // UPDATE
   [exports.labels[1]]: (formData) => {
     const [id, data] = extractId(formData, Model.primaryId)
-    if (id !== 0 && !id) throw errors.noID()
+    if (!id && id !== 0) throw errors.noID()
     if (!data || !Object.keys(data).length) throw errors.noData()
     return Model.update(id, data)
   },
@@ -25,7 +25,7 @@ exports.modelActions = (Model) => ({
   // REMOVE
   [exports.labels[2]]: (formData) => {
     const id = formData[Model.primaryId]
-    if (id !== 0 && !id) throw errors.noID()
+    if (!id && id !== 0) throw errors.noID()
     return Model.remove(id)
   },
 
@@ -35,6 +35,6 @@ exports.modelActions = (Model) => ({
 
 
 // Filter function for Object
-exports.filterFormData = (formData, filterCb = (val,key) => val) => Object.entries(formData).reduce(
+exports.filterFormData = (formData, filterCb = (val,key) => val || val === 0) => Object.entries(formData).reduce(
   (filtered, [key, val]) => filterCb(val,key) ? Object.assign(filtered, { [key]: val }) : filtered
 , {})
