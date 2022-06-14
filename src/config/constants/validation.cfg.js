@@ -2,8 +2,6 @@
 const userCfg = require('./users.cfg')
 
 module.exports = {
-  // Mask values when reporting errors for these values
-  mask: [ 'password', 'confirm' ],
   // Default values
   defaults: {
     _users: {
@@ -25,7 +23,7 @@ module.exports = {
     _users: {
       id: { min: 32, max: 32 },
       token: { min: 32, max: 32 },
-      access: { elem: { max: 5 }, array: { max: Object.keys(userCfg.access).length } },
+      access: { elem: { max: 16 }, array: { max: Object.keys(userCfg.access).length } },
       cors: { min: 0, max: 2048 },
       ...userCfg.limits
     },
@@ -57,7 +55,7 @@ module.exports = {
       data: "string*",
     },
     test: {
-      id: "int",
+      testId: "int",
       name: "string",
       number: "float",
       comment: "string*?",
