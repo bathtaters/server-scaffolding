@@ -45,19 +45,26 @@ Built on ***SQLite3*** database w/ basic **CRUD** API & simple **web GUI**.
 
 ### .env Variables
 ```
-NODE_ENV=development|production
-port=8080
-MORGAN_FMT=combined|common|dev|short|tiny
-LOG_LEVEL=debug|info|log|warn|error
-SESSION_SECRET=secretForExpressSession
-DB_DIR=/var/db/sqlite3/my-server/
+NODE_ENV=[development]|production|test
+port=[8080]
+MORGAN_CONSOLE=combined|common|dev|[short]|tiny
+MORGAN_FILE=combined|[common]|dev|short|tiny
+LOG_CONSOLE=debug|[info]|log|warn|error
+LOG_FILE=debug|info|log|[warn]|error
+SESSION_SECRET=[secret]
+DB_DIR=[/project/.db]
+LOG_DIR=[/project/.logs]
 ```
+##### _Default options are in [brackets]._
 
 ---
 
 ### *TO DO:*
+ - Add timestamp to _users (lastAccess for GUI + API)
  - Add unit **testing**
  - Add API endpoint **testing**
+ - Add automatic type conversions (ie. Object > JSON = SQL database = JSON > Object)
+ - Allow reading logs / changing levels via GUI (admin only)
 
 ---
 
