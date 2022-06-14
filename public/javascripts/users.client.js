@@ -44,9 +44,6 @@ $( 'input.accessChecks' ).on('input', function() {
   }
 });
 
-/* Require username to do anything */
-$(function() { $( 'input#username' ).attr('required', true); })
-
 /* Update password/confirm fields on each change */
 $( 'input#clearForm' ).on('click', function() { $( 'input#confirm' ).removeClass('invalid').attr('required', false); });
 $( 'input#confirm, input#password' ).on('input', function() {
