@@ -39,8 +39,8 @@ exports.guiAdapter = (user) => !user ? [] : Array.isArray(user) ? user.map(expor
   arrayCors: Array.isArray(user.cors),
   regExCors: isRegEx(user.cors),
   cors: displayCors(user.cors),
-  guiTime: user.guiTime ? new Date(user.guiTime).toLocaleString() : '',
-  apiTime: user.apiTime ? new Date(user.apiTime).toLocaleString() : '',
+  guiTime: user.guiTime ? new Date(user.guiTime).toLocaleString() : '-',
+  apiTime: user.apiTime ? new Date(user.apiTime).toLocaleString() : '-',
 })
 
 exports.preValidateAdapter = (formData) => {

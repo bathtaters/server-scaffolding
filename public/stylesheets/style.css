@@ -53,6 +53,7 @@ table:not(.horizontal) thead, table:not(.horizontal) tbody {
   max-width: 99%;
 }
 tr.tableRow { cursor: pointer; }
+td { overflow-wrap: anywhere; }
 
 /* Fix 'buttonInput' mixin style */
 .button-group > .input-group { display: flex; }
