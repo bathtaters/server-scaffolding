@@ -13,5 +13,6 @@ module.exports = {
   login: '/login/',
   base: '/dashboard/',
   users: '/users/',
+  profile: '/users/profile/',
   logout: '/users/logout/',
 }

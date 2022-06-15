@@ -1,4 +1,4 @@
-const { accessArray, accessInt, decodeCors, encodeCors, displayCors, isRegEx } = require('../utils/users.utils')
+const { accessArray, accessInt, decodeCors, encodeCors, displayCors, isRegEx, hasAccess } = require('../utils/users.utils')
 const { generateToken, encodePassword } = require('../utils/auth.utils')
 const userDef = require('../config/constants/validation.cfg').defaults._users
 const errors = require('../config/constants/error.messages')
@@ -33,14 +33,14 @@ exports.addAdapter = ({
   username, access, password, cors
 })
 
-exports.guiAdapter = (users) => !users ? [] : users.map((usr) => {
-  usr.access = accessArray(usr.access).join('/')
-  usr.arrayCors = Array.isArray(usr.cors)
-  usr.regExCors = isRegEx(usr.cors)
-  usr.cors = displayCors(usr.cors)
-  usr.guiTime = usr.guiTime ? new Date(usr.guiTime).toLocaleString() : ''
-  usr.apiTime = usr.apiTime ? new Date(usr.apiTime).toLocaleString() : ''
-  return usr
+exports.guiAdapter = (user) => !user ? [] : Array.isArray(user) ? user.map(exports.guiAdapter) : ({
+  ...user,
+  access: accessArray(user.access).join('/'),
+  arrayCors: Array.isArray(user.cors),
+  regExCors: isRegEx(user.cors),
+  cors: displayCors(user.cors),
+  guiTime: user.guiTime ? new Date(user.guiTime).toLocaleString() : '',
+  apiTime: user.apiTime ? new Date(user.apiTime).toLocaleString() : '',
 })
 
 exports.preValidateAdapter = (formData) => {
@@ -61,4 +61,9 @@ exports.confirmPassword = (formData, action) => {
 
   delete formData.confirm
   return formData
+}
+
+exports.guiFormAdapter = ({ id, username, password, confirm }, action, user) => {
+  if (user.id !== id && !hasAccess(user.access, 'admin')) throw errors.modifyOther()
+  return exports.confirmPassword({ id, username, password, confirm }, action)
 }

@@ -14,7 +14,7 @@ exports.loginPage = [
     const isUser = await Users.count()
     return res.render('login', {
       title: 'Backend Login',
-      isHome: true, isUser,
+      hideNav: true, isUser,
       postURL: `/${protectedPrefix}${urls.users}login/`,
     })
   },
@@ -26,7 +26,6 @@ exports.dashboardHome = [
     title: 'Home',
     user: req.user.username,
     isAdmin: hasAccess(req.user.access, 'admin'),
-    isHome: true,
     models
   }),
 ]
@@ -61,18 +60,18 @@ exports.error = (header) => (error, req, res, _) =>
   })
 
 
-exports.form = (Model, { accessLevel = 'gui', redirectURL = '', mutateData = () => {} } = {}) => {
+exports.form = (Model, { accessLevel = 'gui', redirectURL = '', formatData = (data) => data } = {}) => {
   const formActions = modelActions(Model)
 
   return [
     checkAuth(`/${protectedPrefix}${urls.login}`, accessLevel), 
     (req,res,next) => {
-      const { action, ...formData } = filterFormData(req.body)
+      let { action, ...formData } = filterFormData(req.body)
 
       if (!action || !Object.keys(formActions).includes(action))
         return next(errors.badAction(action))
       
-      try { mutateData(formData, action) }
+      try { formData = formatData(formData, action, req.user) || formData }
       catch (err) { return next(err) }
 
       return formActions[action](formData)

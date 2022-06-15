@@ -1,9 +1,11 @@
 header
   span.logo= title
-  if !isHome
+  if !hideNav
     a.button(href=urls.base) Home
   if isAdmin
     a.button(href=urls.users) Users
+  else
+    a.button(href=urls.profile) Profile
   .spacer
   i.align-self-center.dim= user
   a.button(href=urls.logout) Logout

@@ -1,0 +1,36 @@
+extends base
+
+include form.mixins.pug
+
+block scripts
+  script(src="/javascripts/profile.client.js")
+  script(src="/javascripts/togglePassword.js")
+
+block content
+  table
+    //- caption User Profile
+    thead
+      tr
+        each val in tableFields
+          th= val
+    tbody
+      tr
+        each val, key in tableFields
+          -var rowCls = key !== 'cors' ? '' : userData.regExCors ? 'cors-regex' : userData.arrayCors ? 'cors-array' : ''
+          td(data-label=val)= userData[key]
+
+  hr
+
+  form#editForm(action=postURL method="POST")
+    fieldset
+      legend.row
+        h2 Update Profile
+
+      .row
+        .col-sm
+          input(type="hidden" value=userData[idKey] id=idKey name=idKey)
+            
+          each val, key in { username: 'text', password: 'password', confirm: 'password' }
+            +formInput(key, val, limits[key], defaults[key], tableFields[key], '', tooltips[key])
+
+      +buttonRow(buttons)

@@ -3,7 +3,8 @@ const { protectedPrefix, urls } = require('../config/meta')
 const { access, tableFields, tooltips } = require('../config/constants/users.cfg')
 const { login, logout, checkAuth } = require('../middleware/auth.middleware')
 const { labels } = require('../services/form.services')
-const { guiAdapter, confirmPassword } = require('../services/users.services')
+const { guiAdapter, confirmPassword, guiFormAdapter } = require('../services/users.services')
+const { hasAccess } = require('../utils/users.utils')
 const { form } = require('./gui.controllers')
 
 exports.login  = login(`/${protectedPrefix}${urls.base}`, `/${protectedPrefix}${urls.login}`)
@@ -28,16 +29,35 @@ exports.userTable = [
       ...staticUserTableParams,
       users,
       user: req.user.username,
-      
+      isAdmin: hasAccess(req.user.access, 'admin'),
     })
   },
 ]
 
+exports.userProfile = [
+  checkAuth(`/${protectedPrefix}${urls.login}`, 'gui'),
+  (req, res) => res.render('profile', {
+    ...staticUserTableParams,
+    title: 'User Profile',
+    user: req.user.username,
+    userData: guiAdapter(req.user),
+    buttons: labels.slice(1,3),
+    isAdmin: hasAccess(req.user.access, 'admin'),
+    postURL: `/${protectedPrefix}${urls.profile}form/`,
+  }),
+]
 
-exports.form = form(Users, {
+
+exports.adminForm = form(Users, {
   accessLevel: 'admin',
-  mutateData: confirmPassword,
+  formatData: confirmPassword,
   redirectURL: `/${protectedPrefix}${urls.users}`,
+})
+
+exports.userForm = form(Users, {
+  accessLevel: 'gui',
+  formatData: guiFormAdapter,
+  redirectURL: `/${protectedPrefix}${urls.profile}`,
 })
 
 
