@@ -6,6 +6,7 @@ const year = (startYear, endYear) => startYear >= endYear ? endYear : `${startYe
 module.exports = {
 
   // GUI Footer text
+  title,
   footer: {
     full: [
       `${title} v${version}`,

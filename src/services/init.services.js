@@ -3,7 +3,7 @@ const logger = require('../config/log.adapter')
 const meta = require('../config/meta')
 const shutdownError = require('../config/constants/error.messages').shutdown
 const { varName } = require('../utils/gui.utils')
-const { footer } = require('../config/constants/gui.cfg')
+const { title, footer } = require('../config/constants/gui.cfg')
 const { getDb, openDb, closeDb } = require('../config/db')
 const { closeAll } = require('./log.services')
 const models = require('../models/_all')
@@ -27,6 +27,7 @@ async function initializeServer(server) {
   process.on('unhandledRejection', handleError)
   
   // Setup view vars
+  server.locals.appTitle = title
   server.locals.footerData = footer
   server.locals.varName = varName
   server.locals.urls = meta.urls
