@@ -2,16 +2,50 @@
   --universal-margin: 0.5rem;
 }
 
-html, body {
+/* Page styling */
+html, body, #siteContainer {
   height: 100%;
   width: 100%;
   min-width: 300px;
 }
 
+html { overflow-x: hidden; }
+
+#siteContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+#siteContainer > header,
+#siteContainer > footer {
+  flex-shrink: 0;
+}
+
 #pageContainer {
   max-width: 1024px;
   padding: 1rem;
-  margin: auto;
+  flex-grow: 1;
+  align-self: center;
+  width: calc(100% - 2rem);
+}
+@media screen and (max-width: 767px) {
+  #pageContainer { 
+    padding: 0.25rem;
+    width: calc(100% - 0.5rem);
+  }
+}
+
+/* Fix footer styling */
+footer > .row {
+  justify-content: center;
+  text-align: center;
+}
+@media screen and (max-width: 767px) {
+  footer p { font-size: 0.8em; }
+}
+@media screen and (min-width: 767px) {
+  .visible-sm { display: none; }
 }
 
 /* Fix table styling */
