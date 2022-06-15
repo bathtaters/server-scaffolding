@@ -31,6 +31,7 @@ module.exports = {
   // Form Errors
   noConfirm: () => createError(400, "Must confirm password"),
   badConfirm: () => createError(400, "Passwords don't match"),
+  modifyOther: () => createError(403, "Must have admin privlege to modify other users"),
   badAction: (action) => createError(400, `Invalid action: ${action || '[None]'}.`),
 
   // Other Errors
