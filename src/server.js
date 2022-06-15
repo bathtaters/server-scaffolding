@@ -29,6 +29,7 @@ server.use(exitMiddleware(server))
 server.use(express.json())
 server.use(express.urlencoded({ extended: false }))
 server.use(express.static(join(rootPath, 'public')))
+server.use('/', express.static(join(rootPath, 'public', 'root')))
 server.use(authMiddleware)
 server.use(commonMiddleware)
 
