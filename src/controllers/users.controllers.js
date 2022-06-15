@@ -22,40 +22,40 @@ const staticUserTableParams = {
   postURL: `/${protectedPrefix}${urls.users}form/`,
 }
 exports.userTable = [
-  checkAuth(`/${protectedPrefix}${urls.login}`, 'admin'),
+  checkAuth(`/${protectedPrefix}${urls.login}`, access.admin),
   async (req, res) => {
     const users = await Users.get().then(guiAdapter)
     return res.render('users', {
       ...staticUserTableParams,
       users,
       user: req.user.username,
-      isAdmin: hasAccess(req.user.access, 'admin'),
+      isAdmin: hasAccess(req.user.access, access.admin),
     })
   },
 ]
 
 exports.userProfile = [
-  checkAuth(`/${protectedPrefix}${urls.login}`, 'gui'),
+  checkAuth(`/${protectedPrefix}${urls.login}`, access.gui),
   (req, res) => res.render('profile', {
     ...staticUserTableParams,
     title: 'User Profile',
     user: req.user.username,
     userData: guiAdapter(req.user),
     buttons: labels.slice(1,3),
-    isAdmin: hasAccess(req.user.access, 'admin'),
+    isAdmin: hasAccess(req.user.access, access.admin),
     postURL: `/${protectedPrefix}${urls.profile}form/`,
   }),
 ]
 
 
 exports.adminForm = form(Users, {
-  accessLevel: 'admin',
+  accessLevel: access.admin,
   formatData: confirmPassword,
   redirectURL: `/${protectedPrefix}${urls.users}`,
 })
 
 exports.userForm = form(Users, {
-  accessLevel: 'gui',
+  accessLevel: access.gui,
   formatData: guiFormAdapter,
   redirectURL: `/${protectedPrefix}${urls.profile}`,
 })

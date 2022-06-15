@@ -2,6 +2,7 @@ const { accessArray, accessInt, decodeCors, encodeCors, displayCors, isRegEx, ha
 const { generateToken, encodePassword } = require('../utils/auth.utils')
 const userDef = require('../config/constants/validation.cfg').defaults._users
 const errors = require('../config/constants/error.messages')
+const { access } = require('../config/constants/users.cfg')
 
 exports.getAdapter = ({ id, token, username, access, cors, key, guiTime, apiTime }) => ({
   id, token, username, access, guiTime, apiTime,
@@ -64,6 +65,6 @@ exports.confirmPassword = (formData, action) => {
 }
 
 exports.guiFormAdapter = ({ id, username, password, confirm }, action, user) => {
-  if (user.id !== id && !hasAccess(user.access, 'admin')) throw errors.modifyOther()
+  if (user.id !== id && !hasAccess(user.access, access.admin)) throw errors.modifyOther()
   return exports.confirmPassword({ id, username, password, confirm }, action)
 }

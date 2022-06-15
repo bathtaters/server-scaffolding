@@ -34,7 +34,7 @@ exports.accessArray = (accessInt) => {
   return array.length === 0 ? [noAccess] : array
 }
 
-exports.hasAccess = (accessInt, accessStr) => (access[accessStr] || 0) & (accessInt || 0)
+exports.hasAccess = (accessIntA, accessIntB) => (accessIntA || 0) & (accessIntB || 0)
 
 exports.passwordAccess = exports.accessInt(requirePassword)
 

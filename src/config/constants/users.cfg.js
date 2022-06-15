@@ -14,13 +14,18 @@ module.exports = {
   loginAccess: [ 'gui', 'admin' ],
   requirePassword: [ 'gui', 'admin' ],
 
-  tableFields: { username: 'Username', access: 'Access', password: 'Password', token: 'API Token', cors: 'CORS Origin', guiTime: 'GUI Access', apiTime: 'API Access' },
+  tableFields: {
+    username: 'Username', access: 'Access', password: 'Password',
+    token: 'API Token', cors: 'CORS Origin', guiTime: 'GUI Access', apiTime: 'API Access'
+  },
   
   encode: { iters: 1049, keylen: 64, digest: 'sha512' },
 
   saveLoginMs: 5 * 24 * 60 * 60 * 1000,
 
   apiToken: { header: "Authorization", matchToken: /^Bearer (.+)$/ },
+
+  timestampKeyRegEx: /^(.*)Time$/,
 
   tooltips: {
     password: `Must be at least ${limits.password.min} characters.`,

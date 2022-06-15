@@ -4,9 +4,9 @@ const passport = require('passport')
 const LocalStrategy = require('passport-local').Strategy
 
 const Users = require('../models/_Users')
-const { hasAccess } = require('../utils/users.utils')
-const { loginAccess } = require('../config/constants/users.cfg')
+const { hasAccess, accessInt } = require('../utils/users.utils')
 const { authorizeUser, storeUser, loadUser, sessionOptions } = require('../services/auth.services')
+const loginAccess = accessInt(require('../config/constants/users.cfg').loginAccess)
 
 
 exports.initAuth = () => {
