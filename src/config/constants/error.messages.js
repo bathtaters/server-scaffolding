@@ -27,6 +27,12 @@ module.exports = {
   badToken: () => createError(401, "Invalid or outdated bearer token."),
   noAccess: () => createError(403, "User does not have access."),
   badAccess: (access, type = 'key') => createError(500, `Invalid access ${type}: ${access}.`),
+  loginMessages: {
+    noUser:     { fail: 'Incorrect username or user was deleted' },
+    noPassword: { fail: 'Password not created (Contact administrator)' },
+    noAccess:   { fail: 'Insufficient access level' },
+    noMatch:    { fail: 'Incorrect password or misspelled username' },
+  },
   
   // Form Errors
   noConfirm: () => createError(400, "Must confirm password"),

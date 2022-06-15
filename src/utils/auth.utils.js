@@ -1,6 +1,7 @@
 const hat = require('hat')
 const crypto = require('crypto')
 const { encode } = require('../config/constants/users.cfg')
+const failureMsg = require('../config/constants/error.messages').loginMessages
 
 exports.generateToken = () => hat()
 
@@ -11,12 +12,13 @@ exports.encodePassword = (password) => {
   }
 }
 
-exports.testPassword = (password) => (userData) => {
-  if (!userData || !Object.keys(userData).length) return { fail: 'User not found' }
-  if (!userData.key) return { fail: 'Password not set' }
+exports.testPassword = (password, accessInt) => (userData) => {
+  if (!userData || !Object.keys(userData).length) return failureMsg.noUser
+  if (!(userData.access & accessInt)) return failureMsg.noAccess
+  if (!userData.key) return failureMsg.noPassword
 
   return crypto.timingSafeEqual(
     Buffer.from(userData.key, 'base64url'),
     crypto.pbkdf2Sync(password, userData.salt, encode.iters, encode.keylen, encode.digest)
-  ) ? userData : { fail: 'Incorrect password' }
+  ) ? userData : failureMsg.noMatch
 }

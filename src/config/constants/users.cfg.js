@@ -11,7 +11,7 @@ limits.confirm = limits.password
 module.exports = {
   access, accessMax, limits,
   defaultAccess: [ 'api', 'gui' ],
-  initialAccess: [ 'gui', 'admin' ],
+  loginAccess: [ 'gui', 'admin' ],
   requirePassword: [ 'gui', 'admin' ],
 
   tableFields: { username: 'Username', access: 'Access', password: 'Password', token: 'API Token', cors: 'CORS Origin', guiTime: 'GUI Access', apiTime: 'API Access' },

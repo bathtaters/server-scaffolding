@@ -11,8 +11,8 @@ exports.sessionOptions = {
   cookie: { path: `/${protectedPrefix}`, maxAge: saveLoginMs, secure: 'auto', sameSite: true },
 }
 
-exports.authorizeUser = (Model) => (username, password, done) => 
-  Model.checkPassword(username, password).then((user) => {
+exports.authorizeUser = (Model, accessLevel) => (username, password, done) => 
+  Model.checkPassword(username, password, accessLevel).then((user) => {
     if (!user) return done(null, false)
     if (user.fail) return done(null, false, { message: user.fail })
     done(null, user)

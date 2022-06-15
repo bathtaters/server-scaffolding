@@ -1,6 +1,5 @@
 const Model = require('./_Model')
-const { initialAccess } = require('../config/constants/users.cfg')
-const { passwordAccess } = require('../utils/users.utils')
+const { passwordAccess, accessInt } = require('../utils/users.utils')
 const { addAdapter, getAdapter, setAdapter, schemaAdapter } = require('../services/users.services')
 const { generateToken, testPassword } = require('../utils/auth.utils')
 const errors = require('../config/constants/error.messages')
@@ -52,14 +51,14 @@ class Users extends Model {
     return super.update(id, { token: generateToken() })
   }
 
-  async checkPassword(username, password) {
+  async checkPassword(username, password, accessLevel) {
     const users = await this.count()
     if (!users)
-      return this.add({ username, password, access: initialAccess })
+      return this.add({ username, password, access: accessInt(accessLevel) })
         .then((id) => id && this.get(id))
         .then((data) => logger.info(' > Created initial user: '+data.username) || data)
 
-    return super.get(username.toLowerCase(), 'username').then(testPassword(password))
+    return super.get(username.toLowerCase(), 'username').then(testPassword(password, accessInt(accessLevel)))
   }
 
   validUsername(username) {

@@ -5,16 +5,18 @@ const { getTableFields, varName, getSchema } = require('../utils/gui.utils')
 const { hasAccess } = require('../utils/users.utils')
 const { protectedPrefix, urls } = require('../config/meta')
 const errors = require('../config/constants/error.messages')
+const limits = require('../config/constants/validation.cfg').limits._users
 
 const models = Object.keys(require('../models/_all'))
 
 exports.loginPage = [
   forwardOnAuth(`/${protectedPrefix}${urls.base}`, 'gui'),
-  async (_, res) => {
+  async (req, res) => {
     const isUser = await Users.count()
     return res.render('login', {
       title: 'Backend Login',
-      hideNav: true, isUser,
+      hideNav: true, isUser, limits,
+      failureMessage: req.flash('error'),
       postURL: `/${protectedPrefix}${urls.users}login/`,
     })
   },
