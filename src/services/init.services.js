@@ -18,21 +18,18 @@ async function initializeServer(server) {
     return gracefulExitHandler(server, listener, gracefulExitOptions)
   }
   const handleError = (err) => {
-    logger.error('Unhandled Error:', err || 'Unknown error')
+    logger.error('Unhandled Error:', err || 'Unknown')
     return handleClose()
   }
   process.on('SIGINT',  handleClose)
   process.on('SIGTERM', handleClose)
-  process.on('uncaughtException', handleError)
+  process.on('uncaughtException',  handleError)
   process.on('unhandledRejection', handleError)
   
   // Setup view vars
   server.locals.footerData = footer
   server.locals.varName = varName
-  server.locals.urls = {}
-  Object.entries(meta.urls).forEach(([name, url]) => {
-    server.locals.urls[name] = typeof url === 'string' ? '/' + meta.protectedPrefix + url : url
-  })
+  server.locals.urls = meta.urls
 
   // Setup DB & init Models
   if (!getDb()) await openDb()

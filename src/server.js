@@ -1,38 +1,53 @@
-// Dependencies
+// Module Dependencies
 require('dotenv').config()
 const express = require('express')
-const path = require('path')
-const exitMiddleware = require('express-graceful-exit').middleware
+const join = require('path').join
 const initServer = require('./services/init.services')
-const errorMissing = require('./config/constants/error.messages').missing
-const meta = require('./config/meta')
+// Middleware
+const exitMiddleware = require('express-graceful-exit').middleware
+const authMiddleware = require('./middleware/auth.middleware').initAuth()
+const logMiddleware  = require('./middleware/log.middleware')
+const commonMiddleware = require('./middleware/common.middleware')
+const errorMiddleware  = require('./middleware/error.middleware')
+// Routes
+const apiRoutes   = require('./routes/api.routes')
+const guiRoutes   = require('./routes/gui.routes')
+const adminRoutes = require('./routes/admin.routes')
+const rootRoutes  = require('./routes/root.routes')
+// Constants
+const { urls, rootPath } = require('./config/meta')
  
-// Basics
+
+// Server Setup
 const server = express()
-server.set('trust proxy', true)
-server.set('views', path.join(__dirname, 'views'))
+server.set('trust proxy', 1)
+server.set('views', join(rootPath, 'src', 'views'))
 server.set('view engine', 'pug')
 
-// Middleware
+// Server-level Middleware
 server.use(exitMiddleware(server))
 server.use(express.json())
 server.use(express.urlencoded({ extended: false }))
-server.use(express.static(path.join(__dirname, '..', 'public')));
-server.use('/api', require('./middleware/cors.middleware'))
-server.use(`/${meta.protectedPrefix}`, require('./middleware/auth.middleware').initAuth())
-require('./middleware/log.middleware')(server)
-server.use(require('./middleware/common.middleware'))
+server.use(express.static(join(rootPath, 'public')))
+server.use(authMiddleware)
+server.use(commonMiddleware)
 
-// API Routes
-server.use('/api', require('./routes/api.routes'))
+// Log Middleware
+server.use(logMiddleware())
+server.use(urls.api.prefix,       logMiddleware(urls.api.prefix))
+server.use(urls.gui.basic.prefix, logMiddleware(urls.gui.basic.prefix))
+server.use(urls.gui.admin.prefix, logMiddleware(urls.gui.admin.prefix))
+server.use(Object.values(urls.gui.root), logMiddleware('root'))
 
-// GUI Routes
-server.use(`/${meta.protectedPrefix}`, require('./routes/gui.routes'))
-server.use(`/${meta.protectedPrefix}${meta.urls.users}`, require('./routes/users.routes'))
+// Routes
+server.use('/',                   rootRoutes)
+server.use(urls.api.prefix,       apiRoutes)
+server.use(urls.gui.basic.prefix, guiRoutes)
+server.use(urls.gui.admin.prefix, adminRoutes)
 
-// Errors
-server.use((_,__,next) => next(errorMissing()))
-server.use(require('./middleware/error.middleware'))
+// Error Handling
+server.use(urls.api.prefix, errorMiddleware.json)
+server.use(errorMiddleware.page)
 
 // Start server
 initServer(server)

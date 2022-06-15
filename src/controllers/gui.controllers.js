@@ -1,88 +1,57 @@
 const Users = require('../models/_Users')
-const { modelActions, filterFormData, labels } = require('../services/form.services')
-const { checkAuth, forwardOnAuth } = require('../middleware/auth.middleware')
 const { getTableFields, varName, getSchema } = require('../utils/gui.utils')
+const { access, tableFields, tooltips } = require('../config/constants/users.cfg')
+const { guiAdapter } = require('../services/users.services')
 const { hasAccess } = require('../utils/users.utils')
-const { access } = require('../config/constants/users.cfg')
-const { protectedPrefix, urls } = require('../config/meta')
+const { labels } = require('../services/form.services')
 const errors = require('../config/constants/error.messages')
-const limits = require('../config/constants/validation.cfg').limits._users
+const urls = require('../config/meta').urls.gui.basic
 
-const models = Object.keys(require('../models/_all'))
+const models = require('../models/_all').map(({title}) => title)
 
-exports.loginPage = [
-  forwardOnAuth(`/${protectedPrefix}${urls.base}`, access.gui),
-  async (req, res) => {
-    const isUser = await Users.count()
-    return res.render('login', {
-      title: 'Backend Login',
-      hideNav: true, isUser, limits,
-      failureMessage: req.flash('error'),
-      postURL: `/${protectedPrefix}${urls.users}login/`,
-    })
-  },
-]
+exports.dbHome = (req, res) => res.render('dbHome', {
+  title: 'Home',
+  user: req.user.username,
+  isAdmin: hasAccess(req.user.access, access.admin),
+  baseURL: urls.prefix + urls.home + '/',
+  models
+})
 
-exports.dashboardHome = [
-  checkAuth(`/${protectedPrefix}${urls.login}`, access.gui),
-  (req, res) => res.render('dashboard', {
-    title: 'Home',
-    user: req.user.username,
-    isAdmin: hasAccess(req.user.access, access.admin),
-    models
-  }),
-]
-
-exports.modelDashboard = (Model, view = 'model') => [
-  checkAuth(`/${protectedPrefix}${urls.login}`, access.gui), 
-  (req, res, next) => Model.get().then((data) => 
+exports.modelDb = (Model, view = 'dbModel') => {
+  const staticDbParams = {
+    title: varName(Model.title),
+    idKey: Model.primaryId,
+    postURL: `${urls.prefix}${urls.home}/${Model.title}${urls.form}`,
+    buttons: labels,
+    schema: getSchema(Model.schema, Model.primaryId),
+    tableFields: getTableFields(Model.schema, Model.primaryId),
+    limits: Model.limits || {},
+    defaults: Model.defaults || {},
+  }
+  return (req, res, next) => Model.get().then((data) => 
     res.render(view, {
-      title: varName(Model.title),
-      user: req.user.username,
-      isAdmin: hasAccess(req.user.access, access.admin),
-      postURL: `/${protectedPrefix}${urls.base}${Model.title}/form/`,
-      idKey: Model.primaryId,
+      ...staticDbParams,
+      user: req.user && req.user.username,
+      isAdmin: req.user && hasAccess(req.user.access, access.admin),
       data,
-      buttons: labels,
-      schema: getSchema(Model.schema, Model.primaryId),
-      tableFields: getTableFields(Model.schema, Model.primaryId),
-      limits: Model.limits || {},
-      defaults: Model.defaults || {},
     })
-  ).catch(next),
-]
-
-
-exports.error = (header) => (error, req, res, _) =>
-  res.render('error', {
-    title: '',
-    user: req.user && req.user.username,
-    isAdmin: req.user && hasAccess(req.user.access, access.admin),
-    showStack: process.env.NODE_ENV === 'development',
-    header, error,
-  })
-
-
-exports.form = (Model, { accessLevel = access.gui, redirectURL = '', formatData = (data) => data } = {}) => {
-  const formActions = modelActions(Model)
-
-  return [
-    checkAuth(`/${protectedPrefix}${urls.login}`, accessLevel), 
-    (req,res,next) => {
-      let { action, ...formData } = filterFormData(req.body)
-
-      if (!action || !Object.keys(formActions).includes(action))
-        return next(errors.badAction(action))
-      
-      try { formData = formatData(formData, action, req.user) || formData }
-      catch (err) { return next(err) }
-
-      return formActions[action](formData)
-        .then(() => res.redirect(redirectURL || `/${protectedPrefix}${urls.base}${Model.title}`))
-        .catch(next)
-    },
-    exports.error(`${varName(Model.title)} Form Error`)
-  ]
+  ).catch(next)
 }
 
-exports.swap = require('./api.controllers').swap
+const staticUserParams = {
+  title: 'Users Profile',
+  tooltips,
+  tableFields,
+  idKey: Users.primaryId,
+  buttons: labels.slice(1,3),
+  limits: Users.limits || {},
+  defaults: Users.defaults || {},
+  postURL: urls.prefix + urls.user + urls.form,
+}
+exports.userProfile = (req, res, next) => !req.user ? next(errors.noData('user')) :
+  res.render('profile', {
+    ...staticUserParams,
+    user: req.user.username,
+    userData: guiAdapter(req.user),
+    isAdmin: hasAccess(req.user.access, access.admin),
+  })

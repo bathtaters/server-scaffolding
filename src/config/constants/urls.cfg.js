@@ -10,8 +10,34 @@ module.exports = {
     // href: "https://cdnjs.cloudflare.com/ajax/libs/mini.css/2.3.7/mini-dark.css", // WRONG STYLES
   },
 
-  login: '/login/',
-  base: '/dashboard/',
+  api: {
+    prefix: '/api',
+    swap:   '/swap',
+  },
+  gui: {
+    splashRedirect: /\/(index|home)(.html?)?/,
+    root: {
+      login:  '/login',
+      logout: '/logout',
+    },
+    basic: {
+      prefix: '/gui',
+      home: '/db',
+      user: '/profile',
+      form: '/form',
+      swap: '/swap',
+    },
+    admin: {
+      prefix: '/admin',
+      home:  '/settings',
+      user:  '/users',
+      logs:  '/logs',
+      form:  '/form',
+      token: '/regenToken',
+    },
+  },
+  
+  base: '/db/',
   users: '/users/',
   profile: '/users/profile/',
   logout: '/users/logout/',

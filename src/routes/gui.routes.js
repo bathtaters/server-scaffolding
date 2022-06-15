@@ -1,16 +1,22 @@
 const router = require('express').Router()
 const models = require('../models/_all')
 const controllers = require('../controllers/gui.controllers')
+const actions = require('../controllers/action.controllers')
 const validate = require('../validators/gui.validators')
-const { urls } = require('../config/meta')
+const { checkAuth } = require('../middleware/auth.middleware')
+const { access } = require('../config/constants/users.cfg')
+const { basic, root } = require('../config/meta').urls.gui
 
-Object.entries(models).forEach(([name, Model]) => {
-  router.get( `${urls.base}${name}`,                                            controllers.modelDashboard(Model))
-  router.post(`${urls.base}${name}/form`, validate.all(name),                   controllers.form(Model))
-  router.post(`${urls.base}${name}/swap`, validate.swap(name, Model.primaryId), controllers.swap(Model))
+router.use(checkAuth(root.login, access.gui))
+
+router.get( basic.home,                           controllers.dbHome)
+router.get( basic.user,                           controllers.userProfile)
+router.post(basic.user+basic.form, validate.form, actions.userForm)
+
+models.forEach((Model) => {
+  router.get( `${basic.home}/${Model.title}`,                                    controllers.modelDb(Model))
+  router.post(`${basic.home}/${Model.title}${basic.form}`, validate.all(Model),  actions.form(Model))
+  router.post(`${basic.home}/${Model.title}${basic.swap}`, validate.swap(Model), actions.swap(Model))
 })
-
-router.get(urls.base,  controllers.dashboardHome)
-router.get(urls.login, controllers.loginPage)
 
 module.exports = router

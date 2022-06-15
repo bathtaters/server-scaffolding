@@ -1,14 +1,18 @@
 const session = require('express-session')
 const SQLiteStore = require('connect-sqlite3')(session)
 const { saveLoginMs } = require('../config/constants/users.cfg')
-const { protectedPrefix, dbDir } = require('../config/meta')
+const { dbDir } = require('../config/meta')
 
 exports.sessionOptions = {
   store: new SQLiteStore({ dir: dbDir, db: 'sessions.db' }),
   secret: process.env.SESSION_SECRET || "secret",
   resave: false,
   saveUninitialized: true,
-  cookie: { path: `/${protectedPrefix}`, maxAge: saveLoginMs, secure: 'auto', sameSite: true },
+  cookie: {
+    maxAge: saveLoginMs,
+    sameSite: 'strict',
+    secure: process.env.NODE_ENV === 'production',
+  },
 }
 
 exports.authorizeUser = (Model, accessLevel) => (username, password, done) => 
