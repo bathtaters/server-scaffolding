@@ -4,17 +4,18 @@ const { addAdapter, getAdapter, setAdapter, schemaAdapter } = require('../servic
 const { generateToken, testPassword } = require('../utils/auth.utils')
 const errors = require('../config/constants/error.messages')
 const logger = require('../config/log.adapter')
-const { access } = require('../config/constants/users.cfg')
+const { access, timestampKeyRegEx } = require('../config/constants/users.cfg')
 
-const validTimestamps = [ 'api', 'gui' ]
+
 class Users extends Model {
   constructor() { 
     super('_users', { schema: schemaAdapter, defaults: false })
     // { defaults: false } = ignore default values
+    this.validTimestamps = Object.keys(this.schema).filter((k) => timestampKeyRegEx.test(k)).map((k) => k.match(timestampKeyRegEx)[1])
   }
 
   get(id, idKey, updateTimestamp = null) {
-    if (updateTimestamp && !validTimestamps.includes(updateTimestamp)) logger.warn(`Ignoring request to update invalid '${updateTimestamp}Timestamp': ${id}`)
+    if (updateTimestamp && !this.validTimestamps.includes(updateTimestamp)) logger.warn(`Ignoring request to update invalid '${updateTimestamp}Timestamp': ${id}`)
 
     return super.get(id, idKey || this.primaryId).then((user) => {
       if (!id && Array.isArray(user)) return user.map(getAdapter)
