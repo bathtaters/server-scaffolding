@@ -2,10 +2,12 @@ extends base
 
 block content
   .container
-    h2= header
-    if error.status
-      h5: i.small &nbsp;Error code: #{error.status}
-    p= error.message
+    h2.responsive-margin
+      span= header
+      if showStack && error.status 
+        span :
+        i.small &nbsp;#{error.status}
+    p.responsive-padding= error.message
     if showStack
       pre= error.stack
-    a.button(href="..") Back
+    a.button(href="javascript:history.back()") Back

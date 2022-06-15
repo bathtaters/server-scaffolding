@@ -52,6 +52,7 @@ footer > .row {
 table:not(.horizontal) thead, table:not(.horizontal) tbody {
   max-width: 99%;
 }
+table:not(.horizontal) thead { position: sticky; }
 tr.tableRow { cursor: pointer; }
 td { overflow-wrap: anywhere; }
 
@@ -85,7 +86,6 @@ button, .button, [role="button"],
 [type="button"], [type="submit"], [type="reset"] {
   text-align: center;
 }
-.small { font-size: 0.9em; }
 
 /* Allow header alignment */
 header { display: flex; }
@@ -122,3 +122,4 @@ textarea:invalid, textarea:invalid:focus, textarea:invalid:focus-visible, select
 .cors-array { color: lightskyblue; }
 .align-self-center { align-self: center;  }
 .dim { opacity: 0.6;}
+.small { font-size: 0.9em; font-weight: 300; }
