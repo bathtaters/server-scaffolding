@@ -3,6 +3,7 @@ exports.formatFileArgs = (arg) => !arg || typeof arg !== 'object' ? String(arg) 
 
 // Converting buffer data for debug log
 exports.decodeBuffer = (type, data, enc) => 
+  !Buffer.isBuffer(data) ? data :
   type.includes('html') ? `[HTML: ${data.byteLength.toLocaleString()} bytes]` :
   type.includes('json') ? JSON.parse(data.toString(enc)) :
   /* other: */ data.toString(enc)
