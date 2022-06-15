@@ -1,0 +1,8 @@
+footer
+  .row
+    each sect, idx in footerData.full
+      if idx
+        p.col.hidden-sm |
+      p.col.hidden-sm= sect
+    each sect, idx in footerData.short
+      p.col.responsive-margin.responsive-padding.visible-sm= sect

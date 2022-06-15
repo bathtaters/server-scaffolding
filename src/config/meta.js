@@ -8,8 +8,12 @@ const protectedPrefix = 'admin'
 const dbDir = process.env.DB_DIR || join(rootPath, '.db')
 
 module.exports = {
-  name: pkg.name || 'Untitled',
+  name: pkg.name || 'untitled',
   version: pkg.version || '0',
+  author: pkg.author.name || pkg.author || 'Unknown',
+  license: `https://opensource.org/licenses/${pkg.license || 'BSD-2-Clause'}`,
+  releaseYear: 2021 || new Date().getFullYear(),
+  repoLink: pkg.repository && pkg.repository.url,
   port: process.env.port || +pkgCfg.port || 8080,
   dbPath: join(dbDir, 'database.db'),
   logDir: process.env.LOG_DIR || join(rootPath, '.logs'),
