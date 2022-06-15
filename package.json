@@ -1,7 +1,7 @@
 {
   "name": "my-project-server",
   "version": "0.1.0",
-  "description": "",
+  "description": "Backend server with CRUD API, simple web GUI & built-in user management",
   "main": "./src/server.js",
   "scripts": {
     "start": "node ./src/server.js",
@@ -9,8 +9,12 @@
     "test": "jest ./src/config/testing/"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "bathtaters",
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bathtaters/server-scaffolding"
+  },
   "dependencies": {
     "connect-flash": "^0.1.1",
     "connect-sqlite3": "^0.9.13",
