@@ -84,6 +84,8 @@ class Model {
       return services.run(getDb(), `DELETE FROM ${this.title} WHERE ${idKey || this.primaryId} = ?`, [id])
     }).then(() => ({ success: true }))
   }
+
+  custom(sql, params) { return services.all(getDb(), sql, params) }
 }
 
 module.exports = Model

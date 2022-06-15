@@ -12,6 +12,7 @@ const createError = require('http-errors')
 module.exports = {
   // Basic Errors
   unknown: () => createError(500, "Unknown server error.") ,
+  unknownDb: () => createError(502, "Unknwon database error."),
   shutdown: () => createError(503, "Server is currently shutting down.", { headers: { "retry-after": 3 * 60 } }) ,
   missing: () => createError(404, "Resource not found."),
   test: () => createError(418, "API is not a Teapot."),
@@ -42,5 +43,6 @@ module.exports = {
 
   // Other Errors
   badUsername: (username, reason) => createError(409, `Cannot add ${username || 'user'}: ${reason}`),
+  deleteAdmin: () => createError(403, "Cannot remove the only admin. Add a new admin then retry, or reset User Table to remove all users."),
   internalValidate: (message) => createError(500, message),
 }

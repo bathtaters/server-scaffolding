@@ -4,6 +4,7 @@ const { addAdapter, getAdapter, setAdapter, schemaAdapter } = require('../servic
 const { generateToken, testPassword } = require('../utils/auth.utils')
 const errors = require('../config/constants/error.messages')
 const logger = require('../config/log.adapter')
+const { access } = require('../config/constants/users.cfg')
 
 const validTimestamps = [ 'api', 'gui' ]
 class Users extends Model {
@@ -45,6 +46,16 @@ class Users extends Model {
       if (!current.password && !(passwordAccess & current.access)) throw errors.noData('password for GUI access')
     }
     return super.update(id, newData)
+  }
+
+  async remove(id, idKey = null) {
+    if (!idKey) idKey = this.primaryId
+
+    const admins = await this.custom(`SELECT ${idKey} FROM ${this.title} WHERE access & ?`, [access.admin])
+    if (!admins) throw errors.unknownDb()
+
+    if (admins.length < 2 && admins.find((u) => u[idKey] === id)) throw errors.deleteAdmin()
+    return super.remove(id, idKey)
   }
 
   regenToken(id) {
