@@ -39,7 +39,7 @@ exports.modelDb = (Model, view = 'dbModel') => {
 }
 
 const staticUserParams = {
-  title: 'Users Profile',
+  title: 'Profile',
   tooltips,
   tableFields,
   idKey: Users.primaryId,

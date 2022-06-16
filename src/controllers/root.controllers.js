@@ -10,7 +10,7 @@ exports.loginPage = [
 
   (req, res) => Users.count().then((isUser) => 
     res.render('login', {
-      title: 'Backend Login',
+      title: 'Login',
       hideNav: true,
       isUser,
       limits,
