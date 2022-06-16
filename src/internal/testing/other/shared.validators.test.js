@@ -8,7 +8,7 @@ const shared = require('../../validators/shared.validators')
 // Mocks
 jest.mock('express-validator', () => ({ checkSchema: jest.fn((r)=>[r]) }))
 jest.mock('../../middleware/validate.middleware', () => 'checkValidation')
-jest.mock('../../../config/validation.cfg', () => ({
+jest.mock('../../../config/models.cfg', () => ({
   types:  { routeA: { a: 'type1', b: 'type2' }, routeB: { c: 'type3', d: 'type4' }, },
   limits: { routeA: { a: 'lims1', b: 'lims2' }, routeB: { c: 'lims3' }, },
 }))

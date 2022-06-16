@@ -1,4 +1,4 @@
-const definition = require('../../config/validation.cfg').types._users
+const definition = require('../../config/models.cfg').types._users
 const validate = require('./shared.validators')
 const { preValidateAdapter } = require('../services/users.services')
 const { title, primaryId } = require('../models/Users')

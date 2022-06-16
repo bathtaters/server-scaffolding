@@ -1,5 +1,5 @@
 // Validation Config Vars
-const userValidation = require('../internal/config/users.cfg').validation
+const userDefinitions = require('../internal/config/users.cfg').definitions
 
 module.exports = {
   // Data types
@@ -7,7 +7,7 @@ module.exports = {
   //  Suffix: [] = array of, ? = optional
   //  string* = allow symbols/spaces
   types: {
-    _users: userValidation.types,
+    _users: userDefinitions.types,
 
     base: {
       id: "int",
@@ -23,7 +23,7 @@ module.exports = {
 
   // Default values
   defaults: {
-    _users: userValidation.defaults,
+    _users: userDefinitions.defaults,
 
     base: {
       data: "DEFAULT VALUE",
@@ -36,7 +36,7 @@ module.exports = {
 
   // Num/Char limits
   limits: {
-    _users: userValidation.limits,
+    _users: userDefinitions.limits,
     
     base: {
       data: { min: 0, max: 1000 },

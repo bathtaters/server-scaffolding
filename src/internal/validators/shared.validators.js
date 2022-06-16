@@ -3,7 +3,7 @@ const logger = require('../config/log')
 const checkValidation = require('../middleware/validate.middleware')
 const { getSchemaFromCfg } = require('../services/validate.services')
 const { filterDupes } = require('../utils/validate.utils')
-const validCfg = require('../../config/validation.cfg')
+const validCfg = require('../../config/models.cfg')
 
 // Validate by config/validation[route]
 //  params/body are [...keys]|{ inKey: validKey }|'all'|falsy

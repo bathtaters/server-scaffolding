@@ -28,7 +28,7 @@ module.exports = {
     cors: 'Enter: * (all), true/false (all/none), comma-seperated urls, or RegExp(&quot;<regexp>&quot;).',
   },
 
-  validation: {
+  definitions: {
     types: {
       id: "hex",
       username: "string",

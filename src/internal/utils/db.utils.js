@@ -1,4 +1,4 @@
-const validateTypes = require('../../config/validation.cfg').types
+const validateTypes = require('../../config/models.cfg').types
 const { getTypeArray } = require('./validate.utils')
 
 exports.hasDupes = (array) => array.some((val, idx) => array.slice(0, idx).includes(val))
