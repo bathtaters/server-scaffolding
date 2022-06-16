@@ -2,7 +2,7 @@ function startup(server) {
   // Add code to execute just before server starts
 }
 
-function teardown(server) {
+function teardown() {
   // Add code to execute when server begins to shutdown
 }
 
