@@ -9,7 +9,7 @@ router.post(root.login,  validate.login, actions.login)
 router.get( root.login,                  controllers.loginPage)
 
 // TO DO -- Make splash page
-router.get('/',            (req,res) => res.redirect(root.login))
+router.get('/',            controllers.splashPage)
 router.get(splashRedirect, (req,res) => res.redirect('/'))
 
 module.exports = router

@@ -1,0 +1,13 @@
+extends components/base
+
+block body
+  #siteContainer
+    header
+      span.logo= appTitle
+      span.spacer
+      span.responsive-padding.responsive-margin
+        a(href=urls.gui.root.login)
+          img(src="/favicon.ico" alt=appTitle width="32px")
+    
+    #pageContainer
+      p Hello and welcome to my server, please enjoy this page.

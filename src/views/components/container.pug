@@ -1,0 +1,17 @@
+extends base
+
+block body
+  #siteContainer
+    include header.pug
+    
+    #pageContainer
+      block content
+    
+    include footer.pug
+    
+    script(
+      src=urls.jquery.src,
+      integrity=urls.jquery.integrity,
+      crossorigin="anonymous"
+    )
+    block scripts

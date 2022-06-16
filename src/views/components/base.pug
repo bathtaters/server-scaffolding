@@ -1,7 +1,7 @@
 doctype html
 html
   head
-    title= title ? `${appTitle} - ${title}` : appTitle
+    title= appTitle
 
     link(rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png")
     link(rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png")
@@ -14,20 +14,7 @@ html
 
     link(rel='stylesheet', href=urls.minicss.href)
     link(rel='stylesheet', href='/stylesheets/style.css')
-    
+    block head
     
   body
-    #siteContainer
-      include header.pug
-      
-      #pageContainer
-        block content
-      
-      include footer.pug
-    
-    script(
-      src=urls.jquery.src,
-      integrity=urls.jquery.integrity,
-      crossorigin="anonymous"
-    )
-    block scripts
+    block body
