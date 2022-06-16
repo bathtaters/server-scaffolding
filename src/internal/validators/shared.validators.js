@@ -1,5 +1,5 @@
 const { checkSchema } = require('express-validator')
-const logger = require('../config/log.adapter')
+const logger = require('../config/log')
 const checkValidation = require('../middleware/validate.middleware')
 const { getSchemaFromCfg } = require('../services/validate.services')
 const { filterDupes } = require('../utils/validate.utils')

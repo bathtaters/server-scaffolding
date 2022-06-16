@@ -1,6 +1,6 @@
 const { gracefulExitHandler } = require('express-graceful-exit')
 const { startup, teardown } = require('../../server.init')
-const logger = require('../config/log.adapter')
+const logger = require('../config/log')
 const meta = require('../../config/meta')
 const urls = require('../../config/urls.cfg')
 const shutdownError = require('../config/errors.internal').shutdown

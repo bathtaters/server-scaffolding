@@ -1,6 +1,6 @@
 const randomKey = require('crypto').randomUUID
 const requestLogger = require('morgan')
-const logger = require('../config/log.adapter')
+const logger = require('../config/log')
 const { openFile } = require('../services/log.services')
 const { decodeBuffer } = require('../utils/log.utils')
 

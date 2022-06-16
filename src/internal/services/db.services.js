@@ -1,4 +1,4 @@
-const logger = require('../config/log.adapter')
+const logger = require('../config/log')
 
 function exec(db, sql) {
   return new Promise((res,rej) => {

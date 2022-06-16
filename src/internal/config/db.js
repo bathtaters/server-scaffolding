@@ -1,6 +1,6 @@
 const sqlite = require('sqlite3').verbose()
 const mkDir = require('fs').mkdirSync
-const logger = require('./log.adapter')
+const logger = require('./log')
 const { dbPath, dbDir } = require('../../config/meta')
 
 let db
