@@ -3,7 +3,7 @@ const validator = require('validator').default
 const unescSpy = jest.spyOn(validator, 'unescape')
 
 // Imports
-const { dateOptions, filterDupes, getTypeArray, escapedLength, deepUnescape } = require('../../../utils/validate.utils')
+const { dateOptions, filterDupes, getTypeArray, escapedLength, deepUnescape } = require('../../utils/validate.utils')
 
 
 describe('dateOptions', () => {
