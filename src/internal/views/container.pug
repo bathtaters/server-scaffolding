@@ -1,13 +1,16 @@
 extends base
 
+block head
+  block header
+
 block body
   #siteContainer
-    include header.pug
+    include ../../views/components/header.pug
     
     #pageContainer
       block content
     
-    include footer.pug
+    include ../../views/components/footer.pug
     
     script(
       src=urls.jquery.src,

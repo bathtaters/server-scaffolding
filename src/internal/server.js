@@ -23,7 +23,7 @@ const rootPath = require('../config/meta').rootPath
 // Server Setup
 const server = express()
 server.set('trust proxy', 1)
-server.set('views', join(rootPath, 'src', 'views'))
+server.set('views', [join(rootPath, 'src', 'views'), join(rootPath, 'src', 'internal', 'views')])
 server.set('view engine', 'pug')
 
 if (setup) setup(server)
