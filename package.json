@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node ./src/internal/server.js",
     "inspect": "node --inspect ./src/internal/server.js",
-    "test": "jest ./src/internal/testing/"
+    "test": "jest ./src/"
   },
   "keywords": [],
   "author": "bathtaters",
