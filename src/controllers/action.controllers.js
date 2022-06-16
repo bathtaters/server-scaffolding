@@ -5,8 +5,8 @@ const { login, logout } = require('../middleware/auth.middleware')
 const errors = require('../config/constants/error.messages')
 const urls = require('../config/meta').urls.gui
 
-exports.login  = login(urls.basic.prefix +urls .basic.home, urls.root.login)
-exports.logout = logout('/')
+exports.login  = login(urls.basic.prefix + urls.basic.home, urls.root.login)
+exports.logout = logout(urls.root.login)
 
 exports.swap = require('./api.controllers').swap
 
