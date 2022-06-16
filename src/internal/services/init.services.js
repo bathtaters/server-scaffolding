@@ -48,13 +48,13 @@ async function initializeServer(server) {
 
 
 async function terminateServer() {
-  if (teardown) await teardown(server)
+  if (teardown) await teardown()
 
   if (getDb()) await closeDb()
 
   logger.info(`${meta.name} services ended`)
 
-  return closeAll().then(() => console.log('Closed log files'))
+  return closeAll().then(() => ['info', 'debug'].includes(logger.logLevel.console) ? console.info('Closed log files') : null)
 }
 
 

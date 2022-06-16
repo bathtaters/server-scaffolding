@@ -24,7 +24,7 @@ exports.appendToLog = (name) => {
   exports.openFile(name)
 
   return function appendFile(...args) {
-    if (!fileStreams[name]) console.debug('Log file closed:',name,'Attempting to write:',...args)
+    if (!fileStreams[name]) console.warn('Log file closed:',name,'Attempting to write:',...args)
     return fileStreams[name].write(`${new Date().toISOString()}: ${args.map(formatFileArgs).join(' ')}\n`)
   }
 }
