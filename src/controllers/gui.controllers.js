@@ -5,7 +5,7 @@ const { guiAdapter } = require('../services/users.services')
 const { hasAccess } = require('../utils/users.utils')
 const { labels } = require('../services/form.services')
 const errors = require('../config/constants/error.messages')
-const urls = require('../config/meta').urls.gui.basic
+const urls = require('../config/constants/urls.cfg').gui.basic
 
 const models = require('../models/_all').map(({title}) => title)
 

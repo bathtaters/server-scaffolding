@@ -3,7 +3,7 @@ const models = require('../models/_all')
 const validate = require('../validators/api.validators')
 const controllers = require('../controllers/api.controllers')
 const corsMiddleware = require('../middleware/cors.middleware')
-const urls = require('../config/meta').urls.api
+const urls = require('../config/constants/urls.cfg').api
 
 router.use(corsMiddleware)
 

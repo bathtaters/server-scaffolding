@@ -1,6 +1,7 @@
 const { gracefulExitHandler } = require('express-graceful-exit')
 const logger = require('../config/log.adapter')
 const meta = require('../config/meta')
+const urls = require('../config/constants/urls.cfg')
 const shutdownError = require('../config/constants/error.messages').shutdown
 const { varName } = require('../utils/gui.utils')
 const { title, footer } = require('../config/constants/gui.cfg')
@@ -30,7 +31,7 @@ async function initializeServer(server) {
   server.locals.appTitle = title
   server.locals.footerData = footer
   server.locals.varName = varName
-  server.locals.urls = meta.urls
+  server.locals.urls = urls
 
   // Setup DB & init Models
   if (!getDb()) await openDb()

@@ -3,7 +3,7 @@ const { confirmPassword, guiFormAdapter } = require('../services/users.services'
 const { modelActions, filterFormData } = require('../services/form.services')
 const { login, logout } = require('../middleware/auth.middleware')
 const errors = require('../config/constants/error.messages')
-const urls = require('../config/meta').urls.gui
+const urls = require('../config/constants/urls.cfg').gui
 
 exports.login  = login(urls.basic.prefix + urls.basic.home, urls.root.login)
 exports.logout = logout(urls.root.login)

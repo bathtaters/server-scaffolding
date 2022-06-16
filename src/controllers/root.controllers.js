@@ -2,7 +2,7 @@ const Users = require('../models/_Users')
 const { forwardOnAuth } = require('../middleware/auth.middleware')
 const { access } = require('../config/constants/users.cfg')
 const limits = require('../config/constants/validation.cfg').limits._users
-const urls = require('../config/meta').urls.gui
+const urls = require('../config/constants/urls.cfg').gui
 
 exports.loginPage = [
   forwardOnAuth(urls.basic.prefix + urls.basic.home, access.gui),

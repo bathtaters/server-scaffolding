@@ -3,7 +3,7 @@ const { access, tableFields, tooltips } = require('../config/constants/users.cfg
 const { guiAdapter } = require('../services/users.services')
 const { hasAccess } = require('../utils/users.utils')
 const { labels } = require('../services/form.services')
-const urls = require('../config/meta').urls.gui.admin
+const urls = require('../config/constants/urls.cfg').gui.admin
 
 const staticUserParams = {
   title: 'Users',

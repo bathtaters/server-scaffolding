@@ -15,7 +15,8 @@ const guiRoutes   = require('./routes/gui.routes')
 const adminRoutes = require('./routes/admin.routes')
 const rootRoutes  = require('./routes/root.routes')
 // Constants
-const { urls, rootPath } = require('./config/meta')
+const urls = require('./config/constants/urls.cfg')
+const rootPath = require('./config/meta').rootPath
  
 
 // Server Setup

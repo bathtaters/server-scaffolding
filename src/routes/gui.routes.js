@@ -5,7 +5,7 @@ const actions = require('../controllers/action.controllers')
 const validate = require('../validators/gui.validators')
 const { checkAuth } = require('../middleware/auth.middleware')
 const { access } = require('../config/constants/users.cfg')
-const { basic, root } = require('../config/meta').urls.gui
+const { basic, root } = require('../config/constants/urls.cfg').gui
 
 router.use(checkAuth(root.login, access.gui))
 

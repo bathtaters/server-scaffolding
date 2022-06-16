@@ -2,7 +2,7 @@ const router = require('express').Router()
 const controllers = require('../controllers/root.controllers')
 const actions = require('../controllers/action.controllers')
 const validate = require('../validators/root.validators')
-const { root, splashRedirect } = require('../config/meta').urls.gui
+const { root, splashRedirect } = require('../config/constants/urls.cfg').gui
 
 router.get( root.logout,                 actions.logout)
 router.post(root.login,  validate.login, actions.login)
