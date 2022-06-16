@@ -2,7 +2,7 @@ const { checkSchema } = require('express-validator')
 const logger = require('../config/log')
 const checkValidation = require('../middleware/validate.middleware')
 const { getSchemaFromCfg } = require('../services/validate.services')
-const { filterDupes } = require('../utils/validate.utils')
+const { filterDupes } = require('../utils/common.utils')
 const validCfg = require('../../config/models.cfg')
 
 // Validate by config/validation[route]

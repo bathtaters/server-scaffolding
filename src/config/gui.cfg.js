@@ -1,14 +1,14 @@
 const { name, version, author, license, releaseYear, repoLink } = require('./meta')
-
-const capitalizeHyphenated = (str) => str.replace(/^\w/, a=>a.toUpperCase()).replace(/-(\w)/g, (_,g)=>' '+g.toUpperCase())
+const { capitalizeHyphenated } = require('../internal/utils/common.utils')
 
 const title = capitalizeHyphenated(name)
+
 const year = (startYear, endYear) => startYear >= endYear ? endYear : `${startYear} - ${endYear}`
 
 module.exports = {
+  title,
 
   // GUI Footer text
-  title,
   footer: {
     full: [
       `${title} v${version}`,

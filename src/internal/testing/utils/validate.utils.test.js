@@ -3,24 +3,12 @@ const validator = require('validator').default
 const unescSpy = jest.spyOn(validator, 'unescape')
 
 // Imports
-const { dateOptions, filterDupes, getTypeArray, escapedLength, deepUnescape } = require('../../utils/validate.utils')
+const { dateOptions, getTypeArray, escapedLength, deepUnescape } = require('../../utils/validate.utils')
 
 
 describe('dateOptions', () => {
   it('hasDate', () => { expect(dateOptions).toHaveProperty('date') })
   it('hasTime', () => { expect(dateOptions).toHaveProperty('time') })
-})
-
-describe('filterDupes', () => {
-  it('ignores non-dupes', () => {
-    expect(filterDupes([])).toEqual([])
-    expect(filterDupes([1, 2, 3])).toEqual([1, 2, 3])
-    expect(filterDupes(['a', 'A', 'b'])).toEqual(['a', 'A', 'b'])
-  })
-  it('removes duped values', () => {
-    expect(filterDupes([1, 2, 3, 2, 1, 4, 4])).toEqual([1, 2, 3, 4])
-    expect(filterDupes(['a', 'A', 'a', 'b', 'a'])).toEqual(['a','A','b'])
-  })
 })
 
 // Check getTypeArray (test*[]? => [test*[]?, test, *, [], ?])

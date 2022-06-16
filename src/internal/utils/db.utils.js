@@ -1,8 +1,6 @@
 const validateTypes = require('../../config/models.cfg').types
 const { getTypeArray } = require('./validate.utils')
 
-exports.hasDupes = (array) => array.some((val, idx) => array.slice(0, idx).includes(val))
-
 exports.extractId = (data, idKey) => {
   const id = data[idKey]
   delete data[idKey]
