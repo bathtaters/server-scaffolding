@@ -1,14 +1,30 @@
 // Validation Config Vars
-const userCfg = require('../internal/config/users.cfg')
+const userValidation = require('../internal/config/users.cfg').validation
 
 module.exports = {
+  // Data types
+  //  Values: string|uuid|b64(url)|hex|date|datetime|boolean|int|float|object|any
+  //  Suffix: [] = array of, ? = optional
+  //  string* = allow symbols/spaces
+  types: {
+    _users: userValidation.types,
+
+    base: {
+      id: "int",
+      data: "string*",
+    },
+    test: {
+      testId: "int",
+      name: "string",
+      number: "float",
+      comment: "string*?",
+    },
+  },
+
   // Default values
   defaults: {
-    _users: {
-      username: "user",
-      access: userCfg.defaultAccess,
-      cors: '*',
-    },
+    _users: userValidation.defaults,
+
     base: {
       data: "DEFAULT VALUE",
     },
@@ -20,13 +36,8 @@ module.exports = {
 
   // Num/Char limits
   limits: {
-    _users: {
-      id: { min: 32, max: 32 },
-      token: { min: 32, max: 32 },
-      access: { elem: { max: 16 }, array: { max: Object.keys(userCfg.access).length } },
-      cors: { min: 0, max: 2048 },
-      ...userCfg.limits
-    },
+    _users: userValidation.limits,
+    
     base: {
       data: { min: 0, max: 1000 },
     },
@@ -36,31 +47,4 @@ module.exports = {
       comment: { min: 0, max: 1000 },
     },
   },
-
-  // Data types
-  //  Values: string|uuid|b64(url)|hex|date|datetime|boolean|int|float|object|any
-  //  Suffix: [] = array of, ? = optional
-  //  string* = allow symbols/spaces
-  types: {
-    _users: {
-      id: "hex",
-      username: "string",
-      password: "string",
-      token: "hex",
-      access: "string[]?",
-      cors: "string*",
-      guiTime: "datetime?",
-      apiTime: "datetime?",
-    },
-    base: {
-      id: "int",
-      data: "string*",
-    },
-    test: {
-      testId: "int",
-      name: "string",
-      number: "float",
-      comment: "string*?",
-    },
-  }
 }

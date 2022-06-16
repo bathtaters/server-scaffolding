@@ -3,7 +3,7 @@ const Users = require('../models/Users')
 const { hasAccess } = require('../utils/users.utils')
 const { deepUnescape } = require('../utils/validate.utils')
 const { apiToken, access } = require('../config/users.cfg')
-const errors = require('../../config/error.messages')
+const errors = require('../config/errors.internal')
 
 const getToken = (authHdr) => authHdr && (authHdr.match(apiToken.matchToken) || [])[1]
 

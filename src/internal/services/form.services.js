@@ -1,4 +1,4 @@
-const errors = require('../../config/error.messages')
+const errors = require('../config/errors.internal')
 const { extractId } = require('../utils/db.utils')
 
 exports.labels = [ 'Add', 'Update', 'Remove', 'Reset' ]

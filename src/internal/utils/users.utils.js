@@ -1,4 +1,4 @@
-const errors = require('../../config/error.messages')
+const errors = require('../config/errors.internal')
 const logger = require('../config/log.adapter')
 
 

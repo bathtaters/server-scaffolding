@@ -1,7 +1,7 @@
 const hat = require('hat')
 const crypto = require('crypto')
 const { encode } = require('../config/users.cfg')
-const failureMsg = require('../../config/error.messages').loginMessages
+const failureMsg = require('../config/errors.internal').loginMessages
 
 exports.generateToken = () => hat()
 

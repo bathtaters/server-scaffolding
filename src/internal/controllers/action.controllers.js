@@ -2,7 +2,7 @@ const Users = require('../models/Users')
 const { confirmPassword, guiFormAdapter } = require('../services/users.services')
 const { modelActions, filterFormData } = require('../services/form.services')
 const { login, logout } = require('../middleware/auth.middleware')
-const errors = require('../../config/error.messages')
+const errors = require('../config/errors.internal')
 const urls = require('../../config/urls.cfg').gui
 
 exports.login  = login(urls.basic.prefix + urls.basic.home, urls.root.login)

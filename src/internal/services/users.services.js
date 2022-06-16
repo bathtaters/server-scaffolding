@@ -1,7 +1,7 @@
 const { accessArray, accessInt, decodeCors, encodeCors, displayCors, isRegEx, hasAccess } = require('../utils/users.utils')
 const { generateToken, encodePassword } = require('../utils/auth.utils')
 const userDef = require('../../config/validation.cfg').defaults._users
-const errors = require('../../config/error.messages')
+const errors = require('../config/errors.internal')
 const { access } = require('../config/users.cfg')
 
 exports.getAdapter = ({ id, token, username, access, cors, key, guiTime, apiTime }) => ({

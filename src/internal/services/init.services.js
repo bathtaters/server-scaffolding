@@ -1,13 +1,14 @@
 const { gracefulExitHandler } = require('express-graceful-exit')
-const logger = require('../internal/config/log.adapter')
-const meta = require('../config/meta')
-const urls = require('../config/urls.cfg')
-const shutdownError = require('../config/error.messages').shutdown
-const { varName } = require('../internal/utils/gui.utils')
-const { title, footer } = require('../config/gui.cfg')
-const { getDb, openDb, closeDb } = require('../internal/config/db')
-const { closeAll } = require('../internal/services/log.services')
-const models = require('../models/_all')
+const { startup, teardown } = require('../../server.init')
+const logger = require('../config/log.adapter')
+const meta = require('../../config/meta')
+const urls = require('../../config/urls.cfg')
+const shutdownError = require('../config/errors.internal').shutdown
+const { varName } = require('../utils/gui.utils')
+const { title, footer } = require('../../config/gui.cfg')
+const { getDb, openDb, closeDb } = require('../config/db')
+const { closeAll } = require('../services/log.services')
+const models = require('../../models/_all')
 
 let isClosing = false
 
@@ -37,6 +38,8 @@ async function initializeServer(server) {
   if (!getDb()) await openDb()
   await Promise.all(Object.values(models).map((m) => m.isInitialized))
 
+  if (startup) await startup(server)
+
   logger.info(`${meta.name} services started`)
   
   // Open port
@@ -45,6 +48,8 @@ async function initializeServer(server) {
 
 
 async function terminateServer() {
+  if (teardown) await teardown(server)
+
   if (getDb()) await closeDb()
 
   logger.info(`${meta.name} services ended`)

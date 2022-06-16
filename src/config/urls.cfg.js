@@ -36,9 +36,4 @@ module.exports = {
       token: '/regenToken',
     },
   },
-  
-  base: '/db/',
-  users: '/users/',
-  profile: '/users/profile/',
-  logout: '/users/logout/',
 }

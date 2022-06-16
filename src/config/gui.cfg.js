@@ -1,5 +1,7 @@
 const { name, version, author, license, releaseYear, repoLink } = require('./meta')
+
 const capitalizeHyphenated = (str) => str.replace(/^\w/, a=>a.toUpperCase()).replace(/-(\w)/g, (_,g)=>' '+g.toUpperCase())
+
 const title = capitalizeHyphenated(name)
 const year = (startYear, endYear) => startYear >= endYear ? endYear : `${startYear} - ${endYear}`
 

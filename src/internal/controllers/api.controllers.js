@@ -1,4 +1,4 @@
-const errors = require('../../config/error.messages')
+const errors = require('../config/errors.internal')
 
 exports.create = (Model) => function (req,res,next) {
   if (!req.body || !Object.keys(req.body).length) return next(errors.noData())

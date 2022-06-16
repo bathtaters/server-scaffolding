@@ -1,6 +1,6 @@
 const httpErrs = require('http-errors')
 const logger = require('../config/log.adapter')
-const errors = require('../../config/error.messages')
+const errors = require('../config/errors.internal')
 const { access } = require('../config/users.cfg')
 const { hasAccess } = require('../utils/users.utils')
 const { varName } = require('../utils/gui.utils')

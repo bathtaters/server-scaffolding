@@ -4,7 +4,7 @@ const { access, tableFields, tooltips } = require('../config/users.cfg')
 const { guiAdapter } = require('../services/users.services')
 const { hasAccess } = require('../utils/users.utils')
 const { labels } = require('../services/form.services')
-const errors = require('../../config/error.messages')
+const errors = require('../config/errors.internal')
 const urls = require('../../config/urls.cfg').gui.basic
 
 const models = require('../../models/_all').map(({title}) => title)

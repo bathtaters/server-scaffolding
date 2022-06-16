@@ -2,7 +2,7 @@ const { openDb, getDb } = require('../config/db')
 const services = require('../services/db.services')
 const { sanitizeSchemaData, schemaFromValidate, hasDupes } = require('../utils/db.utils')
 const { defaults: validateDefaults, limits: validateLimits } = require('../../config/validation.cfg')
-const errors = require('../../config/error.messages')
+const errors = require('../config/errors.internal')
 
 class Model {
 

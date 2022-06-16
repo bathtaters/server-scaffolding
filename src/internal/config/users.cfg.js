@@ -1,16 +1,11 @@
 const access = { api: 1, gui: 2, admin: 4, none: 0 }
 
-const accessMax = Object.values(access).reduce((sum,n) => sum + n, 0)
-
-const limits = {
-  username: { min: 2, max: 255 },
-  password: { min: 8, max: 128 },
-}
-limits.confirm = limits.password
+const passwordLimits = { min: 8, max: 128 }
 
 module.exports = {
-  access, accessMax, limits,
-  defaultAccess: [ 'api', 'gui' ],
+  access,
+  accessMax: Object.values(access).reduce((sum,n) => sum | n, 0),
+
   loginAccess: [ 'gui', 'admin' ],
   requirePassword: [ 'gui', 'admin' ],
 
@@ -28,8 +23,38 @@ module.exports = {
   timestampKeyRegEx: /^(.*)Time$/,
 
   tooltips: {
-    password: `Must be at least ${limits.password.min} characters.`,
+    password: `Must be at least ${passwordLimits.min} characters.`,
     confirm: 'Must match Password.',
     cors: 'Enter: * (all), true/false (all/none), comma-seperated urls, or RegExp(&quot;<regexp>&quot;).',
+  },
+
+  validation: {
+    types: {
+      id: "hex",
+      username: "string",
+      password: "string",
+      token: "hex",
+      access: "string[]?",
+      cors: "string*",
+      guiTime: "datetime?",
+      apiTime: "datetime?",
+    },
+    
+    defaults: {
+      username: "user",
+      access: [ 'api', 'gui' ],
+      cors: '*',
+    },
+  
+    limits: {
+      username: { min: 2, max: 255 },
+      password: passwordLimits,
+      confirm: passwordLimits,
+  
+      id: { min: 32, max: 32 },
+      token: { min: 32, max: 32 },
+      access: { elem: { max: 16 }, array: { max: Object.keys(access).length } },
+      cors: { min: 0, max: 2048 },
+    },
   },
 }
