@@ -2,13 +2,13 @@ header
   span.logo= title
   if !hideNav
     a.button(href=urls.gui.basic.prefix + urls.gui.basic.home) Home
-  if isAdmin
-    //- a.button(href=urls.gui.admin.prefix + urls.gui.admin.home) Settings
-    a.button(href=urls.gui.admin.prefix + urls.gui.admin.user) Users
-    //- a.button(href=urls.gui.admin.prefix + urls.gui.admin.logs) Logs
-  else
-    a.button(href=urls.gui.basic.prefix + urls.gui.basic.user) User
-  .spacer
-  if user
-    i.align-self-center.dim= user
-    a.button(href=urls.gui.root.logout) Logout
+    if isAdmin
+      //- a.button(href=urls.gui.admin.prefix + urls.gui.admin.home) Settings
+      a.button(href=urls.gui.admin.prefix + urls.gui.admin.user) Users
+      //- a.button(href=urls.gui.admin.prefix + urls.gui.admin.logs) Logs
+    else
+      a.button(href=urls.gui.basic.prefix + urls.gui.basic.user) User
+    span.spacer
+    if user
+      i.align-self-center.dim= user
+      a.button(href=urls.gui.root.logout) Logout
