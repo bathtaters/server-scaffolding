@@ -13,6 +13,9 @@ exports.logNames = (maxLevels, getName) => Object.entries(maxLevels).reduce((lev
   Object.assign(levels, { [type]: getName(level) }),
 {})
 
+// Middleware that doesn't do anything
+exports.emptyMiddleware = (req, res, next) => { next() }
+
 // Build function based on MaxLevel settings
 const ignoreFunc = () => {}
 exports.getFunction = (currLevel, maxLevels, getArg, getFunc) => {
