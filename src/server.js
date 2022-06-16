@@ -5,17 +5,17 @@ const join = require('path').join
 const initServer = require('./services/init.services')
 // Middleware
 const exitMiddleware = require('express-graceful-exit').middleware
-const authMiddleware = require('./middleware/auth.middleware').initAuth()
-const logMiddleware  = require('./middleware/log.middleware')
+const authMiddleware = require('./internal/middleware/auth.middleware').initAuth()
+const logMiddleware  = require('./internal/middleware/log.middleware')
 const commonMiddleware = require('./middleware/common.middleware')
-const errorMiddleware  = require('./middleware/error.middleware')
+const errorMiddleware  = require('./internal/middleware/error.middleware')
 // Routes
-const apiRoutes   = require('./routes/api.routes')
-const guiRoutes   = require('./routes/gui.routes')
-const adminRoutes = require('./routes/admin.routes')
-const rootRoutes  = require('./routes/root.routes')
+const apiRoutes   = require('./internal/routes/api.routes')
+const guiRoutes   = require('./internal/routes/gui.routes')
+const adminRoutes = require('./internal/routes/admin.routes')
+const rootRoutes  = require('./internal/routes/root.routes')
 // Constants
-const urls = require('./config/constants/urls.cfg')
+const urls = require('./config/urls.cfg')
 const rootPath = require('./config/meta').rootPath
  
 

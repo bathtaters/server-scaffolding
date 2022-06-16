@@ -1,4 +1,4 @@
-const { deepUnescape } = require('../utils/validate.utils')
+const { deepUnescape } = require('../internal/utils/validate.utils')
 
 // Add deepUnescape to run on send args
 const unescapeMiddleware = (_, res, next) => {

@@ -1,12 +1,12 @@
 const { gracefulExitHandler } = require('express-graceful-exit')
-const logger = require('../config/log.adapter')
+const logger = require('../internal/config/log.adapter')
 const meta = require('../config/meta')
-const urls = require('../config/constants/urls.cfg')
-const shutdownError = require('../config/constants/error.messages').shutdown
-const { varName } = require('../utils/gui.utils')
-const { title, footer } = require('../config/constants/gui.cfg')
-const { getDb, openDb, closeDb } = require('../config/db')
-const { closeAll } = require('./log.services')
+const urls = require('../config/urls.cfg')
+const shutdownError = require('../config/error.messages').shutdown
+const { varName } = require('../internal/utils/gui.utils')
+const { title, footer } = require('../config/gui.cfg')
+const { getDb, openDb, closeDb } = require('../internal/config/db')
+const { closeAll } = require('../internal/services/log.services')
 const models = require('../models/_all')
 
 let isClosing = false
