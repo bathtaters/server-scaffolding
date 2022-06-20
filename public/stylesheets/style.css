@@ -78,12 +78,6 @@ td { overflow-wrap: anywhere; }
   }
 }
 
-/* Hide icon text */
-span[class^='icon-'] {
-  color: #0000;
-  overflow: hidden;
-}
-
 /* Fix lone card styling */
 .card.center { margin: auto; }
 
