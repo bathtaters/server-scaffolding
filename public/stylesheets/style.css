@@ -1,17 +1,7 @@
-:root {
-  --universal-margin: 0.5rem;
-}
-
-/* Page styling */
-html, body, #siteContainer {
-  height: 100%;
-  width: 100%;
-  min-width: 300px;
-}
-
-html { overflow-x: hidden; }
-
+/* Base site layout */
 #siteContainer {
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -23,6 +13,7 @@ html { overflow-x: hidden; }
 }
 
 #pageContainer {
+  min-width: 300px;
   max-width: 1024px;
   padding: 1rem;
   flex-grow: 1;
@@ -36,60 +27,6 @@ html { overflow-x: hidden; }
   }
 }
 
-/* Fix footer styling */
-footer > .row {
-  justify-content: center;
-  text-align: center;
-}
-@media screen and (max-width: 767px) {
-  footer p { font-size: 0.8em; }
-}
-@media screen and (min-width: 767px) {
-  .visible-sm { display: none; }
-}
-
-/* Fix table styling */
-table:not(.horizontal) thead, table:not(.horizontal) tbody {
-  max-width: 99%;
-}
-table:not(.horizontal) thead { position: sticky; }
-tr.tableRow { cursor: pointer; }
-td { overflow-wrap: anywhere; }
-
-/* Fix 'buttonInput' mixin style */
-.button-group > .input-group { display: flex; }
-.button-input > .button-group > input:not([type="button"]):not([type="submit"]):not([type="reset"]),
-.button-input > .button-group > textarea, .button-input > .button-group > select {
-  flex-grow: 1;
-  margin: 0;
-}
-.button-input > .button-group > input[type="button"],
-.button-input > .button-group > input[type="submit"],
-.button-input > .button-group > input[type="reset"],
-.button-input > .button-group > button {
-  max-width: max-content;
-}
-@media screen and (max-width: 767px) {
-  .button-input > .button-group > input[type="button"],
-  .button-input > .button-group > input[type="submit"],
-  .button-input > .button-group > input[type="reset"],
-  .button-input > .button-group > button {
-    max-width: initial;
-  }
-}
-
-/* Fix lone card styling */
-.card.center { margin: auto; }
-
-/* Fix button styling */
-button, .button, [role="button"],
-[type="button"], [type="submit"], [type="reset"] {
-  text-align: center;
-}
-
-/* Allow header alignment */
-header { display: flex; }
-header > .spacer { flex-grow: 1; }
 
 /* Toggle show/hide password button */
 .input-group, .button-group { position: relative; }
@@ -102,24 +39,10 @@ button.toggle-password.small {
   padding: 0px;
 }
 
-/* Style invalid input fields */
-input.invalid:not([type="button"]):not([type="submit"]):not([type="reset"]),
-input.invalid:not([type="button"]):not([type="submit"]):not([type="reset"]):focus,
-input.invalid:not([type="button"]):not([type="submit"]):not([type="reset"]):focus-visible,
-textarea.invalid, textarea.invalid:focus, textarea.invalid:focus-visible, select.invalid,
-input:invalid:not([type="button"]):not([type="submit"]):not([type="reset"]),
-input:invalid:not([type="button"]):not([type="submit"]):not([type="reset"]):focus,
-input:invalid:not([type="button"]):not([type="submit"]):not([type="reset"]):focus-visible,
-textarea:invalid, textarea:invalid:focus, textarea:invalid:focus-visible, select:invalid {
-  border-color: #d32f2f;
-  outline-color: #d32f2f;
-  box-shadow: none;
-}
+/* Color specialized CORs values */
+.cors-regex, .cors-array { color: lightskyblue; }
 
-/* Random styles */
-.valid { border-color: #d32f2f; box-shadow: none; }
-.cors-regex { color: lightcoral; }
-.cors-array { color: lightskyblue; }
+/* Additional generic styling */
 .align-self-center { align-self: center;  }
 .dim { opacity: 0.6;}
 .small { font-size: 0.9em; font-weight: 300; }

@@ -1,0 +1,84 @@
+/* Base styling */
+:root {
+  --universal-margin: 0.5rem;
+}
+
+/* html { overflow-x: hidden; } */
+
+html, body {
+  height: 100%;
+  width: 100%;
+  min-width: 300px;
+}
+
+/* Fix table styling */
+table:not(.horizontal) thead, table:not(.horizontal) tbody {
+  max-width: 99%;
+}
+table:not(.horizontal) thead { position: sticky; }
+tr.tableRow { cursor: pointer; }
+td { overflow-wrap: anywhere; }
+
+/* Fix lone card styling */
+.card.center { margin: auto; }
+
+/* Fix button styling */
+button, .button, [role="button"],
+[type="button"], [type="submit"], [type="reset"] {
+  text-align: center;
+}
+
+/* Fix header alignment */
+header { display: flex; }
+header > .spacer { flex-grow: 1; }
+
+/* Fix footer styling */
+footer > .row {
+  justify-content: center;
+  text-align: center;
+}
+@media screen and (max-width: 767px) { footer p { font-size: 0.8em; } }
+
+
+/* Fix invalid input fields */
+input.invalid:not([type="button"]):not([type="submit"]):not([type="reset"]),
+input.invalid:not([type="button"]):not([type="submit"]):not([type="reset"]):focus,
+input.invalid:not([type="button"]):not([type="submit"]):not([type="reset"]):focus-visible,
+textarea.invalid, textarea.invalid:focus, textarea.invalid:focus-visible, select.invalid,
+input:invalid:not([type="button"]):not([type="submit"]):not([type="reset"]),
+input:invalid:not([type="button"]):not([type="submit"]):not([type="reset"]):focus,
+input:invalid:not([type="button"]):not([type="submit"]):not([type="reset"]):focus-visible,
+textarea:invalid, textarea:invalid:focus, textarea:invalid:focus-visible, select:invalid {
+  border-color: #d32f2f;
+  outline-color: #d32f2f;
+  box-shadow: none;
+}
+
+/* Fix 'buttonInput' mixin */
+.button-group > .input-group { display: flex; }
+.button-input > .button-group > input:not([type="button"]):not([type="submit"]):not([type="reset"]),
+.button-input > .button-group > textarea, .button-input > .button-group > select {
+  flex-grow: 1;
+  margin: 0;
+}
+.button-input > .button-group > input[type="button"],
+.button-input > .button-group > input[type="submit"],
+.button-input > .button-group > input[type="reset"],
+.button-input > .button-group > button {
+  max-width: max-content;
+}
+@media screen and (max-width: 767px) {
+  .button-input > .button-group > input[type="button"],
+  .button-input > .button-group > input[type="submit"],
+  .button-input > .button-group > input[type="reset"],
+  .button-input > .button-group > button {
+    max-width: initial;
+  }
+}
+
+/* Add 'visible' classes (AKA show content based on screen size) */
+.hidden.visible-sm, .hidden.visible-md, .hidden.visible-lg { display: initial !important; }
+@media screen and (max-width: 767px)  { .visible-md, .hidden.visible-md { display: none !important; } }
+@media screen and (min-width: 768px)  { .visible-sm, .hidden.visible-sm { display: none !important; } }
+@media screen and (max-width: 1279px) { .visible-lg, .hidden.visible-lg { display: none !important; } }
+@media screen and (min-width: 1280px) { .visible-md, .hidden.visible-md { display: none !important; } }
