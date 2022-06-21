@@ -4,7 +4,7 @@ function exec(db, sql) {
   return new Promise((res,rej) => {
     db.exec('BEGIN TRANSACTION; '+sql+'; COMMIT;', (err) => {
       if (err) {
-        logger.error('Error executing transaction, rolling back.')
+        logger.error(err, { label: 'SQL rollback' })
         return db.run('ROLLBACK', rbErr => rej(rbErr || err))
       }
       return res()

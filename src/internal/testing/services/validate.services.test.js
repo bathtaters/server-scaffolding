@@ -417,7 +417,7 @@ describe('getSchema', () => {
       warnSpy.mockImplementationOnce(() => {})
       services.getSchema('test','any*',null,['isIn'],false)
       expect(warnSpy).toBeCalledTimes(1)
-      expect(warnSpy).toBeCalledWith('* is ignored w/ non-string type: ', 'any*')
+      expect(warnSpy).toBeCalledWith('* is ignored w/ non-string type: any*')
     })
   })
 })

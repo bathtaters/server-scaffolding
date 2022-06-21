@@ -48,7 +48,7 @@ const isRegEx = /^RegExp\(["'](.*)["']\)\s*$/
 
 const regEx = {
   stringify: (re)  => `RegExp("${re.toString().slice(1, -1)}")`,
-  parse:     (str) => RegExp(str.match(isRegEx)[1] || logger.warn('Invalid RegExp',str)),
+  parse:     (str) => RegExp(str.match(isRegEx)[1] || logger.warn(`Invalid RegExp ${str}`)),
   canString: (re)  => typeof re.compile === 'function',
   canParse:  (str) => isRegEx.test(str),
 }

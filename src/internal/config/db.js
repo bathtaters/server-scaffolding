@@ -1,21 +1,22 @@
 const sqlite = require('sqlite3').verbose()
 const mkDir = require('fs').mkdirSync
 const logger = require('./log')
-const { dbPath, dbDir } = require('../../config/meta')
+const { dbPath } = require('../../config/meta')
+const dbDir = require('path').dirname(dbPath)
 
 let db
 
 function openDb(temp = false) {
   return new Promise((res,rej) => {
-    if (db) return logger.debug('Already connected db') || res(db)
-    if (mkDir(dbDir, { recursive: true })) logger.info('Created database folder:', dbDir)
+    if (db) { logger.verbose('Already connected db'); return res(db) }
+    if (mkDir(dbDir, { recursive: true })) logger.info(`Created database folder: ${dbDir}`)
 
     db = new sqlite.Database(temp ? ':memory:' : dbPath, (err) => {
       if (err) {
-        logger.error('Unable to connect database:', err)
+        logger.error(err, { label: 'opening DB' })
         return rej(err)
       }
-      logger.info('Connected to database')
+      logger.verbose('Connected to database')
       return res(db)
     })
   })
@@ -23,14 +24,14 @@ function openDb(temp = false) {
 
 function closeDb() {
   return new Promise((res,rej) => {
-    if (!db) return logger.debug('Already disconnected db') || res()
+    if (!db) { logger.verbose('Already disconnected db'); return res() }
     db.close((err) => {
       if (err) {
-        logger.error('Unable to disconnect database:', err)
+        logger.error(err, { label: 'closing DB' })
         return rej(err)
       }
       db = null
-      logger.info('Disconnected database')
+      logger.verbose('Disconnected database')
       return res()
     })
   })

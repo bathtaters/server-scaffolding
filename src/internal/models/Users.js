@@ -68,7 +68,10 @@ class Users extends Model {
     if (!users)
       return this.add({ username, password, access: accessInt(accessLevel) })
         .then((id) => id && this.get(id))
-        .then((data) => logger.info(' > Created initial user: '+data.username) || data)
+        .then((data) => {
+          logger.info(`Created initial user: ${data.username}`)
+          return data
+        })
 
     return super.get(username.toLowerCase(), 'username').then(testPassword(password, accessInt(accessLevel)))
   }
