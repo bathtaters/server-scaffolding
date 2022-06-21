@@ -1,6 +1,6 @@
 const { varNameDict, sql2html, MASK_CHAR } = require('../../config/gui.cfg')
 
-exports.varName = (str) =>  Object.keys(varNameDict).includes(str) ? varNameDict[str] :
+exports.varName = (str) =>  typeof str !== 'string' ? str : Object.keys(varNameDict).includes(str) ? varNameDict[str] :
   str.charAt(0) === '_' ? exports.varName(str.slice(1)) :
   str.replace(/([A-Z])/g, ' $1').replace(/^./, (ltr) => ltr.toUpperCase())
 
