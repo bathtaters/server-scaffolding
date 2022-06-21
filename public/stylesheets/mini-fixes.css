@@ -27,6 +27,7 @@ button, .button, [role="button"],
 [type="button"], [type="submit"], [type="reset"] {
   text-align: center;
 }
+.button-group > .center { align-self: center; }
 
 /* Fix header alignment */
 header { display: flex; }
