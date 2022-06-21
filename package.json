@@ -30,7 +30,9 @@
     "passport": "^0.6.0",
     "passport-local": "^1.0.0",
     "pug": "^3.0.2",
-    "sqlite3": "^5.0.8"
+    "sqlite3": "^5.0.8",
+    "winston": "^3.7.2",
+    "winston-daily-rotate-file": "^4.7.1"
   },
   "devDependencies": {
     "@types/jest": "^28.1.1",

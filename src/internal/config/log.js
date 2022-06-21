@@ -1,29 +1,38 @@
-const mkDir = require('fs').mkdirSync
-const { getLogLevel, getFunction, logNames } = require('../utils/log.utils')
-const { appendToLog } = require('../services/log.services')
-const { defaultLevels, logOrder, initMessage, mkDirMsg } = require('./log.cfg')
-const logDir = require('../../config/meta').logDir
+const { createLogger, transports } = require('winston')
+const DailyRotateFile = require('winston-daily-rotate-file')
+const { getLogLevel } = require('../utils/log.utils')
+const config = require('./log.cfg')
+const { logPath } = require('../../config/meta')
 
-function createLogObject() {
-  const createdDir = Boolean(mkDir(logDir, { recursive: true }))
+const logger = createLogger({
+  levels: config.levels,
+  format: config.logFormat.common,
+  transports: [
+    // Console logs
+    new transports.Console({
+      ...getLogLevel(process.env.LOG_CONSOLE, config, 'console'),
+      format: config.logFormat.console,
+    }),
 
-  const maxLevels = {
-    console: getLogLevel(logOrder, process.env.LOG_CONSOLE, getLogLevel(defaultLevels.console)),
-    file:    getLogLevel(logOrder, process.env.LOG_FILE,    getLogLevel(defaultLevels.file)),
-  }
-  
-  let logger = { logLevel: logNames(maxLevels, (level) => logOrder[level] || level) }
-  logOrder.forEach((name, level) => { logger[name] = getFunction(level, maxLevels, name, getFunctions) }, {})
-  
-  if (createdDir) logger.info(mkDirMsg(logDir))
-  if (process.env.NODE_ENV !== 'test') logger.info(Object.entries(maxLevels).map(initMessage(logOrder)).join(', '))
+    // File logs
+    new DailyRotateFile({
+      ...getLogLevel(process.env.LOG_FILE, config, 'file'),
+      filename: logPath,
+      datePattern: 'YYYY-MM-DD' + (config.splitFilesHourly ? '.HH' : ''),
+      zippedArchive: true,
+      maxSize: '25m',
+      maxFiles: '30d',
+      format: config.logFormat.file,
+    }),
+  ],
+  silent: process.env.NODE_ENV === 'test',
+})
 
-  return logger
-}
+logger.debug = () => logger.warn('Calling uninitialized logger.debug') 
+logger.stream = { write: (msg) => logger.http(msg.trim()) } // Adapter for Morgan.stream
 
-const getFunctions = {
-  console: (name) => name in console ? console[name]     : () => {},
-  file:    (name) => name !== 'none' ? appendToLog(name) : () => {},
-}
+logger.verbose(logger.transports.map(
+  ({ level, silent }, idx) => config.initMessage(['console','file'][idx], silent ? config.silent[0] : level || logger.level)).join(', ')
+)
 
-module.exports = createLogObject()
+module.exports = logger

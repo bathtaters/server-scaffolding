@@ -1,37 +1,46 @@
-// Formatting used for writing files
-exports.formatFileArgs = (arg) => !arg || typeof arg !== 'object' ? String(arg) : arg.stack ? arg.stack : JSON.stringify(arg)
+// Get highest value log from Levels array ({ levelName: levelValue, ... })
+exports.getMaxEntry = (obj) => Object.entries(obj).reduce((max, [key, val]) => val > max[1] ? [key, val] : max, [null, Number.NEGATIVE_INFINITY])
 
-// Converting buffer data for debug log
-exports.decodeBuffer = (type, data, enc) => 
-  !Buffer.isBuffer(data) ? data :
+// Normalize log level
+exports.getLogLevel = (logLevel, { levels, defaultLevel, silent, httpDebug }, key) => {
+  if (!logLevel && key) logLevel = defaultLevel[key]
+
+  if (typeof logLevel === 'string') logLevel = logLevel.toLowerCase()
+
+  if (logLevel in levels) return { level: logLevel }
+  if (silent.includes(logLevel)) return { silent: true }
+  if (httpDebug.includes(logLevel)) return { level: exports.getMaxEntry(levels)[0] || 'verbose' }
+
+  if (!key) throw new Error(`Invalid default log level: ${logLevel}`)
+  return exports.getLogLevel(defaultLevel[key], { levels, defaultLevel, silent, httpDebug })
+}
+
+// Convert buffer data for debug log
+const decodeBuffer = (type, data, enc) => 
+  !Buffer.isBuffer(data) || !type ? data :
   type.includes('html') ? `[HTML: ${data.byteLength.toLocaleString()} bytes]` :
   type.includes('json') ? JSON.parse(data.toString(enc)) :
   /* other: */ data.toString(enc)
 
-// Convert maxLevels from Ints to Names
-exports.logNames = (maxLevels, getName) => Object.entries(maxLevels).reduce((levels, [type, level]) =>
-  Object.assign(levels, { [type]: getName(level) }),
-{})
+// Format HTTP messages
+exports.httpHdr = ({ method, protocol, subdomains, hostname, originalUrl }, title = 'HTTP') => 
+  `\n\x1b[35m${title.toUpperCase()}\x1b[0m: ${method} ${protocol}://${subdomains.concat('').join('.')}${hostname}${originalUrl}`
 
-// Middleware that doesn't do anything
-exports.emptyMiddleware = (req, res, next) => { next() }
+exports.httpReq = (id, { headers, params, body, session, user, ips, ip, cookies, signedCookies }) => ({
+  id,
+  headers,
+  params,
+  body: { ...body },
+  cookies: session && session.cookie,
+  // cookies: (session ? [{ type: 'session', ...session.cookie }] : []).concat(cookies || []).concat(signedCookies || []),
+  user,
+  ips: ips.concat(ip)
+})
 
-// Build function based on MaxLevel settings
-const ignoreFunc = () => {}
-exports.getFunction = (currLevel, maxLevels, getArg, getFunc) => {
-  let funcs = []
-  Object.keys(maxLevels).forEach((key) => {
-    if (getFunc[key] && maxLevels[key] >= currLevel) funcs.push(getFunc[key](getArg))
-  })
-
-  if (funcs.length < 2) return funcs[0] || ignoreFunc
-  return function aggregate(...args) { funcs.forEach((func) => func(...args)) }
-}
-
-// Get Log Level from number or log name
-exports.getLogLevel = (logOrder, logLevel, defaultLevel) => {
-  if (!isNaN(logLevel)) logLevel = +logLevel
-  else if (typeof logLevel === 'string') logLevel = logOrder.indexOf(logLevel.toLowerCase())
-  if (typeof logLevel !== 'number' || logLevel < 0) logLevel = defaultLevel
-  return logLevel
-}
+exports.httpRes = (id, start, data, enc, headers, status) => ({
+  id,
+  headers: { ...headers },
+  timeMs: new Date().getTime() - start,
+  status,
+  data: decodeBuffer(headers['content-type'], data, enc),
+})

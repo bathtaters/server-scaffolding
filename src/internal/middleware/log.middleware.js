@@ -1,47 +1,38 @@
+const httpLogger = require('morgan')
 const randomKey = require('crypto').randomUUID
-const requestLogger = require('morgan')
 const logger = require('../config/log')
-const { openFile } = require('../services/log.services')
-const { decodeBuffer, emptyMiddleware } = require('../utils/log.utils')
-const { defaultMorgan, autoEnableVerbose, verboseMsg } = require('../config/log.cfg')
+const { httpHdr, httpReq, httpRes } = require('../utils/log.utils')
+const { defaultHttp, httpDebug, silent, httpMessage } = require('../config/log.cfg')
 
-function debugLog(req, res, next) {
-  if (!enableDebugLog) return next()
+function loadLogMiddleware() {
+  // No Middleware
+  const httpFormat = process.env.LOG_HTTP || defaultHttp
+  if (!httpFormat || silent.includes(httpFormat)) return (req,res,next) => next()
 
-  /* REQUEST */
-  const start = new Date().getTime(), txId = randomKey()
-  const { method, params, body, user, headers, ips, ip } = req
-  const url = `${req.protocol}://${req.subdomains.concat('').join('.')}${req.hostname}${req.originalUrl}`
-  // const cookies = (req.session ? [{ type: 'session', ...req.session.cookie }] : []).concat(req.cookies || []).concat(req.signedCookies || [])
-  const cookies = req.session && req.session.cookie
-  logger.debug('REQUEST:', method, url, { txId, headers, params, body: { ...body }, cookies, user, ips: ips.concat(ip) })
-
-  /* RESPONSE */
-  res.noLogEnd = res.end
-  res.end = (data, enc) => {
-    const headers = { ...res.getHeaders() }
-    const decoded = decodeBuffer(res.get('content-type'), data, enc)
-    const timeMs = new Date().getTime() - start
-    logger.debug('RESPONSE:', method, url, { txId, headers, timeMs, status: res.statusCode, data: decoded })
-    return res.noLogEnd(data, enc)
+  // Normal Middleware
+  if (!httpDebug.includes(httpFormat)) {
+    logger.verbose(httpMessage(httpFormat))
+    return httpLogger(httpFormat, { stream: logger.stream })
   }
 
-  return next()
-}
+  // Debug Middleware
+  logger.log(process.env.NODE_ENV === 'production' ? 'warn' : 'info', httpMessage())
+  logger.debug = console.debug
 
-
-function getLogMiddleware(route) {
-  if (route) {
-    if (process.env.REQ_FILE.toLowerCase() === 'none') return emptyMiddleware
-    return requestLogger(process.env.REQ_FILE || defaultMorgan.file, { stream: openFile(route.replace(/\//g,'') || 'root') })
-  }
+  return function debugLogger(req, res, next) {
+    /* REQUEST */
+    const start = new Date().getTime(), id = randomKey()
+    logger.debug(httpHdr(req, 'Request'), httpReq(id, req))
   
-  if (enableDebugLog) return debugLog
-  if (process.env.REQ_CONSOLE.toLowerCase() === 'none') return emptyMiddleware
-  else return requestLogger(process.env.REQ_CONSOLE || defaultMorgan.console)
+    /* RESPONSE */
+    res.noLogEnd = res.end
+    res.end = (data, enc) => {
+      res.noLogEnd(data, enc)
+      logger.debug(httpHdr(req, 'Response'), httpRes(id, start, data, enc, res.getHeaders(), res.statusCode))
+    }
+  
+    return next()
+  }
 }
 
-
-const enableDebugLog = autoEnableVerbose(logger.logLevel) && (logger.debug(verboseMsg) || true)
-
-module.exports = getLogMiddleware
+module.exports = loadLogMiddleware

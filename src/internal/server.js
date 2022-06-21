@@ -36,15 +36,8 @@ server.use(express.static(join(rootPath, 'public')))
 server.use('/', express.static(join(rootPath, 'public', 'root')))
 server.use(authMiddleware)
 server.use(commonMiddleware)
-
 if (middleware) middleware(server)
-
-// Log Middleware
 server.use(logMiddleware())
-server.use(urls.api.prefix,       logMiddleware(urls.api.prefix))
-server.use(urls.gui.basic.prefix, logMiddleware(urls.gui.basic.prefix))
-server.use(urls.gui.admin.prefix, logMiddleware(urls.gui.admin.prefix))
-server.use(Object.values(urls.gui.root), logMiddleware('root'))
 
 // Routes
 server.use('/',                   rootRoutes)

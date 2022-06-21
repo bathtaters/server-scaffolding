@@ -17,6 +17,7 @@ credentials.json
 # logs
 .logs
 *.log
+*-audit.json
 
 # misc
 package-lock.json
