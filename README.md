@@ -68,10 +68,9 @@ Includes ***Passport*** session authentication, ***Morgan*** console/file loggin
 ```
 NODE_ENV=[development]|production|test
 port=[8080]
-REQ_CONSOLE=combined|common|dev|[short]|tiny|none
-REQ_FILE=combined|[common]|dev|short|tiny|none
-LOG_CONSOLE=debug|[info]|log|warn|error|none
-LOG_FILE=debug|info|log|[warn]|error|none
+LOG_CONSOLE=verbose|http|[info]|warn|error|none
+LOG_FILE=verbose|http|info|[warn]|error|none
+LOG_HTTP=debug|combined|[common]|dev|short|tiny|none
 SESSION_SECRET=[secret]
 DB_DIR=[<project-dir>/.db]
 LOG_DIR=[<project-dir>/.logs]
@@ -80,10 +79,12 @@ LOG_DIR=[<project-dir>/.logs]
 ---
 
 ### *TO DO:*
- - **Split logs** daily (Add date to filename) _(Only create files when they're written to)_
- - **Admin GUI:** Allow reading logs / Changing .env vars & some constants / Restarting server
+ - **Admin GUI:** Add log reader
+ - **Admin GUI:** Allow changing .env vars / Restarting server
  - Add **unit testing** for utils/services
  - Add **endpoint testing** for API & GUI form/login routes
+ - Add **pagination** for models (& user table) w/ settable page size
+ - Allow **searching** for models (& user table) by field (Add 'Search' button)
  - Allow **restricting** user access by **model**
 
 ---
