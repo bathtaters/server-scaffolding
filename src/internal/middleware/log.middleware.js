@@ -1,7 +1,7 @@
 const httpLogger = require('morgan')
 const randomKey = require('crypto').randomUUID
 const logger = require('../config/log')
-const { httpHdr, httpReq, httpRes } = require('../utils/log.utils')
+const { httpHdr, httpReq, httpRes } = require('../utils/http.utils')
 const { defaultHttp, httpDebug, silent, httpMessage } = require('../config/log.cfg')
 
 function loadLogMiddleware() {
