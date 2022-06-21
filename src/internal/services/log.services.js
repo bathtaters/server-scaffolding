@@ -1,0 +1,34 @@
+const { readdir, readFile } = require('fs/promises')
+const { join, dirname, basename } = require('path')
+const { formatFileLog } = require('../utils/log.utils')
+const { logViewFileFilter } = require('../config/log.cfg')
+const { logPath } = require('../../config/meta')
+const [ logDir, logFilename ] = [ dirname(logPath), basename(logPath) ]
+
+// Get log files
+const logFileRegex = logViewFileFilter(logFilename)
+exports.logList = (folder = logDir) =>
+  readdir(folder).then((files) =>
+    files.filter((filename) => logFileRegex.test(filename))
+  )
+
+exports.logFile = (filename, folder = logDir) =>
+  readFile(join(folder, filename)).then((log) =>
+    log.toString().split('\n').map(formatFileLog)
+  )
+
+// Normalize log level
+exports.getLogLevel = (logLevel, { levels, defaultLevel, testLevel, silent, httpDebug }, key) => {
+  if (process.env.NODE_ENV === 'test' && testLevel) return key === 'console' ? { level: testLevel } : { silent: true }
+
+  if (!logLevel && key) logLevel = defaultLevel[key]
+
+  if (typeof logLevel === 'string') logLevel = logLevel.toLowerCase()
+
+  if (logLevel in levels) return { level: logLevel }
+  if (silent.includes(logLevel)) return { silent: true }
+  if (httpDebug.includes(logLevel)) return { level: exports.getMaxEntry(levels)[0] || 'verbose' }
+
+  if (!key) throw new Error(`Invalid default log level: ${logLevel}`)
+  return exports.getLogLevel(defaultLevel[key], { levels, defaultLevel, silent, httpDebug })
+}

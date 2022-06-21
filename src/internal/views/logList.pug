@@ -1,0 +1,7 @@
+extends container
+
+block content
+  h1 Log Files
+  ul
+    each log in logs
+      li: a(href=baseURL+log)= log

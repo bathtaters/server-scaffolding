@@ -14,6 +14,7 @@ router.post(admin.user+admin.token, validate.token, actions.regenToken)
 
 // TO DO -- Add settings/logs
 router.get(admin.home, (req, res) => res.redirect(admin.prefix + admin.user))
-router.get(admin.logs, (req, res) => res.redirect(admin.prefix + admin.user))
+router.get(admin.logs,              controllers.logList)
+router.get(admin.logs+'/:filename', controllers.logView)
 
 module.exports = router

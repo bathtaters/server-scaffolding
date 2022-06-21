@@ -3,9 +3,10 @@ const { varName } = require('../utils/gui.utils')
 const { getMaxEntry } = require('../utils/log.utils')
 
 const levels = { error: 0, warn: 1, info: 2, http: 3, verbose: 4 }
+const colors = { error: 'red', warn: 'yellow', info: 'green', http: 'cyan', verbose: 'gray' }
 
 module.exports = {
-  levels,
+  levels, colors,
 
   files: {
     splitHourly: false, // false = Daily
@@ -22,10 +23,12 @@ module.exports = {
   initMessage: (name, level) => `${varName(name)} log mode: ${level || 'unknown'}${level in levels ? ` (${levels[level] + 1} of ${(getMaxEntry(levels)[1] || -1) + 1})` : ''}`,
   httpMessage: (mode) => `HTTP request logging enabled (${mode || 'DEBUG MODE'})`,
 
+  // Filter for logView
+  logViewFileFilter: (filename) => RegExp(`^${filename.replace(/([\.\^\$\(\[])/g,'\\$1').replace(/%.+%/g,'.+')}$`),
+
   logFormat: {
     common: format.combine(
       format.errors({ stack: true }),
-      format((info) => typeof info.label === 'string' ? { ...info, level: `${info.level} [${info.label}]` } : info)(),
     ),
     file: format.combine(
       format.uncolorize(),
@@ -33,7 +36,8 @@ module.exports = {
       format.json(),
     ),
     console: format.combine(
-      format.colorize({ colors: { http: 'cyan', verbose: 'gray' }}),
+      format((info) => typeof info.label === 'string' ? { ...info, level: `${info.level} [${info.label}]` } : info)(),
+      format.colorize({ colors }),
       format.padLevels(),
       format.printf(({ level, message, stack }) => `${level}: ${stack || message}`),
       // format.json()

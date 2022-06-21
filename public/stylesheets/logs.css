@@ -1,0 +1,49 @@
+/* Log container */
+.log { min-width: 512px; }
+
+/* Filter buttons */
+.filter-level:disabled {
+  background: #111;
+  outline: solid;
+}
+
+/* Log lines */
+.log > .line:hover { background-color: #112; }
+.log .log-time { color: #CBA; }
+.log .log-label {
+  font-weight: bold;
+  text-decoration: underline;
+  margin-inline-end: 0.5em;
+}
+
+.log .log-msg, .log .log-label { white-space: pre-wrap; }
+
+.log .log-time, .log .log-level, .log .log-stack {
+  font-family: monospace;
+  font-size: 0.9em;
+}
+@media screen and (max-width: 767px) {
+  .log .log-msg, .log .log-time,
+  .log .log-level, .log .log-label,
+  .log .log-stack {
+    font-size: 0.8em;
+  }
+}
+
+/* Error stack */
+.log .log-stack {
+  margin-left: 2em;
+  white-space: pre-wrap;
+}
+
+/* Text Colors */
+.log-level { color: #AAA; }
+.gray { color: #AAA; }
+.red { color: #D00; }
+.green { color: #0A0; }
+.yellow { color: #ED0; }
+.blue { color: #55F; }
+.magenta { color: #F5F; }
+.cyan { color: #5CC; }
+.white { color: #DDD; }
+.black { color: #888; }
