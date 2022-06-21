@@ -18,14 +18,13 @@ const logger = createLogger({
     new DailyRotateFile({
       ...getLogLevel(process.env.LOG_FILE, config, 'file'),
       filename: logPath,
-      datePattern: 'YYYY-MM-DD' + (config.splitFilesHourly ? '.HH' : ''),
+      datePattern: 'YYYY-MM-DD' + (config.files.splitHourly ? '.HH' : ''),
       zippedArchive: true,
-      maxSize: '25m',
-      maxFiles: '30d',
+      maxSize: config.files.maxBytes || '20M',
+      maxFiles: (config.files.maxDays || 14) + 'd',
       format: config.logFormat.file,
     }),
   ],
-  silent: process.env.NODE_ENV === 'test',
 })
 
 logger.debug = () => logger.warn('Calling uninitialized logger.debug') 

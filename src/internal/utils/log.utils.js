@@ -2,7 +2,9 @@
 exports.getMaxEntry = (obj) => Object.entries(obj).reduce((max, [key, val]) => val > max[1] ? [key, val] : max, [null, Number.NEGATIVE_INFINITY])
 
 // Normalize log level
-exports.getLogLevel = (logLevel, { levels, defaultLevel, silent, httpDebug }, key) => {
+exports.getLogLevel = (logLevel, { levels, defaultLevel, testLevel, silent, httpDebug }, key) => {
+  if (process.env.NODE_ENV === 'test' && testLevel) return key === 'console' ? { level: testLevel } : { silent: true }
+
   if (!logLevel && key) logLevel = defaultLevel[key]
 
   if (typeof logLevel === 'string') logLevel = logLevel.toLowerCase()
