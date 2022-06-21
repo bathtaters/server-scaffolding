@@ -3,7 +3,6 @@ const pkg = require('../../package.json')
 const pkgCfg = pkg.config || {}
 
 const rootPath = join(__dirname,'..','..') // Update if this file moves
-const dbDir = process.env.DB_DIR || join(rootPath, '.db')
 
 module.exports = {
   name: pkg.name || 'untitled',
@@ -16,7 +15,6 @@ module.exports = {
 
   port: process.env.port || +pkgCfg.port || 8080,
   rootPath,
-  dbDir,
-  dbPath: join(dbDir, 'database.db'),
-  logDir: process.env.LOG_DIR || join(rootPath, '.logs'),
+  dbPath:  join(process.env.DB_DIR  || join(rootPath, '.db'),   'database.db'),
+  logPath: join(process.env.LOG_DIR || join(rootPath, '.logs'), `${pkg.name || 'server'}_%DATE%.log`),
 }
