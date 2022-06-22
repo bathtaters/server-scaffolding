@@ -1,0 +1,15 @@
+extends container
+
+block header
+  meta(http-equiv="Refresh" content=`${seconds}; url='${url}'`)
+
+block scripts
+  script(src="/javascripts/delay.client.js")
+
+block content
+  .card.center.plain
+    h2= title || 'Hang on'
+
+    p#countLine You'll continue in #[span#countdown= seconds] seconds.
+
+    p#linkLine.hidden #[a#fwdLink(href=url) Click here] to continue.
