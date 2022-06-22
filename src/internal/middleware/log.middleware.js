@@ -2,11 +2,11 @@ const httpLogger = require('morgan')
 const randomKey = require('crypto').randomUUID
 const logger = require('../config/log')
 const { httpHdr, httpReq, httpRes } = require('../utils/http.utils')
-const { defaultHttp, httpDebug, silent, httpMessage } = require('../config/log.cfg')
+const { httpDebug, silent, httpMessage } = require('../config/log.cfg')
 
 function loadLogMiddleware() {
   // No Middleware
-  const httpFormat = process.env.LOG_HTTP || defaultHttp
+  const httpFormat = process.env.LOG_HTTP || require('../config/env.cfg').defaults.LOG_HTTP
   if (!httpFormat || silent.includes(httpFormat)) return (req,res,next) => next()
 
   // Normal Middleware

@@ -1,7 +1,9 @@
+// Constants
+const { rootPath } = require('../config/meta')
+const urls = require('../config/urls.cfg')
 // Module Dependencies
-require('dotenv').config()
 const express = require('express')
-const join = require('path').join
+const { join } = require('path')
 const startServer = require('./services/init.services')
 const { setup, middleware, routes } = require('../server.init')
 // Middleware
@@ -15,9 +17,6 @@ const apiRoutes   = require('./routes/api.routes')
 const guiRoutes   = require('./routes/gui.routes')
 const adminRoutes = require('./routes/admin.routes')
 const rootRoutes  = require('./routes/root.routes')
-// Constants
-const urls = require('../config/urls.cfg')
-const rootPath = require('../config/meta').rootPath
  
 
 // Server Setup

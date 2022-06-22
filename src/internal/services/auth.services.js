@@ -5,7 +5,7 @@ const { dbPath } = require('../../config/meta')
 
 exports.sessionOptions = {
   store: new SQLiteStore({ dir: require('path').dirname(dbPath), db: 'sessions.db' }),
-  secret: process.env.SESSION_SECRET || "secret",
+  secret: process.env.SESSION_SECRET || require('../config/env.cfg').defaults.SESSION_SECRET,
   resave: false,
   saveUninitialized: true,
   cookie: {

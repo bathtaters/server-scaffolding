@@ -18,10 +18,10 @@ exports.logFile = (filename, folder = logDir) =>
   )
 
 // Normalize log level
-exports.getLogLevel = (logLevel, { levels, defaultLevel, testLevel, silent, httpDebug }, key) => {
-  if (process.env.NODE_ENV === 'test' && testLevel) return key === 'console' ? { level: testLevel } : { silent: true }
+exports.getLogLevel = (logLevel, { levels, testLevel, silent, httpDebug }, defaultLevel, isConsole) => {
+  if (process.env.NODE_ENV === 'test' && testLevel) return isConsole ? { level: testLevel } : { silent: true }
 
-  if (!logLevel && key) logLevel = defaultLevel[key]
+  if (!logLevel && defaultLevel) logLevel = defaultLevel
 
   if (typeof logLevel === 'string') logLevel = logLevel.toLowerCase()
 
@@ -29,6 +29,6 @@ exports.getLogLevel = (logLevel, { levels, defaultLevel, testLevel, silent, http
   if (silent.includes(logLevel)) return { silent: true }
   if (httpDebug.includes(logLevel)) return { level: exports.getMaxEntry(levels)[0] || 'verbose' }
 
-  if (!key) throw new Error(`Invalid default log level: ${logLevel}`)
-  return exports.getLogLevel(defaultLevel[key], { levels, defaultLevel, silent, httpDebug })
+  if (!defaultLevel) throw new Error(`Invalid default log level: ${logLevel}`)
+  return exports.getLogLevel(defaultLevel, { levels, silent, httpDebug })
 }

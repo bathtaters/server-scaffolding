@@ -14,8 +14,6 @@ module.exports = {
     maxDays: 30, 
   },
 
-  defaultLevel: { console: 'info', file: 'warn' },
-  defaultHttp: 'common',
   silent: ['none', 'silent'], // Disable
   httpDebug: ['debug'],       // Enable max verbosity for requests/responses
   testLevel: 'warn', // Force this level when testing & disable files, falsy value will ignore this
