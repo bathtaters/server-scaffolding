@@ -1,7 +1,11 @@
 const Users = require('../models/Users')
 const { confirmPassword, guiFormAdapter } = require('../services/users.services')
 const { modelActions, filterFormData } = require('../services/form.services')
+const { settingsActions } = require('../services/settings.services')
 const { login, logout } = require('../middleware/auth.middleware')
+const { hasAccess } = require('../utils/users.utils')
+const { access } = require('../config/users.cfg')
+const { restartTimeout } = require('../config/env.cfg')
 const errors = require('../config/errors.internal')
 const urls = require('../../config/urls.cfg').gui
 
@@ -39,3 +43,25 @@ exports.userForm = exports.form(Users, {
   formatData: guiFormAdapter,
   redirectURL: urls.basic.prefix+urls.basic.user,
 })
+
+
+const restartParams = (req) => ({
+  title: 'Restarting server...',
+  seconds: restartTimeout,
+  url: `${urls.admin.prefix}${urls.admin.home}`,
+  user: req.user && req.user.username,
+  isAdmin: req.user && hasAccess(req.user.access, access.admin),
+})
+
+exports.settingsForm = (req,res,next) => {
+  const { action, env } = req.body
+  if (!action || !Object.keys(settingsActions).includes(action)) return next(errors.badAction(action))
+
+  if (action.toLowerCase() === 'update' && !env) return next(errors.noData('.ENV data'))
+
+  return settingsActions[action](env)
+    .then((delay) => delay ?
+      res.render('delay', restartParams(req)) :
+      res.redirect(`${urls.admin.prefix}${urls.admin.home}`)
+    ).catch(next)
+}

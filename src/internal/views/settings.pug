@@ -1,0 +1,20 @@
+extends container
+
+include form.mixins.pug
+
+block scripts
+  script(src="/javascripts/env.client.js")
+
+block content
+  form.plain(action=postURL method="POST")
+    fieldset
+      legend.row
+        h2 Admin Settings
+        input.small.button.button-group#revertForm(type="reset" value="Revert")
+
+      +formInput("env", "12", null, env, ".ENV File", "marginX")
+      i
+        span.marginX.small.dim NOTE: Settings will take effect after restart
+        a.small(href="https://github.com/bathtaters/server-scaffolding/blob/master/README.md#env-variables" target="_blank") View Readme
+
+      +buttonRow(buttons, ['primary','primary' + (canUndo ? '' : ' disabled'),'secondary','secondary'])

@@ -3,6 +3,7 @@ const { access, tableFields, tooltips } = require('../config/users.cfg')
 const { guiAdapter } = require('../services/users.services')
 const { hasAccess } = require('../utils/users.utils')
 const { labels } = require('../services/form.services')
+const { getEnv, canUndo, settingsActions } = require('../services/settings.services')
 const { logList, logFile } = require('../services/log.services')
 const { getAllLevels } = require('../utils/log.utils')
 const urls = require('../../config/urls.cfg').gui.admin
@@ -29,6 +30,17 @@ exports.userTable = (req, res, next) => Users.get().then(guiAdapter).then((users
   })
 ).catch(next)
 
+// SETTINGS
+exports.settings = (req, res, next) =>
+  res.render('settings', {
+    title: 'Settings',
+    env: getEnv(),
+    canUndo: canUndo(),
+    buttons: Object.keys(settingsActions),
+    postURL: urls.prefix + urls.home + urls.form,
+    user: req.user && req.user.username,
+    isAdmin: req.user && hasAccess(req.user.access, access.admin),
+  })
 
 // LOGS
 const logBaseURL = urls.prefix + urls.logs
