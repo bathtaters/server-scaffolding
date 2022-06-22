@@ -15,7 +15,7 @@ module.exports = {
       `<a href="${license}" target="_blank">Copyright ${year(releaseYear, new Date().getFullYear())}</a> ${author} & contributors`,
     ].concat(repoLink ? `<a href="${repoLink}" target="_blank">Repository</a>` : []),
     short: [
-      `${title} v${version}`,
+      repoLink ? `<a href="${repoLink}" target="_blank">${title}</a> v${version}` : `${title} v${version}`,
       `<a href="${license}" target="_blank">© ${year(releaseYear, new Date().getFullYear())}</a> ${author}`,
     ]
   },
