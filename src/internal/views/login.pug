@@ -28,7 +28,7 @@ block content
             button.toggle-password.small(type="button")
 
           .button-group
-            input.button(type="submit" value=(isUser ? "Login" : "Create"))
+            input.primary(type="submit" value=(isUser ? "Login" : "Create"))
           
           if failureMessage.length
             .toast= failureMessage.join(', ')

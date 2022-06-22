@@ -15,7 +15,7 @@ mixin typedInp(key, inpType, limits, defaultValue, classes)
     if (inpType === 'password')
       button.toggle-password.small(type="button")
   else
-    textarea(name=key id=key class=classes rows=inpType)
+    textarea(name=key id=key class=classes rows=inpType)= defaultValue
 
 mixin formInput(key, inpType, limits, defaultValue, label, classes, tooltip)
   if inpType === 'hidden'
@@ -40,7 +40,11 @@ mixin buttonInput(key, inpType, button, limits, defaultValue, label, tooltip, bu
       +typedInp(key, inpType, limits, defaultValue)
       input.button(type='button' name=buttonKey id=buttonKey+button value=button)
 
-mixin buttonRow(buttons, key = 'action', buttonType = 'submit')
+mixin buttonRow(buttons, classes = [], key = 'action', buttonType = 'submit')
   .row.button-group
-    each action in buttons
-      input.inverse.large(type=buttonType name=key id=key+action value=action)
+    each action, idx in buttons
+      input.large(
+        type=buttonType name=key id=key+action value=action
+        class=((classes[idx] && classes[idx].replace('disabled','').trim()) || 'inverse')
+        disabled=(!!classes[idx] && classes[idx].includes('disabled'))
+      )
