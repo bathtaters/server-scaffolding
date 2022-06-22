@@ -29,8 +29,15 @@ block content
                   span.log-label= line.label
                 span.log-msg= line.message
               .row.log-stack.responsive-padding #{line.stack}
+          else if line.message.length > 128
+            details.col-sm
+              if line.label
+                summary.log-label= line.label
+              else
+                summary= line.message.slice(0,48) + '...'
+              .row.log-msg.responsive-padding= line.message
           else
             .col-sm
               if line.label
                 span.log-label= line.label
-              span= line.message
+              span.log-msg= line.message
