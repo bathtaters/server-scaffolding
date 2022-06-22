@@ -22,12 +22,20 @@ td { overflow-wrap: anywhere; }
 /* Fix lone card styling */
 .card.center { margin: auto; }
 
+/* Remove form styling */
+form.plain, .card.plain {
+  background: none;
+  border: 0;
+}
+form.plain fieldset { background: var(--form-back-color); }
+
 /* Fix button styling */
 button, .button, [role="button"],
 [type="button"], [type="submit"], [type="reset"] {
   text-align: center;
 }
 .button-group > .center { align-self: center; }
+.button-group { margin-top: 1em; margin-bottom: 1em; }
 
 /* Fix header alignment */
 header { display: flex; }

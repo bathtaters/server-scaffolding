@@ -6,8 +6,8 @@ block scripts
 block content
   .row
 
-    .card.large.col.center
-      form(action=postURL method="POST")
+    .card.large.col.center.plain
+      form.plain(action=postURL method="POST")
         fieldset
           legend= isUser ? "Login" : "Create Admin"
 

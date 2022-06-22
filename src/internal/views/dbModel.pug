@@ -6,7 +6,7 @@ block scripts
   script(src="/javascripts/model.client.js")
 
 block content
-  form#editForm(action=postURL method="POST")
+  form.plain#editForm(action=postURL method="POST")
     fieldset
       legend.row
         h2 Edit Table
