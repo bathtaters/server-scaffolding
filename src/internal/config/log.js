@@ -20,7 +20,7 @@ const logger = createLogger({
       ...getLogLevel(process.env.LOG_FILE, config, defaults.LOG_FILE),
       filename: logPath,
       datePattern: 'YYYY-MM-DD' + (config.files.splitHourly ? '.HH' : ''),
-      zippedArchive: true,
+      zippedArchive: false,
       maxSize: config.files.maxBytes || '20M',
       maxFiles: (config.files.maxDays || 14) + 'd',
       format: config.logFormat.file,
