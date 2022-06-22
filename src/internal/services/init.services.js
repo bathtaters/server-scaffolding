@@ -28,6 +28,8 @@ async function initializeServer(server) {
   }
   process.on('SIGINT',  handleClose)
   process.on('SIGTERM', handleClose)
+  process.on('SIGUSR1', terminateServer)
+  process.on('SIGUSR2', handleClose)
   process.on('uncaughtException',  handleError)
   process.on('unhandledRejection', handleError)
   
@@ -51,11 +53,15 @@ async function initializeServer(server) {
 
 
 async function terminateServer() {
+  if (!isClosing) logger.info(`Shutting down server`)
+
   if (teardown) await teardown()
 
   if (getDb()) await closeDb()
 
   logger.info(`${meta.name} services ended`)
+
+  if (!isClosing) process.exit()
 }
 
 
