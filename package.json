@@ -4,8 +4,9 @@
   "description": "Backend server with CRUD API, simple web GUI & built-in user management",
   "main": "./src/internal/server.js",
   "scripts": {
-    "start": "node ./src/internal/server.js",
-    "inspect": "node --inspect ./src/internal/server.js",
+    "start": "nodemon ./src/internal/server.js",
+    "start-no-mon": "node ./src/internal/server.js",
+    "inspect": "nodemon --inspect ./src/internal/server.js",
     "test": "jest ./src/"
   },
   "keywords": [],

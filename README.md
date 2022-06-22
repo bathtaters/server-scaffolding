@@ -3,17 +3,28 @@
 ***Express*** server built on ***SQLite3*** database w/ basic **CRUD** API, **web GUI** & **user management**.
 Includes ***Passport*** session authentication, ***Morgan*** console/file logging & ***pug*** view templating.
 
+---
+
+## Customizing
+
 ### Get Started
  1. Update `package.json` info (ie. `name`, `version`, `author`, `license`, `repository`)
  2. Create `.env` file _(see below guide)_
- 3. Run server & navigate to `[DOMAIN]/login/` in browser
- 4. Enter credentials to create an initial `ADMIN` user
- 5. Navigate to ***Users*** to manage users
+ 3. Run `npm -g i nodemon` _(if you don't have nodemon)_
+ 4. Run server `npm start` & navigate to `[DOMAIN]/login/` in browser
+ 5. Enter credentials to create an initial `ADMIN` user
+ 6. Navigate to ***Users*** to manage users
 
 ### Add a DB Model
  1. Copy `models/Base.js` as a starting point.
  2. Add entries in `config/models.cfg.js` to define schema/types, default values & limits for input validation.
  3. Add to `models/_all.js` to connect to API/GUI automtically.
+
+### Deploy to Production
+ 1. Recommend using pm2 to run
+ 2. Update `pm2.json` info (ie. `name`, `cwd`, `*_file`)
+ 3. Create production `.env`
+ 4. Run using `pm2 start pm2.json`
 
 ---
 
@@ -79,7 +90,6 @@ LOG_DIR=[<project-dir>/.logs]
 ---
 
 ### *TO DO:*
- - **Admin GUI:** Add log reader
  - **Admin GUI:** Allow changing .env vars / Restarting server
  - Add **unit testing** for utils/services
  - Add **endpoint testing** for API & GUI form/login routes
