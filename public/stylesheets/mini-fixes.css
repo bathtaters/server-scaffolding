@@ -37,9 +37,28 @@ button, .button, [role="button"],
 .button-group > .center { align-self: center; }
 .button-group { margin-top: 1em; margin-bottom: 1em; }
 
+/* Fix disabled buttons */
+input[type="button"]:disabled:hover, input[type="submit"]:disabled:hover,
+input[type="reset"]:disabled:hover, button:disabled:hover,
+a.button:not([href]):hover, a.button[disabled]:hover {
+  background-color: var(--button-back-color);
+  background: var(--button-back-color);
+}
+input[type="button"]:disabled, input[type="submit"]:disabled,
+input[type="reset"]:disabled, button:disabled,
+a.button:not([href]), a.button[disabled] {
+  background-color: var(--button-back-color);
+  background: var(--button-back-color);
+  opacity: 0.5;
+}
+
 /* Fix header alignment */
 header { display: flex; }
 header > .spacer { flex-grow: 1; }
+
+/* Fix row alignment */
+.row.center { justify-content: center; }
+.row > .center { align-self: center; }
 
 /* Fix footer styling */
 footer > .row {
