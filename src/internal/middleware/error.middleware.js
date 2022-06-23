@@ -7,7 +7,7 @@ const { varName } = require('../utils/gui.utils')
 const defaultError = errors.unknown()
 
 // Error string formatting
-const getName = (err) => err.name || (err.status && err.status in httpErrs ? httpErrs[err.status] : 'Error')
+const getName = (err) => err.name    || (err.status && err.status in httpErrs ? httpErrs[err.status].name : 'Error')
 const getMsg  = (err) => err.message || defaultError.message
 const getCode = (err) => err.status  || defaultError.status
 const formatErr = (err) => err.stack || `${err.name} <${err.status}>: ${err.message}`
