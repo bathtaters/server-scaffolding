@@ -2,6 +2,7 @@ const { parse } = require('dotenv')
 const { exec } = require('child_process')
 const { writeFile } = require('fs/promises')
 const { getEnvVars, stringifyEnv } = require('../utils/settings.utils')
+const { deepUnescape } = require('../utils/validate.utils')
 const { defaults } = require('../config/env.cfg')
 const { noUndo } = require('../config/errors.internal')
 const { envPath } = require('../../config/meta')
@@ -18,7 +19,7 @@ exports.canUndo = () => envHistory.length > 1
 
 exports.settingsActions = {
   Update:  (text) => {
-    const envObj = parse(text)
+    const envObj = parse(deepUnescape(text))
     envHistory.push(envObj)
     return writeCurrent()
   },

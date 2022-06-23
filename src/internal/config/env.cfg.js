@@ -6,6 +6,7 @@ const updateRootPath = (rootPath) => {
 module.exports = {
   updateRootPath,
   restartTimeout: 3,
+  maxCharCount: 1024,
 
   defaults: {
     NODE_ENV: 'development',
