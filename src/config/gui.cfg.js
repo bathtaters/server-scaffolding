@@ -7,6 +7,10 @@ const year = (startYear, endYear) => startYear >= endYear ? endYear : `${startYe
 
 module.exports = {
   title,
+  pageOptions: {
+    defaultSize: 100,
+    sizeList: [5, 10, 25, 50, 100],
+  },
 
   // GUI Footer text
   footer: {

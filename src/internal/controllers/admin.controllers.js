@@ -7,6 +7,7 @@ const { getEnv, canUndo, settingsActions } = require('../services/settings.servi
 const { logList, logFile } = require('../services/log.services')
 const { getAllLevels } = require('../utils/log.utils')
 const urls = require('../../config/urls.cfg').gui.admin
+const { pageOptions } = require('../../config/gui.cfg')
 const { colors } = require('../config/log.cfg')
 
 // USER TABLE
@@ -21,10 +22,11 @@ const staticUserParams = {
   defaults: Users.defaults || {},
   postURL: urls.prefix + urls.user + urls.form,
 }
-exports.userTable = (req, res, next) => Users.get().then(guiAdapter).then((users) => 
+exports.userTable = (req, res, next) => Users.getPaginationData(req.query, pageOptions).then(({ data, ...pageData }) => 
   res.render('users', {
     ...staticUserParams,
-    users,
+    ...pageData,
+    users: guiAdapter(data),
     user: req.user && req.user.username,
     isAdmin: req.user && hasAccess(req.user.access, access.admin),
   })

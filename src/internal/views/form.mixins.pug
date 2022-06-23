@@ -48,3 +48,31 @@ mixin buttonRow(buttons, classes = [], key = 'action', buttonType = 'submit')
         class=((classes[idx] && classes[idx].replace('disabled','').trim()) || 'inverse')
         disabled=(!!classes[idx] && classes[idx].includes('disabled'))
       )
+
+mixin pageData(page, size, id = 'queryString', pageKey = 'page', sizeKey = 'size')
+  - var qryStr = `?${pageKey}=${page}&${sizeKey}=${size}`
+  +formInput(id, 'hidden', null, qryStr)
+
+mixin pageNav(page, size, total, sizes, prev = '<', next = '>', pageKey = 'page', sizeKey = 'size')
+  .row.center
+
+    if (total > 1)
+      .col.row.center
+        if prev
+          a.button(href=(page > 1 && `?${pageKey}=${page - 1}&${sizeKey}=${size}`) disabled=(page < 2))= prev
+
+        -var p = 0
+        while p++ < total
+          a.button.solid(href=(p !== page && `?${pageKey}=${p}&${sizeKey}=${size}`) disabled=(p === page) class=(p === page ? 'inverse' : ''))= p
+
+        if next
+          a.button(href=(page < total && `?${pageKey}=${page + 1}&${sizeKey}=${size}`) disabled=(page >= total))= next
+
+    if (total > 1 && sizes && sizes.length > 1)
+      .marginX
+
+    if (sizes && sizes.length > 1)
+      .col.row
+        .col.center.marginX Page size:
+        each opt in sizes
+          a.button.solid(href=(size !== opt && `?${pageKey}=1&${sizeKey}=${opt}`) disabled=(size === opt) class=(size === opt ? 'inverse' : ''))= opt

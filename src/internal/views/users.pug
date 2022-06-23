@@ -23,6 +23,7 @@ block content
           +checkboxes('access', accessLevels, tableFields.access)
           span#primary-key
             +formInput(idKey, 'hidden')
+          +pageData(page, size)
 
       .row: .col-sm
         +formInput('cors', '2', limits.cors, defaults.cors, tableFields.cors, '', tooltips.cors)
@@ -44,3 +45,5 @@ block content
           each val, key in tableFields
             -var rowCls = key !== 'cors' ? '' : user.regExCors ? 'cors-regex' : user.arrayCors ? 'cors-array' : ''
             td(data-label=val data-key=key class=rowCls)= user[key]
+
+  +pageNav(page, size, pageCount, sizes)

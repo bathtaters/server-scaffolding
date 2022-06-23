@@ -22,6 +22,7 @@ module.exports = {
   noData: (missingField) => createError(400, `No ${missingField || 'data'} provided.`),
   noEntry: (id) => createError(400, `No entry exists at ID ${id || ''}.`),
   noAdd: () => createError(502, "New entry was not created."),
+  noSize: () => createError(400, "Invalid page size for paginated request."),
   
   // Authentication Errors
   noToken: () => createError(401, "Missing bearer token or incorrect format."),

@@ -7,6 +7,9 @@ exports.extractId = (data, idKey) => {
   return [id, data]
 }
 
+const sortAlgo = (a,b) => a - b
+exports.appendAndSort = (array, value) => array.includes(value) ? array.slice().sort(sortAlgo) : array.concat(value).sort(sortAlgo)
+
 exports.sanitizeSchemaData = (data, schema=null) => Object.keys(data).reduce((obj,key) =>
   !schema || Object.keys(schema).includes(key) ? Object.assign(obj, { [key]: data[key] }) : obj
 , {})

@@ -5,6 +5,7 @@ const { guiAdapter } = require('../services/users.services')
 const { hasAccess } = require('../utils/users.utils')
 const { labels } = require('../services/form.services')
 const errors = require('../config/errors.internal')
+const { pageOptions } = require('../../config/gui.cfg')
 const urls = require('../../config/urls.cfg').gui.basic
 
 const models = require('../../models/_all').map(({title}) => title)
@@ -28,12 +29,13 @@ exports.modelDb = (Model, view = 'dbModel') => {
     limits: Model.limits || {},
     defaults: Model.defaults || {},
   }
-  return (req, res, next) => Model.get().then((data) => 
+
+  return (req, res, next) => Model.getPaginationData(req.query, pageOptions).then((pageData) => 
     res.render(view, {
       ...staticDbParams,
+      ...pageData,
       user: req.user && req.user.username,
       isAdmin: req.user && hasAccess(req.user.access, access.admin),
-      data,
     })
   ).catch(next)
 }

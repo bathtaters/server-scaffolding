@@ -45,5 +45,6 @@ button.toggle-password.small {
 /* Additional generic styling */
 .align-self-center { align-self: center;  }
 .dim { opacity: 0.6;}
+.solid { opacity: 1.0 !important; }
 .small { font-size: 0.9em; font-weight: 300; }
 .marginX { margin-left: 1em; margin-right: 1em; }

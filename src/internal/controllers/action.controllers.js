@@ -20,7 +20,7 @@ exports.form = function getFormController(Model, { redirectURL = '', formatData 
   const formActions = modelActions(Model)
 
   return (req,res,next) => {
-    let { action, ...formData } = filterFormData(req.body)
+    let { action, queryString, ...formData } = filterFormData(req.body)
 
     if (!action || !Object.keys(formActions).includes(action))
       return next(errors.badAction(action))
@@ -29,7 +29,7 @@ exports.form = function getFormController(Model, { redirectURL = '', formatData 
     catch (err) { return next(err) }
 
     return formActions[action](formData)
-      .then(() => res.redirect(redirectURL || `${urls.basic.prefix}${urls.basic.home}/${Model.title}`))
+      .then(() => res.redirect(redirectURL + (queryString || '') || `${urls.basic.prefix}${urls.basic.home}/${Model.title}${queryString || ''}`))
       .catch(next)
   }
 }
@@ -54,7 +54,7 @@ const restartParams = (req) => ({
 })
 
 exports.settingsForm = (req,res,next) => {
-  const { action, env } = req.body
+  const { action, queryString, env } = req.body
   if (!action || !Object.keys(settingsActions).includes(action)) return next(errors.badAction(action))
 
   if (action.toLowerCase() === 'update' && !env) return next(errors.noData('.ENV data'))
@@ -62,6 +62,6 @@ exports.settingsForm = (req,res,next) => {
   return settingsActions[action](env)
     .then((delay) => delay ?
       res.render('delay', restartParams(req)) :
-      res.redirect(`${urls.admin.prefix}${urls.admin.home}`)
+      res.redirect(`${urls.admin.prefix}${urls.admin.home}${queryString || ''}`)
     ).catch(next)
 }

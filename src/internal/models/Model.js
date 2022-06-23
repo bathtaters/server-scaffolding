@@ -1,6 +1,6 @@
 const { openDb, getDb } = require('../config/db')
 const services = require('../services/db.services')
-const { sanitizeSchemaData, schemaFromValidate } = require('../utils/db.utils')
+const { sanitizeSchemaData, schemaFromValidate, appendAndSort } = require('../utils/db.utils')
 const { defaults: validateDefaults, limits: validateLimits } = require('../../config/models.cfg')
 const { hasDupes } = require('../utils/common.utils')
 const errors = require('../config/errors.internal')
@@ -35,6 +35,12 @@ class Model {
   get(id = null, idKey = null) {
     if (id == null) return services.all(getDb(), `SELECT * FROM ${this.title}`)
     return services.get(getDb(), `SELECT * FROM ${this.title} WHERE ${idKey || this.primaryId} = ?`, [id])
+  }
+
+  getPage(page, size, reverse = null, orderKey = null) {
+    if (!size) return Promise.reject(errors.noSize())
+    const sort = reverse == null && !orderKey ? '' : `ORDER BY ${orderKey || this.primaryId} ${reverse ? 'DESC' : 'ASC'} `
+    return services.all(getDb(), `SELECT * FROM ${this.title} ${sort}LIMIT ${size} OFFSET ${(page - 1) * size}`)
   }
 
   count(id = null, idKey = null) {
@@ -87,6 +93,22 @@ class Model {
   }
 
   custom(sql, params) { return services.all(getDb(), sql, params) }
+
+  async getPaginationData({ page, size }, { defaultSize = 5, minSize, sizeList = [], startPage = 1 } = {}) {
+    const total = await this.count()
+    
+    size = +(size || defaultSize)
+    const pageCount = Math.ceil(total / size)
+    page = Math.max(1, Math.min(+(page || startPage), pageCount))
+    if (typeof minSize !== 'number') minSize = Math.min(...sizeList)
+  
+    const data = await this.getPage(page, size)
+  
+    return {
+      data, page, pageCount, size,
+      sizes: (pageCount > 1 || total > minSize) && appendAndSort(sizeList, size),
+    }
+  }
 }
 
 module.exports = Model
