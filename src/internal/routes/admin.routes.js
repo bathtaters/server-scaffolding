@@ -8,7 +8,7 @@ const { admin, root } = require('../../config/urls.cfg').gui
 
 router.use(checkAuth(root.login, access.admin))
 
-router.get( admin.user,                             controllers.userTable)
+router.get( admin.user,             validate.page,  controllers.userTable)
 router.post(admin.user+admin.form,  validate.form,  actions.adminForm)
 router.post(admin.user+admin.token, validate.token, actions.regenToken)
 

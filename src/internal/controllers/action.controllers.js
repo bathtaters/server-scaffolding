@@ -4,6 +4,7 @@ const { modelActions, filterFormData } = require('../services/form.services')
 const { settingsActions } = require('../services/settings.services')
 const { login, logout } = require('../middleware/auth.middleware')
 const { hasAccess } = require('../utils/users.utils')
+const { deepUnescape } = require('../utils/validate.utils')
 const { access } = require('../config/users.cfg')
 const { restartTimeout } = require('../config/env.cfg')
 const errors = require('../config/errors.internal')
@@ -28,8 +29,9 @@ exports.form = function getFormController(Model, { redirectURL = '', formatData 
     try { formData = formatData(formData, action, req.user) || formData }
     catch (err) { return next(err) }
 
+    const urlSuffix = queryString ? deepUnescape(queryString) : ''
     return formActions[action](formData)
-      .then(() => res.redirect(redirectURL + (queryString || '') || `${urls.basic.prefix}${urls.basic.home}/${Model.title}${queryString || ''}`))
+      .then(() => res.redirect((redirectURL || `${urls.basic.prefix}${urls.basic.home}/${Model.title}`) + urlSuffix))
       .catch(next)
   }
 }
@@ -62,6 +64,6 @@ exports.settingsForm = (req,res,next) => {
   return settingsActions[action](env)
     .then((delay) => delay ?
       res.render('delay', restartParams(req)) :
-      res.redirect(`${urls.admin.prefix}${urls.admin.home}${queryString || ''}`)
+      res.redirect(`${urls.admin.prefix}${urls.admin.home}${queryString ? deepUnescape(queryString) : ''}`)
     ).catch(next)
 }

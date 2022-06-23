@@ -14,7 +14,7 @@ router.get( basic.user,                           controllers.userProfile)
 router.post(basic.user+basic.form, validate.form, actions.userForm)
 
 models.forEach((Model) => {
-  router.get( `${basic.home}/${Model.title}`,                                    controllers.modelDb(Model))
+  router.get( `${basic.home}/${Model.title}`,              validate.page,        controllers.modelDb(Model))
   router.post(`${basic.home}/${Model.title}${basic.form}`, validate.all(Model),  actions.form(Model))
   router.post(`${basic.home}/${Model.title}${basic.swap}`, validate.swap(Model), actions.swap(Model))
 })
