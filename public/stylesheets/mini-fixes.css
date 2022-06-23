@@ -15,6 +15,7 @@ html, body {
 table:not(.horizontal) thead, table:not(.horizontal) tbody {
   max-width: 99%;
 }
+table:not(.horizontal) { max-height: 424px; }
 table:not(.horizontal) thead { position: sticky; }
 tr.tableRow { cursor: pointer; }
 td { overflow-wrap: anywhere; }
