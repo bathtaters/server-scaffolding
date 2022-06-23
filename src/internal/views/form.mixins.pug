@@ -50,8 +50,9 @@ mixin buttonRow(buttons, classes = [], key = 'action', buttonType = 'submit')
       )
 
 mixin pageData(page, size, id = 'queryString', pageKey = 'page', sizeKey = 'size')
-  - var qryStr = `?${pageKey}=${page}&${sizeKey}=${size}`
-  +formInput(id, 'hidden', null, qryStr)
+  if (page || size)
+    - var qryStr = `?${pageKey}=${page || 1}` + (size ? `&${sizeKey}=${size}` : '')
+    +formInput(id, 'hidden', null, qryStr)
 
 mixin pageNav(page, size, total, sizes, prev = '<', next = '>', pageKey = 'page', sizeKey = 'size')
   .row.center
