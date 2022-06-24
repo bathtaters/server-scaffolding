@@ -1,6 +1,7 @@
 // Spies & Imports
 const checkValidation = require('../../middleware/validate.middleware')
 const services = require('../../services/validate.services')
+const schemaGetSpy = jest.spyOn(services,   'getSchema')
 const schemaCfgSpy = jest.spyOn(services,   'getSchemaFromCfg')
 
 const shared = require('../../validators/shared.validators')
@@ -57,7 +58,7 @@ describe('byRoute', () => {
   })
 
   it('passes each key to getSchemaFromCfg', () => {
-    shared.byRoute('routeA')(['a'],['a','b'],'opt',false)
+    shared.byRoute('routeA')(['a'],['a','b'],'opt')
     expect(schemaCfgSpy).toHaveBeenNthCalledWith(1, 
       expect.anything(),
       'a',
@@ -153,5 +154,28 @@ describe('byRoute', () => {
   it('results are renamed using input object keys', () => {
     expect(shared.byRoute('routeB')({ c1: 'c', c2: 'c' },{ c3: 'c', d: 'd' },'opt'))
       .toEqual([{ c1: true, c2: true, c3: true, d: true }, checkValidation])
+  })
+
+  it('gets additional validation', () => {
+    schemaGetSpy.mockImplementationOnce((key,_,__,isIn)=>({ [key]: { in: isIn } }))
+    schemaGetSpy.mockImplementationOnce((key,_,__,isIn)=>({ [key]: { in: isIn } }))
+    expect(shared.byRoute('routeA')([],[],'o',[{ key: 'c', isIn: 'X' }, { key: 'a', isIn: 'X' }]))
+      .toEqual([{ a: { in: ['X'] }, c: { in: ['X'] } }, checkValidation])
+  })
+
+  it('merges additional validation to exisiting', () => {
+    schemaGetSpy.mockImplementationOnce((key,x,y,isIn)=>({ [key]: { in: isIn } }))
+    schemaCfgSpy.mockImplementationOnce((_,key,isIn)=>({ [key]: { in: isIn } }))
+    expect(shared.byRoute('routeA')([],['a'],'opt',[{ key: 'c', isIn: 'X' }, { key: 'a', isIn: 'X' }]))
+      .toEqual([{ a: { in: ['body', 'X'] }, c: { in: ['X'] } }, checkValidation])
+  })
+})
+
+describe('additionalOnly', () => {
+  it('gets additional validation', () => {
+    schemaGetSpy.mockImplementationOnce((key,_,__,isIn)=>({ [key]: { in: isIn } }))
+    schemaGetSpy.mockImplementationOnce((key,_,__,isIn)=>({ [key]: { in: isIn } }))
+    expect(shared.additionalOnly([{ key: 'c', isIn: 'X' }, { key: 'a', isIn: 'X' }]))
+      .toEqual([{ a: { in: ['X'] }, c: { in: ['X'] } }, checkValidation])
   })
 })

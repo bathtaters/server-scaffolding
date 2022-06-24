@@ -1,22 +1,24 @@
 const { checkSchema } = require('express-validator')
-const logger = require('../config/log')
 const checkValidation = require('../middleware/validate.middleware')
-const { getSchemaFromCfg } = require('../services/validate.services')
+const { getSchemaFromCfg, getSchema } = require('../services/validate.services')
 const { filterDupes } = require('../utils/common.utils')
 const validCfg = require('../../config/models.cfg')
+const logger = require('../config/log')
 
 // Validate by config/validation[route]
 //  params/body are [...keys]|{ inKey: validKey }|'all'|falsy
 //  optionalBody = make all body keys optional, unless body key is in params
+//  additional = [{ key: 'name', typeStr: 'int?', in: ['body','params',etc], limits: { min, max, etc } }, ...]
 //  also removes any keys in params from body
-exports.byRoute = (route) => (params, body = [], optionalBody = false) => 
-  checkSchema(getSchemaAdapter(route, { params, body }, optionalBody))
+exports.byRoute = (route) => (params, body = [], optionalBody = false, additional) => 
+  checkSchema(getSchemaAdapter(route, { params, body }, optionalBody, additional))
     .concat(checkValidation)
-  
+
+exports.additionalOnly = (additional) => checkSchema(appendAdditional({}, additional)).concat(checkValidation)
 
 
 // HELPER -- Retrieve validation schema for route based on route & keys
-function getSchemaAdapter(route, keys, optionalBody) {
+function getSchemaAdapter(route, keys, optionalBody, additional) {
 
   // 'all' instead of key array will include validation for all entries
   Object.keys(keys).forEach(t => {
@@ -48,7 +50,7 @@ function getSchemaAdapter(route, keys, optionalBody) {
       getSchemaFromCfg(route, key, isIn, optionalBody)
     ),
   {})
-  if (!Object.keys(keysDict).length) return schema
+  if (!Object.keys(keysDict).length) return appendAdditional(schema, additional)
 
   // Re-Assign validation names based on input
   let renamedSchema = {}, missing = Object.keys(schema)
@@ -61,5 +63,24 @@ function getSchemaAdapter(route, keys, optionalBody) {
 
   // Copy any missed schema
   missing.forEach((key) => { renamedSchema[key] = schema[key] })
-  return renamedSchema
+  
+  // Append 'additional' schema
+  return appendAdditional(renamedSchema, additional)
+}
+
+// HELPER -- Build & Append additional validation to schema
+function appendAdditional(schema, additional) {
+  if (additional) additional.forEach(({ key, typeStr, isIn, limits }) => {
+    // Check 'isIn' value
+    if (!isIn) return logger.warn('Missing "isIn" from additional validator schema')
+    if (!Array.isArray(isIn)) isIn = [isIn]
+
+    // If key already exists, just add missing 'in' values
+    if (key in schema) return isIn.forEach((entry) => schema[key].in.includes(entry) || schema[key].in.push(entry))
+
+    // Append to schema
+    Object.entries(getSchema(key, typeStr, limits, isIn)).forEach(([key,val]) => schema[key] = val)
+  })
+
+  return schema
 }
