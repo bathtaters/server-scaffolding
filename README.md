@@ -90,12 +90,13 @@ LOG_DIR=[<project-dir>/.logs]
 ---
 
 ### *TO DO:*
- - **Admin GUI:** Allow changing .env vars / Restarting server
+ - **Search GUI** (shared.validators + validate.services testing)
+ - Add **accordion styling** to log Errors
+ - Add **tooltip** to Search mode checkbox
+ - Allow **restricting** user access by **model** _(create 'modelList' = [] & 'modelAllowList' = false for each user)_
  - Add **unit testing** for utils/services
  - Add **endpoint testing** for API & GUI form/login routes
- - Add **pagination** for models (& user table) w/ settable page size
- - Allow **searching** for models (& user table) by field (Add 'Search' button)
- - Allow **restricting** user access by **model**
+ - Test deploying w/ **pm2** _(Does Restart Server still work?)_
 
 ---
 
