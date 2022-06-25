@@ -16,26 +16,23 @@ block content
       input.bordered.filter-level(type="button" class=(colors[level] || '') value=level)
 
   pre.container.log
-    each line in log
+    each line, idx in log
       if line
         .row.line.responsive-padding(class=`level-${line.level}`)
           .col-sm-3.hidden-sm.log-time= line.timestamp.full
           .col-sm-2.hidden.visible-sm.log-time= line.timestamp.short
           .col-sm-1.log-level(class=(colors[line.level] || ''))= line.level === 'error' ? 'err' : line.level.slice(0,4)
-          if line.stack
+          if line.stack || line.message.length > 128
             details.col-sm
               summary
                 if line.label
                   span.log-label= line.label
-                span.log-msg= line.message
-              .row.log-stack.responsive-padding #{line.stack}
-          else if line.message.length > 128
-            details.col-sm
-              if line.label
-                summary.log-label= line.label
-              else
-                summary= line.message.slice(0,48) + '...'
-              .row.log-msg.responsive-padding= line.message
+                if line.message.length > 128
+                  if !line.label
+                    span.log-msg= line.message.slice(0,48) + '...'
+                else
+                  span.log-msg= line.message
+              .row.responsive-padding(class=(line.stack ? 'log-stack' : 'log-msg'))= line.stack || line.message
           else
             .col-sm
               if line.label
