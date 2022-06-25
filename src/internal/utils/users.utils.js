@@ -79,4 +79,4 @@ exports.displayCors = (cors) => {
   return cors
 }
 
-exports.isRegEx = regEx.canString
+exports.isRegEx = (re) => re && regEx.canString(re)
