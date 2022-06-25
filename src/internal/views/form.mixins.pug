@@ -2,7 +2,8 @@ mixin typedInp(key, inpType, limits, defaultValue, classes)
   if isNaN(inpType)
     input(
       name=key id=key class=classes readonly=(inpType === 'readonly')
-      value=defaultValue
+      value=(inpType !== 'checkbox' ? defaultValue : undefined)
+      checked=(inpType === 'checkbox' ? defaultValue : undefined)
       type=(inpType === 'id' ? "number" : inpType === 'readonly' ? "text" : inpType)
       step=(inpType === 'number' ? "any" : inpType === 'id' ? "1" : undefined)
       pattern=(inpType === 'number' || inpType === 'id' ? "\\d+" : undefined)
@@ -20,6 +21,10 @@ mixin typedInp(key, inpType, limits, defaultValue, classes)
 mixin formInput(key, inpType, limits, defaultValue, label, classes, tooltip)
   if inpType === 'hidden'
     +typedInp(key, inpType, null, defaultValue, "hidden")
+  else if inpType === 'checkbox'
+    .input-group
+      +typedInp(key, inpType, limits, !!defaultValue, classes)
+      label(for=key aria-label=tooltip class=(tooltip ? 'tooltip' : ''))= label || varName(key)
   else
     .input-group.vertical
       label(for=key aria-label=tooltip class=(tooltip ? 'tooltip' : ''))= label || varName(key)
@@ -40,13 +45,14 @@ mixin buttonInput(key, inpType, button, limits, defaultValue, label, tooltip, bu
       +typedInp(key, inpType, limits, defaultValue)
       input.button(type='button' name=buttonKey id=buttonKey+button value=button)
 
-mixin buttonRow(buttons, classes = [], key = 'action', buttonType = 'submit')
+mixin buttonRow(buttons, classes = [], urls = [], key = 'action', buttonType = 'submit')
   .row.button-group
     each action, idx in buttons
       input.large(
         type=buttonType name=key id=key+action value=action
         class=((classes[idx] && classes[idx].replace('disabled','').trim()) || 'inverse')
         disabled=(!!classes[idx] && classes[idx].includes('disabled'))
+        formaction=(urls[idx])
       )
 
 mixin pageData(page, size, id = 'queryString', pageKey = 'page', sizeKey = 'size')
