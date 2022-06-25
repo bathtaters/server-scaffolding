@@ -1,49 +1,28 @@
-extends container
-
-include form.mixins.pug
+extends modelBase
 
 block scripts
   script(src="/javascripts/users.client.js")
   script(src="/javascripts/togglePassword.js")
 
-block content
-  form.plain#editForm(action=postURL method="POST")
-    fieldset
-      legend.row
-        h2 Edit User
-        input.small.button.button-group#clearForm(type="reset" value="Clear")
+block form
+  .row
+    .col-sm
+      each val, key in { username: 'text', password: 'password', confirm: 'password' }
+        +formInput(key, val, limits[key], defaults[key], tableFields[key], '', tooltips[key])
+    
+    .col-sm
+      +buttonInput('token', 'readonly', 'Regen', limits.token, defaults.token, tableFields.token, tooltips.token)
+      +checkboxes('access', accessLevels, tableFields.access)
+      span#primary-key
+        +formInput(idKey, 'hidden')
+      +pageData(page, size)
 
-      .row
-        .col-sm
-          each val, key in { username: 'text', password: 'password', confirm: 'password' }
-            +formInput(key, val, limits[key], defaults[key], tableFields[key], '', tooltips[key])
-        
-        .col-sm
-          +buttonInput('token', 'readonly', 'Regen', limits.token, defaults.token, tableFields.token, tooltips.token)
-          +checkboxes('access', accessLevels, tableFields.access)
-          span#primary-key
-            +formInput(idKey, 'hidden')
-          +pageData(page, size)
+  .row: .col-sm
+    +formInput('cors', '2', limits.cors, defaults.cors, tableFields.cors, '', tooltips.cors)
 
-      .row: .col-sm
-        +formInput('cors', '2', limits.cors, defaults.cors, tableFields.cors, '', tooltips.cors)
-
-      +buttonRow(buttons, ['primary','primary','secondary','secondary'])
-      
-        
-  hr
-
-  table.striped.hoverable
-    caption User Table
-    thead
-      tr
-        each val in tableFields
-          th= val
-    tbody
-      each user in users
-        tr.tableRow(data-key=idKey data-val=user[idKey])
-          each val, key in tableFields
-            -var rowCls = key !== 'cors' ? '' : user.regExCors ? 'cors-regex' : user.arrayCors ? 'cors-array' : ''
-            td(data-label=val data-key=key class=rowCls)= user[key]
-
-  +pageNav(page, size, pageCount, sizes)
+block table
+  each user in data
+    tr.tableRow(data-key=idKey data-val=user[idKey])
+      each val, key in tableFields
+        -var rowCls = key !== 'cors' ? '' : user.regExCors ? 'cors-regex' : user.arrayCors ? 'cors-array' : ''
+        td(data-label=val data-key=key class=rowCls)= user[key]

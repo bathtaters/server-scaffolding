@@ -1,0 +1,46 @@
+extends container
+
+include form.mixins.pug
+
+block scripts
+  script(src="/javascripts/model.client.js")
+
+block content
+  if searchData
+    .row
+      h2.col Search Terms
+      a.col(href=(baseURL || '.')) Clear Results
+    .row
+      each val, key in searchData
+        if key in tableFields
+          .col.marginX
+            b= tableFields[key] + ': '
+            span= val
+
+  form.plain#editForm(action=postURL method="POST")
+    fieldset
+      legend.row
+        h2 Edit Table
+        input.small.button.button-group#clearForm(type="reset" value="Clear")
+        .small
+          +formInput('searchMode', 'checkbox', null, searchData, 'Search')
+
+      block form
+
+      +buttonRow(buttons, ['primary','tertiary','tertiary','secondary','secondary'], submitURLs)
+        
+  hr
+
+  table.striped.hoverable
+    caption= title + (searchData ? ` Results (${data.length})` : " Table")
+    thead
+      tr
+        each val in tableFields
+          th= val
+    tbody
+      if !data.length
+        tr.dim: td.center: i - Empty -
+      block table
+
+  if !searchData
+    +pageNav(page, size, pageCount, sizes)

@@ -1,43 +1,22 @@
-extends container
+extends modelBase
 
-include form.mixins.pug
+block form
+  .row
+    .col-sm#primary-key
+      +formInput(idKey, 'readonly', limits[idKey], defaults[idKey], tableFields[idKey], 'button-group')
+    .col-sm
+      +buttonInput('swapId', 'id', 'Swap', limits[idKey], defaults[idKey])
+      if !searchData
+        +pageData(page, size)
 
-block scripts
-  script(src="/javascripts/model.client.js")
+  .row
+    each val, key in schema
+      .col-sm
+        +formInput(key, val, limits[key], defaults[key], tableFields[key])
 
-block content
-  form.plain#editForm(action=postURL method="POST")
-    fieldset
-      legend.row
-        h2 Edit Table
-        input.small.button.button-group#clearForm(type="reset" value="Clear")
 
-      .row
-        .col-sm#primary-key
-          +formInput(idKey, 'readonly', limits[idKey], defaults[idKey], tableFields[idKey], 'button-group')
-          +pageData(page, size)
-        .col-sm
-          +buttonInput('swapId', 'id', 'Swap', limits[idKey], defaults[idKey])
-
-      .row
-        each val, key in schema
-          .col-sm
-            +formInput(key, val, limits[key], defaults[key], tableFields[key])
-
-      +buttonRow(buttons, ['primary','primary','secondary','secondary'])
-        
-  hr
-
-  table.striped.hoverable
-    caption= title + " Table"
-    thead
-      tr
-        each val in tableFields
-          th= val
-    tbody
-      each entry in data
-        tr.tableRow
-          each val, key in tableFields
-            td(data-label=val data-key=key)= entry[key.toLowerCase()]
-
-  +pageNav(page, size, pageCount, sizes)
+block table
+  each entry in data
+    tr.tableRow
+      each val, key in tableFields
+        td(data-label=val data-key=key)= entry[key.toLowerCase()]
