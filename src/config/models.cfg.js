@@ -42,7 +42,7 @@ module.exports = {
       data: { min: 0, max: 1000 },
     },
     test: {
-      name: { min: 0, max: 100 },
+      name: { min: 2, max: 100 },
       number: { min: -999, max: 999 },
       comment: { min: 0, max: 1000 },
     },
