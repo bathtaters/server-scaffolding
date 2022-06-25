@@ -1,36 +1,25 @@
 const Users = require('../models/Users')
+const { modelDb } = require('./gui.controllers')
 const { access, tableFields, tooltips } = require('../config/users.cfg')
 const { guiAdapter } = require('../services/users.services')
 const { hasAccess } = require('../utils/users.utils')
-const { labels } = require('../services/form.services')
 const { getEnv, canUndo, settingsActions } = require('../services/settings.services')
 const { logList, logFile } = require('../services/log.services')
 const { getAllLevels } = require('../utils/log.utils')
 const urls = require('../../config/urls.cfg').gui.admin
-const { pageOptions } = require('../../config/gui.cfg')
 const { colors } = require('../config/log.cfg')
 
 // USER TABLE
-const staticUserParams = {
+exports.userTable = modelDb(Users, { view: 'users', formatData: guiAdapter, overrideDbParams: {
   title: 'Users',
   tooltips,
   tableFields,
-  idKey: Users.primaryId,
-  buttons: labels,
+  schema: [],
   accessLevels: Object.keys(access),
-  limits: Users.limits || {},
-  defaults: Users.defaults || {},
+  baseURL: urls.prefix + urls.user,
   postURL: urls.prefix + urls.user + urls.form,
-}
-exports.userTable = (req, res, next) => Users.getPaginationData(req.query, pageOptions).then(({ data, ...pageData }) => 
-  res.render('users', {
-    ...staticUserParams,
-    ...pageData,
-    users: guiAdapter(data),
-    user: req.user && req.user.username,
-    isAdmin: req.user && hasAccess(req.user.access, access.admin),
-  })
-).catch(next)
+  submitURLs: [urls.prefix + urls.user + urls.form + urls.find],
+}})
 
 // SETTINGS
 exports.settings = (req, res, next) =>

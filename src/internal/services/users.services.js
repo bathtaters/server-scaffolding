@@ -34,18 +34,24 @@ exports.addAdapter = ({
   username, access, password, cors
 })
 
-exports.guiAdapter = (user) => !user ? [] : Array.isArray(user) ? user.map(exports.guiAdapter) : ({
-  ...user,
-  access: accessArray(user.access).join('/'),
-  arrayCors: Array.isArray(user.cors),
-  regExCors: isRegEx(user.cors),
-  cors: displayCors(user.cors),
-  guiTime: user.guiTime ? new Date(user.guiTime).toLocaleString() : '-',
-  apiTime: user.apiTime ? new Date(user.apiTime).toLocaleString() : '-',
-})
+exports.guiAdapter = (user) => {
+  if (!user) return []
+  if (Array.isArray(user)) return user.map(exports.guiAdapter)
+
+  if ('access'  in user) user.access  = accessArray(user.access).join('/')
+  if ('guiTime' in user) user.guiTime = user.guiTime ? new Date(user.guiTime).toLocaleString() : '-'
+  if ('apiTime' in user) user.apiTime = user.apiTime ? new Date(user.apiTime).toLocaleString() : '-'
+
+  return 'cors'  in user ? ({
+    ...user,
+    cors: displayCors(user.cors),
+    regExCors: isRegEx(user.cors),
+    arrayCors: Array.isArray(user.cors),
+  }) : user
+}
 
 exports.preValidateAdapter = (formData) => {
-  if (formData.access && typeof formData.access === 'string') formData.access = [formData.access]
+  if (formData.access && typeof formData.access === 'string') formData.access = formData.access.split(',')
 }
 
 exports.schemaAdapter = (schema) => {
@@ -54,7 +60,7 @@ exports.schemaAdapter = (schema) => {
   return schema
 }
 
-exports.confirmPassword = (formData, action) => {
+exports.confirmPassword = (formData, _, action) => {
   if ((action === 'Add' || action === 'Update') && 'password' in formData) {
     if (!('confirm' in formData)) throw errors.noConfirm()
     if (formData.password !== formData.confirm) throw errors.badConfirm()
@@ -64,7 +70,7 @@ exports.confirmPassword = (formData, action) => {
   return formData
 }
 
-exports.guiFormAdapter = ({ id, username, password, confirm }, action, user) => {
+exports.guiFormAdapter = ({ id, username, password, confirm }, user, action) => {
   if (user.id !== id && !hasAccess(user.access, access.admin)) throw errors.modifyOther()
   return exports.confirmPassword({ id, username, password, confirm }, action)
 }

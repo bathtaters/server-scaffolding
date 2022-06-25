@@ -21,6 +21,7 @@ class Model {
     this.defaults = defaults != null ? defaults : validateDefaults[title]
     this.limits = limits != null ? limits : validateLimits[title]
     this.primaryId = primaryId
+    this.bitmapFields = []
 
     this.isInitialized = new Promise(async (res, rej) => {
       if (!getDb()) { await openDb() }
@@ -41,6 +42,30 @@ class Model {
     if (!size) return Promise.reject(errors.noSize())
     const sort = reverse == null && !orderKey ? '' : `ORDER BY ${orderKey || this.primaryId} ${reverse ? 'DESC' : 'ASC'} `
     return services.all(getDb(), `SELECT * FROM ${this.title} ${sort}LIMIT ${size} OFFSET ${(page - 1) * size}`)
+  }
+
+  find(matchData, partialMatch = false) {
+
+    matchData = sanitizeSchemaData(matchData, this.schema)
+    const searchData = Object.entries(matchData)
+    if (!searchData.length) return Promise.reject(errors.noData())
+
+    let text = [], params = []
+    searchData.forEach(([key,val]) => {
+      if (!partialMatch) {
+        text.push(`${key} = ?`);    params.push(val)
+        
+      } else if (this.bitmapFields.includes(key)) {
+        val = +val
+        text.push(`${key} ${val ? '&' : '='} ?`)
+        params.push(val)
+
+      } else {
+        text.push(`${key} LIKE ?`); params.push(`%${val}%`)
+      }
+    })
+
+    return services.all(getDb(), `SELECT * FROM ${this.title} WHERE ${text.join(' AND ')}`, params)
   }
 
   count(id = null, idKey = null) {

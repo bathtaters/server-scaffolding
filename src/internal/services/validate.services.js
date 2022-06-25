@@ -4,8 +4,11 @@ const errorText = require("../config/validate.messages")
 const { getTypeArray, dateOptions, escapedLength } = require('../utils/validate.utils')
 const errors = require('../config/errors.internal')
 
+// Obscure 'min' field (For allowing partial validation on searches) from limit
+const hidingMin = ({ min, ...other }) => other
+
 // Generate Schema object based on input
-function getSchema(key, typeStr, limits, isIn, forceOptional = false) {
+function getSchema(key, typeStr, limits, isIn, forceOptional = false, disableMin = false) {
   if (!isIn || !isIn.length) throw errors.internalValidate(errorText.missingIn(key))
 
   // Get type from typeStr
@@ -56,7 +59,10 @@ function getSchema(key, typeStr, limits, isIn, forceOptional = false) {
 
   // Pass limits as options
   if (limits && (limits.array || limits.elem)) limits = limits.elem
-  if (limits) limits = { options: limits, errorMessage: errorText.limit(limits, type[1] === 'string') }
+  if (limits) {
+    if (disableMin) limits = hidingMin(limits) // Remove minimum
+    limits = { options: limits, errorMessage: errorText.limit(limits, type[1] === 'string') }
+  }
 
   // Set type-specific validators/sanitizers
   switch (type[1]) {
@@ -109,17 +115,21 @@ function getSchema(key, typeStr, limits, isIn, forceOptional = false) {
 
 
 // Generate schema object based on ValidCfg file
-function getSchemaFromCfg(set, key, isIn = ['params'], optionalIfOnlyBody = false) {
+const OPTIONAL_FIELDS = ['body','query']
+function getSchemaFromCfg(set, key, isIn = ['params'], forceOptionalFields = false, disableMin = false) {
   // Determine if optional flag should be forced
   let forceOptional = false
-  if (optionalIfOnlyBody) {
-    // Remove body tag if other tags
-    if (isIn.length > 1) isIn = isIn.filter(t => t !== 'body')
-    // Otherwise force optional flag
-    else if (isIn[0] === 'body') forceOptional = true
+  if (forceOptionalFields) {
+    // Remove body & query tags if other tags
+    if (isIn.length > 1) {
+      isIn = isIn.filter((field) => !OPTIONAL_FIELDS.includes(field))
+      if (!isIn.length) isIn = OPTIONAL_FIELDS
+    }
+    // Force optional flag
+    if (OPTIONAL_FIELDS.includes(isIn[0])) forceOptional = true
   }
 
-  return exports.getSchema(key, validCfg.types[set][key], validCfg.limits[set][key], isIn, forceOptional)
+  return exports.getSchema(key, validCfg.types[set][key], validCfg.limits[set][key], isIn, forceOptional, disableMin)
 }
 
 exports.getSchema = getSchema

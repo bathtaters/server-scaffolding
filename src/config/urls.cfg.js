@@ -24,8 +24,9 @@ module.exports = {
       prefix: '/gui',
       home: '/db',
       user: '/profile',
-      form: '/form',
       swap: '/swap',
+      form: '/form',
+      find: '/results',
     },
     admin: {
       prefix: '/admin',
@@ -33,6 +34,7 @@ module.exports = {
       user:  '/users',
       logs:  '/logs',
       form:  '/form',
+      find: '/results',
       token: '/regenToken',
     },
   },

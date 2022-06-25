@@ -26,13 +26,13 @@ exports.form = function getFormController(Model, { redirectURL = '', formatData 
     if (!action || !Object.keys(formActions).includes(action))
       return next(errors.badAction(action))
     
-    try { formData = formatData(formData, action, req.user) || formData }
+    try { formData = formatData(formData, req.user, action) || formData }
     catch (err) { return next(err) }
 
-    const urlSuffix = queryString ? deepUnescape(queryString) : ''
-    return formActions[action](formData)
-      .then(() => res.redirect((redirectURL || `${urls.basic.prefix}${urls.basic.home}/${Model.title}`) + urlSuffix))
-      .catch(next)
+    return formActions[action](formData).then((url) => res.redirect(
+        (redirectURL || `${urls.basic.prefix}${urls.basic.home}/${Model.title}`) +
+        (!url && queryString ? deepUnescape(queryString) : url || '')
+    )).catch(next)
   }
 }
 

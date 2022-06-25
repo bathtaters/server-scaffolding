@@ -11,6 +11,7 @@ class Users extends Model {
   constructor() { 
     super('_users', { schema: schemaAdapter, defaults: false })
     // { defaults: false } = ignore default values
+    this.bitmapFields.push('access')
     this.validTimestamps = Object.keys(this.schema).filter((k) => timestampKeyRegEx.test(k)).map((k) => k.match(timestampKeyRegEx)[1])
   }
 
@@ -37,6 +38,10 @@ class Users extends Model {
     if ((passwordAccess & newData.access) && !newData.key) throw errors.noData('password for GUI access')
 
     return super.add(newData)
+  }
+
+  find(matchData, partialMatch) {
+    return super.find(setAdapter(matchData), partialMatch)
   }
 
   async update(id, data) {

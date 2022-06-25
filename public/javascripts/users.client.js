@@ -83,3 +83,43 @@ $( '#actionRegen' ).click(function() {
     }
   });
 });
+
+/* Enable/Disable search restrictions */
+$(function() {
+  $( 'input[min]' ).each(function() {
+    var min = $(this).attr('min');
+    if (+min > 0) { $(this).attr('data-min', min); }
+  });
+  $( 'input[minLength]' ).each(function() {
+    var min = $(this).attr('minLength');
+    if (+min > 0) { $(this).attr('data-minLength', min); }
+  });
+
+  function enableSearch() {
+    $( 'input#token' ).attr('readonly', false);
+    $( 'input#password' ).attr('disabled', true);
+    $( 'input#confirm' ).attr('disabled', true);
+    $( 'input[type="submit"]:not(#actionSearch)' ).attr('disabled', true);
+    $( 'input[data-min]' ).each(function() { $(this).attr('min', false); });
+    $( 'input[data-minLength]' ).each(function() { $(this).attr('minLength', false); });
+  }
+
+  function disableSearch() {
+    $( 'input#token' ).attr('readonly', true);
+    $( 'input#password' ).attr('disabled', false);
+    $( 'input#confirm' ).attr('disabled', false);
+    $( 'input[type="submit"]' ).attr('disabled', false);
+    $( 'input[data-min]' ).each(function() { $(this).attr('min', $(this).attr('data-min')); });
+    $( 'input[data-minLength]' ).each(function() { $(this).attr('minLength', $(this).attr('data-minLength')); });
+  }
+
+  if ($( 'input#searchMode' ).prop('checked')) { enableSearch(); }
+
+  $( 'input#clearForm' ).on('click', function() { disableSearch(); });
+
+  $( 'input#searchMode' ).on('input', function() {
+    if ($(this).prop('checked')) { enableSearch(); }
+    else { disableSearch(); }
+  });
+
+});

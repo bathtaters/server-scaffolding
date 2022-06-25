@@ -17,6 +17,48 @@ $( 'tr.tableRow' ).on('click', function() {
   });
 });
 
+/* Enable/Disable search restrictions */
+$(function() {
+  var idElem = $( '#primary-key input' );
+
+  $( 'input[min]' ).each(function() {
+    var min = $(this).attr('min');
+    if (+min > 0) { $(this).attr('data-min', min); }
+  });
+  $( 'input[minLength]' ).each(function() {
+    var min = $(this).attr('minLength');
+    if (+min > 0) { $(this).attr('data-minLength', min); }
+  });
+
+  function enableSearch() {
+    idElem.attr('readonly', false);
+    $( 'input#swapId' ).attr('disabled', true);
+    $( 'input#actionSwap' ).attr('disabled', true);
+    $( 'input[type="submit"]:not(#actionSearch)' ).attr('disabled', true);
+    $( 'input[data-min]' ).each(function() { $(this).attr('min', false); });
+    $( 'input[data-minLength]' ).each(function() { $(this).attr('minLength', false); });
+  }
+
+  function disableSearch() {
+    idElem.attr('readonly', true);
+    $( 'input#swapId' ).attr('disabled', false);
+    $( 'input#actionSwap' ).attr('disabled', false);
+    $( 'input[type="submit"]' ).attr('disabled', false);
+    $( 'input[data-min]' ).each(function() { $(this).attr('min', $(this).attr('data-min')); });
+    $( 'input[data-minLength]' ).each(function() { $(this).attr('minLength', $(this).attr('data-minLength')); });
+  }
+
+  if ($( 'input#searchMode' ).prop('checked')) { enableSearch(); }
+  
+  $( 'input#clearForm' ).on('click', function() { disableSearch(); });
+
+  $( 'input#searchMode' ).on('input', function() {
+    if ($(this).prop('checked')) { enableSearch(); }
+    else { disableSearch(); }
+  });
+
+});
+
 /* Swap two IDs */
 $( '#actionSwap' ).on('click', function() {
   var sendData = { swap: $( 'input#swapId' ).val() };
