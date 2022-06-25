@@ -43,7 +43,8 @@ button.toggle-password.small {
 .cors-regex, .cors-array { color: lightskyblue; }
 
 /* Additional generic styling */
-.align-self-center { align-self: center;  }
+.center { text-align: center; }
+.align-self-center { align-self: center; }
 .dim { opacity: 0.6;}
 .solid { opacity: 1.0 !important; }
 .small { font-size: 0.9em; font-weight: 300; }
