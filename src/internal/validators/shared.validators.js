@@ -10,15 +10,15 @@ const logger = require('../config/log')
 //  optionalBody = make all body keys optional, unless body key is in params
 //  additional = [{ key: 'name', typeStr: 'int?', in: ['body','params',etc], limits: { min, max, etc } }, ...]
 //  also removes any keys in params from body
-exports.byRoute = (route) => (params, body = [], optionalBody = false, additional) => 
-  checkSchema(getSchemaAdapter(route, { params, body }, optionalBody, additional))
+exports.byRoute = (route) => (params, body = [], optionalBody = false, bodyIsQuery = false, allowPartialSearch = false, additional = null) => 
+  checkSchema(getSchemaAdapter(route, { params, [bodyIsQuery ? 'query' : 'body']: body }, optionalBody, allowPartialSearch, additional))
     .concat(checkValidation)
 
 exports.additionalOnly = (additional) => checkSchema(appendAdditional({}, additional)).concat(checkValidation)
 
 
 // HELPER -- Retrieve validation schema for route based on route & keys
-function getSchemaAdapter(route, keys, optionalBody, additional) {
+function getSchemaAdapter(route, keys, optionalBodyQry, disableMin, additional) {
 
   // 'all' instead of key array will include validation for all entries
   Object.keys(keys).forEach(t => {
@@ -29,7 +29,7 @@ function getSchemaAdapter(route, keys, optionalBody, additional) {
 
   // Build list of keys (combining unique)
   let keyList = {}, keysDict = {}
-  Object.keys(keys).forEach(inType => {
+  Object.keys(keys).forEach((inType) => {
     if (!keys[inType]) return
 
     if (typeof keys[inType] !== 'object') keys[inType] = [keys[inType]]
@@ -47,7 +47,7 @@ function getSchemaAdapter(route, keys, optionalBody, additional) {
   // Call getValidation on each entry in keyList to create validationSchema
   const schema = Object.entries(keyList).reduce((valid, [key, isIn]) =>
     Object.assign(valid,
-      getSchemaFromCfg(route, key, isIn, optionalBody)
+      getSchemaFromCfg(route, key, isIn, optionalBodyQry, disableMin)
     ),
   {})
   if (!Object.keys(keysDict).length) return appendAdditional(schema, additional)
