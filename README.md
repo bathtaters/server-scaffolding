@@ -21,7 +21,7 @@ Includes ***Passport*** session authentication, ***Morgan*** console/file loggin
  3. Add to `models/_all.js` to connect to API/GUI automtically.
 
 ### Deploy to Production
- 1. Recommend using pm2 to run
+ 1. Recommend using pm2 to ensure Restart button works
  2. Update `pm2.json` info (ie. `name`, `cwd`, `*_file`)
  3. Create production `.env`
  4. Run using `pm2 start pm2.json`
@@ -37,9 +37,9 @@ Includes ***Passport*** session authentication, ***Morgan*** console/file loggin
 |`/`|`POST`|`{...data}`|`{ id }`|Create|
 |`/`|`GET`| |`[{...data}]`|Read all|
 |`/[id]`|`GET`| |`{...data}`|Read|
-|`/[id]`|`PUT`|`{...data}`|`{ success }`|Update _(Only fields in `data`)_|
+|`/[id]`|`PUT`|`{...data}`|`{ success }`|Update|
 |`/[id]`|`DELETE`| |`{ success }`|Delete|
-|`/swap`|`POST`|`{ id, swap }`|`{ success }`|Swap IDs _(`swap` = ID to swap with)_|
+|`/swap`|`POST`|`{ id, swap }`|`{ success }`|Swap IDs _(`swap` = ID)_|
 
 
 ---
@@ -67,10 +67,10 @@ Includes ***Passport*** session authentication, ***Morgan*** console/file loggin
 ##### _Must login as user with `ADMIN` access._
 | Admin URL | Description |
 |------|------|
-|`/settings`|_[Coming soon]_ Change server settings & reboot|
+|`/settings`|Change server settings & reboot|
 |`/users`|User table editor|
-|`/logs`|_[Coming soon]_ Index of log files|
-|`/logs/[log]`|_[Coming soon]_ Basic log viewer|
+|`/logs`|Index of log files|
+|`/logs/[log]`|Basic log viewer|
 
 ---
 
@@ -90,9 +90,7 @@ LOG_DIR=[<project-dir>/.logs]
 ---
 
 ### *TO DO:*
- - **Search GUI** (shared.validators + validate.services testing)
  - Add **accordion styling** to log Errors
- - Add **tooltip** to Search mode checkbox
  - Allow **restricting** user access by **model** _(create 'modelList' = [] & 'modelAllowList' = false for each user)_
  - Add **unit testing** for utils/services
  - Add **endpoint testing** for API & GUI form/login routes
