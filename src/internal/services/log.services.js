@@ -9,7 +9,7 @@ const [ logDir, logFilename ] = [ dirname(logPath), basename(logPath) ]
 const logFileRegex = logViewFileFilter(logFilename)
 exports.logList = (folder = logDir) =>
   readdir(folder).then((files) =>
-    files.filter((filename) => logFileRegex.test(filename))
+    files.filter((filename) => logFileRegex.test(filename)).sort((a,b) => b.localeCompare(a))
   )
 
 exports.logFile = (filename, folder = logDir) =>
