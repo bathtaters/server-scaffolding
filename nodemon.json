@@ -9,6 +9,7 @@
     "public",
     "README*.*",
     "jest*.*",
+    "*.test.js",
     "package-lock.json",
     "node_modules"
   ],
