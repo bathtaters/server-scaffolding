@@ -33,9 +33,11 @@ describe('byRoute', () => {
       expect.anything(),
       expect.anything(),
       expect.anything(),
+      expect.anything(),
     )
     expect(schemaCfgSpy).toHaveBeenNthCalledWith(2, 
       'routeA',
+      expect.anything(),
       expect.anything(),
       expect.anything(),
       expect.anything(),
@@ -48,12 +50,31 @@ describe('byRoute', () => {
       expect.anything(),
       expect.anything(),
       'opt',
+      expect.anything(),
     )
     expect(schemaCfgSpy).toHaveBeenNthCalledWith(2, 
       expect.anything(),
       expect.anything(),
       expect.anything(),
       'opt',
+      expect.anything(),
+    )
+  })
+  it('passes partialMatch to getSchemaFromCfg', () => {
+    shared.byRoute('routeA')(['a'],['a','b'],'opt',false,'part')
+    expect(schemaCfgSpy).toHaveBeenNthCalledWith(1, 
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      'part',
+    )
+    expect(schemaCfgSpy).toHaveBeenNthCalledWith(2, 
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      'part',
     )
   })
 
@@ -64,10 +85,12 @@ describe('byRoute', () => {
       'a',
       expect.anything(),
       expect.anything(),
+      expect.anything(),
     )
     expect(schemaCfgSpy).toHaveBeenNthCalledWith(2, 
       expect.anything(),
       'b',
+      expect.anything(),
       expect.anything(),
       expect.anything(),
     )
@@ -79,11 +102,13 @@ describe('byRoute', () => {
       expect.anything(),
       ['params','body'],
       expect.anything(),
+      expect.anything(),
     )
     expect(schemaCfgSpy).toHaveBeenNthCalledWith(2, 
       expect.anything(),
       expect.anything(),
       ['body'],
+      expect.anything(),
       expect.anything(),
     )
   })
@@ -95,6 +120,7 @@ describe('byRoute', () => {
       'a',
       ['params'],
       expect.anything(),
+      expect.anything(),
     )
     expect(schemaCfgSpy).toBeCalledTimes(1)
   })
@@ -105,11 +131,13 @@ describe('byRoute', () => {
       'c',
       ['params'],
       expect.anything(),
+      expect.anything(),
     )
     expect(schemaCfgSpy).toHaveBeenNthCalledWith(2,
       expect.anything(),
       'd',
       ['params','body'],
+      expect.anything(),
       expect.anything(),
     )
     expect(schemaCfgSpy).toBeCalledTimes(2)
@@ -121,11 +149,13 @@ describe('byRoute', () => {
       'c',
       ['params'],
       expect.anything(),
+      expect.anything(),
     )
     expect(schemaCfgSpy).toHaveBeenNthCalledWith(2,
       expect.anything(),
       'd',
       ['body'],
+      expect.anything(),
       expect.anything(),
     )
     expect(schemaCfgSpy).toBeCalledTimes(2)
@@ -137,11 +167,13 @@ describe('byRoute', () => {
       'c',
       ['params', 'body'],
       expect.anything(),
+      expect.anything(),
     )
     expect(schemaCfgSpy).toHaveBeenNthCalledWith(2,
       expect.anything(),
       'd',
       ['body'],
+      expect.anything(),
       expect.anything(),
     )
     expect(schemaCfgSpy).toBeCalledTimes(2)
@@ -159,15 +191,33 @@ describe('byRoute', () => {
   it('gets additional validation', () => {
     schemaGetSpy.mockImplementationOnce((key,_,__,isIn)=>({ [key]: { in: isIn } }))
     schemaGetSpy.mockImplementationOnce((key,_,__,isIn)=>({ [key]: { in: isIn } }))
-    expect(shared.byRoute('routeA')([],[],'o',[{ key: 'c', isIn: 'X' }, { key: 'a', isIn: 'X' }]))
+    expect(shared.byRoute('routeA')([],[],'opt',false,false,[{ key: 'c', isIn: 'X' }, { key: 'a', isIn: 'X' }]))
       .toEqual([{ a: { in: ['X'] }, c: { in: ['X'] } }, checkValidation])
   })
 
   it('merges additional validation to exisiting', () => {
     schemaGetSpy.mockImplementationOnce((key,x,y,isIn)=>({ [key]: { in: isIn } }))
     schemaCfgSpy.mockImplementationOnce((_,key,isIn)=>({ [key]: { in: isIn } }))
-    expect(shared.byRoute('routeA')([],['a'],'opt',[{ key: 'c', isIn: 'X' }, { key: 'a', isIn: 'X' }]))
+    expect(shared.byRoute('routeA')([],['a'],'opt',false,false,[{ key: 'c', isIn: 'X' }, { key: 'a', isIn: 'X' }]))
       .toEqual([{ a: { in: ['body', 'X'] }, c: { in: ['X'] } }, checkValidation])
+  })
+
+  it('bodyIsQuery makes isIn = query', () => {
+    shared.byRoute('routeA')([],['a','c'],'opt',true)
+    expect(schemaCfgSpy).toHaveBeenNthCalledWith(1,
+      expect.anything(),
+      'a',
+      ['query'],
+      expect.anything(),
+      expect.anything(),
+    )
+    expect(schemaCfgSpy).toHaveBeenNthCalledWith(2,
+      expect.anything(),
+      'c',
+      ['query'],
+      expect.anything(),
+      expect.anything(),
+    )
   })
 })
 

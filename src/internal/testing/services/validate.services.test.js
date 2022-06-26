@@ -30,6 +30,7 @@ describe('getSchemaFromCfg', () => {
       expect.anything(),
       expect.anything(),
       expect.anything(),
+      expect.anything(),
     )
   })
   it('passes isIn', () => {
@@ -39,6 +40,7 @@ describe('getSchemaFromCfg', () => {
       expect.anything(),
       expect.anything(),
       'isIn',
+      expect.anything(),
       expect.anything(),
     )
   })
@@ -50,6 +52,7 @@ describe('getSchemaFromCfg', () => {
       expect.anything(),
       expect.anything(),
       false,
+      expect.anything(),
     )
     schemaSpy.mockClear()
     services.getSchemaFromCfg('setA', 'a', 'isIn', '')
@@ -59,14 +62,27 @@ describe('getSchemaFromCfg', () => {
       expect.anything(),
       expect.anything(),
       false,
+      expect.anything(),
     )
   })
-  
+  it('passes disableMin', () => {
+    services.getSchemaFromCfg('setA', 'a', 'isIn', false, 'noMin')
+    expect(schemaSpy).toBeCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      'noMin',
+    )
+  })
+
   it('gets type from config', () => {
     services.getSchemaFromCfg('setA', 'a', 'isIn', false)
     expect(schemaSpy).toBeCalledWith(
       expect.anything(),
       'type1',
+      expect.anything(),
       expect.anything(),
       expect.anything(),
       expect.anything(),
@@ -76,6 +92,7 @@ describe('getSchemaFromCfg', () => {
     expect(schemaSpy).toBeCalledWith(
       expect.anything(),
       'type3',
+      expect.anything(),
       expect.anything(),
       expect.anything(),
       expect.anything(),
@@ -89,6 +106,7 @@ describe('getSchemaFromCfg', () => {
       'lims2',
       expect.anything(),
       expect.anything(),
+      expect.anything(),
     )
     schemaSpy.mockClear()
     services.getSchemaFromCfg('setB', 'd', 'isIn', false)
@@ -98,10 +116,11 @@ describe('getSchemaFromCfg', () => {
       undefined,
       expect.anything(),
       expect.anything(),
+      expect.anything(),
     )
   })
 
-  it('optional true if optional & isIn = [body]', () => {
+  it('optional true if optional & isIn = [body|query]', () => {
     services.getSchemaFromCfg('setA', 'a', ['body'], true)
     expect(schemaSpy).toBeCalledWith(
       expect.anything(),
@@ -109,6 +128,27 @@ describe('getSchemaFromCfg', () => {
       expect.anything(),
       expect.anything(),
       true,
+      expect.anything(),
+    )
+    schemaSpy.mockClear()
+    services.getSchemaFromCfg('setA', 'a', ['query'], true)
+    expect(schemaSpy).toBeCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      true,
+      expect.anything(),
+    )
+    schemaSpy.mockClear()
+    services.getSchemaFromCfg('setA', 'a', ['body','query'], true)
+    expect(schemaSpy).toBeCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      true,
+      expect.anything(),
     )
     schemaSpy.mockClear()
     services.getSchemaFromCfg('setA', 'a', ['isIn','body'], true)
@@ -118,6 +158,17 @@ describe('getSchemaFromCfg', () => {
       expect.anything(),
       expect.anything(),
       false,
+      expect.anything(),
+    )
+    schemaSpy.mockClear()
+    services.getSchemaFromCfg('setA', 'a', ['isIn','query'], true)
+    expect(schemaSpy).toBeCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      false,
+      expect.anything(),
     )
     schemaSpy.mockClear()
     services.getSchemaFromCfg('setA', 'a', [], true)
@@ -127,6 +178,7 @@ describe('getSchemaFromCfg', () => {
       expect.anything(),
       expect.anything(),
       false,
+      expect.anything(),
     )
   })
   it('filters isIn if optional', () => {
@@ -137,6 +189,27 @@ describe('getSchemaFromCfg', () => {
       expect.anything(),
       ['isIn'],
       expect.anything(),
+      expect.anything(),
+    )
+    schemaSpy.mockClear()
+    services.getSchemaFromCfg('setA', 'a', ['isIn','query'], true)
+    expect(schemaSpy).toBeCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      ['isIn'],
+      expect.anything(),
+      expect.anything(),
+    )
+    schemaSpy.mockClear()
+    services.getSchemaFromCfg('setA', 'a', ['query','isIn','body'], true)
+    expect(schemaSpy).toBeCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      ['isIn'],
+      expect.anything(),
+      expect.anything(),
     )
     schemaSpy.mockClear()
     services.getSchemaFromCfg('setA', 'a', ['isInA','isInB'], true)
@@ -146,14 +219,16 @@ describe('getSchemaFromCfg', () => {
       expect.anything(),
       ['isInA','isInB'],
       expect.anything(),
+      expect.anything(),
     )
     schemaSpy.mockClear()
-    services.getSchemaFromCfg('setA', 'a', ['body'], true)
+    services.getSchemaFromCfg('setA', 'a', ['body','query'], true)
     expect(schemaSpy).toBeCalledWith(
       expect.anything(),
       expect.anything(),
       expect.anything(),
-      ['body'],
+      ['body','query'],
+      expect.anything(),
       expect.anything(),
     )
   })
@@ -210,6 +285,15 @@ describe('getSchema', () => {
         .toHaveProperty('optional', {options: {checkFalsy: true}})
       expect(services.getSchema('test','string',{elem:{min: 10}},['isIn'],false).test)
         .not.toHaveProperty('optional')
+    })
+    it('disableMin = true removes min from elem.limits', () => {
+      const lims = { min: 12, test: 'lims' }
+      expect(services.getSchema('test','int',lims,['isIn'],false,true).test.isInt)
+        .toHaveProperty('options',{ test: 'lims' })
+      expect(services.getSchema('test','int[]',{elem: lims},['isIn'],false,true)['test.*'].isInt)
+        .toHaveProperty('options',{ test: 'lims' })
+      expect(services.getSchema('test','int[]',{array: lims},['isIn'],false,true).test.isArray)
+        .toHaveProperty('options',{ min: 12, test: 'lims' })
     })
     it('just uses isType = { errorMsg } if missing limits', () => {
       expect(services.getSchema('test','float',null,['isIn'],false).test.isFloat)
