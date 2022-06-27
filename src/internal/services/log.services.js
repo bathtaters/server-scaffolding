@@ -12,10 +12,16 @@ exports.logList = (folder = logDir) =>
     files.filter((filename) => logFileRegex.test(filename)).sort((a,b) => b.localeCompare(a))
   )
 
-exports.logFile = (filename, folder = logDir) =>
+exports.logFile = (filename, folder = logDir) => Promise.all([
   readFile(join(folder, filename)).then((log) =>
     log.toString().split('\n').map(formatFileLog)
-  )
+  ),
+  exports.logList(folder)
+]).then(([log, files]) => {
+  const idx = files.indexOf(filename)
+  if (idx < 0) return { log }
+  return { log, prev: files[idx + 1], next: files[idx - 1] }
+})
 
 // Normalize log level
 exports.getLogLevel = (logLevel, { levels, testLevel, silent, httpDebug }, defaultLevel, isConsole) => {
