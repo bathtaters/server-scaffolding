@@ -7,7 +7,7 @@ const { getEnv, canUndo, settingsActions } = require('../services/settings.servi
 const { logList, logFile } = require('../services/log.services')
 const { getAllLevels } = require('../utils/log.utils')
 const urls = require('../../config/urls.cfg').gui.admin
-const { colors } = require('../config/log.cfg')
+const { colors, maxLogLine, trimLogMessage } = require('../config/log.cfg')
 
 // USER TABLE
 exports.userTable = modelDb(Users, { view: 'users', formatData: guiAdapter, overrideDbParams: {
@@ -45,12 +45,13 @@ exports.logList = (req, res, next) => logList().then((logs) =>
   })
 ).catch(next)
 
-exports.logView = (req, res, next) => logFile(req.params.filename).then((log) => 
+exports.logView = (req, res, next) => logFile(req.params.filename).then(({ log, prev, next }) => 
   res.render('logView', {
     title: req.params.filename,
-    log, colors,
+    log, prev, next,
+    colors, maxLogLine, trimLogMessage,
     levels: getAllLevels(log),
-    baseURL: logBaseURL,
+    baseURL: logBaseURL + '/',
     user: req.user && req.user.username,
     isAdmin: req.user && hasAccess(req.user.access, access.admin),
   })

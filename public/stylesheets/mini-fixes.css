@@ -33,6 +33,10 @@ form.plain fieldset { background: var(--form-back-color); }
 /* Fix checkbox alignment */
 .input-group > input[type='checkbox'] { vertical-align: bottom; }
 
+/* Fix collapse styling */
+.collapse > label.row { display: flex; height: auto; }
+.collapse > [type="checkbox"] { position: initial; display: none; }
+
 /* Fix button styling */
 button, .button, [role="button"],
 [type="button"], [type="submit"], [type="reset"] {

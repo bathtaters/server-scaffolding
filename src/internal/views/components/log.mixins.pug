@@ -1,0 +1,33 @@
+mixin logHeaderDesc(line)
+  .col-sm-3.hidden-sm.log-time= line.timestamp.full
+  .col-sm-2.hidden.visible-sm.log-time= line.timestamp.short
+
+  .col-sm-1.log-level(class=(colors[line.level] || ''))= line.level === 'error' ? 'err' : line.level.slice(0,4)
+
+  .col-sm.log-label-container
+    if line.label
+      span.log-label= line.label
+    if line.message.length > maxLogLine
+      span.log-msg= trimLogMessage(line)
+    else
+      span.log-msg= line.message
+
+mixin logBody(line)
+  if line.message.length > maxLogLine || line.stack
+    .row.responsive-padding
+      if line.message.length > maxLogLine
+        .row.log-stack= line.message
+      if line.message.length > maxLogLine && line.stack
+        hr
+      if line.stack
+        .row.log-stack= line.stack
+
+mixin logHeader(line, idx)
+  -var classes = `row line responsive-padding level-${line.level}`
+  if line.message.length > maxLogLine || line.stack
+    input(type="checkbox" id=`expand${idx}` aria-hidden="true" name="expanded" checked=false)
+    label(for=`expand${idx}` aria-hidden="true" class=classes)
+      +logHeaderDesc(line)
+  else
+    div(class=classes)
+      +logHeaderDesc(line)

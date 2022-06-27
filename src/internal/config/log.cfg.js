@@ -41,4 +41,8 @@ module.exports = {
       // format.json()
     ),
   },
+  
+  // Handle long log lines in Log GUI
+  maxLogLine: 128,
+  trimLogMessage: (line) => line.label ? '' : line.message.trim().length ? `${(line.message.trim()).slice(0,48).replace(/\s*\r?\n.*/,'')}...` : 'View Details',
 }
