@@ -27,6 +27,5 @@ exports.formatFileLog = (line) => {
   if (!line) return null
   line = JSON.parse(line)
   if (line.timestamp) line.timestamp = formatFileTime(line.timestamp)
-  if (line.stack) line.stack = line.stack.replace(/<(.+)>/g,'[$1]')
   return line
 }

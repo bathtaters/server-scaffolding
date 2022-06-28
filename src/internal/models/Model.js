@@ -4,6 +4,7 @@ const { sanitizeSchemaData, schemaFromValidate, appendAndSort } = require('../ut
 const { defaults: validateDefaults, limits: validateLimits } = require('../../config/models.cfg')
 const { hasDupes } = require('../utils/common.utils')
 const errors = require('../config/errors.internal')
+const { deepUnescape } = require('../utils/validate.utils')
 
 class Model {
 
@@ -36,16 +37,20 @@ class Model {
   }
     
   get(id = null, idKey = null, raw = false) {
-    if (id == null) return services.all(getDb(), `SELECT * FROM ${this.title}`).then((res) => raw || !this.getAdapter ? res : res.map(this.getAdapter))
+    if (id == null)
+      return services.all(getDb(), `SELECT * FROM ${this.title}`).then(deepUnescape)
+        .then((res) => raw || !this.getAdapter ? res : res.map(this.getAdapter))
+
     return services.get(getDb(), `SELECT * FROM ${this.title} WHERE ${idKey || this.primaryId} = ?`, [id])
-      .then((res) => raw || !this.getAdapter ? res : res && this.getAdapter(res))
+      .then(deepUnescape).then((res) => raw || !this.getAdapter ? res : res && this.getAdapter(res))
   }
 
   getPage(page, size, reverse = null, orderKey = null) {
     if (!size) return Promise.reject(errors.noSize())
+
     const sort = reverse == null && !orderKey ? '' : `ORDER BY ${orderKey || this.primaryId} ${reverse ? 'DESC' : 'ASC'} `
     return services.all(getDb(), `SELECT * FROM ${this.title} ${sort}LIMIT ${size} OFFSET ${(page - 1) * size}`)
-      .then((res) => !this.getAdapter ? res : res.map(this.getAdapter))
+      .then(deepUnescape).then((res) => !this.getAdapter ? res : res.map(this.getAdapter))
   }
 
   find(matchData, partialMatch = false) {
@@ -70,7 +75,7 @@ class Model {
     })
 
     return services.all(getDb(), `SELECT * FROM ${this.title} WHERE ${text.join(' AND ')}`, params)
-      .then((res) => !this.getAdapter ? res : res.map(this.getAdapter))
+      .then(deepUnescape).then((res) => !this.getAdapter ? res : res.map(this.getAdapter))
   }
 
   count(id = null, idKey = null) {
@@ -93,7 +98,7 @@ class Model {
     return services.get(getDb(), 
       `INSERT INTO ${this.title}(${ keys.join(', ') }) VALUES(${ keys.map(()=>'?').join(', ') }) RETURNING ${returnField}`,
       Object.values(data)
-    ).then((row) => row && row[returnField])
+    ).then((row) => deepUnescape(row && row[returnField]))
   }
     
   update(id, data, idKey = null) {
@@ -124,7 +129,10 @@ class Model {
     }).then(() => ({ success: true }))
   }
 
-  custom(sql, params, raw = true) { return services.all(getDb(), sql, params).then((res) => raw || !this.getAdapter ? res : res.map(this.getAdapter)) }
+  custom(sql, params, raw = true) { 
+    return services.all(getDb(), sql, params).then(deepUnescape)
+      .then((res) => raw || !this.getAdapter ? res : res.map(this.getAdapter))
+  }
 
   async getPaginationData({ page, size }, { defaultSize = 5, minSize, sizeList = [], startPage = 1 } = {}) {
     const total = await this.count()
