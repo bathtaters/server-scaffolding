@@ -31,11 +31,11 @@ mixin formInput(key, inpType, limits, defaultValue, label, classes, tooltip)
       +typedInp(key, inpType, limits, defaultValue, classes)
 
 mixin checkboxes(key, options, label)
-  fieldset.input-group.vertical
+  fieldset.input-group.vertical(id=key+'Checks')
     legend= label || varName(key)
     each item in options
       .input-group
-        input.accessChecks(type='checkbox' name=key id=item value=item)
+        input(type='checkbox' class=key+'Checks' name=key id=item value=item)
         label(for=item)= item
 
 mixin buttonInput(key, inpType, button, limits, defaultValue, label, tooltip, buttonKey = 'action')
