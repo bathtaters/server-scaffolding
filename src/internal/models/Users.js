@@ -9,7 +9,7 @@ const { access, timestampKeyRegEx } = require('../config/users.cfg')
 
 class Users extends Model {
   constructor() { 
-    super('_users', { schema: schemaAdapter, defaults: false })
+    super('_users', { schema: schemaAdapter, defaults: false, getAdapter, setAdapter })
     // { defaults: false } = ignore default values
     this.bitmapFields.push('access')
     this.validTimestamps = Object.keys(this.schema).filter((k) => timestampKeyRegEx.test(k)).map((k) => k.match(timestampKeyRegEx)[1])
@@ -19,13 +19,13 @@ class Users extends Model {
     if (updateTimestamp && !this.validTimestamps.includes(updateTimestamp)) logger.warn(`Ignoring request to update invalid '${updateTimestamp}Timestamp': ${id}`)
 
     return super.get(id, idKey || this.primaryId).then((user) => {
-      if (!id && Array.isArray(user)) return user.map(getAdapter)
+      if (!id && Array.isArray(user)) return user
       if (!user) return user
 
       if (updateTimestamp && user[this.primaryId])
         super.update(user[this.primaryId], { [`${updateTimestamp}Time`]: new Date().toJSON() })
 
-      return getAdapter(user)
+      return user
     }
     )
   }
@@ -40,18 +40,13 @@ class Users extends Model {
     return super.add(newData)
   }
 
-  find(matchData, partialMatch) {
-    return super.find(setAdapter(matchData), partialMatch)
-  }
-
   async update(id, data) {
-    const newData = setAdapter(data)
-    
-    if ((passwordAccess & newData.access) && !newData.key) {
-      const current = await this.get(id)
-      if (!current.password && !(passwordAccess & current.access)) throw errors.noData('password for GUI access')
+    if (!data.password && (passwordAccess & accessInt(data.access))) {
+      const current = await this.custom(`SELECT key FROM ${this.title} WHERE ${this.primaryId} = ?`, [id]).then((r) => r && r[0])
+      if (!current) throw errors.noEntry(id)
+      if (!current.key) throw errors.noData('password for GUI access')
     }
-    return super.update(id, newData)
+    return super.update(id, data)
   }
 
   async remove(id, idKey = null) {
@@ -77,8 +72,8 @@ class Users extends Model {
           logger.info(`Created initial user: ${data.username}`)
           return data
         })
-
-    return super.get(username.toLowerCase(), 'username').then(testPassword(password, accessInt(accessLevel)))
+    
+    return super.get(username.toLowerCase(), 'username', true).then(testPassword(password, accessInt(accessLevel)))
   }
 
   validUsername(username) {

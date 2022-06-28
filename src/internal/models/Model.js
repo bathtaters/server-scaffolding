@@ -7,7 +7,7 @@ const errors = require('../config/errors.internal')
 
 class Model {
 
-  constructor(title, { schema, defaults, limits, primaryId = 'id' } = {}) {
+  constructor(title, { schema, defaults, limits, primaryId = 'id', getAdapter, setAdapter } = {}) {
     if (!schema) schema = schemaFromValidate(title, primaryId)
     if (typeof schema === 'function') schema = schema(schemaFromValidate(title, primaryId), title, primaryId)
 
@@ -22,6 +22,8 @@ class Model {
     this.limits = limits != null ? limits : validateLimits[title]
     this.primaryId = primaryId
     this.bitmapFields = []
+    this.getAdapter = typeof getAdapter === 'function' ? getAdapter : null
+    this.setAdapter = typeof setAdapter === 'function' ? setAdapter : null
 
     this.isInitialized = new Promise(async (res, rej) => {
       if (!getDb()) { await openDb() }
@@ -33,19 +35,21 @@ class Model {
     return services.reset(getDb(), { [this.title]: this.schema }, overwrite).then(() => ({ success: true }))
   }
     
-  get(id = null, idKey = null) {
-    if (id == null) return services.all(getDb(), `SELECT * FROM ${this.title}`)
+  get(id = null, idKey = null, raw = false) {
+    if (id == null) return services.all(getDb(), `SELECT * FROM ${this.title}`).then((res) => raw || !this.getAdapter ? res : res.map(this.getAdapter))
     return services.get(getDb(), `SELECT * FROM ${this.title} WHERE ${idKey || this.primaryId} = ?`, [id])
+      .then((res) => raw || !this.getAdapter ? res : this.getAdapter(res))
   }
 
   getPage(page, size, reverse = null, orderKey = null) {
     if (!size) return Promise.reject(errors.noSize())
     const sort = reverse == null && !orderKey ? '' : `ORDER BY ${orderKey || this.primaryId} ${reverse ? 'DESC' : 'ASC'} `
     return services.all(getDb(), `SELECT * FROM ${this.title} ${sort}LIMIT ${size} OFFSET ${(page - 1) * size}`)
+      .then((res) => !this.getAdapter ? res : res.map(this.getAdapter))
   }
 
   find(matchData, partialMatch = false) {
-
+    if (this.setAdapter) matchData = this.setAdapter(matchData)
     matchData = sanitizeSchemaData(matchData, this.schema)
     const searchData = Object.entries(matchData)
     if (!searchData.length) return Promise.reject(errors.noData())
@@ -66,6 +70,7 @@ class Model {
     })
 
     return services.all(getDb(), `SELECT * FROM ${this.title} WHERE ${text.join(' AND ')}`, params)
+      .then((res) => !this.getAdapter ? res : res.map(this.getAdapter))
   }
 
   count(id = null, idKey = null) {
@@ -76,6 +81,7 @@ class Model {
   }
     
   add(data, returnField) {
+    if (this.setAdapter) data = this.setAdapter(data)
     data = sanitizeSchemaData(data, this.schema)
     if (this.defaults) data = { ...this.defaults, ...data }
     
@@ -93,6 +99,7 @@ class Model {
   update(id, data, idKey = null) {
     if (id == null) return Promise.reject(errors.noID())
 
+    if (this.setAdapter) data = this.setAdapter(data)
     data = sanitizeSchemaData(data, this.schema)
     const keys = Object.keys(data)
     if (!keys.length) return Promise.reject(errors.noData())
@@ -117,7 +124,7 @@ class Model {
     }).then(() => ({ success: true }))
   }
 
-  custom(sql, params) { return services.all(getDb(), sql, params) }
+  custom(sql, params, raw = true) { return services.all(getDb(), sql, params).then((res) => raw || !this.getAdapter ? res : res.map(this.getAdapter)) }
 
   async getPaginationData({ page, size }, { defaultSize = 5, minSize, sizeList = [], startPage = 1 } = {}) {
     const total = await this.count()
