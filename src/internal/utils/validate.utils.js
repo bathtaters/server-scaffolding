@@ -2,6 +2,23 @@
 const typeRegex = /^([^[?*]+)(\*)?(\[\])?(\?)?$/
 exports.getTypeArray = (typeStr) => typeStr && typeStr.match(typeRegex)
 
+// Boolean rules
+const boolRules = {
+  true:  [true,  1, '1', 'true', 'yes',  'on'],
+  false: [false, 0, '0', 'false', 'no', 'off', ''],
+  types: ['string', 'number', 'boolean'],
+  loose: true, // case-insensitive & convert using Boolean() [false: anything not in 'false' => true]
+}
+const allBools    = boolRules.true.concat(boolRules.false)
+const boolStrings = boolRules.true.concat(boolRules.false).filter((val) => typeof val === 'string').map((val) => val.toLowerCase())
+const falseBools  = boolRules.false.filter((val) => typeof val === 'string').map((val) => val.toLowerCase())
+const boolTypes   = boolRules.types.map((val) => val.toLowerCase()).filter((val) => val !== 'string')
+
+exports.isBoolean = !boolRules.loose ? (val) => allBools.includes(val) :
+  (val) => typeof val === 'string' ? boolStrings.includes(val.toLowerCase()) : boolTypes.includes(typeof val)
+exports.parseBoolean = !boolRules.loose ? (val) => !boolRules.false.includes(val) :
+  (val) => typeof val === 'string' ? !falseBools.includes(val.toLowerCase()) : Boolean(val)
+
 // Setup date-only parsing
 const strictDates = true
 exports.dateOptions = {

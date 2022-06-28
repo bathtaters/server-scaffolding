@@ -1,7 +1,7 @@
 const logger = require('../config/log')
 const validCfg = require('../../config/models.cfg')
 const errorText = require("../config/validate.messages")
-const { getTypeArray, dateOptions, escapedLength } = require('../utils/validate.utils')
+const { getTypeArray, dateOptions, escapedLength, isBoolean, parseBoolean } = require('../utils/validate.utils')
 const errors = require('../config/errors.internal')
 
 // Obscure 'min' field (For allowing partial validation on searches) from limit
@@ -94,8 +94,8 @@ function getSchema(key, typeStr, limits, isIn, forceOptional = false, disableMin
       ptr.toInt = true
       break
     case 'boolean':
-      ptr.isBoolean = { errorMessage: errorText.boolean }
-      ptr.toBoolean = true
+      ptr.custom = { options: isBoolean, errorMessage: errorText.boolean }
+      ptr.customSanitizer = { options: parseBoolean }
       break
     case 'datetime':
       ptr.isISO8601 = { options: dateOptions.time, errorMessage: errorText.datetime }
