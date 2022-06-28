@@ -67,8 +67,9 @@ header { display: flex; }
 header > .spacer { flex-grow: 1; }
 
 /* Fix row alignment */
-.row { align-items: baseline; }
+.row.baseline { align-items: baseline; }
 .row.center { justify-content: center; }
+.row.nowrap { flex-wrap: nowrap; }
 .row > .center { align-self: center; }
 
 /* Fix footer styling */

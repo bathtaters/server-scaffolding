@@ -7,10 +7,10 @@ block scripts
 
 block content
   if searchData
-    .row
+    .row.baseline
       h2.col Search Terms
       a.col(href=(baseURL || '.')) Clear Results
-    .row
+    .row.baseline
       each val, key in searchData
         if key in tableFields
           .col.marginX
@@ -22,7 +22,7 @@ block content
 
   form.plain#editForm(action=postURL method="POST")
     fieldset
-      legend.row
+      legend.row.baseline
         h2= (canRead && !canWrite ? 'Search ' : 'Edit ') + title
         input.small.button.button-group#clearForm(type="reset" value="Clear")
         if canRead && canWrite
