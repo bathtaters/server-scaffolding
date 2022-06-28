@@ -39,11 +39,20 @@ button.toggle-password.small {
   padding: 0px;
 }
 
+/* CSS Grid styling (for form.mixin checkboxes) */
+.grid {
+  display: grid;
+  justify-items: center;
+  align-items: center;
+}
+.grid-right { justify-self: end; }
+
 /* Color specialized CORs values */
 .cors-regex, .cors-array { color: lightskyblue; }
 
 /* Additional generic styling */
 .center { text-align: center; }
+.autoMargin { margin: auto; }
 .align-self-center { align-self: center; }
 .dim { opacity: 0.6;}
 .solid { opacity: 1.0 !important; }

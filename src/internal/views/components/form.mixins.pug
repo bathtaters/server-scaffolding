@@ -30,13 +30,27 @@ mixin formInput(key, inpType, limits, defaultValue, label, classes, tooltip)
       label(for=key aria-label=tooltip class=(tooltip ? 'tooltip' : ''))= label || varName(key)
       +typedInp(key, inpType, limits, defaultValue, classes)
 
-mixin checkboxes(key, options, label)
+mixin checkboxes(key, rows, label, columns)
   fieldset.input-group.vertical(id=key+'Checks')
     legend= label || varName(key)
-    each item in options
-      .input-group
-        input(type='checkbox' class=key+'Checks' name=key id=item value=item)
-        label(for=item)= item
+    if !columns
+      each row in rows
+        .input-group
+          input(type='checkbox' class=key+'Checks' name=key id=row value=row)
+          label(for=row)= row
+    else
+      .grid(style=(columns && `grid-template-columns: repeat(${columns.length + 1}, min-content)`))
+        .grid-hdr
+        each col in columns
+          label.grid-hdr(for=col)= col
+        each row in rows
+          label.grid-hdr.grid-right(for=row)= row
+          each col in columns
+            input(
+              type='checkbox' name=key title=`${row} ${col}`
+              class=`${key}Checks` data-row=row data-col=col
+              id=`${row}-${col}` value=`${row}-${col}`
+            )
 
 mixin buttonInput(key, inpType, button, limits, defaultValue, label, tooltip, buttonKey = 'action')
   .input-group.vertical.button-input

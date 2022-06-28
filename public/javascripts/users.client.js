@@ -29,16 +29,36 @@ $( 'tr.tableRow' ).on('click', function() {
     }
 
     $( 'input.'+key+'Checks' ).prop('checked', false);
-    var checks = $(this).text().split(', ');
+    var checks = $(this).text().split(', ')
 
-    if (key === 'models') {
-      $( 'input#allowModels'  ).prop('checked', /^Allow/.test(checks[0]));
-      checks[0] = checks[0].replace(/^(Block|Allow): /,'');
+    // Simple checkboxes
+    if (key !== 'models') {
+      checks.forEach(function(accessType) {
+        $( 'input.'+key+'Checks#'+accessType ).prop('checked', true);
+      });
+      return;
     }
-    
-    checks.forEach(function(accessType) {
-      $( 'input.'+key+'Checks#'+accessType ).prop('checked', true);
-    });
+
+    // Table checkboxes
+    var i = checks.length;
+    while (i-- > 0) {
+
+      var check = checks[i].match(/^([^[]+)\[([^\]]+)\]$/);
+      if (!check || !check[1]) { continue; }
+
+      var anyChecked = false;
+
+      if (check[2]) {
+        $( 'input.'+key+'Checks[data-row="'+check[1]+'"]' ).each(function() {
+          if (check[2].indexOf($(this).attr('data-col').charAt(0)) !== -1) {
+            $(this).prop('checked', true);
+            anyChecked = true;
+          }
+        });
+      }
+
+      if (!anyChecked) { $( 'input.'+key+'Checks#'+check[1]+'-none' ).prop('checked', true); }
+    }
         
   });
 });
@@ -56,28 +76,12 @@ $( 'input.accessChecks' ).on('input', function() {
 $( 'input.modelsChecks' ).on('input', function() {
   if (!$(this).prop('checked')) return;
 
-  if ($(this).attr('id') === "none") {
-    $( 'input.modelsChecks' ).not( '#none' ).prop('checked', false);
+  var row = $(this).attr('data-row')
+  if ($(this).attr('data-col') === "none") {
+    $( 'input.modelsChecks[data-row="'+row+'"]' ).not(this).prop('checked', false);
   } else {
-    $( 'input#none' ).prop('checked', false);
+    $( 'input.modelsChecks[data-row="'+row+'"][data-col="none"]' ).prop('checked', false);
   }
-});
-
-/* Update title of models on allowModels change */
-$(function() {
-  function allowMode() { $( 'fieldset#modelsChecks > legend' ).text('Allow Models'); }
-  function blockMode() { $( 'fieldset#modelsChecks > legend' ).text('Block Models'); }
-
-  if ($( 'input#allowModels' ).prop('checked')) { allowMode(); }
-  else { blockMode(); }
-
-  $( 'input#clearForm' ).on('click', function() { blockMode(); });
-
-  $( 'input#allowModels' ).on('input', function() {
-    if ($(this).prop('checked')) { allowMode(); }
-    else { blockMode(); }
-  });
-
 });
 
 /* Update password/confirm fields on each change */
