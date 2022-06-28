@@ -16,7 +16,7 @@
   margin-inline-end: 0.5em;
 }
 
-.log .log-msg, .log .log-label { white-space: pre-wrap; }
+.log .log-msg, .log .log-label { white-space: initial; }
 
 .log .log-time, .log .log-level, .log .log-stack {
   font-family: monospace;

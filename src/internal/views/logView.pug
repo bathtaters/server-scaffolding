@@ -9,12 +9,12 @@ block scripts
   script(src="/javascripts/logs.client.js")
 
 block content
-  .row
+  .row.nowrap
     if prev
-      .col: a.button(href=baseURL+prev) PREV
-    .col-sm: h1.center= title
+      .col: a.button.small(href=baseURL+prev) PREV
+    .col-sm: h2.center= title
     if next
-      .col: a.button(href=baseURL+next) NEXT
+      .col: a.button.small(href=baseURL+next) NEXT
 
   .button-group
     label.center Filter
