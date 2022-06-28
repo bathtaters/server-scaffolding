@@ -1,5 +1,5 @@
 const Model = require('./Model')
-const { passwordAccess, accessInt } = require('../utils/users.utils')
+const { passwordAccess, accessInt, hasAccess } = require('../utils/users.utils')
 const { addAdapter, getAdapter, setAdapter, schemaAdapter } = require('../services/users.services')
 const { generateToken, testPassword } = require('../utils/auth.utils')
 const errors = require('../config/errors.internal')
@@ -74,6 +74,13 @@ class Users extends Model {
         })
     
     return super.get(username.toLowerCase(), 'username', true).then(testPassword(password, accessInt(accessLevel)))
+  }
+
+  async checkToken(token, accessLevel) {
+    return super.get(token, 'token', true).then((user) => !user ? null :
+      !hasAccess(user.access, accessInt(accessLevel)) ? false :
+      this.getAdapter ? this.getAdapter(user) : user
+    )
   }
 
   validUsername(username) {

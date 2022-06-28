@@ -13,7 +13,7 @@ const loginAccess = accessInt(require('../config/users.cfg').loginAccess)
 exports.initAuth = () => {
   passport.use(new LocalStrategy(authorizeUser(Users, loginAccess)))
   passport.serializeUser(storeUser(Users))
-  passport.deserializeUser(loadUser(Users))
+  passport.deserializeUser(loadUser(Users, 'gui'))
 
   return [
     session(sessionOptions),

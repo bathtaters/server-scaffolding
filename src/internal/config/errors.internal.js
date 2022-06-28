@@ -25,6 +25,7 @@ module.exports = {
   noSize: () => createError(400, "Invalid page size for paginated request."),
   
   // Authentication Errors
+  noUser: () => createError(401, "User not found."),
   noToken: () => createError(401, "Missing bearer token or incorrect format."),
   badToken: () => createError(401, "Invalid or outdated bearer token."),
   noAccess: () => createError(403, "User does not have access."),

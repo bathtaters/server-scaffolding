@@ -1,28 +1,26 @@
 const cors = require('cors')
+const passport = require('passport')
+const BearerStrategy = require('passport-http-bearer').Strategy
 const Users = require('../models/Users')
-const { hasAccess } = require('../utils/users.utils')
-const { deepUnescape } = require('../utils/validate.utils')
-const { apiToken, access } = require('../config/users.cfg')
+const { authorizeBearer } = require('../services/auth.services')
+const { hasModelAccess } = require('../utils/users.utils')
+const { access } = require('../config/users.cfg')
 const errors = require('../config/errors.internal')
 
-const getToken = (authHdr) => authHdr && (authHdr.match(apiToken.matchToken) || [])[1]
+passport.use(new BearerStrategy(authorizeBearer(Users, access.api)))
 
-async function getCors(req, callback) {
-  const authToken = getToken(req.get(apiToken.header))
-  if (!authToken) return callback(errors.noToken())
+const bearerAuth = passport.authenticate('bearer', { session: false })
   
-  const user = await Users.get(authToken,'token')
-  if (!user || !('cors' in user) || !('access' in user))
-    return callback(errors.badToken())
+const modelAuth = (modelName) => (req, _, next) => 
+  req.isAuthenticated() && hasModelAccess(req.user, modelName) ?
+    next() : next(errors.noModel(modelName))
 
-  if (!hasAccess(user.access, access.api)) return callback(errors.noAccess())
+const getCors = (req, next) => !req.isAuthenticated() ? next(errors.noAccess()) : next(null, {
+  credentials: true,
+  methods: ['GET','POST','PUT','DELETE'],
+  origin: req.user.cors,
+})
 
-  Users.get(user.id, null, 'api')
-  return callback(null, {
-    credentials: true,
-    methods: ['GET','POST','PUT','DELETE'],
-    origin: deepUnescape(user.cors),
-  })
-}
-
-module.exports = cors(getCors)
+module.exports = (modelName = null) => modelName ?
+  [bearerAuth, modelAuth(modelName), cors(getCors)] :
+  [bearerAuth, cors(getCors)]
