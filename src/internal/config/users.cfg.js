@@ -8,10 +8,12 @@ module.exports = {
 
   loginAccess: [ 'gui', 'admin' ],
   requirePassword: [ 'gui', 'admin' ],
+  emptyModelArray: 'none',
 
   tableFields: {
     username: 'Username', access: 'Access', password: 'Password',
-    token: 'API Token', cors: 'CORS Origin', guiTime: 'GUI Access', apiTime: 'API Access'
+    token: 'API Token', cors: 'CORS Origin', models: 'Model Access',
+    guiTime: 'GUI Access', apiTime: 'API Access'
   },
   
   encode: { iters: 1049, keylen: 64, digest: 'sha512' },
@@ -36,6 +38,8 @@ module.exports = {
       token: "hex",
       access: "string[]?",
       cors: "string*",
+      models: "string[]",
+      allowModels: "boolean",
       guiTime: "datetime?",
       apiTime: "datetime?",
     },
@@ -43,6 +47,8 @@ module.exports = {
     defaults: {
       username: "user",
       access: [ 'api', 'gui' ],
+      models: '[]',
+      allowModels: false,
       cors: '*',
     },
   
@@ -54,6 +60,7 @@ module.exports = {
       id: { min: 32, max: 32 },
       token: { min: 32, max: 32 },
       access: { elem: { max: 16 }, array: { max: Object.keys(access).length } },
+      models: { elem: { max: 255 }, array: { max: 1024 } },
       cors: { min: 0, max: 2048 },
     },
   },

@@ -1,3 +1,4 @@
+const { emptyModelArray } = require('../config/users.cfg')
 const errors = require('../config/errors.internal')
 const logger = require('../config/log')
 
@@ -37,6 +38,10 @@ exports.accessArray = (accessInt) => {
 exports.hasAccess = (accessIntA, accessIntB) => (accessIntA || 0) & (accessIntB || 0)
 
 exports.passwordAccess = exports.accessInt(requirePassword)
+
+exports.hasModelAccess = ({ allowModels, models }, modelName) => models && !!allowModels === models.includes(modelName)
+
+exports.getModelsString = (models, allow) => `${allow ? 'Allow' : 'Block'}: ${(Array.isArray(models) && models.join(', ')) || emptyModelArray}`
 
 
 /* ---- CORS ADAPTERS ---- */

@@ -4,8 +4,9 @@ const passport = require('passport')
 const LocalStrategy = require('passport-local').Strategy
 
 const Users = require('../models/Users')
-const { hasAccess, accessInt } = require('../utils/users.utils')
+const { hasAccess, hasModelAccess, accessInt } = require('../utils/users.utils')
 const { authorizeUser, storeUser, loadUser, sessionOptions } = require('../services/auth.services')
+const errors = require('../config/errors.internal')
 const loginAccess = accessInt(require('../config/users.cfg').loginAccess)
 
 
@@ -26,6 +27,8 @@ exports.checkAuth = (redirectURL, accessLevel) => (req, res, next) => {
   if (req.isAuthenticated() && hasAccess(req.user.access, accessLevel)) return next()
   res.redirect(redirectURL)
 }
+
+exports.checkModel = (modelName) => (req, _, next) => hasModelAccess(req.user, modelName) ? next() : next(errors.noModel(modelName))
     
 exports.forwardOnAuth = (redirectURL, accessLevel) => (req, res, next) => {
   if (req.isAuthenticated() && hasAccess(req.user.access, accessLevel)) return res.redirect(redirectURL)

@@ -15,21 +15,31 @@ $( 'tr.tableRow' ).on('click', function() {
   $( 'input#'+$(this).attr('data-key') ).val( $(this).attr('data-val') );
 
   $(this).children('td').each(function() {
-    var key = '#'+$(this).attr('data-key');
+    var key = $(this).attr('data-key');
     
-    if (key === '#password' || key === '#confirm') { return true; }
-
-    if (key !== '#access') {
-      $( key ).val($(this).text());
+    if (key === 'password') {
+      $( '#password' ).text('')
+      $( '#confirm' ).text('')
       return true;
     }
 
-    $( 'input.accessChecks' ).prop('checked', false);
+    if (key !== 'access' && key !== 'models') {
+      $( '#' + key ).val($(this).text());
+      return true;
+    }
 
-    $(this).text().split('/').forEach(function(accessType) {
-      $( 'input#'+accessType ).prop('checked', true);
+    $( 'input.'+key+'Checks' ).prop('checked', false);
+    var checks = $(this).text().split(', ');
+
+    if (key === 'models') {
+      $( 'input#allowModels'  ).prop('checked', /^Allow/.test(checks[0]));
+      checks[0] = checks[0].replace(/^(Block|Allow): /,'');
+    }
+    
+    checks.forEach(function(accessType) {
+      $( 'input.'+key+'Checks#'+accessType ).prop('checked', true);
     });
-
+        
   });
 });
 
@@ -42,6 +52,32 @@ $( 'input.accessChecks' ).on('input', function() {
   } else {
     $( 'input#none' ).prop('checked', false);
   }
+});
+$( 'input.modelsChecks' ).on('input', function() {
+  if (!$(this).prop('checked')) return;
+
+  if ($(this).attr('id') === "none") {
+    $( 'input.modelsChecks' ).not( '#none' ).prop('checked', false);
+  } else {
+    $( 'input#none' ).prop('checked', false);
+  }
+});
+
+/* Update title of models on allowModels change */
+$(function() {
+  function allowMode() { $( 'fieldset#modelsChecks > legend' ).text('Allow Models'); }
+  function blockMode() { $( 'fieldset#modelsChecks > legend' ).text('Block Models'); }
+
+  if ($( 'input#allowModels' ).prop('checked')) { allowMode(); }
+  else { blockMode(); }
+
+  $( 'input#clearForm' ).on('click', function() { blockMode(); });
+
+  $( 'input#allowModels' ).on('input', function() {
+    if ($(this).prop('checked')) { allowMode(); }
+    else { blockMode(); }
+  });
+
 });
 
 /* Update password/confirm fields on each change */

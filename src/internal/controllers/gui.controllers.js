@@ -2,7 +2,7 @@ const Users = require('../models/Users')
 const { getTableFields, varName, getSchema } = require('../utils/gui.utils')
 const { access, tableFields, tooltips } = require('../config/users.cfg')
 const { guiAdapter } = require('../services/users.services')
-const { hasAccess } = require('../utils/users.utils')
+const { hasAccess, hasModelAccess } = require('../utils/users.utils')
 const { labels } = require('../services/form.services')
 const errors = require('../config/errors.internal')
 const { pageOptions } = require('../../config/gui.cfg')
@@ -15,7 +15,7 @@ exports.dbHome = (req, res) => res.render('dbHome', {
   user: req.user.username,
   isAdmin: hasAccess(req.user.access, access.admin),
   baseURL: urls.prefix + urls.home + '/',
-  models
+  models: models.filter((modelName) => hasModelAccess(req.user, modelName)),
 })
 
 exports.modelDb = (Model, { view = 'dbModel', partialMatch = true, overrideDbParams = {}, formatData = (data) => data } = {}) => {

@@ -3,7 +3,7 @@ const models = require('../../models/_all')
 const controllers = require('../controllers/gui.controllers')
 const actions = require('../controllers/action.controllers')
 const validate = require('../validators/gui.validators')
-const { checkAuth } = require('../middleware/auth.middleware')
+const { checkAuth, checkModel } = require('../middleware/auth.middleware')
 const { access } = require('../config/users.cfg')
 const { basic, root } = require('../../config/urls.cfg').gui
 
@@ -14,6 +14,8 @@ router.get( basic.user,                           controllers.userProfile)
 router.post(basic.user+basic.form, validate.form, actions.userForm)
 
 models.forEach((Model) => {
+  router.use( `${basic.home}/${Model.title}`, checkModel(Model.title))
+  
   const controller = controllers.modelDb(Model)
   router.get( `${basic.home}/${Model.title}`,                           validate.page,             controller.model)
   router.post(`${basic.home}/${Model.title}${basic.swap}`,              validate.swap(Model),      actions.swap(Model))

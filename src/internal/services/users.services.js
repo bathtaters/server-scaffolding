@@ -1,16 +1,19 @@
-const { accessArray, accessInt, decodeCors, encodeCors, displayCors, isRegEx, hasAccess } = require('../utils/users.utils')
+const { accessArray, accessInt, decodeCors, encodeCors, displayCors, isRegEx, hasAccess, getModelsString } = require('../utils/users.utils')
 const { generateToken, encodePassword } = require('../utils/auth.utils')
 const userDef = require('../../config/models.cfg').defaults._users
 const errors = require('../config/errors.internal')
-const { access } = require('../config/users.cfg')
+const { access, emptyModelArray } = require('../config/users.cfg')
 
-exports.getAdapter = ({ id, token, username, access, cors, key, guiTime, apiTime }) => ({
+exports.getAdapter = ({ id, token, username, access, cors, key, guiTime, apiTime, models, allowModels }) => ({
   id, token, username, access, guiTime, apiTime,
+  models: models ? JSON.parse(models) : [],
+  allowModels: Boolean(allowModels),
   password: Boolean(key),
   cors: decodeCors(cors),
 })
 
 exports.setAdapter = (data) => {
+  if ('models' in data) data.models = JSON.stringify(data.models.filter((str) => emptyModelArray !== str))
   if ('access' in data) data.access = accessInt(data.access)
   if ('cors' in data) data.cors = encodeCors(data.cors)
   if ('username' in data) data.username = data.username.toLowerCase()
@@ -27,18 +30,21 @@ exports.addAdapter = ({
   username = userDef.username,
   access = userDef.access,
   cors = userDef.cors,
+  allowModels = userDef.allowModels,
+  models = userDef.models,
   password,
-}, idKey = 'id') => exports.setAdapter({
+}, idKey = 'id') => ({
   [idKey]: generateToken(),
   token: generateToken(),
-  username, access, password, cors
+  username, access, password, cors, models, allowModels
 })
 
 exports.guiAdapter = (user) => {
   if (!user) return []
   if (Array.isArray(user)) return user.map(exports.guiAdapter)
 
-  if ('access'  in user) user.access  = accessArray(user.access).join('/')
+  if ('access'  in user) user.access  = accessArray(user.access).join(', ')
+  if ('models'  in user) user.models  = getModelsString(user.models, user.allowModels)
   if ('guiTime' in user) user.guiTime = user.guiTime ? new Date(user.guiTime).toLocaleString() : '-'
   if ('apiTime' in user) user.apiTime = user.apiTime ? new Date(user.apiTime).toLocaleString() : '-'
 
@@ -50,8 +56,17 @@ exports.guiAdapter = (user) => {
   }) : user
 }
 
-exports.preValidateAdapter = (formData) => {
+exports.preValidateAdapter = (formData, isSearch) => {
   if (formData.access && typeof formData.access === 'string') formData.access = formData.access.split(',')
+  if (isSearch) {
+    delete formData.models
+    delete formData.allowModels
+    return formData
+  }
+
+  if (formData.allowModels == null) formData.allowModels = false
+  if (formData.models && typeof formData.models === 'string') formData.models = formData.models.split(',')
+  return formData
 }
 
 exports.schemaAdapter = (schema) => {

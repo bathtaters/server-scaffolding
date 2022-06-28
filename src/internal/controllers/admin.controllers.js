@@ -1,6 +1,6 @@
 const Users = require('../models/Users')
 const { modelDb } = require('./gui.controllers')
-const { access, tableFields, tooltips } = require('../config/users.cfg')
+const { access, tableFields, tooltips, emptyModelArray } = require('../config/users.cfg')
 const { guiAdapter } = require('../services/users.services')
 const { hasAccess } = require('../utils/users.utils')
 const { getEnv, canUndo, settingsActions } = require('../services/settings.services')
@@ -10,10 +10,12 @@ const urls = require('../../config/urls.cfg').gui.admin
 const { colors, maxLogLine, trimLogMessage } = require('../config/log.cfg')
 
 // USER TABLE
+const modelList = require('../../models/_all').map(({title}) => title).concat(emptyModelArray)
 exports.userTable = modelDb(Users, { view: 'users', formatData: guiAdapter, overrideDbParams: {
   title: 'Users',
   tooltips,
   tableFields,
+  modelList,
   schema: [],
   accessLevels: Object.keys(access),
   baseURL: urls.prefix + urls.user,

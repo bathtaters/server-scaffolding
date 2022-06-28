@@ -29,6 +29,8 @@ module.exports = {
   badToken: () => createError(401, "Invalid or outdated bearer token."),
   noAccess: () => createError(403, "User does not have access."),
   badAccess: (access, type = 'key') => createError(500, `Invalid access ${type}: ${access}.`),
+  noModel: (modelName) => createError(403, `User does not have access to ${modelName || 'model'}.`),
+  badModels: (models) => createError(500, `Invalid model list: [${typeof models}] ${JSON.stringify(models)}.`),
   loginMessages: {
     noUser:     { fail: 'Incorrect username or user was deleted' },
     noPassword: { fail: 'Password not created (Contact administrator)' },

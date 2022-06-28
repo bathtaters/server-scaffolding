@@ -9,6 +9,15 @@ block form
     .col-sm
       each val, key in { username: 'text', password: 'password', confirm: 'password' }
         +formInput(key, val, limits[key], defaults[key], tableFields[key], '', tooltips[key])
+
+      .collapse.stretch
+        input(type="checkbox" id="expandModels" aria-hidden="true" checked=false)
+        label.center(for="expandModels" aria-hidden="true")= tableFields.models
+        .row
+          .col-sm
+            +checkboxes('models', modelList, 'Models')
+            i.dim.small
+              +formInput('allowModels', 'checkbox', null, defaults.allowModels, 'Allow only selected', '', tooltips.allowModels)
     
     .col-sm
       +buttonInput('token', 'readonly', 'Regen', limits.token, defaults.token, tableFields.token, tooltips.token)
@@ -18,7 +27,7 @@ block form
       +pageData(page, size)
 
   .row: .col-sm
-    +formInput('cors', '2', limits.cors, defaults.cors, tableFields.cors, '', tooltips.cors)
+      +formInput('cors', '2', limits.cors, defaults.cors, tableFields.cors, '', tooltips.cors)
 
 block table
   each user in data
