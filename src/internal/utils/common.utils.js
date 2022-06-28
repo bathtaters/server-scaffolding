@@ -6,3 +6,6 @@ exports.filterDupes = (arr) => arr.filter((val, idx) => !arr.slice(0,idx).includ
 
 // Check if array has any duplicate values
 exports.hasDupes = (array) => array.some((val, idx) => array.slice(0, idx).includes(val))
+
+// Get all routes except given route
+exports.notRoute = (url) => RegExp(`^(?!(${url})($|/.*))`)
