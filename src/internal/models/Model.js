@@ -38,7 +38,7 @@ class Model {
   get(id = null, idKey = null, raw = false) {
     if (id == null) return services.all(getDb(), `SELECT * FROM ${this.title}`).then((res) => raw || !this.getAdapter ? res : res.map(this.getAdapter))
     return services.get(getDb(), `SELECT * FROM ${this.title} WHERE ${idKey || this.primaryId} = ?`, [id])
-      .then((res) => raw || !this.getAdapter ? res : this.getAdapter(res))
+      .then((res) => raw || !this.getAdapter ? res : res && this.getAdapter(res))
   }
 
   getPage(page, size, reverse = null, orderKey = null) {
