@@ -47,7 +47,7 @@ module.exports = {
     defaults: {
       username: "user",
       access: [ 'api', 'gui' ],
-      models: '[]',
+      models: [],
       allowModels: false,
       cors: '*',
     },
