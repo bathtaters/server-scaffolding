@@ -3,11 +3,12 @@ extends components/modelBase
 block form
   .row
     .col-sm#primary-key
-      +formInput(idKey, 'readonly', limits[idKey], defaults[idKey], tableFields[idKey], 'button-group')
-    .col-sm
-      +buttonInput('swapId', 'id', 'Swap', limits[idKey], defaults[idKey])
-      if !searchData
-        +pageData(page, size)
+      +formInput(idKey, canWrite && !canRead ? 'id' : 'readonly', limits[idKey], defaults[idKey], tableFields[idKey], 'button-group')
+    if canWrite
+      .col-sm
+        +buttonInput('swapId', 'id', 'Swap', limits[idKey], defaults[idKey])
+    if !searchData
+      +pageData(page, size)
 
   .row
     each val, key in schema

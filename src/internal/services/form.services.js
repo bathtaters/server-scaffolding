@@ -3,6 +3,15 @@ const { extractId } = require('../utils/db.utils')
 const searchURL = require('../../config/urls.cfg').gui.basic.find
 
 exports.labels = [ 'Search', 'Add', 'Update', 'Remove', 'Reset' ]
+const actionAccess = {
+  [exports.labels[0]]: 'read',  
+  [exports.labels[1]]: 'write', 
+  [exports.labels[2]]: 'write', 
+  [exports.labels[3]]: 'write', 
+  [exports.labels[4]]: 'write', 
+}
+
+exports.labelsByAccess = (accessTypes) => exports.labels.filter((action) => accessTypes.includes(actionAccess[action]))
 
 // Actions based on Form submit button label
 exports.modelActions = (Model) => ({

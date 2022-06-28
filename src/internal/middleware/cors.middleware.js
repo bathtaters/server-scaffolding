@@ -11,8 +11,8 @@ passport.use(new BearerStrategy(authorizeBearer(Users, access.api)))
 
 const bearerAuth = passport.authenticate('bearer', { session: false })
   
-const modelAuth = (modelName) => (req, _, next) => 
-  req.isAuthenticated() && hasModelAccess(req.user, modelName) ?
+const modelAuth = (modelName, accessType) => (req, _, next) => 
+  req.isAuthenticated() && hasModelAccess(req.user.models, modelName, accessType) ?
     next() : next(errors.noModel(modelName))
 
 const getCors = (req, next) => !req.isAuthenticated() ? next(errors.noAccess()) : next(null, {
@@ -21,6 +21,6 @@ const getCors = (req, next) => !req.isAuthenticated() ? next(errors.noAccess()) 
   origin: req.user.cors,
 })
 
-module.exports = (modelName = null) => modelName ?
-  [bearerAuth, modelAuth(modelName), cors(getCors)] :
+module.exports = (modelName = null, accessType) => modelName ?
+  [bearerAuth, modelAuth(modelName, accessType), cors(getCors)] :
   [bearerAuth, cors(getCors)]

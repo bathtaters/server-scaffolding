@@ -3,7 +3,7 @@ const { getTableFields, varName, getSchema } = require('../utils/gui.utils')
 const { access, tableFields, tooltips } = require('../config/users.cfg')
 const { guiAdapter } = require('../services/users.services')
 const { hasAccess, hasModelAccess } = require('../utils/users.utils')
-const { labels } = require('../services/form.services')
+const { labels, labelsByAccess } = require('../services/form.services')
 const errors = require('../config/errors.internal')
 const { pageOptions } = require('../../config/gui.cfg')
 const urls = require('../../config/urls.cfg').gui.basic
@@ -15,7 +15,7 @@ exports.dbHome = (req, res) => res.render('dbHome', {
   user: req.user.username,
   isAdmin: hasAccess(req.user.access, access.admin),
   baseURL: urls.prefix + urls.home + '/',
-  models: models.filter((modelName) => hasModelAccess(req.user, modelName)),
+  models: models.filter((modelName) => req.user && hasModelAccess(req.user.models, modelName)),
 })
 
 exports.modelDb = (Model, { view = 'dbModel', partialMatch = true, overrideDbParams = {}, formatData = (data) => data } = {}) => {
@@ -24,8 +24,7 @@ exports.modelDb = (Model, { view = 'dbModel', partialMatch = true, overrideDbPar
     idKey: Model.primaryId,
     baseURL: `${urls.prefix}${urls.home}/${Model.title}`,
     postURL: `${urls.prefix}${urls.home}/${Model.title}${urls.form}`,
-    submitURLs: [`${urls.prefix}${urls.home}/${Model.title}${urls.form}${urls.find}`],
-    buttons: labels,
+    submitURLs: { Search: `${urls.prefix}${urls.home}/${Model.title}${urls.form}${urls.find}` },
     schema: getSchema(Model.schema, Model.primaryId),
     tableFields: getTableFields(Model.schema, Model.primaryId),
     limits: Model.limits || {},
@@ -34,25 +33,35 @@ exports.modelDb = (Model, { view = 'dbModel', partialMatch = true, overrideDbPar
   }
 
   return {
-    model: (req, res, next) => Model.getPaginationData(req.query, pageOptions).then(({ data, ...pageData}) => 
-      res.render(view, {
+    model: (req, res, next) => Model.getPaginationData(req.query, pageOptions).then(({ data, ...pageData}) => {
+      const canRead  = req.user && hasModelAccess(req.user.models, Model.title, 'read')
+      const canWrite = req.user && hasModelAccess(req.user.models, Model.title, 'write')
+
+      return res.render(view, {
         ...staticDbParams,
         ...pageData,
         data: formatData(data, req.user),
+        buttons: labelsByAccess([canRead ? 'read' : 'X', canWrite ? 'write' : 'X']),
         user: req.user && req.user.username,
-        isAdmin: req.user && hasAccess(req.user.access, access.admin),
+        isAdmin:  req.user && hasAccess(req.user.access, access.admin),
+        canRead, canWrite,
       })
-    ).catch(next),
+    }).catch(next),
 
-    find: (req, res, next) => Model.find(req.query, partialMatch).then((data) => 
-      res.render(view, {
+    find: (req, res, next) => Model.find(req.query, partialMatch).then((data) => {
+      const canRead  = req.user && hasModelAccess(req.user.models, Model.title, 'read')
+      const canWrite = req.user && hasModelAccess(req.user.models, Model.title, 'write')
+
+      return res.render(view, {
         ...staticDbParams,
         data: formatData(data, req.user),
         searchData: formatData(req.query, req.user, labels[0]),
+        buttons: labelsByAccess([canRead ? 'read' : 'X', canWrite ? 'write' : 'X']),
         user: req.user && req.user.username,
         isAdmin: req.user && hasAccess(req.user.access, access.admin),
+        canRead, canWrite,
       })
-    ).catch(next),
+    }).catch(next),
   }
 }
 

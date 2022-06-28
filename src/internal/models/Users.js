@@ -35,7 +35,7 @@ class Users extends Model {
     if (test) throw errors.badUsername(data.username.trim(), test)
 
     const newData = addAdapter(data, this.primaryId)
-    if ((passwordAccess & newData.access) && !newData.key) throw errors.noData('password for GUI access')
+    if ((passwordAccess & newData.access) && !newData.password) throw errors.noData('password for GUI access')
 
     return super.add(newData)
   }

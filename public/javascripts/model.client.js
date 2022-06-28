@@ -49,6 +49,7 @@ $(function() {
   }
 
   if ($( 'input#searchMode' ).prop('checked')) { enableSearch(); }
+  if($( 'input#forceSearch' ).val()) { enableSearch(); }
   
   $( 'input#clearForm' ).on('click', function() { disableSearch(); });
 

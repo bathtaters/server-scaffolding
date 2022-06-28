@@ -29,6 +29,6 @@ exports.authorizeUser = (Model, accessLevel) => (username, password, done) =>
   }).catch(done)
 
 exports.storeUser = (Model) => (user, done) => done(null, user[Model.primaryId])
-exports.loadUser = (Model, accessStr) => (id, done) => Model.get(id, null, accessStr).then((user) =>
-  done(user ? null : errors.noUser(), user || false)
+exports.loadUser = (Model, accessStr) => (id, done) => Model.get(id, null, accessStr).then((user) => 
+  done(null, user || false, user ? undefined : errors.noUser())
 ).catch(done)

@@ -45,14 +45,14 @@ mixin buttonInput(key, inpType, button, limits, defaultValue, label, tooltip, bu
       +typedInp(key, inpType, limits, defaultValue)
       input.button(type='button' name=buttonKey id=buttonKey+button value=button)
 
-mixin buttonRow(buttons, classes = [], urls = [], key = 'action', buttonType = 'submit')
+mixin buttonRow(buttons, classes = {}, urls = {}, key = 'action', buttonType = 'submit')
   .row.button-group
-    each action, idx in buttons
+    each action in buttons
       input.large(
         type=buttonType name=key id=key+action value=action
-        class=((classes[idx] && classes[idx].replace('disabled','').trim()) || 'inverse')
-        disabled=(!!classes[idx] && classes[idx].includes('disabled'))
-        formaction=(urls[idx])
+        class=((classes[action] && classes[action].replace('disabled','').trim()) || 'inverse')
+        disabled=(!!classes[action] && classes[action].includes('disabled'))
+        formaction=(urls[action])
       )
 
 mixin pageData(page, size, id = 'queryString', pageKey = 'page', sizeKey = 'size')
