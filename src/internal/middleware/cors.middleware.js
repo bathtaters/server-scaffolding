@@ -13,7 +13,7 @@ const bearerAuth = passport.authenticate('bearer', { session: false })
   
 const modelAuth = (modelName, accessType) => (req, _, next) => 
   req.isAuthenticated() && hasModelAccess(req.user.models, modelName, accessType) ?
-    next() : next(errors.noModel(modelName))
+    next() : next(errors.noModel(modelName, accessType))
 
 const getCors = (req, next) => !req.isAuthenticated() ? next(errors.noAccess()) : next(null, {
   credentials: true,
