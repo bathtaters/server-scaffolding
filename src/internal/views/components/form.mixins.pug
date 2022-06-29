@@ -1,5 +1,9 @@
 mixin typedInp(key, inpType, limits, defaultValue, classes)
-  if isNaN(inpType)
+  if Array.isArray(inpType)
+    select(name=key id=key class=classes)
+      each opt in inpType
+        option(value=opt selected=(opt === defaultValue))= opt
+  else if isNaN(inpType)
     input(
       name=key id=key class=classes readonly=(inpType === 'readonly')
       value=(inpType !== 'checkbox' ? defaultValue : undefined)
