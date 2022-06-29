@@ -75,7 +75,7 @@ Includes ***Passport*** session authentication, ***Morgan*** console/file loggin
 ---
 
 ## .env Variables
-##### _Defaults are in [brackets]._
+##### _Can be set via `/admin/settings`. Defaults are in [brackets]._
 ```
 NODE_ENV=[development]|production|test
 port=[8080]
