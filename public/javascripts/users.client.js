@@ -10,6 +10,20 @@ $( 'input#actionReset' ).on('click', function(ev) {
 /* Reset hidden fields on 'clear' */
 $( 'input#clearForm' ).on('click', function() { $( 'input[type="hidden"]' ).val(""); });
 
+/* Copy API Key to Clipboard (Hide if no Clipboard API) */
+$( function() { if (!navigator.clipboard) { $( 'a#copyToken' ).addClass('hidden'); } } );
+$( 'a#copyToken' ).on('click', function() {
+  if (!navigator.clipboard) { return window.alert('Browser does not support copying to clipboard'); }
+  
+  var token = $( 'input#token' ).val();
+  if (!token) { return; }
+
+  navigator.clipboard.writeText(token).then(
+    function() { window.alert('API Key copied to clipboard'); }, 
+    function() { window.alert('Error or browser does not support copying to clipboard'); }
+  );
+});
+
 /* Select row for editing */
 $( 'tr.tableRow' ).on('click', function() {
   $( 'input#'+$(this).attr('data-key') ).val( $(this).attr('data-val') );
