@@ -90,8 +90,6 @@ LOG_DIR=[<project-dir>/.logs]
 ---
 
 ### *TO DO:*
- - Add **accordion styling** to log Errors
- - Allow **restricting** user access by **model** _(create 'modelList' = [] & 'modelAllowList' = false for each user)_
  - Add **unit testing** for utils/services
  - Add **endpoint testing** for API & GUI form/login routes
  - Test deploying w/ **pm2** _(Does Restart Server still work?)_
