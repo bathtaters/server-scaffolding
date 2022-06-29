@@ -12,7 +12,7 @@ block form
 
       .collapse
         input(type="checkbox" id="expandModels" aria-hidden="true" checked=false)
-        label.center(for="expandModels" aria-hidden="true")= tableFields.models
+        label.center.tooltip(for="expandModels" aria-hidden="true" aria-label=tooltips.models)= tableFields.models
         .row
           .col.autoMargin
             +checkboxes('models', modelsList[0], 'Models', modelsList[1])

@@ -1,7 +1,7 @@
 const access = { api: 1, gui: 2, admin: 4, none: 0 }
 const models = { read: 1, write: 2, none: 0 }
 
-const allModelsKey = '_all'
+const allModelsKey = 'default'
 
 const passwordLimits = { min: 8, max: 128 }
 
@@ -10,8 +10,8 @@ module.exports = {
   accessMax: Object.values(access).reduce((sum,n) => sum | n, 0),
   models,
   modelsMax: Object.values(models).reduce((sum,n) => sum | n, 0),
-  allModels: [allModelsKey, 'default'],
-  noModelAccessChar: '0',
+  allModelsKey,
+  noModelAccessChar: '-',
 
   loginAccess: [ 'gui', 'admin' ],
   requirePassword: [ 'gui', 'admin' ],
@@ -34,6 +34,7 @@ module.exports = {
     password: `Must be at least ${passwordLimits.min} characters.`,
     confirm: 'Must match Password.',
     cors: 'Enter: * (all), true/false (all/none), comma-seperated urls, or RegExp(&quot;<regexp>&quot;).',
+    models: 'Set read/write access based on model. No setting for a model uses default setting.',
   },
 
   definitions: {
@@ -44,7 +45,7 @@ module.exports = {
       token: "hex",
       access: "string[]?",
       cors: "string*",
-      models: "object",
+      models: "string[]",
       guiTime: "datetime?",
       apiTime: "datetime?",
     },
@@ -64,6 +65,7 @@ module.exports = {
       id: { min: 32, max: 32 },
       token: { min: 32, max: 32 },
       access: { elem: { max: 16 }, array: { max: Object.keys(access).length } },
+      models: { elem: { max: 64 }, array: { max: 100 * Object.keys(models).length } },
       cors: { min: 0, max: 2048 },
     },
   },

@@ -1,5 +1,5 @@
 const Users = require('../models/Users')
-const { confirmPassword, guiFormAdapter } = require('../services/users.services')
+const { adminFormAdapter, userFormAdapter } = require('../services/users.services')
 const { modelActions, filterFormData } = require('../services/form.services')
 const { settingsActions } = require('../services/settings.services')
 const { login, logout } = require('../middleware/auth.middleware')
@@ -37,12 +37,12 @@ exports.form = function getFormController(Model, { redirectURL = '', formatData 
 }
 
 exports.adminForm = exports.form(Users, {
-  formatData: confirmPassword,
+  formatData: adminFormAdapter,
   redirectURL: urls.admin.prefix+urls.admin.user,
 })
 
 exports.userForm = exports.form(Users, {
-  formatData: guiFormAdapter,
+  formatData: userFormAdapter,
   redirectURL: urls.basic.prefix+urls.basic.user,
 })
 

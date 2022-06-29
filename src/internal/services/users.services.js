@@ -1,4 +1,4 @@
-const { accessArray, accessInt, decodeCors, encodeCors, displayCors, isRegEx, hasAccess, getModelsString } = require('../utils/users.utils')
+const { accessArray, accessInt, decodeCors, encodeCors, displayCors, isRegEx, hasAccess, getModelsString, modelsArrayToObj } = require('../utils/users.utils')
 const { generateToken, encodePassword } = require('../utils/auth.utils')
 const userDef = require('../../config/models.cfg').defaults._users
 const errors = require('../config/errors.internal')
@@ -56,8 +56,8 @@ exports.guiAdapter = (user) => {
 
 exports.preValidateAdapter = (formData, isSearch) => {
   if (isSearch) delete formData.models
+  else if (formData.models && typeof formData.models === 'string') formData.models = formData.models.split(',')
   if (formData.access && typeof formData.access === 'string') formData.access = formData.access.split(',')
-  // if (formData.models && typeof formData.models === 'string') formData.models = formData.models.split(',')
   return formData
 }
 
@@ -67,7 +67,7 @@ exports.schemaAdapter = (schema) => {
   return schema
 }
 
-exports.confirmPassword = (formData, _, action) => {
+const confirmPassword = (formData, action) => {
   if ((action === 'Add' || action === 'Update') && 'password' in formData) {
     if (!('confirm' in formData)) throw errors.noConfirm()
     if (formData.password !== formData.confirm) throw errors.badConfirm()
@@ -77,7 +77,12 @@ exports.confirmPassword = (formData, _, action) => {
   return formData
 }
 
-exports.guiFormAdapter = ({ id, username, password, confirm }, user, action) => {
+exports.adminFormAdapter = (formData, _, action) => {
+  if ('models' in formData) formData.models = modelsArrayToObj(formData.models)
+  return confirmPassword(formData, action)
+}
+
+exports.userFormAdapter = ({ id, username, password, confirm }, user, action) => {
   if (user.id !== id && !hasAccess(user.access, access.admin)) throw errors.modifyOther()
-  return exports.confirmPassword({ id, username, password, confirm }, action)
+  return confirmPassword({ id, username, password, confirm }, action)
 }
