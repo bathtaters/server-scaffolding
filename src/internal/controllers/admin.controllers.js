@@ -1,9 +1,10 @@
 const Users = require('../models/Users')
 const { modelDb } = require('./gui.controllers')
 const { access, tableFields, tooltips, allModelsKey, models } = require('../config/users.cfg')
+const envTooltips = require('../config/env.cfg').tooltips
 const { guiAdapter } = require('../services/users.services')
 const { hasAccess } = require('../utils/users.utils')
-const { getEnv, canUndo, settingsActions } = require('../services/settings.services')
+const { getEnv, getForm, canUndo, settingsActions } = require('../services/settings.services')
 const { logList, logFile } = require('../services/log.services')
 const { getAllLevels } = require('../utils/log.utils')
 const urls = require('../../config/urls.cfg').gui.admin
@@ -28,6 +29,8 @@ exports.settings = (req, res, next) =>
   res.render('settings', {
     title: 'Settings',
     env: getEnv(),
+    formSettings: getForm(),
+    tooltips: envTooltips,
     canUndo: canUndo(),
     buttons: Object.keys(settingsActions),
     postURL: urls.prefix + urls.home + urls.form,

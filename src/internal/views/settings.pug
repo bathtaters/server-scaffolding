@@ -12,9 +12,14 @@ block content
         h2 Admin Settings
         input.small.button.button-group#revertForm(type="reset" value="Revert")
 
-      +formInput("env", "12", null, env, ".ENV File", "marginX")
-      i
-        span.marginX.small.dim NOTE: Settings will take effect after restart
-        a.small(href="https://github.com/bathtaters/server-scaffolding/blob/master/README.md#env-variables" target="_blank") View Readme
+      .container: .row
+        each formCol in formSettings
+          .col-sm
+            each settings, key in formCol
+              +formInput(key, settings.type, settings.limits, env[key], key, '', tooltips[key])
+          
+      .center
+        br
+        i.small.dim NOTE: Settings will only take effect after restart
 
       +buttonRow(buttons, { Update: 'tertiary', Undo: 'tertiary' + (canUndo ? '' : ' disabled'), Default: 'secondary', Restart: 'secondary' })

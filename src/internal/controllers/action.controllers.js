@@ -56,10 +56,10 @@ const restartParams = (req) => ({
 })
 
 exports.settingsForm = (req,res,next) => {
-  const { action, queryString, env } = req.body
+  const { action, queryString, ...env } = req.body
   if (!action || !Object.keys(settingsActions).includes(action)) return next(errors.badAction(action))
 
-  if (action.toLowerCase() === 'update' && !env) return next(errors.noData('.ENV data'))
+  if (action.toLowerCase() === 'update' && !env) return next(errors.noData('settings'))
 
   return settingsActions[action](env)
     .then((delay) => delay ?
