@@ -77,9 +77,8 @@ class Users extends Model {
   }
 
   async checkToken(token, accessLevel) {
-    return super.get(token, 'token', true).then((user) => !user ? null :
-      !hasAccess(user.access, accessInt(accessLevel)) ? false :
-      this.getAdapter ? this.getAdapter(user) : user
+    return this.get(token, 'token', 'api').then((user) => !user ? null :
+      !hasAccess(user.access, accessInt(accessLevel)) ? false : user
     )
   }
 
