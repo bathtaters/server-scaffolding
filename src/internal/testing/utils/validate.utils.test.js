@@ -3,7 +3,7 @@ const validator = require('validator').default
 const unescSpy = jest.spyOn(validator, 'unescape')
 
 // Imports
-const { dateOptions, getTypeArray, escapedLength, deepUnescape } = require('../../utils/validate.utils')
+const { dateOptions, isBoolean, parseBoolean, looseBools, getTypeArray, escapedLength, deepUnescape } = require('../../utils/validate.utils')
 
 
 describe('dateOptions', () => {
@@ -42,6 +42,90 @@ describe('getTypeArray', () => {
     expect(getTypeArray('test?')[4]).toBe('?')
     expect(getTypeArray('test*[]')[4]).toBeFalsy()
     expect(getTypeArray('test*[]?')[4]).toBe('?')
+  })
+})
+
+// Check custom Bool validator/sanitizer
+describe('isBoolean', () => {
+  it('succeeds on booleans', () => {
+    expect(isBoolean(true)).toBe(true)
+    expect(isBoolean(false)).toBe(true)
+  })
+  it('succeeds on boolean strings', () => {
+    expect(isBoolean('true')).toBe(true)
+    expect(isBoolean('false')).toBe(true)
+    expect(isBoolean('')).toBe(true)
+  })
+  it('succeeds on 0/1 ints', () => {
+    expect(isBoolean(0)).toBe(true)
+    expect(isBoolean(1)).toBe(true)
+  })
+  it('succeeds on 0/1 strings', () => {
+    expect(isBoolean('0')).toBe(true)
+    expect(isBoolean('1')).toBe(true)
+  })
+  it('succeeds on other boolean strings', () => {
+    expect(isBoolean('yes')).toBe(true)
+    expect(isBoolean('no')).toBe(true)
+    expect(isBoolean('on')).toBe(true)
+    expect(isBoolean('off')).toBe(true)
+  })
+  it('fails on non-boolean strings', () => {
+    expect(isBoolean('truthy')).toBe(false)
+    expect(isBoolean('a')).toBe(false)
+    expect(isBoolean('TEST')).toBe(false)
+  })
+  it('fails on non-boolean types', () => {
+    expect(isBoolean({ test: true })).toBe(false)
+    expect(isBoolean([ 1, 2, 3 ])).toBe(false)
+    expect(isBoolean(null)).toBe(false)
+    expect(isBoolean(undefined)).toBe(false)
+  })
+  it('check loose matches', () => {
+    expect(isBoolean('FALSE')).toBe(looseBools)
+    expect(isBoolean('ofF')).toBe(looseBools)
+    expect(isBoolean(12)).toBe(looseBools)
+  })
+})
+describe('parseBoolean', () => {
+  it('parses booleans', () => {
+    expect(parseBoolean(true)).toBe(true)
+    expect(parseBoolean(false)).toBe(false)
+  })
+  it('parses boolean strings', () => {
+    expect(parseBoolean('true')).toBe(true)
+    expect(parseBoolean('false')).toBe(false)
+    expect(parseBoolean('')).toBe(false)
+  })
+  it('parses 0/1 ints', () => {
+    expect(parseBoolean(0)).toBe(false)
+    expect(parseBoolean(1)).toBe(true)
+  })
+  it('parses 0/1 strings', () => {
+    expect(parseBoolean('0')).toBe(false)
+    expect(parseBoolean('1')).toBe(true)
+  })
+  it('parses other boolean strings', () => {
+    expect(parseBoolean('yes')).toBe(true)
+    expect(parseBoolean('no')).toBe(false)
+    expect(parseBoolean('on')).toBe(true)
+    expect(parseBoolean('off')).toBe(false)
+  })
+  it('parses non-boolean strings', () => {
+    expect(parseBoolean('truthy')).toBe(true)
+    expect(parseBoolean('a')).toBe(true)
+    expect(parseBoolean('TEST')).toBe(true)
+  })
+  it('parses non-boolean types', () => {
+    expect(parseBoolean({ test: true })).toBe(true)
+    expect(parseBoolean([ 1, 2, 3 ])).toBe(true)
+    expect(parseBoolean(12)).toBe(true)
+  })
+  it('parses loose matches', () => {
+    expect(parseBoolean('FALSE')).toBe(!looseBools)
+    expect(parseBoolean('ofF')).toBe(!looseBools)
+    expect(parseBoolean(null)).toBe(!looseBools)
+    expect(parseBoolean(undefined)).toBe(!looseBools)
   })
 })
 

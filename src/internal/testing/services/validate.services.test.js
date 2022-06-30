@@ -3,6 +3,7 @@ const logger = require('../../config/log')
 const warnSpy = jest.spyOn(logger, 'warn')
 const services = require('../../services/validate.services')
 const schemaSpy = jest.spyOn(services, 'getSchema')
+const { isBoolean, parseBoolean } = require('../../utils/validate.utils')
 
 // Mock Config
 jest.mock('../../../config/models.cfg', () => ({
@@ -368,8 +369,8 @@ describe('getSchema', () => {
     })
     it('boolean', () => {
       const result = services.getSchema('test','boolean',null,['isIn'],false)
-      expect(result.test).toHaveProperty('isBoolean', {errorMessage: expect.any(String)})
-      expect(result.test).toHaveProperty('toBoolean', true)
+      expect(result.test).toHaveProperty('custom', { options: isBoolean, errorMessage: expect.any(String) })
+      expect(result.test).toHaveProperty('customSanitizer', { options: parseBoolean })
     })
     it('datetime', () => {
       const result = services.getSchema('test','datetime',null,['isIn'],false)

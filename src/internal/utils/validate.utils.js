@@ -9,6 +9,8 @@ const boolRules = {
   types: ['string', 'number', 'boolean'],
   loose: true, // case-insensitive & convert using Boolean() [false: anything not in 'false' => true]
 }
+exports.looseBools = boolRules.loose // export for testing
+
 const allBools    = boolRules.true.concat(boolRules.false)
 const boolStrings = boolRules.true.concat(boolRules.false).filter((val) => typeof val === 'string').map((val) => val.toLowerCase())
 const falseBools  = boolRules.false.filter((val) => typeof val === 'string').map((val) => val.toLowerCase())
