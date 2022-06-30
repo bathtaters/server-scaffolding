@@ -90,8 +90,9 @@ LOG_DIR=[<project-dir>/.logs]
 ---
 
 ### *TO DO:*
- - Add **unit testing** for utils/services
- - Add **endpoint testing** for API & GUI form/login routes
+ - Add **unit testing** for utils, services, err/log middleware & Model abstract class
+ - Add **endpoint testing** for API & GUI action routes
+ - Define/Add **UI testing** for other GUI routes
  - Test deploying w/ **pm2** _(Does Restart Server still work?)_
 
 ---
