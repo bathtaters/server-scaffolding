@@ -25,7 +25,7 @@ exports.getForm = () => {
   Object.keys(formSettings).forEach((key, idx) => {
     if (Array.isArray(formSettings[key].type)) {
       const currentVal = typeof currentVals[key] === 'string' ? currentVals[key] : String(currentVals[key])
-      if (currentVal && formSettings[key].type.includes(currentVal)) 
+      if (currentVal && !formSettings[key].type.includes(currentVal)) 
         formSettings[key].type.push(currentVal)
     }
     newForm[+(idx >= splitForm)][key] = formSettings[key]
