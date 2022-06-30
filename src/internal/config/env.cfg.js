@@ -24,9 +24,9 @@ module.exports = {
   formSettings: {
     NODE_ENV: { type: ['development','production','test'] },
     port: { type: 'number', limits: { min: 1024, max: 49151 } },
-    LOG_CONSOLE: { type: ['verbose','http','info','warn','error','none'] },
-    LOG_FILE: { type: ['verbose','http','info','warn','error','none'] },
-    LOG_HTTP: { type: ['debug','combined','common','dev','short','tiny','none'] },
+    LOG_CONSOLE: { type: ['none', 'error', 'warn', 'info', 'http', 'verbose'] },
+    LOG_FILE: { type: ['none', 'error', 'warn', 'info', 'http', 'verbose'] },
+    LOG_HTTP: { type: ['none', 'tiny', 'short', 'dev', 'common', 'combined', 'debug'] },
     SESSION_SECRET: { type: 'text', limits: { min: 4, max: 2048 } },
     DB_DIR:  { type: 'text', limits: { min: 0, max: 2048 } },
     LOG_DIR: { type: 'text', limits: { min: 0, max: 2048 } },
