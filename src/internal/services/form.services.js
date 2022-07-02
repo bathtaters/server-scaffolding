@@ -53,7 +53,7 @@ exports.modelActions = (Model) => ({
 
 
 // Filter function for Object
-const defaultFilter = (val,key) => val || val === 0 || val === false
+const defaultFilter = (val,key) => val != null && val !== ''
 exports.filterFormData = (formData, filterCb = defaultFilter) => Object.entries(formData).reduce(
   (filtered, [key, val]) => filterCb(val,key) ? Object.assign(filtered, { [key]: val }) : filtered
 , {})

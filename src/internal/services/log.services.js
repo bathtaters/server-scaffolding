@@ -1,6 +1,6 @@
 const { readdir, readFile } = require('fs/promises')
 const { join, dirname, basename } = require('path')
-const { formatFileLog } = require('../utils/log.utils')
+const { formatFileLog, getMaxEntry } = require('../utils/log.utils')
 const { logViewFileFilter } = require('../config/log.cfg')
 const { logPath } = require('../../config/meta')
 const [ logDir, logFilename ] = [ dirname(logPath), basename(logPath) ]
@@ -33,7 +33,7 @@ exports.getLogLevel = (logLevel, { levels, testLevel, silent, httpDebug }, defau
 
   if (logLevel in levels) return { level: logLevel }
   if (silent.includes(logLevel)) return { silent: true }
-  if (httpDebug.includes(logLevel)) return { level: exports.getMaxEntry(levels)[0] || 'verbose' }
+  if (httpDebug.includes(logLevel)) return { level: getMaxEntry(levels)[0] || 'verbose' }
 
   if (!defaultLevel) throw new Error(`Invalid default log level: ${logLevel}`)
   return exports.getLogLevel(defaultLevel, { levels, silent, httpDebug })

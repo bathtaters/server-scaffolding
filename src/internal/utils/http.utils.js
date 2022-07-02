@@ -16,8 +16,7 @@ exports.httpReq = (id, { headers, params, body, session, user, ips, ip, cookies,
   headers,
   params,
   body: { ...body },
-  cookies: session && session.cookie,
-  // cookies: (session ? [{ type: 'session', ...session.cookie }] : []).concat(cookies || []).concat(signedCookies || []),
+  cookies: (session ? [{ type: 'session', ...session.cookie }] : []).concat(cookies || []).concat(signedCookies || []),
   user,
   ips: ips.concat(ip)
 })

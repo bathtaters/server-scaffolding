@@ -1,4 +1,3 @@
-const { parse } = require('dotenv')
 const { exec } = require('child_process')
 const { writeFile } = require('fs/promises')
 const { getEnvVars, stringifyEnv } = require('../utils/settings.utils')
@@ -47,14 +46,23 @@ exports.settingsActions = {
 
   Default: () => exports.settingsActions.Update(envDefaults),
   
-  Restart: (envObj) => exports.settingsActions.Update(envObj).then(() => {
-    // Restart nodemon
-    if (process.env.NODE_ENV === 'development') exec(`touch "${__filename}"`)
-    // Restart pm2
-    else {
-      process.exitCode = 1
-      process.emit('SIGUSR1')
+  Restart: async (envObj) => {
+    if (envObj) await exports.settingsActions.Update(envObj)
+
+    switch(process.env.NODE_ENV) {
+      case 'test': return 'RESTART'
+
+      case 'development':
+        // Restart nodemon
+        exec(`touch "${__filename}"`)
+        break
+
+      case 'production':
+      default:
+        // Restart pm2
+        process.exitCode = 1
+        process.emit('SIGUSR1')
     }
     return true
-  }),
+  },
 }

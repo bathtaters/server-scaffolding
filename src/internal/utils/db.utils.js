@@ -10,11 +10,14 @@ exports.extractId = (data, idKey) => {
 const sortAlgo = (a,b) => a - b
 exports.appendAndSort = (array, value) => array.includes(value) ? array.slice().sort(sortAlgo) : array.concat(value).sort(sortAlgo)
 
-exports.sanitizeSchemaData = (data, schema=null) => Object.keys(data).reduce((obj,key) =>
-  !schema || Object.keys(schema).includes(key) ? Object.assign(obj, { [key]: data[key] }) : obj
-, {})
+exports.sanitizeSchemaData = (data, schema=null) => {
+  const validKeys = schema && Object.keys(schema)
+  return Object.keys(data).reduce((obj,key) =>
+    !validKeys || validKeys.includes(key) ? Object.assign(obj, { [key]: data[key] }) : obj
+  , {})
+}
 
-exports.schemaFromValidate = (modelName, idKey) => {
+exports.schemaFromValidate = (modelName, primaryKey) => {
   if (!validateTypes[modelName]) return
 
   let schema = {}
@@ -32,7 +35,7 @@ exports.schemaFromValidate = (modelName, idKey) => {
         schema[key] = 'TEXT'
     }
 
-    if (key === idKey) schema[key] += ' PRIMARY KEY'
+    if (key === primaryKey) schema[key] += ' PRIMARY KEY'
   })
 
   return schema

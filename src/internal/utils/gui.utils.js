@@ -27,9 +27,9 @@ exports.getSchema = (schema, idKey) => Object.entries(schema || {}).reduce((res,
 exports.mask = (value) => {
   // Recursively mask
   if (Array.isArray(value))
-    return value.map(mask)
+    return value.map(exports.mask)
   if (value && typeof value === 'object')
-    return Object.entries(value).reduce((obj,[key,val]) => ({ ...obj, [key]: mask(val) }), {})
+    return Object.entries(value).reduce((obj,[key,val]) => ({ ...obj, [key]: exports.mask(val) }), {})
 
   // Mask literals
   switch (typeof value) {

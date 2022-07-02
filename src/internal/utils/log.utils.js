@@ -26,6 +26,6 @@ const formatFileTime = (timestamp) => {
 exports.formatFileLog = (line) => {
   if (!line) return null
   line = JSON.parse(line)
-  if (line.timestamp) line.timestamp = formatFileTime(line.timestamp)
+  if ('timestamp' in line) line.timestamp = formatFileTime(line.timestamp)
   return line
 }

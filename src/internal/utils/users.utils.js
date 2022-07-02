@@ -4,9 +4,7 @@ const logger = require('../config/log')
 
 /* ---- ACCESS ADAPTERS ---- */
 // Access is a Bit-map stored as an Int, retrieved as an array
-
 const { access, accessMax, requirePassword } = require('../config/users.cfg')
-const { deepUnescape } = require('./validate.utils')
 
 const noAccess = Object.keys(access).find((key) => !access[key])
 
@@ -34,7 +32,7 @@ exports.accessArray = (accessInt) => {
   return array.length === 0 ? [noAccess] : array
 }
 
-exports.hasAccess = (accessIntA, accessIntB) => (accessIntA || 0) & (accessIntB || 0)
+exports.hasAccess = (accessIntA, accessIntB) => accessIntA && accessIntB && accessIntA & accessIntB
 
 exports.passwordAccess = exports.accessInt(requirePassword)
 
@@ -73,17 +71,18 @@ exports.modelsArrayToObj = (modelArr) => {
     else modelObj[model] = models[access]
   })
 
-  if (!(allModelsKey in modelObj)) modelObj[allModelsKey] = models.none
+  if (!(allModelsKey in modelObj)) modelObj[allModelsKey] = 0
   return modelObj
 }
 
 exports.getModelsString = (modelObj) => Object.entries(modelObj)
-  .map(([key, int]) => `${key === allModelsKey ? allModelsKey : key}${wrapAccess(exports.modelAccessStr(int))}`).join(', ')
+  .map(([key, int]) => `${key}${wrapAccess(exports.modelAccessStr(int))}`).join(', ')
 
 
 /* ---- CORS ADAPTERS ---- */
 // Allows: String (<url>, *), URL Array, RegExp (match URL), Boolean (true/1 = all, false/0 = none)
 // Stored as a STRING, retrieved as one of the above (for cors.origin)
+const { deepUnescape } = require('./validate.utils')
 
 const isJSON = /^\[[^\]]*\]$|^".*"$/
 const isRegEx = /^RegExp\(["'](.*)["']\)\s*$/
@@ -108,7 +107,7 @@ exports.encodeCors = (cors) => {
   if (cors == null) return undefined
   if (Array.isArray(cors)) return JSON.stringify(cors)
   if (regEx.canString(cors)) return regEx.stringify(cors)
-  if (cors === "true" || cors === "false") return cors
+  if (typeof cors === 'boolean') return cors.toString()
   if (cors === "0" || cors === "1" || cors === 0 || cors === 1) return JSON.stringify(Boolean(+cors))
   if (cors.includes(',')) return JSON.stringify(cors.split(/\s*,\s*/))
   return cors

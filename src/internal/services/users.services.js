@@ -1,8 +1,7 @@
 const { accessArray, accessInt, decodeCors, encodeCors, displayCors, isRegEx, hasAccess, getModelsString, modelsArrayToObj } = require('../utils/users.utils')
 const { generateToken, encodePassword } = require('../utils/auth.utils')
-const userDef = require('../../config/models.cfg').defaults._users
+const { access, definitions } = require('../config/users.cfg')
 const errors = require('../config/errors.internal')
-const { access } = require('../config/users.cfg')
 
 exports.getAdapter = ({ id, token, username, access, cors, key, guiTime, apiTime, models }) => ({
   id, token, username, access, guiTime, apiTime,
@@ -26,10 +25,10 @@ exports.setAdapter = (data) => {
 }
 
 exports.addAdapter = ({
-  username = userDef.username,
-  access = userDef.access,
-  cors = userDef.cors,
-  models = userDef.models,
+  username = definitions.defaults.username,
+  access = definitions.defaults.access,
+  cors = definitions.defaults.cors,
+  models = definitions.defaults.models,
   password,
 }, idKey = 'id') => ({
   [idKey]: generateToken(),
@@ -69,7 +68,7 @@ exports.schemaAdapter = (schema) => {
 
 const confirmPassword = (formData, action) => {
   if ((action === 'Add' || action === 'Update') && 'password' in formData) {
-    if (!('confirm' in formData)) throw errors.noConfirm()
+    if (!formData.confirm) throw errors.noConfirm()
     if (formData.password !== formData.confirm) throw errors.badConfirm()
   }
 
