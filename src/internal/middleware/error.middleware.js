@@ -7,7 +7,7 @@ const { varName } = require('../utils/gui.utils')
 const defaultError = errors.unknown()
 
 // Error string formatting
-const getName = (err) => err.name    || (err.status && err.status in httpErrs ? httpErrs[err.status].name : 'Error')
+const getName = (err) => err.name    || (httpErrs[err.status] || {}).name || 'Error'
 const getMsg  = (err) => err.message || defaultError.message
 const getCode = (err) => err.status  || defaultError.status
 const formatErr = (err) => err.stack || `${err.name} <${err.status}>: ${err.message}`
@@ -16,12 +16,12 @@ const formatErr = (err) => err.stack || `${err.name} <${err.status}>: ${err.mess
 const catchMissing = (req,res,next) => req.error ? next(req.error) : next(errors.missing())
 
 function normalizeError(err, req, res, next) {
-  if (!req.error) req.error = err || defaultError
+  req.error = err || req.error || defaultError
   if (typeof req.error === 'string') req.error = { message: req.error }
   
-  req.error.name    = getName(req.error)
   req.error.message = getMsg(req.error)
   req.error.status  = getCode(req.error)
+  req.error.name    = getName(req.error)
   
   logger.error(`${req.method} ${req.originalUrl} - ${formatErr(req.error)}`)
 
@@ -30,9 +30,9 @@ function normalizeError(err, req, res, next) {
   return next()
 }
 
-const sendAsJSON = (req, res) => res.send({ error: req.error.message })
+const sendAsJSON = (req, res) => res.send({ error: req.error })
 
-const sendAsPage = (req, res) => res.render('error', {
+const sendAsHTML = (req, res) => res.render('error', {
   title: 'Error',
   user: req.user && req.user.username,
   isAdmin: req.user && hasAccess(req.user.access, access.admin),
@@ -44,5 +44,5 @@ const sendAsPage = (req, res) => res.render('error', {
 
 module.exports = {
   json: [ catchMissing, normalizeError, sendAsJSON ],
-  page: [ catchMissing, normalizeError, sendAsPage ],
+  html: [ catchMissing, normalizeError, sendAsHTML ],
 }
