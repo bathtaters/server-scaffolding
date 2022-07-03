@@ -45,7 +45,7 @@ server.use(urls.gui.admin.prefix, adminRoutes)
 
 // Error Handling
 server.use(urls.api.prefix, errorMiddleware.json)
-server.use(errorMiddleware.page)
+server.use(errorMiddleware.html)
 
 // Start server
 startServer(server)
