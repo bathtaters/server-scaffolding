@@ -50,5 +50,4 @@ module.exports = {
   badUsername: (username, reason) => createError(409, `Cannot add ${username || 'user'}: ${reason}`),
   deleteAdmin: () => createError(403, "Cannot remove the only admin. Add a new admin then retry, or reset User Table to remove all users."),
   noUndo: () => createError(500, "Undo queue is empty"),
-  internalValidate: (message) => createError(500, message),
 }
