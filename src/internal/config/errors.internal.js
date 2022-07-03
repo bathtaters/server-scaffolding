@@ -23,6 +23,7 @@ module.exports = {
   noEntry: (id) => createError(400, `No entry exists at ID ${id || ''}.`),
   noAdd: () => createError(502, "New entry was not created."),
   noSize: () => createError(400, "Invalid page size for paginated request."),
+  badPartial: (type) => createError(500, `Attempting partial match with ${type || 'invalid type'}, must be string or bitmap.`),
   
   // Authentication Errors
   noUser: () => createError(401, "User not found."),
