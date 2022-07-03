@@ -1,4 +1,4 @@
-const validateTypes = require('../../config/models.cfg').types
+const configTypes = require('../../config/models.cfg').types
 const { getTypeArray } = require('./validate.utils')
 
 exports.extractId = (data, idKey) => {
@@ -17,11 +17,11 @@ exports.sanitizeSchemaData = (data, schema=null) => {
   , {})
 }
 
-exports.schemaFromValidate = (modelName, primaryKey) => {
-  if (!validateTypes[modelName]) return
+exports.schemaFromConfig = (modelName, primaryKey) => {
+  if (!configTypes[modelName]) return
 
   let schema = {}
-  Object.entries(validateTypes[modelName]).forEach(([key, val]) => {
+  Object.entries(configTypes[modelName]).forEach(([key, val]) => {
     const valType = getTypeArray(val)[1]
     switch(valType) {
       case 'float':

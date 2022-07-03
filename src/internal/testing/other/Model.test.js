@@ -3,7 +3,7 @@ const services = require('../../services/db.services')
 const { openDb, getDb } = require('../../config/db')
 const { hasDupes } = require('../../utils/common.utils')
 const { deepUnescape } = require('../../utils/validate.utils')
-const { sanitizeSchemaData, schemaFromValidate, appendAndSort } = require('../../utils/db.utils')
+const { sanitizeSchemaData, schemaFromConfig, appendAndSort } = require('../../utils/db.utils')
 const errors = require('../../config/errors.internal')
 
 const { deepCopy } = require('./test.utils')
@@ -35,15 +35,15 @@ describe('Model constructor', () => {
     expect(sanitizeSchemaData).toBeCalledTimes(1)
     expect(sanitizeSchemaData).toBeCalledWith({ SCHEMA: true, defId: 'ID' })
   })
-  it('uses schemaFromValidate when no schema', () => {
+  it('uses schemaFromConfig when no schema', () => {
     new Model('test', { ...options })
-    expect(schemaFromValidate).toBeCalledTimes(0)
+    expect(schemaFromConfig).toBeCalledTimes(0)
     expect(new Model('test', { ...options, schema: null }).schema)
       .toEqual({ config: 'SCHEMA', defId: expect.any(String) })
-    expect(schemaFromValidate).toBeCalledTimes(1)
-    expect(schemaFromValidate).toBeCalledWith('test', 'defId')
+    expect(schemaFromConfig).toBeCalledTimes(1)
+    expect(schemaFromConfig).toBeCalledWith('test', 'defId')
   })
-  it('uses schema(schemaFromValidate) when schema is function', () => {
+  it('uses schema(schemaFromConfig) when schema is function', () => {
     const schema = jest.fn((sch) => sch)
     new Model('test', { ...options, schema })
     expect(schema).toBeCalledTimes(1)
@@ -92,9 +92,9 @@ describe('Model constructor', () => {
       })
     })
   })
-  it('error when no schema and no schemaFromValidate', () => {
+  it('error when no schema and no schemaFromConfig', () => {
     expect(() => new Model('test', { ...options, schema: null })).not.toThrowError()
-    schemaFromValidate.mockReturnValueOnce(null)
+    schemaFromConfig.mockReturnValueOnce(null)
     expect(() => new Model('test', { ...options, schema: null })).toThrowError()
   })
   it('error when duplicate keys in schema', () => {
@@ -697,6 +697,6 @@ jest.mock('../../services/db.services', () => ({
 
 jest.mock('../../utils/db.utils', () => ({
   sanitizeSchemaData: jest.fn((schema) => schema),
-  schemaFromValidate: jest.fn(() => ({ config: 'SCHEMA' })),
+  schemaFromConfig: jest.fn(() => ({ config: 'SCHEMA' })),
   appendAndSort: jest.fn((list) => list),
 }))

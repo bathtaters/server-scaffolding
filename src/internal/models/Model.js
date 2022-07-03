@@ -1,7 +1,7 @@
 const { openDb, getDb } = require('../config/db')
 const services = require('../services/db.services')
-const { sanitizeSchemaData, schemaFromValidate, appendAndSort } = require('../utils/db.utils')
-const { defaults: validateDefaults, limits: validateLimits } = require('../../config/models.cfg')
+const { sanitizeSchemaData, schemaFromConfig, appendAndSort } = require('../utils/db.utils')
+const { defaults: configDefaults, limits: configLimits } = require('../../config/models.cfg')
 const { hasDupes } = require('../utils/common.utils')
 const errors = require('../config/errors.internal')
 const { deepUnescape } = require('../utils/validate.utils')
@@ -9,8 +9,8 @@ const { deepUnescape } = require('../utils/validate.utils')
 class Model {
 
   constructor(title, { schema, defaults, limits, primaryId = 'id', getAdapter, setAdapter } = {}) {
-    if (!schema) schema = schemaFromValidate(title, primaryId)
-    if (typeof schema === 'function') schema = schema(schemaFromValidate(title, primaryId), title, primaryId)
+    if (!schema) schema = schemaFromConfig(title, primaryId)
+    if (typeof schema === 'function') schema = schema(schemaFromConfig(title, primaryId), title, primaryId)
 
     if (!schema) throw new Error(`Schema for ${title} not provided and does not exist in validation.json.`)
     if (hasDupes(Object.keys(schema).map((k) => k.toLowerCase()))) throw new Error(`Schema for ${title} contains duplicate key names: ${Object.keys(schema).join(', ')}`)
@@ -19,8 +19,8 @@ class Model {
 
     this.title = title
     this.schema = sanitizeSchemaData(schema)
-    this.defaults = defaults != null ? defaults : validateDefaults[title]
-    this.limits = limits != null ? limits : validateLimits[title]
+    this.defaults = defaults != null ? defaults : configDefaults[title]
+    this.limits = limits != null ? limits : configLimits[title]
     this.primaryId = primaryId
     this.bitmapFields = []
     this.getAdapter = typeof getAdapter === 'function' ? getAdapter : null

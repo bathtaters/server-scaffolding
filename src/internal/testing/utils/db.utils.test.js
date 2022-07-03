@@ -1,11 +1,11 @@
-const { extractId, appendAndSort, sanitizeSchemaData, schemaFromValidate } = require('../../utils/db.utils')
+const { extractId, appendAndSort, sanitizeSchemaData, schemaFromConfig } = require('../../utils/db.utils')
 
 jest.mock('../../utils/validate.utils', () => ({ getTypeArray: (type) => [type, type] }))
 jest.mock('../../../config/models.cfg', () => ({ types: {
   test1: { a: 'string', b: 'int', c: 'object' },
   test2: { d: 'float',  e: 'boolean' },
 }}))
-const validateSchema = {
+const configSchema = {
   test1: { a: 'TEXT', b: 'INTEGER', c: 'TEXT' },
   test2: { d: 'REAL',  e: 'INTEGER' },
 }
@@ -46,19 +46,19 @@ describe('sanitizeSchemaData', () => {
   })
 })
 
-describe('schemaFromValidate', () => {
-  it('fails if modelName not in validate cfg', () => {
-    expect(schemaFromValidate('test3')).toBeUndefined()
-    expect(schemaFromValidate('test4')).toBeUndefined()
+describe('schemaFromConfig', () => {
+  it('fails if modelName not in config', () => {
+    expect(schemaFromConfig('test3')).toBeUndefined()
+    expect(schemaFromConfig('test4')).toBeUndefined()
   })
   it('converts types', () => {
-    expect(schemaFromValidate('test1')).toEqual(validateSchema.test1)
-    expect(schemaFromValidate('test2')).toEqual(validateSchema.test2)
+    expect(schemaFromConfig('test1')).toEqual(configSchema.test1)
+    expect(schemaFromConfig('test2')).toEqual(configSchema.test2)
   })
   it('flags primaryKey', () => {
-    expect(schemaFromValidate('test1','a').a).toContain('PRIMARY KEY')
-    expect(schemaFromValidate('test2','e').e).toContain('PRIMARY KEY')
-    Object.values(schemaFromValidate('test1')).forEach((type) => {
+    expect(schemaFromConfig('test1','a').a).toContain('PRIMARY KEY')
+    expect(schemaFromConfig('test2','e').e).toContain('PRIMARY KEY')
+    Object.values(schemaFromConfig('test1')).forEach((type) => {
       expect(type).not.toContain('PRIMARY KEY')
     })
   })
