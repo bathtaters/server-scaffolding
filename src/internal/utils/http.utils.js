@@ -1,4 +1,6 @@
 // Format HTTP messages
+const prettyJSON = require('winston').format.prettyPrint()
+const formatObject = (obj) => prettyJSON.transform(obj, { colorize: true })[Symbol.for('message')]
 
 // Convert buffer data for debug log
 const decodeBuffer = (type, data, enc) => 
@@ -9,9 +11,9 @@ const decodeBuffer = (type, data, enc) =>
 
 
 exports.httpHdr = ({ method, protocol, subdomains, hostname, originalUrl }, title = 'HTTP') => 
-  `\n\x1b[35m${title.toUpperCase()}\x1b[0m: ${method} ${protocol}://${subdomains.concat('').join('.')}${hostname}${originalUrl}`
+  `\x1b[35m${method} ${title.toUpperCase()}\x1b[0m ${protocol}://${subdomains.concat('').join('.')}${hostname}${originalUrl} `
 
-exports.httpReq = (id, { headers, params, body, session, user, ips, ip, cookies, signedCookies }) => ({
+exports.httpReq = (id, { headers, params, body, session, user, ips, ip, cookies, signedCookies }) => formatObject({
   id,
   headers,
   params,
@@ -21,7 +23,7 @@ exports.httpReq = (id, { headers, params, body, session, user, ips, ip, cookies,
   ips: ips.concat(ip)
 })
 
-exports.httpRes = (id, start, data, enc, headers, status) => ({
+exports.httpRes = (id, start, data, enc, headers, status) => formatObject({
   id,
   headers: { ...headers },
   timeMs: new Date().getTime() - start,
