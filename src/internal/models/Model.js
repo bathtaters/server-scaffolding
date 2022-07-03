@@ -28,7 +28,7 @@ class Model {
 
     this.isInitialized = new Promise(async (res, rej) => {
       if (!getDb()) { await openDb() }
-      this.create().then(() => res(true)).catch(rej)
+      this.create().then((r) => r.success ? res(true) : rej(r)).catch(rej)
     })
   }
 
@@ -53,25 +53,28 @@ class Model {
       .then(deepUnescape).then((res) => !this.getAdapter ? res : res.map(this.getAdapter))
   }
 
-  find(matchData, partialMatch = false) {
+  async find(matchData, partialMatch = false) {
     if (this.setAdapter) matchData = this.setAdapter(matchData)
     matchData = sanitizeSchemaData(matchData, this.schema)
     const searchData = Object.entries(matchData)
-    if (!searchData.length) return Promise.reject(errors.noData())
+    if (!searchData.length) throw errors.noData()
 
     let text = [], params = []
     searchData.forEach(([key,val]) => {
       if (!partialMatch) {
-        text.push(`${key} = ?`);    params.push(val)
+        text.push(`${key} = ?`)
+        params.push(val)
         
       } else if (this.bitmapFields.includes(key)) {
         val = +val
         text.push(`${key} ${val ? '&' : '='} ?`)
         params.push(val)
 
-      } else {
-        text.push(`${key} LIKE ?`); params.push(`%${val}%`)
-      }
+      } else if (typeof val === 'string') {
+        text.push(`${key} LIKE ?`)
+        params.push(`%${val}%`)
+
+      } else throw errors.badPartial(`${typeof val} (${key})`)
     })
 
     return services.all(getDb(), `SELECT * FROM ${this.title} WHERE ${text.join(' AND ')}`, params)
@@ -80,9 +83,9 @@ class Model {
 
   count(id = null, idKey = null) {
     return services.get(getDb(),
-      `SELECT COUNT(*) cnt FROM ${this.title}${id != null ? ` WHERE ${idKey || this.primaryId} = ?` : ''}`,
+      `SELECT COUNT(*) c FROM ${this.title}${id != null ? ` WHERE ${idKey || this.primaryId} = ?` : ''}`,
       id != null ? [id] : []
-    ).then((count) => count && count.cnt)
+    ).then((count) => count && count.c)
   }
     
   add(data, returnField) {
@@ -96,7 +99,7 @@ class Model {
     if (!returnField) returnField = this.primaryId.toLowerCase()
   
     return services.get(getDb(), 
-      `INSERT INTO ${this.title}(${ keys.join(', ') }) VALUES(${ keys.map(()=>'?').join(', ') }) RETURNING ${returnField}`,
+      `INSERT INTO ${this.title}(${ keys.join(',') }) VALUES(${ keys.map(()=>'?').join(',') }) RETURNING ${returnField}`,
       Object.values(data)
     ).then((row) => deepUnescape(row && row[returnField]))
   }
@@ -134,19 +137,18 @@ class Model {
       .then((res) => raw || !this.getAdapter ? res : res.map(this.getAdapter))
   }
 
-  async getPaginationData({ page, size }, { defaultSize = 5, minSize, sizeList = [], startPage = 1 } = {}) {
+  async getPaginationData({ page, size }, { defaultSize = 5, sizeList = [], startPage = 1 } = {}) {
     const total = await this.count()
     
     size = +(size || defaultSize)
     const pageCount = Math.ceil(total / size)
     page = Math.max(1, Math.min(+(page || startPage), pageCount))
-    if (typeof minSize !== 'number') minSize = Math.min(...sizeList)
-  
+    
     const data = await this.getPage(page, size)
   
     return {
       data, page, pageCount, size,
-      sizes: (pageCount > 1 || total > minSize) && appendAndSort(sizeList, size),
+      sizes: (pageCount > 1 || total > Math.min(...sizeList)) && appendAndSort(sizeList, size),
     }
   }
 }
