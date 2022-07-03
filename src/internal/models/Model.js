@@ -32,30 +32,46 @@ class Model {
     })
   }
 
+  
   create(overwrite = false) {
     return services.reset(getDb(), { [this.title]: this.schema }, overwrite).then(() => ({ success: true }))
   }
     
-  get(id = null, idKey = null, raw = false) {
-    if (id == null)
-      return services.all(getDb(), `SELECT * FROM ${this.title}`).then(deepUnescape)
-        .then((res) => raw || !this.getAdapter ? res : res.map(this.getAdapter))
 
-    return services.get(getDb(), `SELECT * FROM ${this.title} WHERE ${idKey || this.primaryId} = ?`, [id])
-      .then(deepUnescape).then((res) => raw || !this.getAdapter ? res : res && this.getAdapter(res))
+  async get(id = null, idKey = null, raw = false) {
+    let result
+    if (id == null)
+      result = await services.all(getDb(), `SELECT * FROM ${this.title}`)
+    
+    else
+      result = await services.get(getDb(),
+        `SELECT * FROM ${this.title} WHERE ${idKey || this.primaryId} = ?`,
+      [id])
+
+    result = deepUnescape(result)
+    if (raw || !this.getAdapter) return result
+    return Array.isArray(result) ? result.map(this.getAdapter) : result && this.getAdapter(result)
   }
 
-  getPage(page, size, reverse = null, orderKey = null) {
+
+  async getPage(page, size, reverse = null, orderKey = null) {
     if (!size) return Promise.reject(errors.noSize())
 
-    const sort = reverse == null && !orderKey ? '' : `ORDER BY ${orderKey || this.primaryId} ${reverse ? 'DESC' : 'ASC'} `
-    return services.all(getDb(), `SELECT * FROM ${this.title} ${sort}LIMIT ${size} OFFSET ${(page - 1) * size}`)
-      .then(deepUnescape).then((res) => !this.getAdapter ? res : res.map(this.getAdapter))
+    const sort = reverse == null && !orderKey ? '' :
+      `ORDER BY ${orderKey || this.primaryId} ${reverse ? 'DESC' : 'ASC'} `
+
+    const result = await services.all(getDb(), 
+      `SELECT * FROM ${this.title} ${sort}LIMIT ${size} OFFSET ${(page - 1) * size}`
+    ).then(deepUnescape)
+
+    return this.getAdapter ? result.map(this.getAdapter) : result
   }
+
 
   async find(matchData, partialMatch = false) {
     if (this.setAdapter) matchData = this.setAdapter(matchData)
     matchData = sanitizeSchemaData(matchData, this.schema)
+
     const searchData = Object.entries(matchData)
     if (!searchData.length) throw errors.noData()
 
@@ -63,32 +79,39 @@ class Model {
     searchData.forEach(([key,val]) => {
       if (!partialMatch) {
         text.push(`${key} = ?`)
-        params.push(val)
+        return params.push(val)
         
-      } else if (this.bitmapFields.includes(key)) {
+      } if (this.bitmapFields.includes(key)) {
         val = +val
         text.push(`${key} ${val ? '&' : '='} ?`)
-        params.push(val)
+        return params.push(val)
 
-      } else if (typeof val === 'string') {
+      } if (typeof val === 'string') {
         text.push(`${key} LIKE ?`)
-        params.push(`%${val}%`)
-
-      } else throw errors.badPartial(`${typeof val} (${key})`)
+        return params.push(`%${val}%`)
+      }
+      throw errors.badPartial(`${typeof val} (${key})`)
     })
-
-    return services.all(getDb(), `SELECT * FROM ${this.title} WHERE ${text.join(' AND ')}`, params)
-      .then(deepUnescape).then((res) => !this.getAdapter ? res : res.map(this.getAdapter))
-  }
-
-  count(id = null, idKey = null) {
-    return services.get(getDb(),
-      `SELECT COUNT(*) c FROM ${this.title}${id != null ? ` WHERE ${idKey || this.primaryId} = ?` : ''}`,
-      id != null ? [id] : []
-    ).then((count) => count && count.c)
-  }
     
-  add(data, returnField) {
+    const result = await services.all(getDb(), 
+      `SELECT * FROM ${this.title} WHERE ${text.join(' AND ')}`,
+    params).then(deepUnescape)
+
+    return this.getAdapter ? result.map(this.getAdapter) : result
+  }
+
+
+  async count(id = null, idKey = null) {
+    const filter = id != null ? ` WHERE ${idKey || this.primaryId} = ?` : ''
+    const result = await services.get(getDb(),
+      `SELECT COUNT(*) c FROM ${this.title}${filter}`,
+      id != null ? [id] : []
+    )
+    return result && result.c
+  }
+  
+  
+  async add(data, returnField) {
     if (this.setAdapter) data = this.setAdapter(data)
     data = sanitizeSchemaData(data, this.schema)
     if (this.defaults) data = { ...this.defaults, ...data }
@@ -98,13 +121,15 @@ class Model {
 
     if (!returnField) returnField = this.primaryId.toLowerCase()
   
-    return services.get(getDb(), 
-      `INSERT INTO ${this.title}(${ keys.join(',') }) VALUES(${ keys.map(()=>'?').join(',') }) RETURNING ${returnField}`,
+    const result = await services.get(getDb(),
+      `INSERT INTO ${this.title}(${keys.join(',')}) VALUES(${keys.map(() => '?').join(',')}) RETURNING ${returnField}`,
       Object.values(data)
-    ).then((row) => deepUnescape(row && row[returnField]))
+    )
+    return deepUnescape(result && result[returnField])
   }
-    
-  update(id, data, idKey = null) {
+   
+  
+  async update(id, data, idKey = null) {
     if (id == null) return Promise.reject(errors.noID())
 
     if (this.setAdapter) data = this.setAdapter(data)
@@ -112,31 +137,37 @@ class Model {
     const keys = Object.keys(data)
     if (!keys.length) return Promise.reject(errors.noData())
 
-    return this.count(id, idKey || this.primaryId).then((exists) => {
-      if (!exists) throw errors.noEntry(id)
-
-      return services.run(getDb(), 
-        `UPDATE ${this.title} SET ${ keys.map(k => k+' = ?').join(', ') } WHERE ${idKey || this.primaryId} = ?`,
-        [...Object.values(data), id]
-      )
-    }).then(() => ({ success: true }))
+    const count = await this.count(id, idKey || this.primaryId)
+    if (!count) throw errors.noEntry(id)
+      
+    await services.run(getDb(),
+      `UPDATE ${this.title} SET ${keys.map(k => `${k} = ?`).join(', ')} WHERE ${idKey || this.primaryId} = ?`,
+      [...Object.values(data), id]
+    )
+    return { success: true }
   }
   
-  remove(id, idKey = null) {
+  
+  async remove(id, idKey = null) {
     if (id == null) return Promise.reject(errors.noID())
 
-    return this.count(id, idKey || this.primaryId).then((exists) => {
-      if (!exists) throw errors.noEntry(id)
-      
-      return services.run(getDb(), `DELETE FROM ${this.title} WHERE ${idKey || this.primaryId} = ?`, [id])
-    }).then(() => ({ success: true }))
+    const count = await this.count(id, idKey || this.primaryId)
+    if (!count) throw errors.noEntry(id)
+
+    await services.run(getDb(),
+      `DELETE FROM ${this.title} WHERE ${idKey || this.primaryId} = ?`,
+    [id])
+    return { success: true }
   }
 
-  custom(sql, params, raw = true) { 
-    return services.all(getDb(), sql, params).then(deepUnescape)
-      .then((res) => raw || !this.getAdapter ? res : res.map(this.getAdapter))
+
+  async custom(sql, params, raw = true) { 
+    const result = await services.all(getDb(), sql, params).then(deepUnescape)
+    if (raw || !this.getAdapter) return result
+    return result.map(this.getAdapter)
   }
 
+  
   async getPaginationData({ page, size }, { defaultSize = 5, sizeList = [], startPage = 1 } = {}) {
     const total = await this.count()
     
