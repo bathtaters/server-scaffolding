@@ -9,3 +9,11 @@ exports.hasDupes = (array) => array.some((val, idx) => array.slice(0, idx).inclu
 
 // Get all routes except given route
 exports.notRoute = (url) => RegExp(`^(?!(${url})($|/.*))`)
+
+// Get object key case-insensitive
+exports.getMatchingKey = (obj, keyAnyCase) => {
+  if (keyAnyCase in obj) return obj[keyAnyCase]
+  const lowerKey = keyAnyCase.toLowerCase() 
+  const caseKey = Object.keys(obj).find((key) => lowerKey === key.toLowerCase())
+  return obj[caseKey || keyAnyCase]
+}

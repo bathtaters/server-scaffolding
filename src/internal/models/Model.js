@@ -2,7 +2,7 @@ const { openDb, getDb } = require('../config/db')
 const services = require('../services/db.services')
 const { sanitizeSchemaData, schemaFromConfig, appendAndSort } = require('../utils/db.utils')
 const { defaults: configDefaults, limits: configLimits } = require('../../config/models.cfg')
-const { hasDupes } = require('../utils/common.utils')
+const { hasDupes, getMatchingKey } = require('../utils/common.utils')
 const errors = require('../config/errors.internal')
 const { deepUnescape } = require('../utils/validate.utils')
 
@@ -125,7 +125,7 @@ class Model {
       `INSERT INTO ${this.title}(${keys.join(',')}) VALUES(${keys.map(() => '?').join(',')}) RETURNING ${returnField}`,
       Object.values(data)
     )
-    return deepUnescape(result && result[returnField])
+    return deepUnescape(result && getMatchingKey(result, returnField))
   }
    
   

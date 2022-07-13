@@ -1,4 +1,5 @@
 const errors = require('../config/errors.internal')
+const { getMatchingKey } = require('../utils/common.utils')
 
 exports.create = (Model) => function (req,res,next) {
   if (!req.body || !Object.keys(req.body).length) return next(errors.noData())
@@ -32,17 +33,17 @@ exports.delete = (Model) => async function (req,res,next) {
 
 const TEMP_ID = -11
 exports.swap = (Model) => async function (req,res,next) {
-  if (req.body[Model.primaryId] == null || req.body.swap == null) return next(errors.noID())
+  const idA = getMatchingKey(req.body, Model.primaryId), idB = req.body.swap
+  if (idA == null || idB == null) return next(errors.noID())
   
-  const resultId = Model.primaryId.toLowerCase()
   try {
-    const entryA = await Model.get(req.body[Model.primaryId]).then((r) => r && r[resultId])
-    const entryB = await Model.get(req.body.swap).then((r) => (r && r[resultId]))
+    const entryA = await Model.get(idA).then((r) => r && getMatchingKey(r, Model.primaryId))
+    const entryB = await Model.get(idB).then((r) => r && getMatchingKey(r, Model.primaryId))
 
-    if (entryA == null) return next(errors.noEntry(req.body[Model.primaryId]))
+    if (entryA == null) return next(errors.noEntry(idA))
 
     // ID change
-    if (entryB == null) return Model.update(entryA,  { [Model.primaryId]: req.body.swap  }).then(res.send).catch(next)
+    if (entryB == null) return Model.update(entryA,  { [Model.primaryId]: idB  }).then(res.send).catch(next)
 
     // ID swap
     await Model.update(entryB,  { [Model.primaryId]: TEMP_ID })
