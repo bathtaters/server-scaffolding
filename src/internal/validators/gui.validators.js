@@ -1,3 +1,4 @@
+const profileName = require('../models/Users').title
 const { byRoute, additionalOnly } = require('./shared.validators')
 const { swap, all } = require('./api.validators')
 
@@ -11,11 +12,14 @@ const pageAdditional = [
   { key: 'size', typeStr: 'int?', isIn: 'query', limits: { min: 1 } },
 ]
 
+const profileFields = { username: 'username', password: 'password', confirm: 'password' }
+
 module.exports = {
   all, swap,
   page: additionalOnly(pageAdditional),
   find: (Model, formFields = 'all') => byRoute(Model.title)([], formFields, true, true,  true),
   form: (Model, formFields = 'all') => byRoute(Model.title)([], formFields, true, false, false, formAdditional),
   formNoMin: (Model, formFields = 'all') => byRoute(Model.title)([], formFields, true, false, true, formAdditional),
+  profile: byRoute(profileName)([], profileFields, true, false, false, formAdditional),
   formAdditional, pageAdditional,
 }
