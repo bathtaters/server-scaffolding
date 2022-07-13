@@ -7,7 +7,7 @@ describe('generateToken', () => {
     expect(typeof generateToken()).toBe('string')
   })
   it('token is 32 chars', () => {
-    expect(generateToken().length).toBe(32)
+    expect(generateToken()).toHaveLength(32)
   })
   it('token is hex chars only', () => {
     expect(generateToken()).toMatch(hexChars)
@@ -27,8 +27,8 @@ describe('encodePassword', () => {
   })
   it('salt & key are correct lengths', () => {
     const { salt, key } = encodePassword('test')
-    expect(salt.length).toBe(b64Len(32))
-    expect(key.length).toBe(b64Len(keyLen))
+    expect(salt).toHaveLength(b64Len(32))
+    expect(key).toHaveLength(b64Len(keyLen))
   })
   it('salt & key are in base64url', () => {
     const { salt, key } = encodePassword('test')

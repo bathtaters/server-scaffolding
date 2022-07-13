@@ -81,7 +81,7 @@ exports.adminFormAdapter = (formData, _, action) => {
   return confirmPassword(formData, action)
 }
 
-exports.userFormAdapter = ({ id, username, password, confirm }, user, action) => {
-  if (user.id !== id && !hasAccess(user.access, access.admin)) throw errors.modifyOther()
-  return confirmPassword({ id, username, password, confirm }, action)
+exports.userFormAdapter = (formData, user, action) => {
+  if (user.id !== formData.id && !hasAccess(user.access, access.admin)) throw errors.modifyOther()
+  return confirmPassword(formData, action)
 }

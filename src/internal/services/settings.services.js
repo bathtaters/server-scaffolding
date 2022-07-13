@@ -10,7 +10,8 @@ const envDefaults = { ...defaults, DB_DIR: '', LOG_DIR: '' }
 
 let envHistory = [getEnvVars(Object.keys(envDefaults))]
 
-const writeCurrent = () => writeFile(envPath, stringifyEnv(exports.getEnv()))
+// Disable persistence when testing
+const writeCurrent = process.env.NODE_ENV === 'test' ? () => Promise.resolve() : () => writeFile(envPath, stringifyEnv(exports.getEnv()))
 
 exports.getEnv = () => envHistory.length < 1 ? {} : envHistory[envHistory.length - 1]
 

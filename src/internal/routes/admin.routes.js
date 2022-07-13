@@ -10,8 +10,8 @@ router.use(checkAuth(root.login, access.admin))
 
 // User Table
 router.get( admin.user,                       validate.page,      controllers.userTable.model)
-router.post(admin.user+admin.token,           validate.token,     actions.regenToken)
 router.get( admin.user+admin.find,            validate.find,      controllers.userTable.find)
+router.post(admin.user+admin.token,           validate.token,     actions.regenToken)
 router.post(admin.user+admin.form,            validate.form,      actions.adminForm)
 router.post(admin.user+admin.form+admin.find, validate.formNoMin, actions.adminForm)
 

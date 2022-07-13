@@ -23,10 +23,10 @@ describe('extractId', () => {
 
 describe('appendAndSort', () => {
   it('appends missing value', () => {
-    expect(appendAndSort([1,2,3], 4).filter((n) => n === 4).length).toEqual(1)
+    expect(appendAndSort([1,2,3], 4).filter((n) => n === 4)).toHaveLength(1)
   })
   it('doesn\'t add missing value', () => {
-    expect(appendAndSort([1,2,3], 3).filter((n) => n === 3).length).toEqual(1)
+    expect(appendAndSort([1,2,3], 3).filter((n) => n === 3)).toHaveLength(1)
   })
   it('sorts in numerical order', () => {
     expect(appendAndSort([82,4,-678,135,-12,])).toEqual([-678,-12,4,82,135])

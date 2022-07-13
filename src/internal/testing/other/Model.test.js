@@ -6,7 +6,7 @@ const { deepUnescape } = require('../../utils/validate.utils')
 const { sanitizeSchemaData, schemaFromConfig, appendAndSort } = require('../../utils/db.utils')
 const errors = require('../../config/errors.internal')
 
-const { deepCopy } = require('./test.utils')
+const { deepCopy } = require('../test.utils')
 const modelOptions = {
   schema: { SCHEMA: true, defId: 'ID' },
   defaults: { data: 'DEFAULT' },
@@ -401,7 +401,7 @@ describe('Model add', () => {
     expect.assertions(1)
     return TestModel.add({ data: 1 }).then(() => {
       expect(services.get).toBeCalledWith(
-        expect.anything(), expect.stringContaining('RETURNING defid'), expect.anything()
+        expect.anything(), expect.stringMatching(/RETURNING defId/i), expect.anything()
       )
     })
   })
@@ -682,7 +682,7 @@ jest.mock('../../config/db', () => ({
 
 jest.mock('../../utils/validate.utils', () => ({ deepUnescape: jest.fn((val) => val) }))
 
-jest.mock('../../utils/common.utils', () => ({ hasDupes: jest.fn(() => false) }))
+jest.mock('../../utils/common.utils', () => ({ hasDupes: jest.fn(() => false), getMatchingKey: (o,k) => o[k], capitalizeHyphenated: jest.fn() }))
 
 jest.mock('../../../config/models.cfg', () => ({
   defaults: { test: 'CFGDEFS' }, limits: { test: 'CFGLIMS' }

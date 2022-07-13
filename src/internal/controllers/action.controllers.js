@@ -15,7 +15,7 @@ exports.logout = logout(urls.root.login)
 
 exports.swap = require('./api.controllers').swap
 
-exports.regenToken = (req,res,next) => Users.regenToken(req.body[Users.primaryId]).then(res.send).catch(next)
+exports.regenToken = (req,res,next) => Users.regenToken(req.body[Users.primaryId]).then((r) => res.send(r)).catch(next)
 
 exports.form = function getFormController(Model, { redirectURL = '', formatData = (data) => data } = {}) {
   const formActions = modelActions(Model)
