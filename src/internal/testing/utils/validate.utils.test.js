@@ -5,6 +5,7 @@ const unescSpy = jest.spyOn(validator, 'unescape')
 // Imports
 const { dateOptions, isBoolean, parseBoolean, looseBools, getTypeArray, escapedLength, deepUnescape } = require('../../utils/validate.utils')
 
+it.todo('formSettingsToValidate')
 
 describe('dateOptions', () => {
   it('hasDate', () => { expect(dateOptions).toHaveProperty('date') })

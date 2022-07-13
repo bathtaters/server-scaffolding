@@ -2,6 +2,17 @@
 const typeRegex = /^([^[?*]+)(\*)?(\[\])?(\?)?$/
 exports.getTypeArray = (typeStr) => typeStr && typeStr.match(typeRegex)
 
+// Get validation & limits from html object { key, type, limits }
+const html2Valid = ({ type, limits }, key, isIn = 'body') => ({
+  key, isIn,
+  typeStr: type === 'number' ? 'int' : 'string',
+  limits: limits || (Array.isArray(type) && {
+    min: Math.min(...type.map((str) => str.length || 0)) || 0,
+    max: Math.max(...type.map((str) => str.length || 0)) || undefined,
+  })
+})
+exports.formSettingsToValidate = (formSettings, isIn = 'body') => Object.entries(formSettings).map(([key, val]) => html2Valid(val, key, isIn), {})
+
 // Boolean rules
 const boolRules = {
   true:  [true,  1, '1', 'true', 'yes',  'on'],
