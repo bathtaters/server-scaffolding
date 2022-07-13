@@ -10,9 +10,9 @@ const { access, timestampKeyRegEx } = require('../config/users.cfg')
 class Users extends Model {
   constructor() { 
     super('_users', { schema: schemaAdapter, defaults: false, getAdapter, setAdapter })
-    // { defaults: false } = ignore default values
     this.bitmapFields.push('access')
     this.validTimestamps = Object.keys(this.schema).filter((k) => timestampKeyRegEx.test(k)).map((k) => k.match(timestampKeyRegEx)[1])
+    this.bgThread = Promise.resolve()
   }
 
   get(id, idKey, updateTimestamp = null) {
@@ -22,8 +22,8 @@ class Users extends Model {
       if (!id && Array.isArray(user)) return user
       if (!user) return user
 
-      if (updateTimestamp && user[this.primaryId])
-        super.update(user[this.primaryId], { [`${updateTimestamp}Time`]: new Date().toJSON() })
+      if (updateTimestamp && user[this.primaryId]) 
+        this.bgThread = super.update(user[this.primaryId], { [`${updateTimestamp}Time`]: new Date().toJSON() })
 
       return user
     }
@@ -41,21 +41,25 @@ class Users extends Model {
   }
 
   async update(id, data) {
+    let current
     if (!data.password && (passwordAccess & accessInt(data.access))) {
-      const current = await this.custom(`SELECT key FROM ${this.title} WHERE ${this.primaryId} = ?`, [id]).then((r) => r && r[0])
+      current = await this.custom(`SELECT key FROM ${this.title} WHERE ${this.primaryId} = ?`, [id]).then((r) => r && r[0])
       if (!current) throw errors.noEntry(id)
       if (!current.key) throw errors.noData('password for GUI access')
+    }
+    if ('access' in data && !(accessInt(data.access) & access.admin)) {
+      if (await this.isLastAdmin(id)) throw errors.deleteAdmin()
+    }
+    if (data.username) {
+      const test = await this.validUsername(data.username, id)
+      if (test) throw errors.badUsername(data.username.trim(), test)
     }
     return super.update(id, data)
   }
 
   async remove(id, idKey = null) {
     if (!idKey) idKey = this.primaryId
-
-    const admins = await this.custom(`SELECT ${idKey} FROM ${this.title} WHERE access & ?`, [access.admin])
-    if (!admins) throw errors.unknownDb()
-
-    if (admins.length < 2 && admins.find((u) => u[idKey] === id)) throw errors.deleteAdmin()
+    if (await this.isLastAdmin(id, idKey)) throw errors.deleteAdmin()
     return super.remove(id, idKey)
   }
 
@@ -64,8 +68,7 @@ class Users extends Model {
   }
 
   async checkPassword(username, password, accessLevel) {
-    const users = await this.count()
-    if (!users)
+    if (!(await this.count()))
       return this.add({ username, password, access: accessInt(accessLevel) })
         .then((id) => id && this.get(id))
         .then((data) => {
@@ -82,10 +85,20 @@ class Users extends Model {
     )
   }
 
-  validUsername(username) {
+  async isLastAdmin(id, idKey) {
+    if (!idKey) idKey = this.primaryId
+
+    const admins = await this.custom(`SELECT ${idKey} FROM ${this.title} WHERE access & ?`, [access.admin])
+    if (!admins) throw errors.unknownDb()
+    return admins.length < 2 && admins.find((u) => u[idKey] === id)
+  }
+
+  validUsername(username, ignoreId) {
     if (/[^a-zA-Z0-9_-]/.test(username)) return 'Cannot contain spaces or symbols (Besides underscore & hyphen)'
     username = username.toLowerCase()
-    return super.get().then((users) => users.every((user) => user.username !== username) ? 0 : 'Username already exists')
+    return super.get().then((users) => users.every((user) =>
+      user[this.primaryId] === ignoreId || user.username !== username) ? 0 : 'Username already exists'
+    )
   }
 }
 
