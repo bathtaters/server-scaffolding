@@ -14,7 +14,7 @@ exports.encodePassword = (password) => {
 
 exports.testPassword = (password, accessInt) => (userData) => {
   if (!userData || !Object.keys(userData).length) return failureMsg.noUser
-  if (!(userData.access & accessInt)) return failureMsg.noAccess
+  if (accessInt && !(userData.access & accessInt)) return failureMsg.noAccess
   if (!userData.key) return failureMsg.noPassword
 
   return crypto.timingSafeEqual(
