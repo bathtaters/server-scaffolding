@@ -49,3 +49,5 @@ server.use(errorMiddleware.html)
 
 // Start server
 startServer(server)
+
+module.exports = server

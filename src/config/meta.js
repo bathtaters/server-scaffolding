@@ -20,7 +20,7 @@ module.exports = {
   license: `https://opensource.org/licenses/${pkg.license || 'BSD-2-Clause'}`,
   repoLink: pkg.repository && pkg.repository.url,
 
-  port: process.env.port || +pkgCfg.port || 8080,
+  port: process.env.NODE_ENV === 'test' ? 0 : +process.env.port || +pkgCfg.port || 8080,
   rootPath, envPath,
   dbPath:  join(process.env.DB_DIR  || env.defaults.DB_DIR,  'database.db'),
   logPath: join(process.env.LOG_DIR || env.defaults.LOG_DIR, `${pkg.name || 'server'}_%DATE%.log`),

@@ -6,12 +6,12 @@ const dbDir = require('path').dirname(dbPath)
 
 let db
 
-function openDb(temp = false) {
+function openDb() {
   return new Promise((res,rej) => {
     if (db) { logger.verbose('Already connected db'); return res(db) }
     if (mkDir(dbDir, { recursive: true })) logger.info(`Created database folder: ${dbDir}`)
 
-    db = new sqlite.Database(temp ? ':memory:' : dbPath, (err) => {
+    db = new sqlite.Database(process.env.NODE_ENV === 'test' ? ':memory:' : dbPath, (err) => {
       if (err) {
         logger.error(err, { label: 'opening DB' })
         return rej(err)
