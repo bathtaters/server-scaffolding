@@ -4,6 +4,9 @@ exports.varName = (str) =>  typeof str !== 'string' ? str : Object.keys(varNameD
   str.charAt(0) === '_' ? exports.varName(str.slice(1)) :
   str.replace(/([A-Z])/g, ' $1').replace(/^./, (ltr) => ltr.toUpperCase())
 
+// Model-specific authorization callback for Form input
+exports.formRW = ({ body }) => body.action === 'Search' ? 'read' : 'write'
+
 // Get KEYS from schema
 exports.getTableFields = (schema, idKey) => {
   let keys = Object.keys(schema || {})

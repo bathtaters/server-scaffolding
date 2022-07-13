@@ -29,8 +29,9 @@ exports.checkAuth = (redirectURL, accessLevel) => (req, res, next) => {
 }
 
 exports.checkModel = (redirectURL, modelName, accessType) => (req, res, next) => {
-  if (hasModelAccess(req.user.models, modelName, accessType)) return next()
-  redirectURL ? res.redirect(redirectURL) : next(errors.noModel(modelName, accessType))
+  const access = typeof accessType === 'function' ? accessType(req) : accessType
+  if (hasModelAccess(req.user.models, modelName, access)) return next()
+  redirectURL ? res.redirect(redirectURL) : next(errors.noModel(modelName, access))
 }
     
 exports.forwardOnAuth = (redirectURL, accessLevel) => (req, res, next) => {
