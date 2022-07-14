@@ -132,7 +132,7 @@ $( '#actionRegen' ).click(function() {
       },
     error:   function(jqXHR, textStatus, errorThrown) {
         window.alert("Error regenerating API ID!\n" + (
-          jqXHR.responseJSON.error || errorThrown + " [" + textStatus + "]"
+          (jqXHR.responseJSON && jqXHR.responseJSON.error) || errorThrown + " [" + textStatus + "]"
         ));
     }
   });

@@ -73,13 +73,14 @@ $( '#actionSwap' ).on('click', function() {
     url:     $( 'form#editForm' ).attr('action').replace('/form', '/swap'),
     data:    sendData,
     success: function(data) {
-        if (!data.success) { window.alert('Error performing swap: '+(data.error || 'Unknown error')); }
-        else { window.location.reload(); }
-      },
+      if (!data.success) { window.alert('Error performing swap: '+(data.error || 'Unknown error')); }
+      window.location.reload();
+    },
     error:   function(jqXHR, textStatus, errorThrown) {
-        window.alert("Error performing swap!\n" + (
-          jqXHR.responseJSON.error || errorThrown + " [" + textStatus + "]"
-        ));
+      window.alert("Error performing swap!\n" + (
+        (jqXHR.responseJSON && jqXHR.responseJSON.error) || errorThrown + " [" + textStatus + "]"
+      ));
+      window.location.reload();
     }
   });
 });
