@@ -3,16 +3,12 @@ const validator = require('validator').default
 const unescSpy = jest.spyOn(validator, 'unescape')
 
 // Imports
-const { dateOptions, isBoolean, parseBoolean, looseBools, getTypeArray, escapedLength, deepUnescape } = require('../../utils/validate.utils')
+const { 
+  getTypeArray, formSettingsToValidate,
+  isBoolean, parseBoolean, looseBools, dateOptions,
+  escapedLength, deepUnescape
+} = require('../../utils/validate.utils')
 
-it.todo('formSettingsToValidate')
-
-describe('dateOptions', () => {
-  it('hasDate', () => { expect(dateOptions).toHaveProperty('date') })
-  it('hasTime', () => { expect(dateOptions).toHaveProperty('time') })
-})
-
-// Check getTypeArray (test*[]? => [test*[]?, test, *, [], ?])
 describe('getTypeArray', () => {
   it('nothing', () => {
     expect(getTypeArray()).toBeFalsy()
@@ -43,6 +39,72 @@ describe('getTypeArray', () => {
     expect(getTypeArray('test?')[4]).toBe('?')
     expect(getTypeArray('test*[]')[4]).toBeFalsy()
     expect(getTypeArray('test*[]?')[4]).toBe('?')
+  })
+})
+
+describe('formSettingsToValidate', () => {
+  it('format for additionalOnly', () => {
+    expect(formSettingsToValidate({ a: { type: 'text', limits: 'limitsA' }, b: { type: 'number', limits: 'limitsB' } }, 'inTest'))
+      .toEqual([
+        { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: expect.anything() },
+        { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: expect.anything() },
+      ])
+  })
+  it('pass keys', () => {
+    expect(formSettingsToValidate({ a: { type: 'text', limits: 'limitsA' }, b: { type: 'number', limits: 'limitsB' } }, 'inTest'))
+      .toEqual([
+        { key: 'a', isIn: expect.any(String), typeStr: expect.any(String), limits: expect.anything() },
+        { key: 'b', isIn: expect.any(String), typeStr: expect.any(String), limits: expect.anything() },
+      ])
+  })
+  it('pass isIn', () => {
+    expect(formSettingsToValidate({ a: { type: 'text', limits: 'limitsA' }, b: { type: 'number', limits: 'limitsB' } }, 'inTest'))
+      .toEqual([
+        { key: expect.any(String), isIn: 'inTest', typeStr: expect.any(String), limits: expect.anything() },
+        { key: expect.any(String), isIn: 'inTest', typeStr: expect.any(String), limits: expect.anything() },
+      ])
+  })
+  it('pass limits', () => {
+    expect(formSettingsToValidate({ a: { type: 'text', limits: 'limitsA' }, b: { type: 'number', limits: 'limitsB' } }, 'inTest'))
+      .toEqual([
+        { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: 'limitsA' },
+        { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: 'limitsB' },
+      ])
+  })
+  it('number => int', () => {
+    expect(formSettingsToValidate({ a: { type: 'text', limits: 'limitsA' }, b: { type: 'number', limits: 'limitsB' } }, 'inTest'))
+      .toEqual([
+        { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: expect.anything() },
+        { key: expect.any(String), isIn: expect.any(String), typeStr: 'int', limits: expect.anything() },
+      ])
+  })
+  it('else/array => string', () => {
+    expect(formSettingsToValidate({ a: { type: 'text', limits: 'limitsA' }, b: { type: ['op','option','longOption'], limits: 'limitsB' } }, 'inTest'))
+      .toEqual([
+        { key: expect.any(String), isIn: expect.any(String), typeStr: 'string', limits: expect.anything() },
+        { key: expect.any(String), isIn: expect.any(String), typeStr: 'string', limits: expect.anything() },
+      ])
+  })
+  it('calculate array limits', () => {
+    expect(formSettingsToValidate({ a: { type: ['9','four'] }, b: { type: ['null','option','longOption'] } }, 'inTest'))
+      .toEqual([
+        { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: { min: 1, max: 4 } },
+        { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: { min: 4, max: 10 } },
+      ])
+  })
+  it('calculate array limits converts to String', () => {
+    expect(formSettingsToValidate({ a: { type: [9,'four'] }, b: { type: [null,'option','longOption'] } }, 'inTest'))
+      .toEqual([
+        { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: { min: 1, max: 4 } },
+        { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: { min: 4, max: 10 } },
+      ])
+  })
+  it('empty array limits', () => {
+    expect(formSettingsToValidate({ a: { type: 'text' }, b: { type: [] } }, 'inTest'))
+      .toEqual([
+        { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: false },
+        { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: 0 },
+      ])
   })
 })
 
@@ -128,6 +190,11 @@ describe('parseBoolean', () => {
     expect(parseBoolean(null)).toBe(!looseBools)
     expect(parseBoolean(undefined)).toBe(!looseBools)
   })
+})
+
+describe('dateOptions', () => {
+  it('hasDate', () => { expect(dateOptions).toHaveProperty('date') })
+  it('hasTime', () => { expect(dateOptions).toHaveProperty('time') })
 })
 
 describe('deepUnescape', () => {
