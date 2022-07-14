@@ -1,11 +1,11 @@
-mixin typedInp(key, inpType, limits, defaultValue, classes)
+mixin typedInp(key, inpType, limits, defaultValue, classes, readonly)
   if Array.isArray(inpType)
     select(name=key id=key class=classes)
       each opt in inpType
         option(value=opt selected=(opt === defaultValue))= opt
   else if isNaN(inpType)
     input(
-      name=key id=key class=classes readonly=(inpType === 'readonly')
+      name=key id=key class=classes readonly=(inpType === 'readonly' || readonly)
       value=(inpType !== 'checkbox' ? defaultValue : undefined)
       checked=(inpType === 'checkbox' ? defaultValue : undefined)
       type=(inpType === 'id' ? "number" : inpType === 'readonly' ? "text" : inpType)
@@ -22,17 +22,17 @@ mixin typedInp(key, inpType, limits, defaultValue, classes)
   else
     textarea(name=key id=key class=classes rows=inpType)= defaultValue
 
-mixin formInput(key, inpType, limits, defaultValue, label, classes, tooltip)
+mixin formInput(key, inpType, limits, defaultValue, label, classes, tooltip, readonly)
   if inpType === 'hidden'
-    +typedInp(key, inpType, null, defaultValue, "hidden")
+    +typedInp(key, inpType, null, defaultValue, "hidden", readonly)
   else if inpType === 'checkbox'
     .input-group
-      +typedInp(key, inpType, limits, !!defaultValue, classes)
+      +typedInp(key, inpType, limits, !!defaultValue, classes, readonly)
       label(for=key aria-label=tooltip class=(tooltip ? 'tooltip' : ''))= label || varName(key)
   else
     .input-group.vertical
       label(for=key aria-label=tooltip class=(tooltip ? 'tooltip' : ''))= label || varName(key)
-      +typedInp(key, inpType, limits, defaultValue, classes)
+      +typedInp(key, inpType, limits, defaultValue, classes, readonly)
 
 mixin checkboxes(key, rows, label, columns)
   fieldset.input-group.vertical(id=key+'Checks')

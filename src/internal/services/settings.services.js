@@ -1,14 +1,17 @@
 const { exec } = require('child_process')
 const { writeFile } = require('fs/promises')
-const { getEnvVars, stringifyEnv } = require('../utils/settings.utils')
+const { getEnvVars, stringifyEnv, filterOutProps } = require('../utils/settings.utils')
 const { deepUnescape } = require('../utils/validate.utils')
 const { defaults, formSettings } = require('../config/env.cfg')
 const { noUndo } = require('../config/errors.internal')
 const { envPath } = require('../../config/meta')
 
-const envDefaults = { ...defaults, DB_DIR: '', LOG_DIR: '' }
+const envDefaults = filterOutProps(
+  { ...defaults, DB_DIR: '', LOG_DIR: '' },
+  Object.entries(formSettings).filter(([_, { readonly }]) => readonly).map(([key]) => key)
+)
 
-let envHistory = [getEnvVars(Object.keys(envDefaults))]
+let envHistory = [ getEnvVars(Object.keys(formSettings)) ]
 
 // Disable persistence when testing
 const writeCurrent = process.env.NODE_ENV === 'test' ? () => Promise.resolve() : () => writeFile(envPath, stringifyEnv(exports.getEnv()))
@@ -35,7 +38,7 @@ exports.getForm = () => {
 
 exports.settingsActions = {
   Update:  (envObj) => {
-    envHistory.push(deepUnescape(envObj))
+    envHistory.push({ ...exports.getEnv(), ...deepUnescape(envObj) })
     return writeCurrent()
   },
 

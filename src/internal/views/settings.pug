@@ -4,6 +4,7 @@ include components/form.mixins.pug
 
 block scripts
   script(src="/javascripts/env.client.js")
+  script(src="/javascripts/togglePassword.js")
 
 block content
   form.plain(action=postURL method="POST")
@@ -16,7 +17,7 @@ block content
         each formCol in formSettings
           .col-sm
             each settings, key in formCol
-              +formInput(key, settings.type, settings.limits, env[key], key, '', tooltips[key])
+              +formInput(key, settings.type, settings.limits, env[key], key, '', tooltips[key], settings.readonly)
           
       .center
         br
