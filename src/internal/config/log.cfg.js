@@ -16,7 +16,6 @@ module.exports = {
 
   silent: ['none', 'silent'], // Disable
   httpDebug: ['debug'],       // Enable max verbosity for requests/responses
-  testLevel: 'none', // Force this level when testing & disable files, falsy value will ignore this
 
   initMessage: (name, level) => `${varName(name)} log mode: ${level || 'unknown'}${level in levels ? ` (${levels[level] + 1} of ${(getMaxEntry(levels)[1] || -1) + 1})` : ''}`,
   httpMessage: (mode) => `HTTP request logging enabled (${mode || 'DEBUG MODE'})`,
@@ -45,4 +44,7 @@ module.exports = {
   // Handle long log lines in Log GUI
   maxLogLine: 128,
   trimLogMessage: (line) => line.label ? '' : line.message.trim().length ? `${(line.message.trim()).slice(0,48).replace(/\s*\r?\n.*/,'')}...` : 'View Details',
+
+  // Get test log level from test.cfg
+  testLevel: process.env.NODE_ENV === 'test' && require('../testing/test.cfg').testLog,
 }
