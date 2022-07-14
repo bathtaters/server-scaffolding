@@ -2,7 +2,7 @@ const { openDb, getDb } = require('../config/db')
 const services = require('../services/db.services')
 const { sanitizeSchemaData, schemaFromConfig, appendAndSort } = require('../utils/db.utils')
 const { defaults: configDefaults, limits: configLimits } = require('../../config/models.cfg')
-const { hasDupes, getMatchingKey } = require('../utils/common.utils')
+const { hasDupes, caseInsensitiveObject } = require('../utils/common.utils')
 const errors = require('../config/errors.internal')
 const { deepUnescape } = require('../utils/validate.utils')
 
@@ -48,7 +48,7 @@ class Model {
         `SELECT * FROM ${this.title} WHERE ${idKey || this.primaryId} = ?`,
       [id])
 
-    result = deepUnescape(result)
+    result = caseInsensitiveObject(deepUnescape(result))
     if (raw || !this.getAdapter) return result
     return Array.isArray(result) ? result.map(this.getAdapter) : result && this.getAdapter(result)
   }
@@ -62,7 +62,7 @@ class Model {
 
     const result = await services.all(getDb(), 
       `SELECT * FROM ${this.title} ${sort}LIMIT ${size} OFFSET ${(page - 1) * size}`
-    ).then(deepUnescape)
+    ).then(deepUnescape).then((res) => res.map(caseInsensitiveObject))
 
     return this.getAdapter ? result.map(this.getAdapter) : result
   }
@@ -95,7 +95,7 @@ class Model {
     
     const result = await services.all(getDb(), 
       `SELECT * FROM ${this.title} WHERE ${text.join(' AND ')}`,
-    params).then(deepUnescape)
+    params).then(deepUnescape).then((res) => res.map(caseInsensitiveObject))
 
     return this.getAdapter ? result.map(this.getAdapter) : result
   }
@@ -111,21 +111,19 @@ class Model {
   }
   
   
-  async add(data, returnField) {
+  async add(data) {
     if (this.setAdapter) data = this.setAdapter(data)
     data = sanitizeSchemaData(data, this.schema)
     if (this.defaults) data = { ...this.defaults, ...data }
     
     const keys = Object.keys(data)
     if (!keys.length) return Promise.reject(errors.noData())
-
-    if (!returnField) returnField = this.primaryId.toLowerCase()
   
-    const result = await services.get(getDb(),
-      `INSERT INTO ${this.title}(${keys.join(',')}) VALUES(${keys.map(() => '?').join(',')}) RETURNING ${returnField}`,
+    const result = await services.getLastId(getDb(),
+      `INSERT INTO ${this.title}(${keys.join(',')}) VALUES(${keys.map(() => '?').join(',')})`,
       Object.values(data)
     )
-    return deepUnescape(result && getMatchingKey(result, returnField))
+    return deepUnescape(result)
   }
    
   
@@ -162,7 +160,7 @@ class Model {
 
 
   async custom(sql, params, raw = true) { 
-    const result = await services.all(getDb(), sql, params).then(deepUnescape)
+    const result = await services.all(getDb(), sql, params).then(deepUnescape).then((res) => res.map(caseInsensitiveObject))
     if (raw || !this.getAdapter) return result
     return result.map(this.getAdapter)
   }

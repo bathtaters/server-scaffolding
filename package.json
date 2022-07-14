@@ -17,6 +17,7 @@
     "url": "https://github.com/bathtaters/server-scaffolding"
   },
   "dependencies": {
+    "@journeyapps/sqlcipher": "^5.3.1",
     "connect-flash": "^0.1.1",
     "connect-sqlite3": "^0.9.13",
     "cookie-parser": "^1.4.6",
@@ -32,7 +33,6 @@
     "passport-http-bearer": "^1.0.1",
     "passport-local": "^1.0.0",
     "pug": "^3.0.2",
-    "sqlite3": "^5.0.8",
     "winston": "^3.7.2",
     "winston-daily-rotate-file": "^4.7.1"
   },

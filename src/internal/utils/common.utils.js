@@ -11,9 +11,26 @@ exports.hasDupes = (array) => array.some((val, idx) => array.slice(0, idx).inclu
 exports.notRoute = (url) => RegExp(`^(?!(${url})($|/.*))`)
 
 // Get object key case-insensitive
-exports.getMatchingKey = (obj, keyAnyCase) => {
-  if (keyAnyCase in obj) return obj[keyAnyCase]
-  const lowerKey = keyAnyCase.toLowerCase() 
-  const caseKey = Object.keys(obj).find((key) => lowerKey === key.toLowerCase())
-  return obj[caseKey || keyAnyCase]
+exports.getMatchingKey = (object, propAnyCase) => {
+  if (propAnyCase in object) return propAnyCase
+  const lowerProp = propAnyCase.toLowerCase()
+  if (lowerProp in object) return lowerProp
+  return Object.keys(object).find((p) => lowerProp === p.toLowerCase())
 }
+
+exports.caseInsensitiveObject = (object) => object && new Proxy(object, {
+  has(object, prop) {
+    return Boolean(exports.getMatchingKey(object, prop))
+  },
+  get(object, prop) {
+    return object[exports.getMatchingKey(object, prop) || prop]
+  },
+  set(object, prop, val) {
+    object[exports.getMatchingKey(object, prop) || prop] = val
+    return true
+  },
+  deleteProperty(object, prop) {
+    delete object[exports.getMatchingKey(object, prop) || prop]
+    return true
+  },
+})

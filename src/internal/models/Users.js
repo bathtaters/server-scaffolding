@@ -37,7 +37,7 @@ class Users extends Model {
     const newData = addAdapter(data, this.primaryId)
     if ((passwordAccess & newData.access) && !newData.password) throw errors.noData('password for GUI access')
 
-    return super.add(newData)
+    return super.add(newData).then(() => newData[this.primaryId])
   }
 
   async update(id, data) {

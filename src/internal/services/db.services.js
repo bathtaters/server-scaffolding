@@ -26,6 +26,14 @@ function get(db, sql, params = []) {
     db.get(sql, params, (err,row) => err ? rej(err) : res(row))
   })
 }
+function getLastId(db, sql, params = []) {
+  return new Promise((res,rej) => {
+    db.serialize(() => {
+      db.run(sql, params, (err) => err && rej(err))
+      db.get('SELECT last_insert_rowid() id', [], (err, row) => err ? rej(err) : res(row && row.id))
+    })
+  })
+}
 
 function reset(db, schema, force) {
   let drops = [], creates = []
@@ -38,4 +46,25 @@ function reset(db, schema, force) {
   return exec(db, drops.concat(creates).join('; '))
 }
 
-module.exports = { exec, all, run, get, reset }
+function encrypt(db, sqlSecret, version = '4') {
+  return new Promise((res,rej) => {
+    db.serialize(() => {
+      db.run(`PRAGMA cipher_compatibility = ${version}`, (err) => {
+        if (err) {
+          logger.error(err, { label: 'init DB encryption' })
+          return rej(err)
+        }
+      })
+      db.run(`PRAGMA key = '${sqlSecret}'`, (err) => {
+        if (err) {
+          logger.error(err, { label: 'encrypting DB' })
+          return rej(err)
+        }
+        logger.verbose('Database encryption enabled')
+        return res(db)
+      })
+    })
+  })
+}
+
+module.exports = { exec, all, run, get, getLastId, reset, encrypt }

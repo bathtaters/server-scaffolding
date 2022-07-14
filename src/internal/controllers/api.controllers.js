@@ -31,19 +31,19 @@ exports.delete = (Model) => async function (req,res,next) {
   return Model.remove(req.params[Model.primaryId]).then(() => res.send({ success: true })).catch(next)
 }
 
-const TEMP_ID = -11
+const TEMP_ID = -0xFF
 exports.swap = (Model) => async function (req,res,next) {
-  const idA = getMatchingKey(req.body, Model.primaryId), idB = req.body.swap
+  const idA = req.body[getMatchingKey(req.body, Model.primaryId)], idB = req.body.swap
   if (idA == null || idB == null) return next(errors.noID())
   
   try {
-    const entryA = await Model.get(idA).then((r) => r && getMatchingKey(r, Model.primaryId))
-    const entryB = await Model.get(idB).then((r) => r && getMatchingKey(r, Model.primaryId))
+    const entryA = await Model.get(idA).then((r) => r && r[Model.primaryId])
+    const entryB = await Model.get(idB).then((r) => r && r[Model.primaryId])
 
     if (entryA == null) return next(errors.noEntry(idA))
 
     // ID change
-    if (entryB == null) return Model.update(entryA,  { [Model.primaryId]: idB  }).then(res.send).catch(next)
+    if (entryB == null) return Model.update(entryA, { [Model.primaryId]: idB  }).then((r) => res.send(r)).catch(next)
 
     // ID swap
     await Model.update(entryB,  { [Model.primaryId]: TEMP_ID })
