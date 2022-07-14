@@ -1,6 +1,4 @@
-const { capitalizeHyphenated, filterDupes, hasDupes, notRoute } = require('../../utils/common.utils')
-
-it.todo('getMatchingKey')
+const { capitalizeHyphenated, filterDupes, hasDupes, notRoute, getMatchingKey } = require('../../utils/common.utils')
 
 describe('capitalizeHyphenated', () => {
   it('capitalizes first letter', () => {
@@ -45,4 +43,23 @@ describe('notRoute', () => {
     expect(notRoute('test').test('testtest')).toBe(true)
     expect(notRoute('test').test('')).toBe(true)
   })
+})
+
+describe('getMatchingKey', () => {
+ it('gets exact key', () => {
+  expect(getMatchingKey({ test: 'match', other: 'alt' }, 'test')).toBe('match')
+  expect(getMatchingKey({ test: 'match', other: 'alt' }, 'other')).toBe('alt')
+ })
+ it('gets case-insensitive key', () => {
+  expect(getMatchingKey({ test: 'match', other: 'alt' }, 'TeSt')).toBe('match')
+  expect(getMatchingKey({ test: 'match', other: 'alt' }, 'OTHER')).toBe('alt')
+ })
+ it('returns undefined when only partial match', () => {
+  expect(getMatchingKey({ test: 'match', other: 'alt' }, 'tes')).toBeUndefined()
+  expect(getMatchingKey({ test: 'match', other: 'alt' }, 'otherKey')).toBeUndefined()
+ })
+ it('returns undefined when missing key', () => {
+  expect(getMatchingKey({ test: 'match', other: 'alt' }, 'missing')).toBeUndefined()
+  expect(getMatchingKey({ test: 'match', other: 'alt' }, 'newKey')).toBeUndefined()
+ })
 })
