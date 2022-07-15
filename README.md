@@ -83,6 +83,7 @@ LOG_CONSOLE=verbose|http|[info]|warn|error|none
 LOG_FILE=verbose|http|info|[warn]|error|none
 LOG_HTTP=debug|combined|[common]|dev|short|tiny|none
 SESSION_SECRET=[secret]
+DB_SECRET=[secret]
 DB_DIR=[<project-dir>/.db]
 LOG_DIR=[<project-dir>/.logs]
 ```
