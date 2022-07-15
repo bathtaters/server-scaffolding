@@ -12,7 +12,7 @@ exports.notRoute = (url) => RegExp(`^(?!(${url})($|/.*))`)
 
 // Get object key case-insensitive
 exports.getMatchingKey = (object, propAnyCase) => {
-  if (propAnyCase in object) return propAnyCase
+  if (propAnyCase in object || typeof propAnyCase !== 'string') return propAnyCase
   const lowerProp = propAnyCase.toLowerCase()
   if (lowerProp in object) return lowerProp
   return Object.keys(object).find((p) => lowerProp === p.toLowerCase())
