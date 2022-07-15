@@ -28,11 +28,15 @@ describe('Test ENV Form Post', () => {
         action: "Update",
         port: "12661",
         LOG_CONSOLE: "test",
+        LOG_FILE: "none",
+        DB_SECRET: "testSecret",
       })
 
     expect(getEnv()).toEqual(expect.objectContaining({
       port: 12661,
       LOG_CONSOLE: "test",
+      LOG_FILE: "none",
+      DB_SECRET: "testSecret",
     }))
   })
 
@@ -44,8 +48,18 @@ describe('Test ENV Form Post', () => {
       })
 
     expect(getEnv()).toEqual(expect.objectContaining({
-      port: "8080",
+      NODE_ENV: "development",
       LOG_CONSOLE: "info",
+      LOG_FILE: "warn",
+      LOG_HTTP: "common",
+      DB_DIR: "", LOG_DIR: ""
+    }))
+  })
+
+  test('POST /form Default ignores readonly', () => {
+    expect(getEnv()).toEqual(expect.objectContaining({
+      port: 12661,
+      DB_SECRET: "testSecret",
     }))
   })
 
@@ -57,7 +71,7 @@ describe('Test ENV Form Post', () => {
       })
 
     expect(getEnv()).toEqual(expect.objectContaining({
-      port: 12661,
+      LOG_FILE: "none",
       LOG_CONSOLE: "test",
     }))
   })
@@ -71,7 +85,10 @@ describe('Test ENV Form Post', () => {
         })
     }
 
-    await request.post(`${envPrefix}/form`).expect(400)
+    await request.post(`${envPrefix}/form`).expect(500).send({
+      ...getEnv(),
+      action: "Undo",
+    })
   })
 
   test('POST /form Restart page', async () => {

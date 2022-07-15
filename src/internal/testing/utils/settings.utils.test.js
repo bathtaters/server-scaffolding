@@ -1,4 +1,4 @@
-const { getEnvVars, stringifyEnv } = require('../../utils/settings.utils')
+const { getEnvVars, stringifyEnv, filterOutProps } = require('../../utils/settings.utils')
 
 jest.mock('../../config/env.cfg', () => ({ defaults: { testA: 'TEST-1', testB: 'TEST-2' }}))
 
@@ -22,5 +22,22 @@ describe('stringifyEnv', () => {
   })
   it('converts object to .env text', () => {
     expect(stringifyEnv({ a: 1, b: "test" })).toBe('a=1\nb=test\n')
+  })
+})
+
+describe('filterOutProps', () => {
+  it('returns input object', () => {
+    const obj = { a: 1, b: 2, c: 3 }
+    expect(filterOutProps(obj, [])).toBe(obj)
+    expect(filterOutProps(obj, [])).toEqual({ a: 1, b: 2, c: 3 })
+  })
+  it('removes listed props', () => {
+    expect(filterOutProps({ a: 1, b: 2, c: 3, d: 4, TeSt: 'data' }, ['a', 'TeSt']))
+      .toEqual({ b: 2, c: 3, d: 4 })
+  })
+  it('mutates input object', () => {
+    const obj = { a: 1, b: 2, c: 3 }
+    filterOutProps(obj, ['a', 'TeSt'])
+    expect(obj).toEqual({ b: 2, c: 3 })
   })
 })

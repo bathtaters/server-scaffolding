@@ -1,12 +1,13 @@
 const Model = require('../../models/Model')
 const services = require('../../services/db.services')
 const { openDb, getDb } = require('../../config/db')
-const { hasDupes } = require('../../utils/common.utils')
+const { hasDupes, caseInsensitiveObject } = require('../../utils/common.utils')
 const { deepUnescape } = require('../../utils/validate.utils')
 const { sanitizeSchemaData, schemaFromConfig, appendAndSort } = require('../../utils/db.utils')
 const errors = require('../../config/errors.internal')
 
 const { deepCopy } = require('../test.utils')
+const { object } = require('../../config/validate.messages')
 const modelOptions = {
   schema: { SCHEMA: true, defId: 'ID' },
   defaults: { data: 'DEFAULT' },
@@ -164,13 +165,14 @@ describe('Model get', () => {
   it('returns result array when no ID', () => {
     expect.assertions(1)
     return TestModel.get().then((ret) => {
-      expect(ret).toEqual(['ALL'])
+      expect(ret).toEqual(['ALL','RES'])
     })
   })
   it('uses getAdapter', () => {
-    expect.assertions(1)
+    expect.assertions(2)
     return TestModel.get('inp','key').then(() => {
       expect(modelOptions.getAdapter).toBeCalledTimes(1)
+      expect(modelOptions.getAdapter).toHaveBeenNthCalledWith(1, expect.objectContaining({ val: 'GET' }))
     })
   })
   it('skips getAdapter when raw = true', () => {
@@ -180,9 +182,27 @@ describe('Model get', () => {
     })
   })
   it('unescapes return value', () => {
-    expect.assertions(1)
-    return TestModel.get('inp','key').then(() => {
+    deepUnescape.mockReturnValueOnce('UNESC')
+    expect.assertions(2)
+    return TestModel.get('inp','key').then((ret) => {
       expect(deepUnescape).toBeCalledTimes(1)
+      expect(ret).toBe('UNESC')
+    })
+  })
+  it('returns case-insensitive object', () => {
+    caseInsensitiveObject.mockReturnValueOnce('CASEI')
+    expect.assertions(2)
+    return TestModel.get('inp','key').then((ret) => {
+      expect(caseInsensitiveObject).toBeCalledTimes(1)
+      expect(ret).toBe('CASEI')
+    })
+  })
+  it('returns case-insensitive object array', () => {
+    caseInsensitiveObject.mockReturnValueOnce('CASEI').mockReturnValueOnce('CASEB')
+    expect.assertions(2)
+    return TestModel.get().then((ret) => {
+      expect(caseInsensitiveObject).toBeCalledTimes(2)
+      expect(ret).toEqual(['CASEI','CASEB'])
     })
   })
 })
@@ -221,19 +241,31 @@ describe('Model getPage', () => {
   it('returns result array on success', () => {
     expect.assertions(1)
     return TestModel.getPage(6,12).then((ret) => {
-      expect(ret).toEqual(['ALL'])
+      expect(ret).toEqual(['ALL','RES'])
     })
   })
   it('uses getAdapter', () => {
-    expect.assertions(1)
+    expect.assertions(3)
     return TestModel.getPage(6,12).then(() => {
-      expect(modelOptions.getAdapter).toBeCalledTimes(1)
+      expect(modelOptions.getAdapter).toBeCalledTimes(2)
+      expect(modelOptions.getAdapter).toHaveBeenNthCalledWith(1, 'ALL', 0, ['ALL','RES'])
+      expect(modelOptions.getAdapter).toHaveBeenNthCalledWith(2, 'RES', 1, ['ALL','RES'])
     })
   })
   it('unescapes return value', () => {
-    expect.assertions(1)
-    return TestModel.getPage(6,12).then(() => {
+    deepUnescape.mockReturnValueOnce(['UNESC'])
+    expect.assertions(2)
+    return TestModel.getPage(6,12).then((ret) => {
       expect(deepUnescape).toBeCalledTimes(1)
+      expect(ret).toEqual(['UNESC'])
+    })
+  })
+  it('returns case-insensitive objects', () => {
+    caseInsensitiveObject.mockReturnValueOnce('CASEI').mockReturnValueOnce('CASEB')
+    expect.assertions(2)
+    return TestModel.getPage(6,12).then((ret) => {
+      expect(caseInsensitiveObject).toBeCalledTimes(2)
+      expect(ret).toEqual(['CASEI','CASEB'])
     })
   })
   it('rejects on missing size', () => {
@@ -291,14 +323,17 @@ describe('Model find', () => {
   it('returns result array on success', () => {
     expect.assertions(1)
     return TestModel.find({ data: 1 }).then((ret) => {
-      expect(ret).toEqual(['ALL'])
+      expect(ret).toEqual(['ALL','RES'])
     })
   })
   it('uses set/getAdapters', () => {
-    expect.assertions(2)
+    expect.assertions(5)
     return TestModel.find({ data: 1 }).then(() => {
-      expect(modelOptions.getAdapter).toBeCalledTimes(1)
+      expect(modelOptions.getAdapter).toBeCalledTimes(2)
       expect(modelOptions.setAdapter).toBeCalledTimes(1)
+      expect(modelOptions.getAdapter).toHaveBeenNthCalledWith(1, 'ALL', 0, ['ALL','RES'])
+      expect(modelOptions.getAdapter).toHaveBeenNthCalledWith(2, 'RES', 1, ['ALL','RES'])
+      expect(modelOptions.setAdapter).toHaveBeenNthCalledWith(1, { data: 1 })
     })
   })
   it('sanitizes input data', () => {
@@ -309,9 +344,19 @@ describe('Model find', () => {
     })
   })
   it('unescapes return value', () => {
-    expect.assertions(1)
-    return TestModel.find({ data: 1 }).then(() => {
+    deepUnescape.mockReturnValueOnce(['UNESC'])
+    expect.assertions(2)
+    return TestModel.find({ data: 1 }).then((ret) => {
       expect(deepUnescape).toBeCalledTimes(1)
+      expect(ret).toEqual(['UNESC'])
+    })
+  })
+  it('returns case-insensitive objects', () => {
+    caseInsensitiveObject.mockReturnValueOnce('CASEI').mockReturnValueOnce('CASEB')
+    expect.assertions(2)
+    return TestModel.find({ data: 1 }).then((ret) => {
+      expect(caseInsensitiveObject).toBeCalledTimes(2)
+      expect(ret).toEqual(['CASEI','CASEB'])
     })
   })
   it('rejects on no data', () => {
@@ -374,60 +419,53 @@ describe('Model add', () => {
 
   it('uses expected SQL', () => {
     expect.assertions(2)
-    return TestModel.add({ data: 1, test: 2 },'ret').then(() => {
-      expect(services.get).toBeCalledTimes(1)
-      expect(services.get).toBeCalledWith(
-        'DB', 'INSERT INTO test(data,test) VALUES(?,?) RETURNING ret', [1,2]
+    return TestModel.add({ data: 1, test: 2 }).then(() => {
+      expect(services.getLastId).toBeCalledTimes(1)
+      expect(services.getLastId).toBeCalledWith(
+        'DB', 'INSERT INTO test(data,test) VALUES(?,?)', [1,2]
       )
     })
   })
   it('uses defaults on missing input fields', () => {
     expect.assertions(1)
-    return TestModel.add({},'ret').then(() => {
-      expect(services.get).toBeCalledWith(
+    return TestModel.add({}).then(() => {
+      expect(services.getLastId).toBeCalledWith(
         expect.anything(),
         expect.stringContaining('(data)'),
         ['DEFAULT']
       )
     })
   })
-  it('returns returnField on success', () => {
+  it('returns LastId on success', () => {
     expect.assertions(1)
-    return TestModel.add({ data: 1 },'val').then((ret) => {
-      expect(ret).toBe('GET')
-    })
-  })
-  it('uses defaultId on missing returnField', () => {
-    expect.assertions(1)
-    return TestModel.add({ data: 1 }).then(() => {
-      expect(services.get).toBeCalledWith(
-        expect.anything(), expect.stringMatching(/RETURNING defId/i), expect.anything()
-      )
+    return TestModel.add({ data: 1 }).then((ret) => {
+      expect(ret).toBe('LAST_ID')
     })
   })
   it('uses setAdapter on input', () => {
-    expect.assertions(1)
-    return TestModel.add({ data: 1 },'ret').then(() => {
+    expect.assertions(2)
+    return TestModel.add({ data: 1 }).then(() => {
       expect(modelOptions.setAdapter).toBeCalledTimes(1)
+      expect(modelOptions.setAdapter).toHaveBeenNthCalledWith(1, { data: 1 })
     })
   })
   it('sanitizes input data', () => {
     expect.assertions(2)
-    return TestModel.add({ data: 1 },'ret').then(() => {
+    return TestModel.add({ data: 1 }).then(() => {
       expect(sanitizeSchemaData).toBeCalledTimes(1)
       expect(sanitizeSchemaData).toBeCalledWith({ data: 1 }, modelOptions.schema)
     })
   })
   it('unescapes return value', () => {
     expect.assertions(1)
-    return TestModel.add({ data: 1 },'ret').then(() => {
+    return TestModel.add({ data: 1 }).then(() => {
       expect(deepUnescape).toBeCalledTimes(1)
     })
   })
   it('rejects on no data & no defaults', () => {
     const NoDefModel = new Model('noDef', { ...modelOptions, defaults: null })
     expect.assertions(1)
-    return NoDefModel.add({},'ret').catch((err) => {
+    return NoDefModel.add({}).catch((err) => {
       expect(err).toEqual(errors.noData())
     })
   })
@@ -462,9 +500,10 @@ describe('Model update', () => {
     })
   })
   it('uses setAdapter on data', () => {
-    expect.assertions(1)
+    expect.assertions(2)
     return TestModel.update('inp', { data: 1 }, 'key').then(() => {
       expect(modelOptions.setAdapter).toBeCalledTimes(1)
+      expect(modelOptions.setAdapter).toHaveBeenNthCalledWith(1, { data: 1 })
     })
   })
   it('sanitizes input data', () => {
@@ -559,13 +598,15 @@ describe('Model custom', () => {
   it('returns result array on success', () => {
     expect.assertions(1)
     return TestModel.custom('SQL','PARAMS',false).then((ret) => {
-      expect(ret).toEqual(['ALL'])
+      expect(ret).toEqual(['ALL','RES'])
     })
   })
   it('uses getAdapter', () => {
-    expect.assertions(1)
+    expect.assertions(3)
     return TestModel.custom('SQL','PARAMS',false).then(() => {
-      expect(modelOptions.getAdapter).toBeCalledTimes(1)
+      expect(modelOptions.getAdapter).toBeCalledTimes(2)
+      expect(modelOptions.getAdapter).toHaveBeenNthCalledWith(1, 'ALL', 0, ['ALL','RES'])
+      expect(modelOptions.getAdapter).toHaveBeenNthCalledWith(2, 'RES', 1, ['ALL','RES'])
     })
   })
   it('skips getAdapter when raw = true', () => {
@@ -575,9 +616,19 @@ describe('Model custom', () => {
     })
   })
   it('unescapes return value', () => {
-    expect.assertions(1)
-    return TestModel.custom('SQL','PARAMS',false).then(() => {
+    deepUnescape.mockReturnValueOnce(['UNESC'])
+    expect.assertions(2)
+    return TestModel.custom('SQL','PARAMS',false).then((ret) => {
       expect(deepUnescape).toBeCalledTimes(1)
+      expect(ret).toEqual(['UNESC'])
+    })
+  })
+  it('returns case-insensitive objects', () => {
+    caseInsensitiveObject.mockReturnValueOnce('CASEI').mockReturnValueOnce('CASEB')
+    expect.assertions(2)
+    return TestModel.custom('SQL','PARAMS',false).then((ret) => {
+      expect(caseInsensitiveObject).toBeCalledTimes(2)
+      expect(ret).toEqual(['CASEI','CASEB'])
     })
   })
 })
@@ -623,7 +674,7 @@ describe('Model getPaginationData', () => {
   it('uses Model.getPage to return data', () => {
     expect.assertions(3)
     return TestModel.getPaginationData(input, options).then(({ data }) => {
-      expect(data).toEqual(['ALL'])
+      expect(data).toEqual(['ALL','RES'])
       expect(services.all).toBeCalledTimes(1)
       expect(services.all).toBeCalledWith(
         // Model.getPage(page:3, size:4) (LIMIT = size, OFFSET = (page - 1) * size)
@@ -682,17 +733,22 @@ jest.mock('../../config/db', () => ({
 
 jest.mock('../../utils/validate.utils', () => ({ deepUnescape: jest.fn((val) => val) }))
 
-jest.mock('../../utils/common.utils', () => ({ hasDupes: jest.fn(() => false), getMatchingKey: (o,k) => o[k], capitalizeHyphenated: jest.fn() }))
+jest.mock('../../utils/common.utils', () => ({
+  hasDupes: jest.fn(() => false),
+  caseInsensitiveObject: jest.fn((o) => o),
+  capitalizeHyphenated: jest.fn()
+}))
 
 jest.mock('../../../config/models.cfg', () => ({
   defaults: { test: 'CFGDEFS' }, limits: { test: 'CFGLIMS' }
 }))
 
 jest.mock('../../services/db.services', () => ({
-  run:   jest.fn((db) => db ? Promise.resolve() : Promise.reject('No DB')),
-  get:   jest.fn((db) => db ? Promise.resolve({ val: 'GET', c: 15 }) : Promise.reject('No DB')),
-  all:   jest.fn((db) => db ? Promise.resolve(['ALL']) : Promise.reject('No DB')),
-  reset: jest.fn((db) => db ? Promise.resolve() : Promise.reject('No DB')),
+  run:       jest.fn((db) => db ? Promise.resolve() : Promise.reject('No DB')),
+  get:       jest.fn((db) => db ? Promise.resolve({ val: 'GET', c: 15 }) : Promise.reject('No DB')),
+  all:       jest.fn((db) => db ? Promise.resolve(['ALL','RES']) : Promise.reject('No DB')),
+  getLastId: jest.fn((db) => db ? Promise.resolve('LAST_ID') : Promise.reject('No DB')),
+  reset:     jest.fn((db) => db ? Promise.resolve() : Promise.reject('No DB')),
 }))
 
 jest.mock('../../utils/db.utils', () => ({

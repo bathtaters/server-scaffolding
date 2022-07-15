@@ -1,19 +1,29 @@
 const { getEnv, canUndo, getForm, settingsActions } = require('../../services/settings.services')
+const { filterOutProps } = require('../../utils/settings.utils')
 
 jest.mock('fs/promises', () => ({ writeFile: () => Promise.resolve() }))
 jest.mock('../../utils/settings.utils', () => ({
   getEnvVars: () => ({ a: 1, b: 2, c: 3 }),
   stringifyEnv: () => {},
+  filterOutProps: jest.fn((obj, props) => { process.testProps = props; return obj }),
 }))
 jest.mock('../../config/env.cfg', () => ({
   updateRootPath: () => {},
-  defaults: { isDefault: true, DB_DIR: '', LOG_DIR: '' },
+  defaults: { a: 12345, DB_DIR: '', LOG_DIR: '' },
   formSettings: {
-    a: { type: 'number' },
-    b: { type: [1,3]  },
-    c: { type: 'text'   },
+    a: { type: 'number'               },
+    b: { type: [1,3] , readonly: true },
+    c: { type: 'text', readonly: true },
   }
 }))
+
+describe('initialize settings.services', () => {
+  afterAll(() => { delete process.testProps })
+
+  it('filters out readonly props', () => {
+    expect(process.testProps).toEqual(['b','c'])
+  })
+})
 
 describe('getEnv/canUndo', () => {
   it('gets initial env val', () => {
@@ -51,6 +61,16 @@ describe('settingsActions', () => {
     })
   })
 
+  it('Update does not change missing props', () => {
+    expect.assertions(1)
+    // + 1 to queue
+    return Update({ b: 4 }).then(() => {
+      expect(getEnv()).toEqual({ a: 1, b: 4, c: 3 })
+      // - 1 from queue
+      return Undo()
+    })
+  })
+
   it('Undo removes from queue', () => {
     expect.assertions(3)
     // + 1 to queue // - 1 from queue
@@ -65,7 +85,7 @@ describe('settingsActions', () => {
     expect.assertions(2)
     // + 1 to queue
     return Default().then(() => {
-      expect(getEnv()).toHaveProperty('isDefault', true)
+      expect(getEnv()).toHaveProperty('a', 12345)
       expect(canUndo()).toBeTruthy()
       // - 1 from queue
       return Undo()
