@@ -11,6 +11,8 @@ mixin logHeaderDesc(line)
       span.log-msg= trimLogMessage(line)
     else
       span.log-msg= line.message
+  
+  .col.small.dim.pmid= line.instance
 
 mixin logBody(line)
   if line.message.length > maxLogLine || line.stack

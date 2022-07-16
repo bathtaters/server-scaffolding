@@ -28,6 +28,7 @@ module.exports = {
       format.errors({ stack: true }),
     ),
     file: format.combine(
+      format((info) => 'NODE_APP_INSTANCE' in process.env ? { ...info, instance: +process.env.NODE_APP_INSTANCE } : info)(),
       format.uncolorize(),
       format.timestamp(),
       format.json(),
