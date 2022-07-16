@@ -11,6 +11,14 @@ env.updateRootPath(rootPath)
 const envPath = join(rootPath, '.env')
 require('dotenv').config({ path: envPath })
 
+// Determine port
+function getPort() {
+  if (process.env.NODE_ENV === 'test') return require('../internal/testing/test.cfg').port
+  return (+process.env.port || +pkgCfg.port || 8080) + (
+    isNaN(process.env.NODE_APP_INSTANCE) ? 0 : +process.env.NODE_APP_INSTANCE
+  )
+}
+
 module.exports = {
   name: pkg.name || 'untitled',
   version: pkg.version || '0',
@@ -20,7 +28,8 @@ module.exports = {
   license: `https://opensource.org/licenses/${pkg.license || 'BSD-2-Clause'}`,
   repoLink: pkg.repository && pkg.repository.url,
 
-  port: process.env.NODE_ENV === 'test' ? require('../internal/testing/test.cfg').port : +process.env.port || +pkgCfg.port || 8080,
+  port: getPort(),
+  isPm2: 'NODE_APP_INSTANCE' in process.env,
   rootPath, envPath,
   dbPath:  join(process.env.DB_DIR  || env.defaults.DB_DIR,  'database.db'),
   logPath: join(process.env.LOG_DIR || env.defaults.LOG_DIR, `${pkg.name || 'server'}_%DATE%.log`),

@@ -8,6 +8,7 @@ const { varName } = require('../utils/gui.utils')
 const { title, footer } = require('../../config/gui.cfg')
 const { getDb, openDb, closeDb } = require('../config/db')
 const models = require('../../models/_all')
+const timeout = require('../../../pm2.config').apps[0].kill_timeout
 
 let isClosing = false
 
@@ -64,8 +65,8 @@ async function terminateServer() {
   if (!isClosing) process.exit()
 }
 
-
 const gracefulExitOptions = {
+  suicideTimeout: timeout || 120 * 1000,
   log: true,
   logger: logger.verbose.bind(logger),
   performLastRequest: true,
