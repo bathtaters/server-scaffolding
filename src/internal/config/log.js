@@ -1,3 +1,4 @@
+const { basename, dirname } = require('path')
 const { createLogger, transports } = require('winston')
 const DailyRotateFile = require('winston-daily-rotate-file')
 const { getLogLevel } = require('../services/log.services')
@@ -13,8 +14,9 @@ const logger = createLogger({
     new transports.Console({
       ...getLogLevel(process.env.LOG_CONSOLE, config, defaults.LOG_CONSOLE, true),
       format: config.logFormat.console,
-    }),
-
+    })
+    
+  ].concat(config.testLevel ? [] : 
     // File logs
     new DailyRotateFile({
       ...getLogLevel(process.env.LOG_FILE, config, defaults.LOG_FILE),
@@ -24,8 +26,8 @@ const logger = createLogger({
       maxSize: config.files.maxBytes || '20M',
       maxFiles: (config.files.maxDays || 14) + 'd',
       format: config.logFormat.file,
-    }),
-  ],
+    })
+  )
 })
 
 logger.debug = () => logger.warn('Calling uninitialized logger.debug') 
