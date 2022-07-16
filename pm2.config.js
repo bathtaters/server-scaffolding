@@ -14,7 +14,7 @@ const prodOptions = {
   max_restarts     : 10,
   max_memory_restart:"150M",
   min_uptime       : "90s",
-  kill_timeout     : 3000,
+  kill_timeout     : 4000,
   exp_backoff_restart_delay: "100",
   watch            : false,
   vizion           : false,

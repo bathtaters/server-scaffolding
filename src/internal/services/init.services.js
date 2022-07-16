@@ -10,23 +10,27 @@ const { getDb, openDb, closeDb } = require('../config/db')
 const models = require('../../models/_all')
 const timeout = require('../../../pm2.config').apps[0].kill_timeout
 
-let isClosing = false
+let isClosing = false, isTerminating = false
 
 async function initializeServer(server) {
   // Handle terminate
   let listener
+
   const handleClose = () => {
     if (isClosing) return
     isClosing = true
     logger.info(`Shutting down server`)
+
     if (!listener) return terminateServer().then(() => process.exit(0))
     return gracefulExitHandler(server, listener, gracefulExitOptions)
   }
+
   const handleError = (err) => {
     logger.error(err || 'Unknown', { label: 'unhandled' })
     if (isClosing) return process.exit(-1)
     return handleClose()
   }
+  
   process.on('SIGINT',  handleClose)
   process.on('SIGTERM', handleClose)
   process.on('SIGUSR1', handleClose)
@@ -54,19 +58,18 @@ async function initializeServer(server) {
 
 
 async function terminateServer() {
-  if (!isClosing) logger.info(`Shutting down server`)
+  if (isTerminating) return
+  isTerminating = true
 
   if (teardown) await teardown()
 
   if (getDb()) await closeDb()
 
   logger.info(`${meta.name} services ended`)
-
-  if (!isClosing) process.exit()
 }
 
 const gracefulExitOptions = {
-  suicideTimeout: timeout || 120 * 1000,
+  suicideTimeout: (timeout || 120 * 1000) - 100,
   log: true,
   logger: logger.verbose.bind(logger),
   performLastRequest: true,
