@@ -29,7 +29,7 @@ async function initializeServer(server) {
   }
   process.on('SIGINT',  handleClose)
   process.on('SIGTERM', handleClose)
-  process.on('SIGUSR1', terminateServer)
+  process.on('SIGUSR1', handleClose)
   process.on('SIGUSR2', handleClose)
   process.on('uncaughtException',  handleError)
   process.on('unhandledRejection', handleError)
@@ -75,4 +75,4 @@ const gracefulExitOptions = {
   getRejectionError: shutdownError,
 }
 
-module.exports = initializeServer
+module.exports = { initializeServer, terminateServer }

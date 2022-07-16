@@ -1,6 +1,7 @@
 const { connect, disconnect, list, restart } = require('../utils/pm2.promises')
 const logger = require('../config/log')
 const { name } = require('../../config/meta')
+const { terminateServer } = require('../services/init.services')
 
 function restartInstance({ pm_id, pid, pm2_env }, updateEnv = false, isSelf = false) {
   process.env.NODE_APP_INSTANCE = pm2_env.NODE_APP_INSTANCE
@@ -10,9 +11,6 @@ function restartInstance({ pm_id, pid, pm2_env }, updateEnv = false, isSelf = fa
 }
 
 async function restartWithEnv(env) {
-  // Begin terminating services
-  process.emit('SIGUSR1')
-
   // Update process.env for restart
   Object.entries(env).forEach(([key,val]) => { process.env[key] = val })
   
@@ -22,6 +20,7 @@ async function restartWithEnv(env) {
 
   // Restart each process that has the same name
   for (const proc of await list()) {
+    console.log('LIST',proc.name,proc.pm_id,proc.pm2_env.NODE_APP_INSTANCE)
     if (proc.name !== name) continue
     if (+proc.pm2_env.NODE_APP_INSTANCE === currentInstance) {
       self = proc
@@ -29,7 +28,9 @@ async function restartWithEnv(env) {
     }
     await restartInstance(proc, true)
   }
+
   // Restart self
+  await terminateServer()
   return self && restartInstance(self, true, true)
 }
 

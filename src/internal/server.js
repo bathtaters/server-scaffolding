@@ -4,7 +4,7 @@ const urls = require('../config/urls.cfg')
 // Module Dependencies
 const express = require('express')
 const { join } = require('path')
-const startServer = require('./services/init.services')
+const { initializeServer } = require('./services/init.services')
 const customServer = require('../server.init')
 const { notRoute } = require('./utils/common.utils')
 // Middleware
@@ -48,6 +48,6 @@ server.use(urls.api.prefix, errorMiddleware.json)
 server.use(errorMiddleware.html)
 
 // Start server
-startServer(server)
+initializeServer(server)
 
 module.exports = server
