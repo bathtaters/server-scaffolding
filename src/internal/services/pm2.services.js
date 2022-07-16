@@ -20,7 +20,6 @@ async function restartWithEnv(env) {
 
   // Restart each process that has the same name
   for (const proc of await list()) {
-    console.log('LIST',proc.name,proc.pm_id,proc.pm2_env.NODE_APP_INSTANCE)
     if (proc.name !== name) continue
     if (+proc.pm2_env.NODE_APP_INSTANCE === currentInstance) {
       self = proc
