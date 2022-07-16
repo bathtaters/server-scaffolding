@@ -33,4 +33,4 @@ async function restartWithEnv(env) {
   return self && restartInstance(self, true, true)
 }
 
-exports.restartCluster = (withEnv) => connect().then(() => restartWithEnv(withEnv)).finally(disconnect)
+exports.restartCluster = (withEnv = {}) => connect().then(() => restartWithEnv(withEnv)).finally(disconnect)
