@@ -62,8 +62,10 @@ exports.settingsForm = (req,res,next) => {
   if (action.toLowerCase() === 'update' && !env) return next(errors.noData('settings'))
 
   return settingsActions[action](env)
-    .then((delay) => delay ?
-      res.render('delay', restartParams(req)) :
-      res.redirect(`${urls.admin.prefix}${urls.admin.home}${queryString ? deepUnescape(queryString) : ''}`)
-    ).catch(next)
+    .then((restart) => {
+      if (typeof restart !== 'function')
+        return res.redirect(`${urls.admin.prefix}${urls.admin.home}${queryString ? deepUnescape(queryString) : ''}`)
+      res.render('delay', restartParams(req))
+      restart()
+    }).catch(next)
 }

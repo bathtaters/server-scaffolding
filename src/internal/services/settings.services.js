@@ -1,28 +1,28 @@
 const { exec } = require('child_process')
-const { writeFile } = require('fs/promises')
+const { writeFile, readFile } = require('fs/promises')
+const { parse } = require('dotenv')
 const { getEnvVars, stringifyEnv, filterOutProps } = require('../utils/settings.utils')
 const { deepUnescape } = require('../utils/validate.utils')
+const { restartCluster } = require('../services/pm2.services')
 const { defaults, formSettings } = require('../config/env.cfg')
 const { noUndo } = require('../config/errors.internal')
-const { envPath } = require('../../config/meta')
+const { envPath, isPm2 } = require('../../config/meta')
 
 const envDefaults = filterOutProps(
   { ...defaults, DB_DIR: '', LOG_DIR: '' },
   Object.entries(formSettings).filter(([_, { readonly }]) => readonly).map(([key]) => key)
 )
 
-let envHistory = [ getEnvVars(Object.keys(formSettings)) ]
-
 // Disable persistence when testing
-const writeCurrent = process.env.NODE_ENV === 'test' ? () => Promise.resolve() : () => writeFile(envPath, stringifyEnv(exports.getEnv()))
+const writeEnv = process.env.NODE_ENV === 'test' ? () => Promise.resolve() : (envObj) => writeFile(envPath, stringifyEnv(envObj))
 
-exports.getEnv = () => envHistory.length < 1 ? {} : envHistory[envHistory.length - 1]
+exports.getEnv = () => readFile(envPath).then((val) => getEnvVars(Object.keys(formSettings), parse(val.toString())))
 
-exports.canUndo = () => envHistory.length > 1
+exports.canUndo = () => false
 
-exports.getForm = () => {
+exports.getForm = async () => {
   const newForm = [{}, {}],
-    currentVals = exports.getEnv(),
+    currentVals = await exports.getEnv(),
     splitForm = Math.ceil(Object.keys(formSettings).length / 2)
 
   Object.keys(formSettings).forEach((key, idx) => {
@@ -37,36 +37,24 @@ exports.getForm = () => {
 }
 
 exports.settingsActions = {
-  Update:  (envObj) => {
-    envHistory.push({ ...exports.getEnv(), ...deepUnescape(envObj) })
-    return writeCurrent()
+  Update:  async (envObj) => {
+    const oldObj = await exports.getEnv()
+    return writeEnv({ ...oldObj, ...deepUnescape(envObj) })
   },
 
-  Undo:    () => {
-    if (!exports.canUndo()) throw noUndo()
-    envHistory.pop()
-    return writeCurrent()
-  },
+  Undo:    () => { throw new Error('UNDO DISABLED') },
 
   Default: () => exports.settingsActions.Update(envDefaults),
   
   Restart: async (envObj) => {
     if (envObj) await exports.settingsActions.Update(envObj)
 
-    switch(process.env.NODE_ENV) {
-      case 'test': return 'RESTART'
+    if (process.env.NODE_ENV === 'test') throw new Error('Triggered restart in test environment')
+    
+    // Restart anything monitoring file changes
+    if (!isPm2) return () => exec(`touch "${__filename}"`)
 
-      case 'development':
-        // Restart nodemon
-        exec(`touch "${__filename}"`)
-        break
-
-      case 'production':
-      default:
-        // Restart pm2
-        process.exitCode = 1
-        process.emit('SIGUSR1')
-    }
-    return true
+    const env = await exports.getEnv()
+    return () => restartCluster(env)
   },
 }

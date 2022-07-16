@@ -25,11 +25,11 @@ exports.userTable = modelDb(Users, { view: 'users', formatData: guiAdapter, over
 }})
 
 // SETTINGS
-exports.settings = (req, res, next) =>
+exports.settings = async (req, res, next) => 
   res.render('settings', {
     title: 'Settings',
-    env: getEnv(),
-    formSettings: getForm(),
+    env: await getEnv(),
+    formSettings: await getForm(),
     tooltips: envTooltips,
     canUndo: canUndo(),
     buttons: Object.keys(settingsActions),
