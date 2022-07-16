@@ -5,7 +5,7 @@
   "main": "./src/internal/server.js",
   "scripts": {
     "start": "nodemon ./src/internal/server.js",
-    "start-pm2": "pm2 start pm2.config.js",
+    "start-pm2": "pm2 start pm2.config.js && pm2 logs",
     "stop-pm2": "pm2 delete pm2.config.js",
     "start-node": "node ./src/internal/server.js",
     "inspect": "nodemon --inspect ./src/internal/server.js",
