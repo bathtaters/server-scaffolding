@@ -43,3 +43,10 @@ exports.deepCopy = (obj) => {
     Object.assign(copy, { [key]: exports.deepCopy(val) })
   , {})
 }
+
+exports.expectEnvWrite = (writeFileSpy, envObj) => Object.entries(envObj).forEach(([key,val]) => {
+  expect(writeFileSpy).toBeCalledWith(
+    expect.any(String),
+    expect.stringContaining(`${key}=${val}\n`)
+  )
+})

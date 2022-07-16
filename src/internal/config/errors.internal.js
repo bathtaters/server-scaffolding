@@ -15,7 +15,7 @@ module.exports = {
   unknownDb: () => createError(502, "Unknwon database error."),
   shutdown: () => createError(503, "Server is currently shutting down.", { headers: { "retry-after": 3 * 60 } }) ,
   missing: () => createError(404, "Resource not found."),
-  test: () => createError(418, "API is not a Teapot."),
+  test: (msg) => createError(418, msg || "API is not a Teapot."),
 
   // CRUD Errors
   noID: () => createError(400, "No ID provided."),

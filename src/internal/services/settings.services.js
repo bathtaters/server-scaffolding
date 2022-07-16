@@ -5,7 +5,7 @@ const { getEnvVars, stringifyEnv, filterOutProps } = require('../utils/settings.
 const { deepUnescape } = require('../utils/validate.utils')
 const { restartCluster } = require('../services/pm2.services')
 const { defaults, formSettings } = require('../config/env.cfg')
-const { noUndo } = require('../config/errors.internal')
+const errors = require('../config/errors.internal')
 const { envPath, isPm2 } = require('../../config/meta')
 
 const envDefaults = filterOutProps(
@@ -14,7 +14,7 @@ const envDefaults = filterOutProps(
 )
 
 // Disable persistence when testing
-const writeEnv = process.env.NODE_ENV === 'test' ? () => Promise.resolve() : (envObj) => writeFile(envPath, stringifyEnv(envObj))
+const writeEnv = (envObj) => writeFile(envPath, stringifyEnv(envObj))
 
 exports.getEnv = () => readFile(envPath).then((val) => getEnvVars(Object.keys(formSettings), parse(val.toString())))
 
@@ -49,7 +49,7 @@ exports.settingsActions = {
   Restart: async (envObj) => {
     if (envObj) await exports.settingsActions.Update(envObj)
 
-    if (process.env.NODE_ENV === 'test') throw new Error('Triggered restart in test environment')
+    if (process.env.NODE_ENV === 'test') throw errors.test('Restart triggered in test envrionment')
     
     // Restart anything monitoring file changes
     if (!isPm2) return () => exec(`touch "${__filename}"`)

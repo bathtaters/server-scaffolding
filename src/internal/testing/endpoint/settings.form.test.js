@@ -1,12 +1,26 @@
 const server = require('../../server')
 const request = require('supertest-session')(server)
 
-const { getEnv, canUndo } = require('../../services/settings.services')
-const { createUser } = require('../test.utils')
+const { readFile, writeFile } = require('fs/promises')
+const { canUndo } = require('../../services/settings.services')
+const { createUser, expectEnvWrite } = require('../test.utils')
 
 const envPrefix = '/admin/settings'
 
 describe('Test ENV Form Post', () => {
+  const objEnv = {
+    NODE_ENV: "enviroment",
+    port: "1234",
+    LOG_CONSOLE: "logC",
+    LOG_FILE: "logF",
+    LOG_HTTP: "logH",
+    SESSION_SECRET: "testSession",
+    DB_SECRET: "testDB",
+    DB_DIR: "",
+    LOG_DIR: "",
+  }
+  
+
   beforeAll(() => {
     const creds = { username: 'test', password: 'password', access: ['admin'] }
     return createUser(creds).then(() => request.post('/login').send(creds))
@@ -17,105 +31,106 @@ describe('Test ENV Form Post', () => {
   })
 
   test('POST /form Update', async () => {
-    expect(getEnv()).not.toEqual(expect.objectContaining({
-      port: 12661,
-      LOG_CONSOLE: "test",
-    }))
-
     await request.post(`${envPrefix}/form`).expect(302).expect('Location',envPrefix)
       .send({
-        ...getEnv(),
+        ...objEnv,
         action: "Update",
         port: "12661",
         LOG_CONSOLE: "test",
         LOG_FILE: "none",
         DB_SECRET: "testSecret",
       })
-
-    expect(getEnv()).toEqual(expect.objectContaining({
-      port: 12661,
+    
+    expect(writeFile).toBeCalledTimes(1)
+    expectEnvWrite(writeFile, {
+      port: "12661",
       LOG_CONSOLE: "test",
       LOG_FILE: "none",
       DB_SECRET: "testSecret",
-    }))
+    })
   })
 
   test('POST /form Default', async () => {
+    readFile.mockResolvedValueOnce('port=current\nDB_SECRET=passthrough\n')
     await request.post(`${envPrefix}/form`).expect(302).expect('Location',envPrefix)
       .send({
-        ...getEnv(),
+        ...objEnv,
         action: "Default",
       })
-
-    expect(getEnv()).toEqual(expect.objectContaining({
+    
+    expect(writeFile).toBeCalledTimes(1)
+    // Default vals
+    expectEnvWrite(writeFile, {
       NODE_ENV: "development",
       LOG_CONSOLE: "info",
       LOG_FILE: "warn",
       LOG_HTTP: "common",
       DB_DIR: "", LOG_DIR: ""
-    }))
+    })
+    // Passthrough current val
+    expectEnvWrite(writeFile, {
+      port: "current",
+      DB_SECRET: "passthrough",
+    })
   })
 
-  test('POST /form Default ignores readonly', () => {
-    expect(getEnv()).toEqual(expect.objectContaining({
-      port: 12661,
-      DB_SECRET: "testSecret",
-    }))
-  })
-
-  test('POST /form Undo', async () => {
+  test.todo('Test UNDO')
+  /*test('POST /form Undo', async () => {
+    const env = await getEnv()
     await request.post(`${envPrefix}/form`).expect(302).expect('Location',envPrefix)
       .send({
-        ...getEnv(),
+        ...env,
         action: "Undo",
       })
 
-    expect(getEnv()).toEqual(expect.objectContaining({
+    expect(await getEnv()).toEqual(expect.objectContaining({
       LOG_FILE: "none",
       LOG_CONSOLE: "test",
     }))
   })
 
   test('POST /form Undo limit', async () => {
+    const env = await getEnv()
     while (canUndo()) {
       await request.post(`${envPrefix}/form`).expect(302).expect('Location',envPrefix)
         .send({
-          ...getEnv(),
+          ...env,
           action: "Undo",
         })
     }
 
     await request.post(`${envPrefix}/form`).expect(500).send({
-      ...getEnv(),
+      ...env,
       action: "Undo",
     })
-  })
+  })*/
 
   test('POST /form Restart page', async () => {
-    await request.post(`${envPrefix}/form`).expect(200).expect('Content-Type', /html/)
+    await request.post(`${envPrefix}/form`).expect(418) // Restart in TEST_ENV => 418
       .send({
-        ...getEnv(),
+        ...objEnv,
         action: "Restart",
       })
   })
 
   test('POST /form Restart updates', async () => {
-    expect(getEnv()).not.toEqual(expect.objectContaining({
-      port: 12662,
-      LOG_CONSOLE: "newtest",
-    }))
-
-    await request.post(`${envPrefix}/form`).expect(200).expect('Content-Type', /html/)
+    await request.post(`${envPrefix}/form`).expect(418) // Restart in TEST_ENV => 418
       .send({
-        ...getEnv(),
+        ...objEnv,
         action: "Restart",
         port: "12662",
         LOG_CONSOLE: "newtest",
       })
 
-    expect(getEnv()).toEqual(expect.objectContaining({
-      port: 12662,
-      LOG_CONSOLE: "newtest",
-    }))
+      expectEnvWrite(writeFile, {
+        port: 12662,
+        LOG_CONSOLE: "newtest",
+      })
   })
 })
+
+// MOCKS
+jest.mock('fs/promises', () => ({
+  readFile:  jest.fn(() => Promise.resolve('')),
+  writeFile: jest.fn(() => Promise.resolve()),
+}))
