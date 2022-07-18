@@ -1,6 +1,6 @@
 const server = require('../../server')
 const request = require('supertest-session')(server)
-const { createUser, updateUser, getModelTestData } = require('../test.utils')
+const { getModelTestData, createUser, updateUser } = require('../endpoint.utils')
 
 const { Model, testKey, idKey, apiPrefix, guiPrefix } = getModelTestData()
 const creds = { username: 'test', password: 'password' }

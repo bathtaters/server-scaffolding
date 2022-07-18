@@ -2,7 +2,7 @@ const server = require('../../server')
 const request = require('supertest-session')(server)
 
 const Users = require('../../models/Users')
-const { createUser } = require('../test.utils')
+const { createUser } = require('../endpoint.utils')
 
 const userPrefix = '/admin/users'
 

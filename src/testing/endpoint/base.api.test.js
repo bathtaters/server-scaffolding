@@ -1,7 +1,7 @@
 const server = require('../../internal/server')
 const request = require('supertest')(server)
 
-const { getApiHeader } = require('../../internal/testing/test.utils')
+const { getApiHeader } = require('../../internal/testing/endpoint.utils')
 
 const apiPrefix = '/api/base'
 

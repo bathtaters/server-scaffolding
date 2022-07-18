@@ -1,7 +1,6 @@
 const server = require('../../server')
 const request = require('supertest')(server)
-
-const { getApiHeader, getModelTestData } = require('../test.utils')
+const { getModelTestData, getApiHeader } = require('../endpoint.utils')
 
 const { testKey, testIsInt, idKey, apiPrefix, Model } = getModelTestData()
 

@@ -2,9 +2,8 @@ const server = require('../../server')
 const request = require('supertest-session')(server)
 
 const { readFile, writeFile } = require('fs/promises')
-const { loadUserHelpers } = require('../test.utils')
+const { createUser } = require('../endpoint.utils')
 const { envPath } = require('../../../config/meta')
-const { createUser } = loadUserHelpers()
 
 const envPrefix = '/admin/settings'
 
