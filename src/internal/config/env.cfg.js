@@ -22,13 +22,13 @@ module.exports = {
   },
 
   formSettings: {
-    NODE_ENV: { type: ['development','production'], limits: { min: 'test'.length, max: 'development'.length } },
     port: { type: 'number', readonly: true, limits: { min: 1024, max: 49151 } },
+    NODE_ENV: { type: ['development','production'], limits: { min: 'test'.length, max: 'development'.length } },
     LOG_CONSOLE: { type: ['none', 'error', 'warn', 'info', 'http', 'verbose'] },
     LOG_FILE: { type: ['none', 'error', 'warn', 'info', 'http', 'verbose'] },
     LOG_HTTP: { type: ['none', 'tiny', 'short', 'dev', 'common', 'combined', 'debug'] },
-    SESSION_SECRET: { type: 'password', limits: { min: 4, max: 2048 } },
     DB_SECRET: { type: 'password', readonly: true, limits: { min: 4, max: 2048 } },
+    SESSION_SECRET: { type: 'password', limits: { min: 4, max: 2048 } },
     DB_DIR:  { type: 'text', limits: { min: 0, max: 2048 } },
     LOG_DIR: { type: 'text', limits: { min: 0, max: 2048 } },
   },
