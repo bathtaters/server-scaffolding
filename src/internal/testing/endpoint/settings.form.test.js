@@ -2,8 +2,9 @@ const server = require('../../server')
 const request = require('supertest-session')(server)
 
 const { readFile, writeFile } = require('fs/promises')
-const { canUndo } = require('../../services/settings.services')
-const { createUser, expectEnvWrite } = require('../test.utils')
+const { loadUserHelpers } = require('../test.utils')
+const { envPath } = require('../../../config/meta')
+const { createUser } = loadUserHelpers()
 
 const envPrefix = '/admin/settings'
 
@@ -31,106 +32,122 @@ describe('Test ENV Form Post', () => {
   })
 
   test('POST /form Update', async () => {
-    await request.post(`${envPrefix}/form`).expect(302).expect('Location',envPrefix)
-      .send({
-        ...objEnv,
-        action: "Update",
-        port: "12661",
-        LOG_CONSOLE: "test",
-        LOG_FILE: "none",
-        DB_SECRET: "testSecret",
-      })
+    objEnv.port = "12661"
+    objEnv.LOG_CONSOLE = "test"
+    objEnv.LOG_FILE = "none"
+    objEnv.DB_SECRET = "testSecret"
+
+    await request.post(`${envPrefix}/form`)
+      .send({ ...objEnv, action: "Update" })
+      .expect(302).expect('Location',envPrefix)
     
     expect(writeFile).toBeCalledTimes(1)
-    expectEnvWrite(writeFile, {
-      port: "12661",
-      LOG_CONSOLE: "test",
-      LOG_FILE: "none",
-      DB_SECRET: "testSecret",
-    })
+    const envFile = await readFile(envPath)
+
+    expect(envFile).toContain("port=12661\n")
+    expect(envFile).toContain("LOG_CONSOLE=test\n")
+    expect(envFile).toContain("LOG_FILE=none\n")
+    expect(envFile).toContain("DB_SECRET=testSecret\n")
+  })
+
+  test('POST /form Update w/ unescaped chars', async () => {
+    objEnv.DB_DIR  = "\\path/to/db!"
+    objEnv.LOG_DIR = "%5Cpath/to/log$"
+
+    await request.post(`${envPrefix}/form`)
+      .send({ ...objEnv, action: "Update" })
+      .expect(302).expect('Location', envPrefix)
+    
+    expect(writeFile).toBeCalledTimes(1)
+    const envFile = await readFile(envPath)
+
+    expect(envFile).toContain("DB_DIR=\\path/to/db!\n")
+    expect(envFile).toContain("LOG_DIR=%5Cpath/to/log$")
   })
 
   test('POST /form Default', async () => {
-    readFile.mockResolvedValueOnce('port=current\nDB_SECRET=passthrough\n')
-    await request.post(`${envPrefix}/form`).expect(302).expect('Location',envPrefix)
-      .send({
-        ...objEnv,
-        action: "Default",
-      })
+    objEnv.DB_DIR  = ""
+    objEnv.LOG_DIR = ""
+
+    await request.post(`${envPrefix}/form`)
+      .send({ ...objEnv, action: "Default" })  
+      .expect(302).expect('Location', envPrefix)
+      
+    expect(writeFile).toBeCalledTimes(1)
+    const envFile = await readFile(envPath)
+
+    // Default vals
+    expect(envFile).toContain("NODE_ENV=development\n")
+    expect(envFile).toContain("LOG_CONSOLE=info\n")
+    expect(envFile).toContain("LOG_FILE=warn\n")
+    expect(envFile).toContain("LOG_HTTP=common\n")
+    expect(envFile).toContain("DB_DIR=\n")
+    expect(envFile).toContain("LOG_DIR=\n")
+    
+    // Passthrough current val
+    expect(envFile).toContain("port=12661\n")
+    expect(envFile).toContain("DB_SECRET=testSecret\n")
+  })
+
+  test('POST /form Undo', async () => {
+    await request.post(`${envPrefix}/form`)
+      .send({ ...objEnv, action: "Undo" })
+      .expect(302).expect('Location', envPrefix)
     
     expect(writeFile).toBeCalledTimes(1)
-    // Default vals
-    expectEnvWrite(writeFile, {
-      NODE_ENV: "development",
-      LOG_CONSOLE: "info",
-      LOG_FILE: "warn",
-      LOG_HTTP: "common",
-      DB_DIR: "", LOG_DIR: ""
-    })
-    // Passthrough current val
-    expectEnvWrite(writeFile, {
-      port: "current",
-      DB_SECRET: "passthrough",
-    })
+    const envFile = await readFile(envPath)
+
+    expect(envFile).toContain("LOG_FILE=none\n")
+    expect(envFile).toContain("LOG_CONSOLE=test\n")
   })
 
-  test.todo('Test UNDO')
-  /*test('POST /form Undo', async () => {
-    const env = await getEnv()
-    await request.post(`${envPrefix}/form`).expect(302).expect('Location',envPrefix)
-      .send({
-        ...env,
-        action: "Undo",
-      })
+  test('POST /form Undo fail', async () => {
+    expect.assertions(2)
 
-    expect(await getEnv()).toEqual(expect.objectContaining({
-      LOG_FILE: "none",
-      LOG_CONSOLE: "test",
-    }))
-  })
-
-  test('POST /form Undo limit', async () => {
-    const env = await getEnv()
-    while (canUndo()) {
-      await request.post(`${envPrefix}/form`).expect(302).expect('Location',envPrefix)
-        .send({
-          ...env,
-          action: "Undo",
-        })
+    try { while (true) {
+      await request.post(`${envPrefix}/form`)
+        .send({ ...objEnv, action: "Undo" })
+        .expect(302).expect('Location', envPrefix)
+    }}
+    catch (err) {
+      expect(err.message).toContain('expected 302')
+      expect(err.message).toContain('got 500')
     }
 
-    await request.post(`${envPrefix}/form`).expect(500).send({
-      ...env,
-      action: "Undo",
-    })
-  })*/
+    await request.post(`${envPrefix}/form`)
+      .send({ ...objEnv, action: "Undo" })
+      .expect(500)
+  })
 
   test('POST /form Restart page', async () => {
-    await request.post(`${envPrefix}/form`).expect(418) // Restart in TEST_ENV => 418
-      .send({
-        ...objEnv,
-        action: "Restart",
-      })
+    await request.post(`${envPrefix}/form`)
+      .send({ ...objEnv, action: "Restart" })
+      .expect(418) // In TEST_ENV: Restart => <418>
   })
 
   test('POST /form Restart updates', async () => {
-    await request.post(`${envPrefix}/form`).expect(418) // Restart in TEST_ENV => 418
-      .send({
-        ...objEnv,
-        action: "Restart",
-        port: "12662",
-        LOG_CONSOLE: "newtest",
-      })
+    objEnv.port = "12662"
+    objEnv.LOG_CONSOLE = "newtest"
 
-      expectEnvWrite(writeFile, {
-        port: 12662,
-        LOG_CONSOLE: "newtest",
-      })
+    await request.post(`${envPrefix}/form`)
+      .send({ ...objEnv, action: "Restart" })
+      .expect(418) // In TEST_ENV: Restart => <418>
+
+    expect(writeFile).toBeCalledTimes(1)
+    const envFile = await readFile(envPath)
+    
+    expect(envFile).toContain("port=12662\n")
+    expect(envFile).toContain("LOG_CONSOLE=newtest\n")
   })
 })
 
+
 // MOCKS
-jest.mock('fs/promises', () => ({
-  readFile:  jest.fn(() => Promise.resolve('')),
-  writeFile: jest.fn(() => Promise.resolve()),
-}))
+
+jest.mock('fs/promises', function() {
+  this.files = {}
+  return ({
+    writeFile: jest.fn((k, v) => Promise.resolve(this.files[k] = v)),
+    readFile:  jest.fn((k) => Promise.resolve(this.files[k] || '')),
+  })
+})

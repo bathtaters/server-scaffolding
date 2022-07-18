@@ -8,3 +8,9 @@ exports.filterOutProps = (obj, hideProps) => {
   hideProps.forEach((prop) => { delete obj[prop] })
   return obj
 }
+
+exports.getChanged = (base, update) => base && update ?
+  Object.keys(update).reduce((diff, key) =>
+    base[key] == update[key] ? diff :
+      Object.assign(diff, { [key]: base[key] })
+  , {}) : {}

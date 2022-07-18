@@ -61,7 +61,7 @@ exports.settingsForm = (req,res,next) => {
 
   if (action.toLowerCase() === 'update' && !env) return next(errors.noData('settings'))
 
-  return settingsActions[action](env)
+  return settingsActions[action](env, req.session)
     .then((restart) => {
       if (typeof restart !== 'function')
         return res.redirect(`${urls.admin.prefix}${urls.admin.home}${queryString ? deepUnescape(queryString) : ''}`)

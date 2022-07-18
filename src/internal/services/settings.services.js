@@ -1,7 +1,7 @@
 const { exec } = require('child_process')
 const { writeFile, readFile } = require('fs/promises')
 const { parse } = require('dotenv')
-const { getEnvVars, stringifyEnv, filterOutProps } = require('../utils/settings.utils')
+const { getEnvVars, stringifyEnv, filterOutProps, getChanged } = require('../utils/settings.utils')
 const { deepUnescape } = require('../utils/validate.utils')
 const { restartCluster } = require('../services/pm2.services')
 const { defaults, formSettings } = require('../config/env.cfg')
@@ -13,12 +13,21 @@ const envDefaults = filterOutProps(
   Object.entries(formSettings).filter(([_, { readonly }]) => readonly).map(([key]) => key)
 )
 
-// Disable persistence when testing
-const writeEnv = (envObj) => writeFile(envPath, stringifyEnv(envObj))
+async function setEnv(envObj, session) {
+  const currentEnv = await exports.getEnv()
+
+  if (session) {
+    const changes = getChanged(currentEnv, envObj)
+
+    if (!Object.keys(changes).length) return
+    session.undoSettings = (session.undoSettings || []).concat(changes)
+  }
+  return writeFile(envPath, stringifyEnv({ ...currentEnv, ...envObj }))
+}
 
 exports.getEnv = () => readFile(envPath).then((val) => getEnvVars(Object.keys(formSettings), parse(val.toString())))
 
-exports.canUndo = () => false
+exports.canUndo = (session) => session && Array.isArray(session.undoSettings) && session.undoSettings.length
 
 exports.getForm = async () => {
   const newForm = [{}, {}],
@@ -37,17 +46,17 @@ exports.getForm = async () => {
 }
 
 exports.settingsActions = {
-  Update:  async (envObj) => {
-    const oldObj = await exports.getEnv()
-    return writeEnv({ ...oldObj, ...deepUnescape(envObj) })
+  Update: (envObj, session) => setEnv(deepUnescape(envObj), session),
+
+  Undo: async (_, session) => {
+    if (!exports.canUndo(session)) throw errors.noUndo()
+    return setEnv(session.undoSettings.pop())
   },
 
-  Undo:    () => { throw new Error('UNDO DISABLED') },
-
-  Default: () => exports.settingsActions.Update(envDefaults),
+  Default: (_, session) => setEnv(envDefaults, session),
   
-  Restart: async (envObj) => {
-    if (envObj) await exports.settingsActions.Update(envObj)
+  Restart: async (envObj, session) => {
+    if (envObj) await setEnv(deepUnescape(envObj), session)
 
     if (process.env.NODE_ENV === 'test') throw errors.test('Restart triggered in test envrionment')
     

@@ -1,4 +1,4 @@
-const { getEnvVars, stringifyEnv, filterOutProps } = require('../../utils/settings.utils')
+const { getEnvVars, stringifyEnv, filterOutProps, getChanged } = require('../../utils/settings.utils')
 
 jest.mock('../../config/env.cfg', () => ({ defaults: { testA: 'TEST-1', testB: 'TEST-2' }}))
 
@@ -39,5 +39,34 @@ describe('filterOutProps', () => {
     const obj = { a: 1, b: 2, c: 3 }
     filterOutProps(obj, ['a', 'TeSt'])
     expect(obj).toEqual({ b: 2, c: 3 })
+  })
+})
+
+describe('getChanged', () => {
+  it('returns empty object when missing input', () => {
+    expect(getChanged({ a: 1, b: '2', c: 'test' })).toEqual({})
+    expect(getChanged(null,{ a: 1, b: '2', c: 'test' })).toEqual({})
+  })
+  it('returns empty object when equal inputs', () => {
+    expect(getChanged({ a: 1, b: '2', c: 'test' },{ a: 1, b: '2', c: 'test' }))
+      .toEqual({})
+  })
+  it('returns empty object when equal inputs', () => {
+    expect(getChanged({ a: 1, b: '2', c: 'test' },{ a: 1, b: '2', c: 'test' }))
+      .toEqual({})
+  })
+  it('returns base value of each changed values', () => {
+    expect(getChanged({ a: 1, b: '2', c: 'test' },{ a: 5, b: '2', c: 'test2' }))
+      .toEqual({ a: 1, c: 'test' })
+  })
+  it('ignore values not in update', () => {
+    const result = getChanged({ a: 1, b: '2', c: 'test' },{ b: '2', c: 'test2' })
+    expect(result).not.toHaveProperty('a')
+    expect(result).toEqual({ c: 'test' })
+  })
+  it('returns undefined for values not in base', () => {
+    const result = getChanged({ b: '2', c: 'test' },{ a: 1, b: '2', c: 'test2' })
+    expect(result).toHaveProperty('a', undefined)
+    expect(result).toEqual({ c: 'test' })
   })
 })

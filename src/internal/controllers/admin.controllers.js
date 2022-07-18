@@ -31,7 +31,7 @@ exports.settings = async (req, res, next) =>
     env: await getEnv(),
     formSettings: await getForm(),
     tooltips: envTooltips,
-    canUndo: canUndo(),
+    canUndo: canUndo(req.session),
     buttons: Object.keys(settingsActions),
     postURL: urls.prefix + urls.home + urls.form,
     user: req.user && req.user.username,
