@@ -1,5 +1,5 @@
 const { connect, disconnect, list, restart } = require('../utils/pm2.promises')
-const logger = require('../config/log')
+const logger = require('../libs/log')
 const { name } = require('../../config/meta')
 const { terminateServer } = require('../services/init.services')
 

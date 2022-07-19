@@ -1,12 +1,12 @@
 const { gracefulExitHandler } = require('express-graceful-exit')
 const { startup, teardown } = require('../../server.init')
-const logger = require('../config/log')
+const logger = require('../libs/log')
 const meta = require('../../config/meta')
 const urls = require('../../config/urls.cfg')
 const shutdownError = require('../config/errors.internal').shutdown
 const { varName } = require('../utils/gui.utils')
 const { title, footer } = require('../../config/gui.cfg')
-const { getDb, openDb, closeDb } = require('../config/db')
+const { getDb, openDb, closeDb } = require('../libs/db')
 const models = require('../../models/_all')
 const timeout = require('../../../pm2.config').apps[0].kill_timeout
 

@@ -1,4 +1,4 @@
-const { openDb, getDb } = require('../config/db')
+const { openDb, getDb } = require('../libs/db')
 const services = require('../services/db.services')
 const { sanitizeSchemaData, schemaFromConfig, appendAndSort } = require('../utils/db.utils')
 const { defaults: configDefaults, limits: configLimits } = require('../../config/models.cfg')

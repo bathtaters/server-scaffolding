@@ -2,7 +2,7 @@ const logMw = require('../../middleware/log.middleware')
 
 const buildArgs = require('./httpArgs.mock')
 jest.mock('morgan', () => (fmt) => 'MORGAN:'+fmt)
-jest.mock('../../config/log', () => ({ log: jest.fn(), http: jest.fn(), verbose: jest.fn() }))
+jest.mock('../../libs/log', () => ({ log: jest.fn(), http: jest.fn(), verbose: jest.fn() }))
 jest.mock('../../config/log.cfg', () => ({
   httpDebug: ['DEBUG'], silent: ['SILENT'], httpMessage: () => ''
 }))
@@ -47,7 +47,7 @@ jest.mock('../../utils/http.utils', () => ({
   httpReq: () => 'REQ',
 }))
 describe('debugLogger', () => {
-  const httpLogger = require('../../config/log').http
+  const httpLogger = require('../../libs/log').http
   let args
   beforeEach(() => { args = buildArgs() })
 

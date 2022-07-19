@@ -1,5 +1,5 @@
 // Imports/Spies/Mocks
-const logger = require('../../config/log')
+const logger = require('../../libs/log')
 const warnSpy = jest.spyOn(logger, 'warn')
 const services = require('../../services/validate.services')
 const schemaSpy = jest.spyOn(services, 'getSchema')

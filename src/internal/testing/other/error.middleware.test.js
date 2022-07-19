@@ -1,4 +1,4 @@
-const logSpy = jest.spyOn(require('../../config/log'),'error')
+const logSpy = jest.spyOn(require('../../libs/log'),'error')
 
 const { json, html } = require('../../middleware/error.middleware')
 const buildArgs = require('./httpArgs.mock')

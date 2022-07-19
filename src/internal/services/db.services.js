@@ -1,4 +1,4 @@
-const logger = require('../config/log')
+const logger = require('../libs/log')
 
 function exec(db, sql) {
   return new Promise((res,rej) => {

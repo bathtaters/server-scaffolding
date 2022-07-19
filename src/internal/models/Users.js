@@ -3,7 +3,7 @@ const { passwordAccess, accessInt, hasAccess } = require('../utils/users.utils')
 const { addAdapter, getAdapter, setAdapter, schemaAdapter } = require('../services/users.services')
 const { generateToken, testPassword } = require('../utils/auth.utils')
 const errors = require('../config/errors.internal')
-const logger = require('../config/log')
+const logger = require('../libs/log')
 const { access, timestampKeyRegEx } = require('../config/users.cfg')
 
 

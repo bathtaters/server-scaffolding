@@ -1,9 +1,8 @@
-const { basename, dirname } = require('path')
 const { createLogger, transports } = require('winston')
 const DailyRotateFile = require('winston-daily-rotate-file')
 const { getLogLevel } = require('../services/log.services')
-const config = require('./log.cfg')
-const { defaults } = require('./settings.cfg')
+const config = require('../config/log.cfg')
+const { defaults } = require('../config/settings.cfg')
 const { logPath } = require('../../config/meta')
 
 const logger = createLogger({

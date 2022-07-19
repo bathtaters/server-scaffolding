@@ -1,13 +1,12 @@
 const Model = require('../../models/Model')
 const services = require('../../services/db.services')
-const { openDb, getDb } = require('../../config/db')
+const { openDb, getDb } = require('../../libs/db')
 const { hasDupes, caseInsensitiveObject } = require('../../utils/common.utils')
 const { deepUnescape } = require('../../utils/validate.utils')
 const { sanitizeSchemaData, schemaFromConfig, appendAndSort } = require('../../utils/db.utils')
 const errors = require('../../config/errors.internal')
 
 const { deepCopy } = require('../test.utils')
-const { object } = require('../../config/validate.messages')
 const modelOptions = {
   schema: { SCHEMA: true, defId: 'ID' },
   defaults: { data: 'DEFAULT' },
@@ -727,7 +726,7 @@ describe('Model getPaginationData', () => {
 
 /* --- MOCKS --- */
 
-jest.mock('../../config/db', () => ({
+jest.mock('../../libs/db', () => ({
   getDb: jest.fn(() => 'DB'), openDb: jest.fn().mockResolvedValue(true)
 }))
 

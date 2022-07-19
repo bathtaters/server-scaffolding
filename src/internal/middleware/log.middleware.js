@@ -1,6 +1,6 @@
 const httpLogger = require('morgan')
 const randomKey = require('crypto').randomUUID
-const logger = require('../config/log')
+const logger = require('../libs/log')
 const { httpHdr, httpReq, httpRes } = require('../utils/http.utils')
 const { httpDebug, silent, httpMessage } = require('../config/log.cfg')
 

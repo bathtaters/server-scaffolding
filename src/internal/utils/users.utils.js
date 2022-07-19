@@ -1,5 +1,5 @@
 const errors = require('../config/errors.internal')
-const logger = require('../config/log')
+const logger = require('../libs/log')
 
 
 /* ---- ACCESS ADAPTERS ---- */
