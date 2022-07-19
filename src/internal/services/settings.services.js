@@ -1,11 +1,11 @@
 const { writeFile, readFile } = require('fs/promises')
 const { parse } = require('dotenv')
 const { getEnvVars, stringifyEnv, filterOutProps, getChanged } = require('../utils/settings.utils')
-const { defaults, formSettings } = require('../config/env.cfg')
+const { defaults, formDefaults, formSettings } = require('../config/env.cfg')
 const { envPath } = require('../../config/meta')
 
 exports.envDefaults = filterOutProps(
-  { ...defaults, DB_DIR: '', LOG_DIR: '' },
+  { ...defaults, ...formDefaults },
   Object.entries(formSettings).filter(([_, { readonly }]) => readonly).map(([key]) => key)
 )
 

@@ -44,4 +44,6 @@ module.exports = {
     DB_DIR:  'Path to database files (Nothing = [project folder]/.db)',
     LOG_DIR: 'Path to log files (Nothing = [project folder]/.logs)',
   },
+
+  formDefaults: { DB_DIR: '', LOG_DIR: '' }, // Overrides for settings form
 }
