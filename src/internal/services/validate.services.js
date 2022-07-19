@@ -1,6 +1,6 @@
-const logger = require('../config/log')
+const logger = require('../libs/log')
 const validCfg = require('../../config/models.cfg')
-const errorText = require("../config/validate.messages")
+const { errorMsgs } = require("../config/validate.cfg")
 const { getTypeArray, dateOptions, escapedLength, isBoolean, parseBoolean } = require('../utils/validate.utils')
 
 // Obscure 'min' field (For allowing partial validation on searches) from limit
@@ -8,25 +8,25 @@ const hidingMin = ({ min, ...other }) => other
 
 // Generate Schema object based on input
 function getSchema(key, typeStr, limits, isIn, forceOptional = false, disableMin = false) {
-  if (!isIn || !isIn.length) throw new Error(errorText.missingIn(key))
+  if (!isIn || !isIn.length) throw new Error(errorMsgs.missingIn(key))
 
   // Get type from typeStr
   const type = getTypeArray(typeStr)
-  if (!type || !type[0]) throw new Error(errorText.missing(key, typeStr))
+  if (!type || !type[0]) throw new Error(errorMsgs.missing(key, typeStr))
   if (forceOptional) type[4] = '?'
   if (type[2] && type[1] !== 'string') logger.warn(`* is ignored w/ non-string type: ${type[0]}`)
 
   // Initialize ptr & static values (errMsg/in)
   let valid = { [key]: {} }
   let ptr = valid[key]
-  ptr.errorMessage = errorText.type(type[0])
+  ptr.errorMessage = errorMsgs.type(type[0])
   ptr.in = isIn
 
   // Add validation for optionals/non-optionals
   if (type[4]) {
     ptr.optional = { options: { nullable: true, checkFalsy: type[1] !== 'boolean' } }
   } else {
-    ptr.exists = { errorMessage: errorText.exists }
+    ptr.exists = { errorMessage: errorMsgs.exists }
     
     // Skip validation of empty strings (only if empty strings are allowed)
     if (type[1] === 'string' && (!limits || (!limits.min && !limits.elem) || ((limits.elem || limits).min === 0))) {
@@ -45,14 +45,14 @@ function getSchema(key, typeStr, limits, isIn, forceOptional = false, disableMin
       arrLimit = limits
       limits = null
     }
-    ptr.isArray = { options: arrLimit, errorMessage: errorText.limit(arrLimit || 'array') }
+    ptr.isArray = { options: arrLimit, errorMessage: errorMsgs.limit(arrLimit || 'array') }
     
     // Create entry & update ptr
     valid[key+'.*'] = {}
     ptr = valid[key+'.*']
 
     // Set statics for new entry
-    ptr.errorMessage = errorText.type(type[1])
+    ptr.errorMessage = errorMsgs.type(type[1])
     ptr.in = isIn
   }
 
@@ -60,23 +60,23 @@ function getSchema(key, typeStr, limits, isIn, forceOptional = false, disableMin
   if (limits && (limits.array || limits.elem)) limits = limits.elem
   if (limits) {
     if (disableMin) limits = hidingMin(limits) // Remove minimum
-    limits = { options: limits, errorMessage: errorText.limit(limits, type[1] === 'string') }
+    limits = { options: limits, errorMessage: errorMsgs.limit(limits, type[1] === 'string') }
   }
 
   // Set type-specific validators/sanitizers
   switch (type[1]) {
     case 'b64': 
     case 'b64url': // pass to string
-      ptr.isBase64 = { options: { urlSafe: type[1] === 'b64url' }, errorMessage: errorText.b64 }
+      ptr.isBase64 = { options: { urlSafe: type[1] === 'b64url' }, errorMessage: errorMsgs.b64 }
     case 'uuid': // pass to string
       if (!ptr.isBase64)
-        ptr.isUUID = { options: 4, errorMessage: errorText.uuid }
+        ptr.isUUID = { options: 4, errorMessage: errorMsgs.uuid }
     case 'hex': // pass to string
       if (!ptr.isBase64 && !ptr.isUUID)
-        ptr.isHexadecimal = { errorMessage: errorText.hex }
+        ptr.isHexadecimal = { errorMessage: errorMsgs.hex }
 
     case 'string':
-      ptr.isString = { errorMessage: errorText.string }
+      ptr.isString = { errorMessage: errorMsgs.string }
       if (!type[2]) { 
         ptr.stripLow = true
         ptr.trim = true
@@ -85,26 +85,26 @@ function getSchema(key, typeStr, limits, isIn, forceOptional = false, disableMin
       if (limits) ptr.custom = escapedLength(limits)
       break
     case 'float':
-      ptr.isFloat = limits || { errorMessage: errorText.float }
+      ptr.isFloat = limits || { errorMessage: errorMsgs.float }
       ptr.toFloat = true
       break
     case 'int':
-      ptr.isInt = limits || { errorMessage: errorText.int }
+      ptr.isInt = limits || { errorMessage: errorMsgs.int }
       ptr.toInt = true
       break
     case 'boolean':
-      ptr.custom = { options: isBoolean, errorMessage: errorText.boolean }
+      ptr.custom = { options: isBoolean, errorMessage: errorMsgs.boolean }
       ptr.customSanitizer = { options: parseBoolean }
       break
     case 'datetime':
-      ptr.isISO8601 = { options: dateOptions.time, errorMessage: errorText.datetime }
+      ptr.isISO8601 = { options: dateOptions.time, errorMessage: errorMsgs.datetime }
       ptr.toDate = true
       break
     case 'date':
-      ptr.isDate = { options: dateOptions.date, errorMessage: errorText.date }
+      ptr.isDate = { options: dateOptions.date, errorMessage: errorMsgs.date }
       ptr.trim = true
       break
-    case 'object': ptr.isObject = { errorMessage: errorText.object } // pass to default
+    case 'object': ptr.isObject = { errorMessage: errorMsgs.object } // pass to default
     case 'any':  // pass to default
     default: break
   }
