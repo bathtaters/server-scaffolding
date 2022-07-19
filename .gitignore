@@ -2,7 +2,7 @@
 /node_modules
 
 # environments
-.env*
+*.env
 
 # credentials
 credentials.json
