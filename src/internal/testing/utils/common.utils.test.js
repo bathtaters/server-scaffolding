@@ -1,6 +1,6 @@
 const {
   capitalizeHyphenated, filterDupes, hasDupes, notRoute,
-  deepEquals, debounce,
+  deepMap, deepEquals, debounce,
   getMatchingKey, caseInsensitiveObject
 } = require('../../utils/common.utils')
 
@@ -46,6 +46,64 @@ describe('notRoute', () => {
     expect(notRoute('test').test('t')).toBe(true)
     expect(notRoute('test').test('testtest')).toBe(true)
     expect(notRoute('test').test('')).toBe(true)
+  })
+})
+
+describe('deepMap', () => {
+  const callback = jest.fn()
+
+  it('calls callback', () => {
+    deepMap('TEST', callback)
+    expect(callback).toHaveBeenNthCalledWith(1, 'TEST')
+    deepMap(12, callback)
+    expect(callback).toHaveBeenNthCalledWith(2, 12)
+    deepMap(false, callback)
+    expect(callback).toHaveBeenNthCalledWith(3, false)
+    deepMap(null, callback)
+    expect(callback).toHaveBeenNthCalledWith(4, null)
+    expect(callback).toBeCalledTimes(4)
+  })
+  it('calls for each array string', () => {
+    deepMap(['a','b','c','d'], callback)
+    expect(callback.mock.calls).toEqual([['a'],['b'],['c'],['d']])
+    callback.mockClear()
+    deepMap(['a',undefined,'c',false,6], callback)
+    expect(callback.mock.calls).toEqual([['a'],[undefined],['c'],[false],[6]])
+  })
+  it('calls on nested arrays', () => {
+    deepMap(['a',[['b','c'],'d']], callback)
+    expect(callback.mock.calls).toEqual([['a'],['b'],['c'],['d']])
+  })
+  it('calls for each object string value', () => {
+    deepMap({ a: 'test', b: 'val', c: 'esc' }, callback)
+    expect(callback.mock.calls).toEqual([['test'],['val'],['esc']])
+    callback.mockClear()
+    deepMap({ a: 'test', b: 12, c: 'val', d: null }, callback)
+    expect(callback.mock.calls).toEqual([['test'],[12],['val'],[null]])
+  })
+  it('calls on nested objects', () => {
+    deepMap({ a: 'test', b: { in: 'val', more: { c: 'esc' }}}, callback)
+    expect(callback.mock.calls).toEqual([['test'],['val'],['esc']])
+  })
+  it('calls on nested arrays/objects', () => {
+    deepMap([{ a: 'test', b: [ 'val', { c: 'esc' } ]}, {}], callback)
+    expect(callback.mock.calls).toEqual([['test'],['val'],['esc']])
+  })
+  it('mutates obj', () => {
+    callback.mockImplementation(v => v + 10)
+    const input = { a: 1, b: [2, { c: 3, d: 4 }] }
+    const output = deepMap(input, callback)
+    expect(output).toBe(input)
+    expect(output).toEqual({ a: 11, b: [12, { c: 13, d: 14 }] })
+    callback.mockReset()
+  })
+  it('mutates array', () => {
+    callback.mockImplementation(v => v + 20)
+    const input = [ 1, [2, { a: 3, b: 4 }] ]
+    const output = deepMap(input, callback)
+    expect(output).toBe(input)
+    expect(output).toEqual([ 21, [22, { a: 23, b: 24 }] ])
+    callback.mockReset()
   })
 })
 
@@ -117,6 +175,13 @@ describe('deepEquals', () => {
     expect(deepEquals([{ a: 'test', b: [ 'val', { c: 'ue' } ]}, {}], [{ a: 'test', b: 'val', c: 'ue' }])).toBeFalsy()
     expect(deepEquals([{ a: 'test', b: [ 'val', { c: 'ue' } ]}, {}], [{ a: 'test', b: [ 'val', { e: 'ue' } ]}, {}])).toBeFalsy()
     expect(deepEquals([{ a: 'test', b: [ 'val', { c: 'ue' } ]}, {}], [{ a: 'test', b: [ 'val', { c: 'ues' } ]}, {}])).toBeFalsy()
+  })
+  it('custom compare function', () => {
+    const looseCompare = (a,b) => a == b
+    expect(deepEquals(1, '1')).toBeFalsy()
+    expect(deepEquals(1, '1', looseCompare)).toBeTruthy()
+    expect(deepEquals(null, undefined)).toBeFalsy()
+    expect(deepEquals(null, undefined, looseCompare)).toBeTruthy()
   })
 })
 

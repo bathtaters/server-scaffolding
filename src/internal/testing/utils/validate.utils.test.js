@@ -1,13 +1,11 @@
-// Setup ESC/UNESC spies
-const validator = require('validator').default
-const unescSpy = jest.spyOn(validator, 'unescape')
-
-// Imports
 const { 
   getTypeArray, formSettingsToValidate,
   isBoolean, parseBoolean, looseBools, dateOptions,
   escapedLength, deepUnescape
 } = require('../../utils/validate.utils')
+
+const { unescape, escape } = require('validator').default
+const { deepMap } = require('../../utils/common.utils')
 
 describe('getTypeArray', () => {
   it('nothing', () => {
@@ -198,65 +196,24 @@ describe('dateOptions', () => {
 })
 
 describe('deepUnescape', () => {
-  it('calls unescaper', () => {
+  it('calls deepMap', () => {
     deepUnescape('TEST')
-    expect(unescSpy).toBeCalledTimes(1)
-    expect(unescSpy).toBeCalledWith('TEST')
+    expect(deepMap).toBeCalledTimes(1)
+    expect(deepMap).toBeCalledWith('TEST', expect.any(Function))
   })
-  it('skips non-strings', () => {
+  it('calls unescape on string', () => {
+    deepUnescape('TEST')
+    expect(unescape).toBeCalledTimes(1)
+    expect(unescape).toBeCalledWith('TEST')
+  })
+  it('skips unescape on non-strings', () => {
+    deepUnescape()
     deepUnescape(12)
-    expect(unescSpy).toBeCalledTimes(0)
-    deepUnescape(false)
-    expect(unescSpy).toBeCalledTimes(0)
     deepUnescape(null)
-    expect(unescSpy).toBeCalledTimes(0)
-  })
-  it('calls for each array string', () => {
-    deepUnescape(['a','b','c','d'])
-    expect(unescSpy).toBeCalledTimes(4)
-    expect(unescSpy.mock.calls).toEqual([['a'],['b'],['c'],['d']])
-    unescSpy.mockClear()
-    deepUnescape(['a',undefined,'c',false,6])
-    expect(unescSpy).toBeCalledTimes(2)
-    expect(unescSpy.mock.calls).toEqual([['a'],['c']])
-  })
-  it('calls on nested arrays', () => {
-    deepUnescape(['a',[['b','c'],'d']])
-    expect(unescSpy).toBeCalledTimes(4)
-    expect(unescSpy.mock.calls).toEqual([['a'],['b'],['c'],['d']])
-  })
-  it('calls for each object string value', () => {
-    deepUnescape({ a: 'test', b: 'val', c: 'esc' })
-    expect(unescSpy).toBeCalledTimes(3)
-    expect(unescSpy.mock.calls).toEqual([['test'],['val'],['esc']])
-    unescSpy.mockClear()
-    deepUnescape({ a: 'test', b: 12, c: 'val', d: null })
-    expect(unescSpy).toBeCalledTimes(2)
-    expect(unescSpy.mock.calls).toEqual([['test'],['val']])
-  })
-  it('calls on nested objects', () => {
-    deepUnescape({ a: 'test', b: { in: 'val', more: { c: 'esc' }}})
-    expect(unescSpy).toBeCalledTimes(3)
-    expect(unescSpy.mock.calls).toEqual([['test'],['val'],['esc']])
-  })
-  it('calls on nested arrays/objects', () => {
-    deepUnescape([{ a: 'test', b: [ 'val', { c: 'esc' } ]}, {}])
-    expect(unescSpy).toBeCalledTimes(3)
-    expect(unescSpy.mock.calls).toEqual([['test'],['val'],['esc']])
-  })
-  it('mutates obj', () => {
-    unescSpy.mockImplementationOnce(() => 'UNESC')
-    const input = { a: 1, b: [2, { c: 'ESC', d: 4 }] }
-    const output = deepUnescape(input)
-    expect(output).toBe(input)
-    expect(output).toEqual({ a: 1, b: [2, { c: 'UNESC', d: 4 }] })
-  })
-  it('mutates array', () => {
-    unescSpy.mockImplementationOnce(() => 'UNESC')
-    const input = [ 1, [2, { a: 'ESC', b: 4 }] ]
-    const output = deepUnescape(input)
-    expect(output).toBe(input)
-    expect(output).toEqual([ 1, [2, { a: 'UNESC', b: 4 }] ])
+    deepUnescape(false)
+    deepUnescape({ a: 1, b: 2 })
+    deepUnescape(['a', 'b', 'c'])
+    expect(unescape).toBeCalledTimes(0)
   })
 })
 
@@ -298,11 +255,11 @@ describe('escapedLength', () => {
     expect(returnVal('"<test! & />"')).toBe(false)
   })
   it('works w/ escaped string', () => {
-    expect(returnVal(validator.escape('&'))).toBe(true)
-    expect(returnVal(validator.escape('&<>"'))).toBe(true)
-    expect(returnVal(validator.escape('"<&! />"'))).toBe(true)
-    expect(returnVal(validator.escape('"<&! />"\''))).toBe(false)
-    expect(returnVal(validator.escape('"<test! & />"'))).toBe(false)
+    expect(returnVal(escape('&'))).toBe(true)
+    expect(returnVal(escape('&<>"'))).toBe(true)
+    expect(returnVal(escape('"<&! />"'))).toBe(true)
+    expect(returnVal(escape('"<&! />"\''))).toBe(false)
+    expect(returnVal(escape('"<test! & />"'))).toBe(false)
   })
   it('works w/ edge cases', () => {
     expect(returnVal('&#amps;&#amps;')).toBe(true)
@@ -314,3 +271,14 @@ describe('escapedLength', () => {
     expect(returnVal('&too long')).toBe(false)
   })
 })
+
+
+// MOCKS
+
+jest.mock('validator', () => ({ default: {
+  unescape: jest.fn(),
+  escape: jest.requireActual('validator').default.escape
+}}))
+jest.mock('../../utils/common.utils', () => ({
+  deepMap: jest.fn((val,cb) => cb(val))
+}))

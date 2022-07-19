@@ -10,9 +10,26 @@ exports.hasDupes = (array) => array.some((val, idx) => array.slice(0, idx).inclu
 // Get all routes except given route
 exports.notRoute = (url) => RegExp(`^(?!(${url})($|/.*))`)
 
+// Run callback on each item & replace with result
+exports.deepMap = (input, callback) => {
+  if (typeof input !== 'object' || !input) return callback(input)
+  
+  if (Array.isArray(input))
+    input.forEach((val, idx) => {
+      input[idx] = exports.deepMap(val, callback)
+    })
+  
+  else
+    Object.keys(input).forEach((key) => {
+      input[key] = exports.deepMap(input[key], callback)
+    })
+
+  return input
+}
+
 // Check deep equality
-exports.deepEquals = (a, b) => {
-  if (a === b) return true
+exports.deepEquals = (a, b, compareFunc = (a,b) => a === b) => {
+  if (compareFunc(a, b)) return true
   if (typeof a !== 'object') return false
   if (!a || !b) return false
   if (Array.isArray(a) !== Array.isArray(b)) return false
