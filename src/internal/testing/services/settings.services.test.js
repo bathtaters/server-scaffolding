@@ -47,6 +47,9 @@ describe('getSettings', () => {
     expect(getSettingsVars).toBeCalledTimes(1)
     expect(getSettingsVars).toBeCalledWith([ 'test', 'env', 'other' ], expect.anything())
   })
+  it('readFile is debounced', async () => {
+    expect(process.env.test_debounce).toBe('readFileMock')
+  })
 })
 
 
@@ -89,6 +92,11 @@ describe('setSettings', () => {
     getChanged.mockReturnValueOnce({})
     await setSettings({ other: 'new' }, {})
     expect(writeFile).toBeCalledTimes(0)
+  })
+  it('clears debouncer after change', async () => {
+    delete process.env.test_debounceClear
+    await setSettings({ test: 'new' })
+    expect(process.env.test_debounceClear).toBe('readFileMock')
   })
 })
 
@@ -134,7 +142,14 @@ jest.mock('../../../config/meta', () => ({ envPath: 'ENV_FILE' }))
 
 jest.mock('fs/promises', () => ({
   writeFile: jest.fn(() => Promise.resolve()),
-  readFile: jest.fn(() => Promise.resolve('')),
+  readFile: jest.fn(() => Promise.resolve('')).mockName('readFileMock'),
+}))
+
+jest.mock('../../utils/common.utils', () => ({
+  debounce: jest.fn((func) => {
+    process.env.test_debounce = func.getMockName()
+    return [func, jest.fn(() => { process.env.test_debounceClear = func.getMockName() })]
+  }),
 }))
 
 jest.mock('../../utils/settings.utils', () => ({

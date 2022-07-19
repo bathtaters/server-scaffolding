@@ -10,6 +10,39 @@ exports.hasDupes = (array) => array.some((val, idx) => array.slice(0, idx).inclu
 // Get all routes except given route
 exports.notRoute = (url) => RegExp(`^(?!(${url})($|/.*))`)
 
+// Check deep equality
+exports.deepEquals = (a, b) => {
+  if (a === b) return true
+  if (typeof a !== 'object') return false
+  if (!a || !b) return false
+  if (Array.isArray(a) !== Array.isArray(b)) return false
+
+  const keys = Object.keys(a), bKeys = Object.keys(b)
+  if (keys.length !== bKeys.length || !bKeys.every((key) => keys.includes(key))) return false
+  return keys.every((key) => exports.deepEquals(a[key], b[key]))
+}
+
+// Get debounced version of func & func to force next call to use original func
+const EMPTY = Symbol('EMPTY')
+exports.debounce = (func, { interval = 1000, ignoreArgs = false } = {}) => {
+  let result = EMPTY, resultargs
+  const forceNextCall = () => { result = EMPTY }
+  if (!interval) return [ func, () => {} ]
+
+  return [
+    function debouncedFunc(...args) {
+      if (result !== EMPTY && (ignoreArgs || exports.deepEquals(args, resultargs))) return result
+      
+      const newResult = result = func(...args)
+      if (!ignoreArgs) resultargs = args
+
+      if (interval > 0) setTimeout(forceNextCall, interval)
+      return newResult
+    },
+    forceNextCall,
+  ]
+}
+
 // Get object key case-insensitive
 exports.getMatchingKey = (object, propAnyCase) => {
   if (propAnyCase in object || typeof propAnyCase !== 'string') return propAnyCase
@@ -18,6 +51,7 @@ exports.getMatchingKey = (object, propAnyCase) => {
   return Object.keys(object).find((p) => lowerProp === p.toLowerCase())
 }
 
+// Create object w/ case insensitive keys
 exports.caseInsensitiveObject = (object) => object && new Proxy(object, {
   has(object, prop) {
     return Boolean(exports.getMatchingKey(object, prop))
