@@ -1,18 +1,28 @@
-const { getSettingsVars, stringifyEnv, filterOutProps, getChanged } = require('../../utils/settings.utils')
+const { getSettingsVars, stringifyEnv, filterOutProps, deepReplace, getChanged } = require('../../utils/settings.utils')
+const { deepMap } = require('../../utils/common.utils')
 
-jest.mock('../../config/settings.cfg', () => ({ defaults: { testA: 'TEST-1', testB: 'TEST-2' }}))
+jest.mock('../../utils/common.utils', () => ({ deepMap: jest.fn((val,cb) => cb(val)) }))
+jest.mock('../../config/settings.cfg', () => ({
+  defaults: { testA: 'TEST-1', testB: 'TEST-2', testC: 'TEST-3' },
+  replaceEnvChars: ['~!', '#']
+}))
 
 describe('getSettingsVars', () => {
-  it('gets vars from process.env', () => {
+  it('gets from second arg', () => {
+    expect(getSettingsVars(['NODE_ENV'], { NODE_ENV: 'custom' }))
+      .toEqual({ NODE_ENV: 'custom' })
+  })
+  it('gets from process.env if no second arg', () => {
     expect(getSettingsVars(['NODE_ENV'])).toEqual({ NODE_ENV: 'test' })
   })
-  it('gets missing vars from settings.cfg.defaults', () => {
-    expect(getSettingsVars(['testA'])).toEqual({ testA: 'TEST-1' })
-    expect(getSettingsVars(['testB'])).toEqual({ testB: 'TEST-2' })
-    expect(getSettingsVars(['testA','testB'])).toEqual({ testA: 'TEST-1', testB: 'TEST-2' })
+  it('gets missing from settings.cfg.defaults', () => {
+    expect(getSettingsVars(['testA'], {})).toEqual({ testA: 'TEST-1' })
+    expect(getSettingsVars(['testB'], {})).toEqual({ testB: 'TEST-2' })
+    expect(getSettingsVars(['testA','testC'], {}))
+      .toEqual({ testA: 'TEST-1', testC: 'TEST-3' })
   })
   it('returns undefined otherwise', () => {
-    expect(getSettingsVars(['test'])).toEqual({ test: undefined })
+    expect(getSettingsVars(['test'], {})).toEqual({ test: undefined })
   })
 })
 
@@ -39,6 +49,37 @@ describe('filterOutProps', () => {
     const obj = { a: 1, b: 2, c: 3 }
     filterOutProps(obj, ['a', 'TeSt'])
     expect(obj).toEqual({ b: 2, c: 3 })
+  })
+})
+
+describe('deepReplace', () => {
+  const callback = jest.fn()
+  const replacer = deepReplace(callback)
+
+  it('calls deepMap', () => {
+    replacer('TEST')
+    expect(deepMap).toBeCalledTimes(1)
+    expect(deepMap).toBeCalledWith('TEST', expect.any(Function))
+  })
+  it('replaces each replaceChar', () => {
+    expect(replacer('~TE~ST!!')).toBe('#TE#ST##')
+  })
+  it('calls callback for each replaceChar', () => {
+    replacer('TE~ST!')
+    expect(callback).toBeCalledTimes(2)
+    expect(callback).toBeCalledWith('~',2,'TE~ST!')
+    expect(callback).toBeCalledWith('!',5,'TE~ST!')
+  })
+  it('skips replace on non-strings', () => {
+    const arr = ['a', 'b', 'c']
+    expect(replacer()).toBeUndefined()
+    expect(replacer(12)).toBe(12)
+    expect(replacer(null)).toBeNull()
+    expect(replacer(false)).toBe(false)
+    expect(replacer({ a: 1, b: 2 })).toEqual({ a: 1, b: 2 })
+    expect(replacer(arr)).toEqual(['a','b','c'])
+    expect(replacer(arr)).toBe(arr)
+    expect(callback).toBeCalledTimes(0)
   })
 })
 

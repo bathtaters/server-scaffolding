@@ -2,6 +2,7 @@ const { settingsDefaults, getSettings, setSettings, canUndo, getForm } = require
 const { readFile, writeFile } = require('fs/promises')
 const { parse } = require('dotenv')
 const { getSettingsVars, getChanged } = require('../../utils/settings.utils')
+const { replaceEnvMsg } = require('../../config/settings.cfg')
 
 describe('settingsDefaults', () => {
   it('includes defaults from settings.cfg.defaults', () => {
@@ -70,6 +71,11 @@ describe('setSettings', () => {
     await setSettings({ other: 'new' })
     expect(writeFile).toBeCalledTimes(1)
     expect(writeFile).toBeCalledWith(expect.anything(), { test: 'val', other: 'new' })
+  })
+  it('calls replaceChars on new settings', async () => {
+    await setSettings({ test: 'new' })
+    expect(replaceEnvMsg).toBeCalledTimes(1)
+    expect(replaceEnvMsg).toBeCalledWith({ test: 'new' })
   })
   it('creates undo queue in session', async () => {
     const session = {}
@@ -156,10 +162,12 @@ jest.mock('../../utils/settings.utils', () => ({
   getSettingsVars: jest.fn((_, obj) => obj),
   stringifyEnv: (obj) => obj,
   filterOutProps: jest.fn((obj, hide) => ({ obj, hide })),
+  deepReplace: jest.fn((cb) => (obj) => cb(obj) || obj),
   getChanged: jest.fn((obj) => obj),
 }))
 
 jest.mock('../../config/settings.cfg', () => ({
+  replaceEnvMsg: jest.fn(),
   defaults: {
     test: 'default',
     env: 1,
@@ -173,3 +181,5 @@ jest.mock('../../config/settings.cfg', () => ({
     other: { type: 'text', readonly: true },
   }
 }))
+
+jest.mock('../../libs/log', () => ({ warn: () => {} }))

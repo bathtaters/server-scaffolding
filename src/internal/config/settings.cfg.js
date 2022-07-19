@@ -47,4 +47,7 @@ module.exports = {
   },
 
   formDefaults: { DB_DIR: '', LOG_DIR: '' }, // Overrides for settings form
+
+  replaceEnvChars: ['=\n', ' '], // [replace any, with]
+  replaceEnvMsg: (char, idx, val) => `Stripping illegal character '${char}' from "${val}" [${idx}]`,
 }
