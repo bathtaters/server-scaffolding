@@ -12,6 +12,11 @@ exports.settingsDefaults = filterOutProps(
   Object.entries(formSettings).filter(([_, { readonly }]) => readonly).map(([key]) => key)
 )
 
+exports.getSettings = async () => {
+  const envObj = await debouncedRead(envPath).then((text) => parse(text.toString()))
+  return getSettingsVars(Object.keys(formSettings), envObj)
+}
+
 exports.setSettings = async (settings, session) => {
   const oldSettings = await exports.getSettings()
 
@@ -24,8 +29,6 @@ exports.setSettings = async (settings, session) => {
   forceNextRead()
   return writeFile(envPath, stringifyEnv({ ...oldSettings, ...settings }))
 }
-
-exports.getSettings = () => debouncedRead(envPath).then((val) => getSettingsVars(Object.keys(formSettings), parse(val.toString())))
 
 exports.canUndo = (session) => session && Array.isArray(session.undoSettings) && session.undoSettings.length
 
