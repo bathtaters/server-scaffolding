@@ -91,8 +91,9 @@ LOG_DIR=[<project-dir>/.logs]
 ---
 
 ### *TO DO:*
+ - Allow **Batch edits** of models & Users via GUI _(Row checkboxes or Shift+Click, & master select all/none)_
+ - Secure **change env settings** _(disallow = or \n, unescape only when writing to file, escape while reading from file)_
  - Define/Add **UI testing** for GUI routes
- - Test deploying w/ **pm2** _(Does Restart Server still work?)_
 
 ---
 
