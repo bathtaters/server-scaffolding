@@ -1,18 +1,18 @@
-const { getEnvVars, stringifyEnv, filterOutProps, getChanged } = require('../../utils/settings.utils')
+const { getSettingsVars, stringifyEnv, filterOutProps, getChanged } = require('../../utils/settings.utils')
 
-jest.mock('../../config/env.cfg', () => ({ defaults: { testA: 'TEST-1', testB: 'TEST-2' }}))
+jest.mock('../../config/settings.cfg', () => ({ defaults: { testA: 'TEST-1', testB: 'TEST-2' }}))
 
-describe('getEnvVars', () => {
+describe('getSettingsVars', () => {
   it('gets vars from process.env', () => {
-    expect(getEnvVars(['NODE_ENV'])).toEqual({ NODE_ENV: 'test' })
+    expect(getSettingsVars(['NODE_ENV'])).toEqual({ NODE_ENV: 'test' })
   })
-  it('gets missing vars from env.cfg.defaults', () => {
-    expect(getEnvVars(['testA'])).toEqual({ testA: 'TEST-1' })
-    expect(getEnvVars(['testB'])).toEqual({ testB: 'TEST-2' })
-    expect(getEnvVars(['testA','testB'])).toEqual({ testA: 'TEST-1', testB: 'TEST-2' })
+  it('gets missing vars from settings.cfg.defaults', () => {
+    expect(getSettingsVars(['testA'])).toEqual({ testA: 'TEST-1' })
+    expect(getSettingsVars(['testB'])).toEqual({ testB: 'TEST-2' })
+    expect(getSettingsVars(['testA','testB'])).toEqual({ testA: 'TEST-1', testB: 'TEST-2' })
   })
   it('returns undefined otherwise', () => {
-    expect(getEnvVars(['test'])).toEqual({ test: undefined })
+    expect(getSettingsVars(['test'])).toEqual({ test: undefined })
   })
 })
 

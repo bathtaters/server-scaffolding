@@ -1,93 +1,93 @@
-const { envDefaults, getEnv, setEnv, canUndo, getForm } = require('../../services/settings.services')
+const { settingsDefaults, getSettings, setSettings, canUndo, getForm } = require('../../services/settings.services')
 const { readFile, writeFile } = require('fs/promises')
 const { parse } = require('dotenv')
-const { getEnvVars, getChanged } = require('../../utils/settings.utils')
+const { getSettingsVars, getChanged } = require('../../utils/settings.utils')
 
-describe('envDefaults', () => {
-  it('includes defaults from env.cfg.defaults', () => {
-    expect(envDefaults.obj).toHaveProperty('test', 'default')
+describe('settingsDefaults', () => {
+  it('includes defaults from settings.cfg.defaults', () => {
+    expect(settingsDefaults.obj).toHaveProperty('test', 'default')
   })
 
-  it('overrides defaults from env.cfg.formDefaults', () => {
-    expect(envDefaults.obj).toHaveProperty('overwrite', 'yes')
+  it('overrides defaults from settings.cfg.formDefaults', () => {
+    expect(settingsDefaults.obj).toHaveProperty('overwrite', 'yes')
   })
 
   it('sends readOnly props to filterOutProps to hide', () => {
-    expect(envDefaults).toHaveProperty('hide', ['env', 'other'])
+    expect(settingsDefaults).toHaveProperty('hide', ['env', 'other'])
   })
 })
 
 
-describe('getEnv', () => {
+describe('getSettings', () => {
   beforeEach(() => { readFile.mockResolvedValueOnce(12345) })
 
   it('reads file at envPath', async () => {
-    await getEnv()
+    await getSettings()
     expect(readFile).toBeCalledTimes(1)
     expect(readFile).toBeCalledWith('ENV_FILE')
   })
   it('converts to string', async () => {
-    expect(typeof await getEnv()).toBe('string')
+    expect(typeof await getSettings()).toBe('string')
   })
   it('gets result from readFile', async () => {
-    expect(await getEnv()).toBe('12345')
+    expect(await getSettings()).toBe('12345')
   })
   it('runs through dotenv parser', async () => {
-    await getEnv()
+    await getSettings()
     expect(parse).toBeCalledTimes(1)
     expect(parse).toBeCalledWith('12345')
   })
-  it('runs through getEnvVars', async () => {
-    await getEnv()
-    expect(getEnvVars).toBeCalledTimes(1)
-    expect(getEnvVars).toBeCalledWith(expect.anything(), '12345')
+  it('runs through getSettingsVars', async () => {
+    await getSettings()
+    expect(getSettingsVars).toBeCalledTimes(1)
+    expect(getSettingsVars).toBeCalledWith(expect.anything(), '12345')
   })
-  it('sends formSettings key list to getEnvVars', async () => {
-    await getEnv()
-    expect(getEnvVars).toBeCalledTimes(1)
-    expect(getEnvVars).toBeCalledWith([ 'test', 'env', 'other' ], expect.anything())
+  it('sends formSettings key list to getSettingsVars', async () => {
+    await getSettings()
+    expect(getSettingsVars).toBeCalledTimes(1)
+    expect(getSettingsVars).toBeCalledWith([ 'test', 'env', 'other' ], expect.anything())
   })
 })
 
 
-describe('setEnv', () => {
-  beforeEach(() => { getEnvVars.mockReturnValueOnce({ test: 'val' }) })
+describe('setSettings', () => {
+  beforeEach(() => { getSettingsVars.mockReturnValueOnce({ test: 'val' }) })
 
   it('writes file at envPath', async () => {
-    await setEnv({ test: 'new' })
+    await setSettings({ test: 'new' })
     expect(writeFile).toBeCalledTimes(1)
     expect(writeFile).toBeCalledWith('ENV_FILE', expect.anything())
   })
   it('writes new settings', async () => {
-    await setEnv({ test: 'new' })
+    await setSettings({ test: 'new' })
     expect(writeFile).toBeCalledTimes(1)
     expect(writeFile).toBeCalledWith(expect.anything(), { test: 'new' })
   })
   it('does not change missing props', async () => {
-    await setEnv({ other: 'new' })
+    await setSettings({ other: 'new' })
     expect(writeFile).toBeCalledTimes(1)
     expect(writeFile).toBeCalledWith(expect.anything(), { test: 'val', other: 'new' })
   })
   it('creates undo queue in session', async () => {
     const session = {}
-    await setEnv({ test: '1' }, session)
+    await setSettings({ test: '1' }, session)
     expect(session).toHaveProperty('undoSettings', expect.any(Array))
     expect(session.undoSettings).toHaveLength(1)
     expect(session.undoSettings[0]).toEqual({ test: 'val' })
     
-    getEnvVars.mockResolvedValueOnce({ test: '1' })
-    await setEnv({ test: '2' }, session)
+    getSettingsVars.mockResolvedValueOnce({ test: '1' })
+    await setSettings({ test: '2' }, session)
     expect(session.undoSettings).toHaveLength(2)
     expect(session.undoSettings[1]).toEqual({ test: '1' })
   })
   it('checks for changes (if session exists)', async () => {
-    await setEnv({ other: 'new' }, {})
+    await setSettings({ other: 'new' }, {})
     expect(getChanged).toBeCalledTimes(1)
     expect(getChanged).toBeCalledWith({ test: 'val' }, { other: 'new' })
   })
   it('skips write if no changes (and session exists)', async () => {
     getChanged.mockReturnValueOnce({})
-    await setEnv({ other: 'new' }, {})
+    await setSettings({ other: 'new' }, {})
     expect(writeFile).toBeCalledTimes(0)
   })
 })
@@ -110,7 +110,7 @@ describe('canUndo', () => {
 describe('getForm', () => {
   let form
   beforeAll(async () => {
-    getEnvVars.mockReturnValueOnce({ test: 1, env: 2, other: 3 })
+    getSettingsVars.mockReturnValueOnce({ test: 1, env: 2, other: 3 })
     form = await getForm()
   })
 
@@ -138,13 +138,13 @@ jest.mock('fs/promises', () => ({
 }))
 
 jest.mock('../../utils/settings.utils', () => ({
-  getEnvVars: jest.fn((_, obj) => obj),
+  getSettingsVars: jest.fn((_, obj) => obj),
   stringifyEnv: (obj) => obj,
   filterOutProps: jest.fn((obj, hide) => ({ obj, hide })),
   getChanged: jest.fn((obj) => obj),
 }))
 
-jest.mock('../../config/env.cfg', () => ({
+jest.mock('../../config/settings.cfg', () => ({
   defaults: {
     test: 'default',
     env: 1,

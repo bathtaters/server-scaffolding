@@ -6,7 +6,7 @@ const errors = require('../config/errors.internal')
 
 exports.sessionOptions = {
   store: new SQLiteStore({ dir: require('path').dirname(dbPath), db: 'sessions.db' }),
-  secret: process.env.SESSION_SECRET || require('../config/env.cfg').defaults.SESSION_SECRET,
+  secret: process.env.SESSION_SECRET || require('../config/settings.cfg').defaults.SESSION_SECRET,
   resave: false,
   saveUninitialized: true,
   cookie: {

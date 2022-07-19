@@ -1,11 +1,11 @@
 const { join } = require('path')
-const env = require('../internal/config/env.cfg')
+const settings = require('../internal/config/settings.cfg')
 const pkg = require('../../package.json')
 const pkgCfg = pkg.config || {}
 
 // Set Project Path (NOTE: Update if this file moves!)
 const rootPath = join(__dirname,'..','..')
-env.updateRootPath(rootPath)
+settings.updateRootPath(rootPath)
 
 // Load .ENV file
 const envPath = join(rootPath, '.env')
@@ -31,6 +31,6 @@ module.exports = {
   port: getPort(),
   isPm2: 'NODE_APP_INSTANCE' in process.env,
   rootPath, envPath,
-  dbPath:  join(process.env.DB_DIR  || env.defaults.DB_DIR,  'database.db'),
-  logPath: join(process.env.LOG_DIR || env.defaults.LOG_DIR, `${pkg.name || 'server'}_%DATE%.log`),
+  dbPath:  join(process.env.DB_DIR  || settings.defaults.DB_DIR,  'database.db'),
+  logPath: join(process.env.LOG_DIR || settings.defaults.LOG_DIR, `${pkg.name || 'server'}_%DATE%.log`),
 }

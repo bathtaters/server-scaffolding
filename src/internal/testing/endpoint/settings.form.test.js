@@ -5,10 +5,10 @@ const { readFile, writeFile } = require('fs/promises')
 const { createUser } = require('../endpoint.utils')
 const { envPath } = require('../../../config/meta')
 
-const envPrefix = '/admin/settings'
+const settingsPrefix = '/admin/settings'
 
 describe('Test ENV Form Post', () => {
-  const objEnv = {
+  const settings = {
     NODE_ENV: "enviroment",
     port: "1234",
     LOG_CONSOLE: "logC",
@@ -31,14 +31,14 @@ describe('Test ENV Form Post', () => {
   })
 
   test('POST /form Update', async () => {
-    objEnv.port = "12661"
-    objEnv.LOG_CONSOLE = "test"
-    objEnv.LOG_FILE = "none"
-    objEnv.DB_SECRET = "testSecret"
+    settings.port = "12661"
+    settings.LOG_CONSOLE = "test"
+    settings.LOG_FILE = "none"
+    settings.DB_SECRET = "testSecret"
 
-    await request.post(`${envPrefix}/form`)
-      .send({ ...objEnv, action: "Update" })
-      .expect(302).expect('Location',envPrefix)
+    await request.post(`${settingsPrefix}/form`)
+      .send({ ...settings, action: "Update" })
+      .expect(302).expect('Location',settingsPrefix)
     
     expect(writeFile).toBeCalledTimes(1)
     const envFile = await readFile(envPath)
@@ -50,12 +50,12 @@ describe('Test ENV Form Post', () => {
   })
 
   test('POST /form Update w/ unescaped chars', async () => {
-    objEnv.DB_DIR  = "\\path/to/db!"
-    objEnv.LOG_DIR = "%5Cpath/to/log$"
+    settings.DB_DIR  = "\\path/to/db!"
+    settings.LOG_DIR = "%5Cpath/to/log$"
 
-    await request.post(`${envPrefix}/form`)
-      .send({ ...objEnv, action: "Update" })
-      .expect(302).expect('Location', envPrefix)
+    await request.post(`${settingsPrefix}/form`)
+      .send({ ...settings, action: "Update" })
+      .expect(302).expect('Location', settingsPrefix)
     
     expect(writeFile).toBeCalledTimes(1)
     const envFile = await readFile(envPath)
@@ -65,12 +65,12 @@ describe('Test ENV Form Post', () => {
   })
 
   test('POST /form Default', async () => {
-    objEnv.DB_DIR  = ""
-    objEnv.LOG_DIR = ""
+    settings.DB_DIR  = ""
+    settings.LOG_DIR = ""
 
-    await request.post(`${envPrefix}/form`)
-      .send({ ...objEnv, action: "Default" })  
-      .expect(302).expect('Location', envPrefix)
+    await request.post(`${settingsPrefix}/form`)
+      .send({ ...settings, action: "Default" })  
+      .expect(302).expect('Location', settingsPrefix)
       
     expect(writeFile).toBeCalledTimes(1)
     const envFile = await readFile(envPath)
@@ -89,9 +89,9 @@ describe('Test ENV Form Post', () => {
   })
 
   test('POST /form Undo', async () => {
-    await request.post(`${envPrefix}/form`)
-      .send({ ...objEnv, action: "Undo" })
-      .expect(302).expect('Location', envPrefix)
+    await request.post(`${settingsPrefix}/form`)
+      .send({ ...settings, action: "Undo" })
+      .expect(302).expect('Location', settingsPrefix)
     
     expect(writeFile).toBeCalledTimes(1)
     const envFile = await readFile(envPath)
@@ -104,32 +104,32 @@ describe('Test ENV Form Post', () => {
     expect.assertions(2)
 
     try { while (true) {
-      await request.post(`${envPrefix}/form`)
-        .send({ ...objEnv, action: "Undo" })
-        .expect(302).expect('Location', envPrefix)
+      await request.post(`${settingsPrefix}/form`)
+        .send({ ...settings, action: "Undo" })
+        .expect(302).expect('Location', settingsPrefix)
     }}
     catch (err) {
       expect(err.message).toContain('expected 302')
       expect(err.message).toContain('got 500')
     }
 
-    await request.post(`${envPrefix}/form`)
-      .send({ ...objEnv, action: "Undo" })
+    await request.post(`${settingsPrefix}/form`)
+      .send({ ...settings, action: "Undo" })
       .expect(500)
   })
 
   test('POST /form Restart page', async () => {
-    await request.post(`${envPrefix}/form`)
-      .send({ ...objEnv, action: "Restart" })
+    await request.post(`${settingsPrefix}/form`)
+      .send({ ...settings, action: "Restart" })
       .expect(418) // In TEST_ENV: Restart => <418>
   })
 
   test('POST /form Restart updates', async () => {
-    objEnv.port = "12662"
-    objEnv.LOG_CONSOLE = "newtest"
+    settings.port = "12662"
+    settings.LOG_CONSOLE = "newtest"
 
-    await request.post(`${envPrefix}/form`)
-      .send({ ...objEnv, action: "Restart" })
+    await request.post(`${settingsPrefix}/form`)
+      .send({ ...settings, action: "Restart" })
       .expect(418) // In TEST_ENV: Restart => <418>
 
     expect(writeFile).toBeCalledTimes(1)

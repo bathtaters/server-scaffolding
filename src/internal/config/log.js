@@ -3,7 +3,7 @@ const { createLogger, transports } = require('winston')
 const DailyRotateFile = require('winston-daily-rotate-file')
 const { getLogLevel } = require('../services/log.services')
 const config = require('./log.cfg')
-const { defaults } = require('./env.cfg')
+const { defaults } = require('./settings.cfg')
 const { logPath } = require('../../config/meta')
 
 const logger = createLogger({

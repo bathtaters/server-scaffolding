@@ -1,6 +1,6 @@
 const Users = require('../models/Users')
 const definition = require('../../config/models.cfg').types._users
-const { formSettings } = require('../config/env.cfg')
+const { formSettings } = require('../config/settings.cfg')
 const { byRoute, additionalOnly } = require('./shared.validators')
 const { page, find, form, formNoMin, formAdditional } = require('./gui.validators')
 const { formSettingsToValidate } = require('../utils/validate.utils')
@@ -14,7 +14,7 @@ Object.keys(definition).forEach((field) => { formFields[field] = field })
 module.exports = {
   page,
   token: byRoute(Users.title)([], [Users.primaryId]),
-  env:   additionalOnly(formAdditional.concat(formSettingsToValidate(formSettings, 'body'))),
+  settings: additionalOnly(formAdditional.concat(formSettingsToValidate(formSettings, 'body'))),
   find: [ preValidate(true, true)  ].concat(find(Users, formFields)),
   form: [ preValidate(false,false) ].concat(form(Users, formFields)),
   formNoMin: [ preValidate(false,true) ].concat(formNoMin(Users, formFields)),

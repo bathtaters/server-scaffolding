@@ -6,7 +6,7 @@ const { login, logout } = require('../middleware/auth.middleware')
 const { hasAccess } = require('../utils/users.utils')
 const { deepUnescape } = require('../utils/validate.utils')
 const { access } = require('../config/users.cfg')
-const { restartTimeout } = require('../config/env.cfg')
+const { restartTimeout } = require('../config/settings.cfg')
 const errors = require('../config/errors.internal')
 const urls = require('../../config/urls.cfg').gui
 
@@ -56,12 +56,12 @@ const restartParams = (req) => ({
 })
 
 exports.settingsForm = (req,res,next) => {
-  const { action, queryString, ...env } = req.body
+  const { action, queryString, ...settings } = req.body
   if (!action || !Object.keys(settingsActions).includes(action)) return next(errors.badAction(action))
 
-  if (action.toLowerCase() === 'update' && !env) return next(errors.noData('settings'))
+  if (action.toLowerCase() === 'update' && !settings) return next(errors.noData('settings'))
 
-  return settingsActions[action](env, req.session)
+  return settingsActions[action](settings, req.session)
     .then((restart) => {
       if (typeof restart !== 'function')
         return res.redirect(`${urls.admin.prefix}${urls.admin.home}${queryString ? deepUnescape(queryString) : ''}`)

@@ -19,6 +19,6 @@ router.post(admin.user+admin.form+admin.find, validate.formNoMin, actions.adminF
 router.get(admin.logs,              controllers.logList)
 router.get(admin.logs+'/:filename', controllers.logView)
 router.get(admin.home,              controllers.settings)
-router.post(admin.home+admin.form,  validate.env, actions.settingsForm)
+router.post(admin.home+admin.form,  validate.settings, actions.settingsForm)
 
 module.exports = router

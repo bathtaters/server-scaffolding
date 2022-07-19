@@ -1,20 +1,20 @@
 const { Update, Undo, Default, Restart } = require('../../services/settings.form')
-const { setEnv, canUndo } = require('../../services/settings.services')
+const { setSettings, canUndo } = require('../../services/settings.services')
 const { deepUnescape } = require('../../utils/validate.utils')
 const errors = require('../../config/errors.internal')
 
 describe('settingsActions', () => {
 
   describe('Update', () => {
-    it('uses setEnv', async () => {
+    it('uses setSettings', async () => {
       await Update({ test: 'new' }, 'session')
-      expect(setEnv).toBeCalledTimes(1)
-      expect(setEnv).toBeCalledWith({ test: 'new' }, expect.anything())
+      expect(setSettings).toBeCalledTimes(1)
+      expect(setSettings).toBeCalledWith({ test: 'new' }, expect.anything())
     })
-    it('passes session to setEnv', async () => {
+    it('passes session to setSettings', async () => {
       await Update({ test: 'new' }, 'session')
-      expect(setEnv).toBeCalledTimes(1)
-      expect(setEnv).toBeCalledWith(expect.anything(), 'session')
+      expect(setSettings).toBeCalledTimes(1)
+      expect(setSettings).toBeCalledWith(expect.anything(), 'session')
     })
     it('unescapes input', async () => {
       await Update({ test: 'new' }, 'session')
@@ -28,16 +28,16 @@ describe('settingsActions', () => {
     let undoSettings = []
     beforeEach(() => { undoSettings = [{ test: '0' }, { test: '1' }] })
 
-    it('does not pass session to setEnv', async () => {
+    it('does not pass session to setSettings', async () => {
       await Undo({}, { undoSettings })
-      expect(setEnv).toBeCalledTimes(1)
-      expect(setEnv).toBeCalledWith(expect.anything())
+      expect(setSettings).toBeCalledTimes(1)
+      expect(setSettings).toBeCalledWith(expect.anything())
     })
     it('sets as last queue value', async () => {  
       await Undo({}, { undoSettings })
-      expect(setEnv).toHaveBeenNthCalledWith(1, { test: '1' })
+      expect(setSettings).toHaveBeenNthCalledWith(1, { test: '1' })
       await Undo({}, { undoSettings })
-      expect(setEnv).toHaveBeenNthCalledWith(2, { test: '0' })
+      expect(setSettings).toHaveBeenNthCalledWith(2, { test: '0' })
     })
     it('shrinks undo queue', async () => {
       expect(undoSettings).toHaveLength(2)
@@ -59,15 +59,15 @@ describe('settingsActions', () => {
 
 
   describe('Default', () => {
-    it('uses setEnv', async () => {
+    it('uses setSettings', async () => {
       await Default({}, 'session')
-      expect(setEnv).toBeCalledTimes(1)
-      expect(setEnv).toBeCalledWith({ test: 'default' }, expect.anything())
+      expect(setSettings).toBeCalledTimes(1)
+      expect(setSettings).toBeCalledWith({ test: 'default' }, expect.anything())
     })
-    it('passes session to setEnv', async () => {
+    it('passes session to setSettings', async () => {
       await Default({}, 'session')
-      expect(setEnv).toBeCalledTimes(1)
-      expect(setEnv).toBeCalledWith(expect.anything(), 'session')
+      expect(setSettings).toBeCalledTimes(1)
+      expect(setSettings).toBeCalledWith(expect.anything(), 'session')
     })
     it('does not unescape input', async () => {
       await Default({}, 'session')
@@ -92,21 +92,21 @@ describe('settingsActions', () => {
         expect(err).toHaveProperty('message', expect.stringContaining('test'))
       })
     })
-    it('uses setEnv', async () => {
+    it('uses setSettings', async () => {
       await Restart({ test: 'new' }, 'session')
         .catch((err) => { if (err.status !== status) throw err })
-      expect(setEnv).toBeCalledTimes(1)
-      expect(setEnv).toBeCalledWith({ test: 'new' }, expect.anything())
+      expect(setSettings).toBeCalledTimes(1)
+      expect(setSettings).toBeCalledWith({ test: 'new' }, expect.anything())
     })
-    it('skips setEnv if no input', async () => {
+    it('skips setSettings if no input', async () => {
       await Restart().catch((err) => { if (err.status !== status) throw err })
-      expect(setEnv).toBeCalledTimes(0)
+      expect(setSettings).toBeCalledTimes(0)
     })
-    it('passes session to setEnv', async () => {
+    it('passes session to setSettings', async () => {
       await Restart({ test: 'new' }, 'session')
         .catch((err) => { if (err.status !== status) throw err })
-      expect(setEnv).toBeCalledTimes(1)
-      expect(setEnv).toBeCalledWith(expect.anything(), 'session')
+      expect(setSettings).toBeCalledTimes(1)
+      expect(setSettings).toBeCalledWith(expect.anything(), 'session')
     })
     it('unescapes input', async () => {
       await Restart({ test: 'new' }, 'session')
@@ -122,9 +122,9 @@ describe('settingsActions', () => {
 // MOCKS
 
 jest.mock('../../services/settings.services', () => ({
-  envDefaults: { test: 'default' },
-  getEnv: jest.fn(() => Promise.resolve({})),
-  setEnv: jest.fn(() => Promise.resolve()),
+  settingsDefaults: { test: 'default' },
+  getSettings: jest.fn(() => Promise.resolve({})),
+  setSettings: jest.fn(() => Promise.resolve()),
   canUndo: jest.fn(() => true),
 }))
 
