@@ -1,31 +1,116 @@
-const { getEnv, canUndo, getForm, settingsActions } = require('../../services/settings.services')
-const { writeFile } = require('fs/promises')
-const { getChanged, getEnvVars } = require('../../utils/settings.utils')
-const { deepUnescape } = require('../../utils/validate.utils')
-const errors = require('../../config/errors.internal')
+const { envDefaults, getEnv, setEnv, canUndo, getForm } = require('../../services/settings.services')
+const { readFile, writeFile } = require('fs/promises')
+const { parse } = require('dotenv')
+const { getEnvVars, getChanged } = require('../../utils/settings.utils')
 
-describe('initialize settings.services', () => {
-  afterAll(() => { delete process.testProps })
+describe('envDefaults', () => {
+  it('includes defaults from env.cfg.defaults', () => {
+    expect(envDefaults.obj).toHaveProperty('test', 'default')
+  })
 
-  it('filters out readonly props from defaults', () => {
-    expect(process.testProps).toEqual(['env', 'other'])
+  it('overrides defaults from env.cfg.formDefaults', () => {
+    expect(envDefaults.obj).toHaveProperty('overwrite', 'yes')
+  })
+
+  it('sends readOnly props to filterOutProps to hide', () => {
+    expect(envDefaults).toHaveProperty('hide', ['env', 'other'])
   })
 })
 
-describe('getEnv/canUndo', () => {
-  it('gets initial env val', async () => {
-    getEnvVars.mockResolvedValueOnce({ test: 'val' })
-    expect(await getEnv()).toEqual({ test: 'val' })
+
+describe('getEnv', () => {
+  beforeEach(() => { readFile.mockResolvedValueOnce(12345) })
+
+  it('reads file at envPath', async () => {
+    await getEnv()
+    expect(readFile).toBeCalledTimes(1)
+    expect(readFile).toBeCalledWith('ENV_FILE')
   })
-  it('cannot undo initially', () => {
+  it('converts to string', async () => {
+    expect(typeof await getEnv()).toBe('string')
+  })
+  it('gets result from readFile', async () => {
+    expect(await getEnv()).toBe('12345')
+  })
+  it('runs through dotenv parser', async () => {
+    await getEnv()
+    expect(parse).toBeCalledTimes(1)
+    expect(parse).toBeCalledWith('12345')
+  })
+  it('runs through getEnvVars', async () => {
+    await getEnv()
+    expect(getEnvVars).toBeCalledTimes(1)
+    expect(getEnvVars).toBeCalledWith(expect.anything(), '12345')
+  })
+  it('sends formSettings key list to getEnvVars', async () => {
+    await getEnv()
+    expect(getEnvVars).toBeCalledTimes(1)
+    expect(getEnvVars).toBeCalledWith([ 'test', 'env', 'other' ], expect.anything())
+  })
+})
+
+
+describe('setEnv', () => {
+  beforeEach(() => { getEnvVars.mockReturnValueOnce({ test: 'val' }) })
+
+  it('writes file at envPath', async () => {
+    await setEnv({ test: 'new' })
+    expect(writeFile).toBeCalledTimes(1)
+    expect(writeFile).toBeCalledWith('ENV_FILE', expect.anything())
+  })
+  it('writes new settings', async () => {
+    await setEnv({ test: 'new' })
+    expect(writeFile).toBeCalledTimes(1)
+    expect(writeFile).toBeCalledWith(expect.anything(), { test: 'new' })
+  })
+  it('does not change missing props', async () => {
+    await setEnv({ other: 'new' })
+    expect(writeFile).toBeCalledTimes(1)
+    expect(writeFile).toBeCalledWith(expect.anything(), { test: 'val', other: 'new' })
+  })
+  it('creates undo queue in session', async () => {
+    const session = {}
+    await setEnv({ test: '1' }, session)
+    expect(session).toHaveProperty('undoSettings', expect.any(Array))
+    expect(session.undoSettings).toHaveLength(1)
+    expect(session.undoSettings[0]).toEqual({ test: 'val' })
+    
+    getEnvVars.mockResolvedValueOnce({ test: '1' })
+    await setEnv({ test: '2' }, session)
+    expect(session.undoSettings).toHaveLength(2)
+    expect(session.undoSettings[1]).toEqual({ test: '1' })
+  })
+  it('checks for changes (if session exists)', async () => {
+    await setEnv({ other: 'new' }, {})
+    expect(getChanged).toBeCalledTimes(1)
+    expect(getChanged).toBeCalledWith({ test: 'val' }, { other: 'new' })
+  })
+  it('skips write if no changes (and session exists)', async () => {
+    getChanged.mockReturnValueOnce({})
+    await setEnv({ other: 'new' }, {})
+    expect(writeFile).toBeCalledTimes(0)
+  })
+})
+
+
+describe('canUndo', () => {
+  it('canUndo returns falsy on missing/empty queue/session', async () => {
     expect(canUndo()).toBeFalsy()
+    expect(canUndo({})).toBeFalsy()
+    expect(canUndo({ undoSettings: [] })).toBeFalsy()
+  })
+  it('canUndo gets remaining undo count', async () => {
+    expect(canUndo({ undoSettings: [1,2] })).toBe(2)
+    expect(canUndo({ undoSettings: [1] })).toBe(1)
+    expect(canUndo({ undoSettings: [] })).toBe(0)
   })
 })
+
 
 describe('getForm', () => {
   let form
   beforeAll(async () => {
-    getEnvVars.mockResolvedValueOnce({ test: 1, env: 2, other: 3 })
+    getEnvVars.mockReturnValueOnce({ test: 1, env: 2, other: 3 })
     form = await getForm()
   })
 
@@ -40,258 +125,33 @@ describe('getForm', () => {
   })
 })
 
-describe('settingsActions', () => {
-  const { Update, Undo, Default, Restart } = settingsActions
-
-  beforeEach(() => { getEnvVars.mockResolvedValueOnce({ test: 'val' }) })
-
-  describe('Update', () => {
-    it('Update writes new settings', async () => {
-      await Update({ test: 'new' })
-      expect(writeFile).toBeCalledTimes(1)
-      expect(writeFile).toBeCalledWith(expect.any(String), { test: 'new' })
-    })
-  
-    it('Update does not change missing props', async () => {
-      await Update({ other: 'new' })
-      expect(writeFile).toBeCalledTimes(1)
-      expect(writeFile).toBeCalledWith(expect.any(String), { test: 'val', other: 'new' })
-    })
-  
-    it('Update adds to undo queue in session', async () => {
-      const session = {}
-      await Update({ test: '1' }, session)
-      getEnvVars.mockResolvedValueOnce({ test: '1' })
-      expect(session).toHaveProperty('undoSettings', expect.any(Array))
-      expect(session.undoSettings).toHaveLength(1)
-  
-      await Update({ test: '2' }, session)
-      expect(session.undoSettings).toHaveLength(2)
-    })
-
-    it('Update unescapes input', async () => {
-      await Update({ test: 'new' })
-      expect(deepUnescape).toBeCalledTimes(1)
-      expect(deepUnescape).toBeCalledWith({ test: 'new' })
-    })
-
-    it('Update checks for changes', async () => {
-      await Update({ other: 'new' }, {})
-      expect(getChanged).toBeCalledTimes(1)
-      expect(getChanged).toBeCalledWith({ test: 'val' }, { other: 'new' })
-    })
-  
-    it('Update skips write when no changes', async () => {
-      getChanged.mockReturnValueOnce({})
-      await Update({ other: 'new' }, {}) // needs Session {}
-      expect(writeFile).toBeCalledTimes(0)
-    })
-  })
-
-  describe('Default', () => {
-    const defaultObj = expect.objectContaining({ test: 'default', env: 1, other: false })
-
-    it('Default writes default settings', async () => {
-      await Default()
-      expect(writeFile).toBeCalledTimes(1)
-      expect(writeFile).toBeCalledWith(expect.any(String), defaultObj)
-    })
-
-    it('Default does not change missing props', async () => {
-      await getEnvVars() // clear default mock
-      getEnvVars.mockResolvedValueOnce({ missing: 'prop' })
-
-      await Default({})
-      expect(writeFile).toBeCalledTimes(1)
-      expect(writeFile).toBeCalledWith(
-        expect.any(String), expect.objectContaining({ missing: 'prop' })
-      )
-    })
-  
-    it('Default adds to undo queue in session', async () => {
-      const session = {}
-      await Default({}, session)
-      getEnvVars.mockResolvedValueOnce({ test: '1' })
-      expect(session).toHaveProperty('undoSettings', expect.any(Array))
-      expect(session.undoSettings).toHaveLength(1)
-  
-      await Default({}, session)
-      expect(session.undoSettings).toHaveLength(2)
-    })
-
-    it('Default does not unescape input', async () => {
-      await Default({})
-      expect(deepUnescape).toBeCalledTimes(0)
-    })
-
-    it('Default checks for changes', async () => {
-      await Default({}, {}) // needs Session {}
-      expect(getChanged).toBeCalledTimes(1)
-      expect(getChanged).toBeCalledWith({ test: 'val' }, defaultObj)
-    })
-  
-    it('Default skips write when no changes', async () => {
-      getChanged.mockReturnValueOnce({})
-      await Default({ other: 'new' }, {}) // needs Session {}
-      expect(writeFile).toBeCalledTimes(0)
-    })
-  })
-
-
-  describe('Restart', () => {
-    it('Restart throws error in test env', async () => {
-      await Restart().catch((err) => {
-        expect(err).toHaveProperty('stack')
-        expect(err).toHaveProperty('status', 418)
-        expect(err).toHaveProperty('message', expect.stringContaining('test'))
-      })
-      await Restart({ test: 'new' }).catch((err) => {
-        expect(err).toHaveProperty('stack')
-        expect(err).toHaveProperty('status', 418)
-        expect(err).toHaveProperty('message', expect.stringContaining('test'))
-      })
-    })
-
-    it('Restart w/ input writes update', async () => {
-      await Restart({ test: 'new' }).catch(() => {})
-      expect(writeFile).toBeCalledTimes(1)
-      expect(writeFile).toBeCalledWith(expect.any(String), { test: 'new' })
-    })
-
-    it('Restart skips writing if no input', async () => {
-      await Restart().catch(() => {})
-      expect(writeFile).toBeCalledTimes(0)
-      expect(canUndo()).toBeFalsy()
-      await getEnvVars() // clear unused mock
-    })
-
-    it('Restart w/ input does not change missing props', async () => {
-      await Restart({ other: 'new' }).catch(() => {})
-      expect(writeFile).toBeCalledTimes(1)
-      expect(writeFile).toBeCalledWith(
-        expect.any(String), { test: 'val', other: 'new' }
-      )
-    })
-  
-    it('Restart w/ input adds to undo queue in session', async () => {
-      const session = {}
-      await Restart({ test: '1' }, session).catch(() => {})
-      getEnvVars.mockResolvedValueOnce({ test: '1' })
-      expect(session).toHaveProperty('undoSettings', expect.any(Array))
-      expect(session.undoSettings).toHaveLength(1)
-  
-      await Restart({ test: '2' }, session).catch(() => {})
-      expect(session.undoSettings).toHaveLength(2)
-    })
-
-    it('Restart unescapes input', async () => {
-      await Restart({ test: 'new' }).catch(() => {})
-      expect(deepUnescape).toBeCalledTimes(1)
-      expect(deepUnescape).toBeCalledWith({ test: 'new' })
-    })
-
-    it('Restart w/ input checks for changes', async () => {
-      await Restart({ other: 'new' }, {}).catch(() => {}) // needs Session {}
-      expect(getChanged).toBeCalledTimes(1)
-      expect(getChanged).toBeCalledWith({ test: 'val' }, { other: 'new' })
-    })
-  
-    it('Restart w/ input skips write when no changes', async () => {
-      getChanged.mockReturnValueOnce({})
-      await Restart({ other: 'new' }, {}).catch(() => {}) // needs Session {}
-      expect(writeFile).toBeCalledTimes(0)
-    })
-  })
-
-
-  describe('Undo', () => {
-    let undoSettings = []
-    beforeEach(() => { undoSettings = [{ test: '0' }, { test: '1' }] })
-
-    it('Undo writes last queue value', async () => {  
-      await Undo({}, { undoSettings })
-      expect(writeFile).toHaveBeenNthCalledWith(1,
-        expect.any(String), { test: '1' }
-      )
-      await Undo({}, { undoSettings })
-      expect(writeFile).toHaveBeenNthCalledWith(2,
-        expect.any(String), { test: '0' }
-      )
-    })
-  
-    it('Undo does not change missing props', async () => {
-      await getEnvVars() // clear default mock
-      getEnvVars.mockResolvedValueOnce({ missing: 'prop' })
-
-      await Undo({}, { undoSettings })
-      expect(writeFile).toBeCalledTimes(1)
-      expect(writeFile).toBeCalledWith(
-        expect.any(String), { test: '1', missing: 'prop' }
-      )
-    })
-  
-    it('Undo shrinks undo queue', async () => {
-      expect(undoSettings).toHaveLength(2)
-      await Undo({}, { undoSettings })
-      expect(undoSettings).toHaveLength(1)
-      await Undo({}, { undoSettings })
-      expect(undoSettings).toHaveLength(0)
-    })
-
-    it('Undo does not unescape input', async () => {
-      await Undo({}, { undoSettings })
-      expect(deepUnescape).toBeCalledTimes(0)
-    })
-
-    it('Undo skips check for changes', async () => {
-      await Undo({}, { undoSettings })
-      expect(getChanged).toBeCalledTimes(0)
-    })
-  
-    it('Undo throws error on missing/empty queue/session', async () => {
-      expect.assertions(3)
-      await Undo({}).catch((err) => expect(err).toEqual(errors.noUndo()))
-      await Undo({},{}).catch((err) => expect(err).toEqual(errors.noUndo()))
-      await Undo({},{ undoSettings: [] }).catch((err) => expect(err).toEqual(errors.noUndo()))
-      await getEnvVars() // clear unused mock
-    })
-  
-    it('canUndo returns falsy on missing/empty queue/session', async () => {
-      expect(canUndo()).toBeFalsy()
-      expect(canUndo({})).toBeFalsy()
-      expect(canUndo({ undoSettings: [] })).toBeFalsy()
-      await getEnvVars() // clear unused mock
-    })
-
-    it('canUndo gets remaining undo count', async () => {
-      expect(canUndo({ undoSettings })).toBe(2)
-      await Undo({}, { undoSettings })
-      expect(canUndo({ undoSettings })).toBe(1)
-      await Undo({}, { undoSettings })
-      expect(canUndo({ undoSettings })).toBeFalsy()
-      expect(canUndo({ undoSettings })).toBe(0)
-    })
-  })
-})
-
-
 
 // MOCKS
 
-jest.mock('fs/promises', () => ({ writeFile: jest.fn(() => Promise.resolve()), readFile: () => Promise.resolve('') }))
-jest.mock('../../utils/validate.utils', () => ({ deepUnescape: jest.fn((obj) => obj) }))
-jest.mock('../../services/pm2.services', () => ({}))
+jest.mock('dotenv', () => ({ parse: jest.fn((input) => input) }))
+
+jest.mock('../../../config/meta', () => ({ envPath: 'ENV_FILE' }))
+
+jest.mock('fs/promises', () => ({
+  writeFile: jest.fn(() => Promise.resolve()),
+  readFile: jest.fn(() => Promise.resolve('')),
+}))
 
 jest.mock('../../utils/settings.utils', () => ({
-  getEnvVars: jest.fn(() => ({})),
+  getEnvVars: jest.fn((_, obj) => obj),
   stringifyEnv: (obj) => obj,
-  filterOutProps: jest.fn((obj, props) => { process.testProps = props; return obj }),
+  filterOutProps: jest.fn((obj, hide) => ({ obj, hide })),
   getChanged: jest.fn((obj) => obj),
 }))
 
 jest.mock('../../config/env.cfg', () => ({
-  updateRootPath: () => {},
-  defaults: { test: 'default', env: 1, other: false, DB_DIR: '', LOG_DIR: '' },
+  defaults: {
+    test: 'default',
+    env: 1,
+    other: false,
+    overwrite: 'no'
+  },
+  formDefaults: { overwrite: 'yes' },
   formSettings: {
     test:  { type: 'number'               },
     env:   { type: [1,3] , readonly: true },

@@ -1,7 +1,7 @@
 const Users = require('../models/Users')
 const { adminFormAdapter, userFormAdapter } = require('../services/users.services')
 const { modelActions, filterFormData } = require('../services/form.services')
-const { settingsActions } = require('../services/settings.services')
+const settingsActions = require('../services/settings.form')
 const { login, logout } = require('../middleware/auth.middleware')
 const { hasAccess } = require('../utils/users.utils')
 const { deepUnescape } = require('../utils/validate.utils')
