@@ -1,8 +1,8 @@
 const updateRootPath = (rootPath) => {
-  module.exports.defaults.DB_DIR  = module.exports.defaults.DB_DIR.replace( /^\.\//, rootPath + '/')
-  module.exports.defaults.LOG_DIR = module.exports.defaults.LOG_DIR.replace(/^\.\//, rootPath + '/')
   module.exports.tooltips.DB_DIR  = module.exports.tooltips.DB_DIR.replace( /%PATH%/g, module.exports.defaults.DB_DIR)
   module.exports.tooltips.LOG_DIR = module.exports.tooltips.LOG_DIR.replace(/%PATH%/g, module.exports.defaults.LOG_DIR)
+  module.exports.defaults.DB_DIR  = module.exports.defaults.DB_DIR.replace( /^\.\//, rootPath + '/')
+  module.exports.defaults.LOG_DIR = module.exports.defaults.LOG_DIR.replace(/^\.\//, rootPath + '/')
 }
 
 module.exports = {
