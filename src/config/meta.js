@@ -1,4 +1,5 @@
 const { join } = require('path')
+const { isCluster } = require('../internal/config/server.cfg')
 const settings = require('../internal/config/settings.cfg')
 const pkg = require('../../package.json')
 const pkgCfg = pkg.config || {}
@@ -15,7 +16,7 @@ require('dotenv').config({ path: envPath })
 function getPort() {
   if (process.env.NODE_ENV === 'test') return require('../internal/testing/test.cfg').port
   return (+process.env.port || +pkgCfg.port || 8080) + (
-    isNaN(process.env.NODE_APP_INSTANCE) ? 0 : +process.env.NODE_APP_INSTANCE
+    isCluster || isNaN(process.env.NODE_APP_INSTANCE) ? 0 : +process.env.NODE_APP_INSTANCE
   )
 }
 

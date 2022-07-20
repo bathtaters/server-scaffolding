@@ -5,10 +5,10 @@ const meta = require('../../config/meta')
 const urls = require('../../config/urls.cfg')
 const shutdownError = require('../config/errors.internal').shutdown
 const { varName } = require('../utils/gui.utils')
+const { gracefulExitOptions } = require('../config/server.cfg')
 const { title, footer } = require('../../config/gui.cfg')
 const { getDb, openDb, closeDb } = require('../libs/db')
 const models = require('../../models/_all')
-const timeout = require('../../../pm2.config').apps[0].kill_timeout
 
 let isClosing = false, isTerminating = false
 
@@ -22,7 +22,7 @@ async function initializeServer(server) {
     logger.info(`Shutting down server`)
 
     if (!listener) return terminateServer().then(() => process.exit(0))
-    return gracefulExitHandler(server, listener, gracefulExitOptions)
+    return gracefulExitHandler(server, listener, shutdownOptions)
   }
 
   const handleError = (err) => {
@@ -35,8 +35,10 @@ async function initializeServer(server) {
   process.on('SIGTERM', handleClose)
   process.on('SIGUSR1', handleClose)
   process.on('SIGUSR2', handleClose)
-  process.on('uncaughtException',  handleError)
-  process.on('unhandledRejection', handleError)
+  if (process.env.NODE_ENV === 'development') {
+    process.on('uncaughtException',  handleError)
+    process.on('unhandledRejection', handleError)
+  }
   
   // Setup view vars
   server.locals.appTitle = title
@@ -68,12 +70,9 @@ async function terminateServer() {
   logger.info(`${meta.name} services ended`)
 }
 
-const gracefulExitOptions = {
-  suicideTimeout: (timeout || 120 * 1000) - 100,
-  log: true,
-  logger: logger.verbose.bind(logger),
-  performLastRequest: true,
-  errorDuringExit: true,
+const shutdownOptions = {
+  ...gracefulExitOptions,
+  logger: logger[gracefulExitOptions.logger || 'verbose'].bind(logger),
   callback: terminateServer,
   getRejectionError: shutdownError,
 }
