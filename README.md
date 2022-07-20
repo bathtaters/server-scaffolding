@@ -11,9 +11,10 @@ Includes ***Passport*** session authentication, ***Morgan*** console/file loggin
  1. Update `package.json` info (ie. `name`, `version`, `author`, `license`, `repository`)
  2. Create `.env` file _(see below guide)_
  3. Run `npm -g i nodemon` _(if you don't have nodemon)_
- 4. Run server `npm start` & navigate to `[DOMAIN]/login/` in browser
- 5. Enter credentials to create an initial `ADMIN` user
+ 4. Run server `npm run dev` & navigate to `[DOMAIN]/login/` in browser
+ 5. Enter credentials to create an initial `ADMIN` user _(Must be done in `run dev` mode)_
  6. Navigate to ***Users*** to manage users
+ 7. Replace `public/images/logo.png`, then [regenerate favicons](https://realfavicongenerator.net/) in `public/root`
 
 ### Add a DB Model
  1. Copy `models/Base.js` as a starting point.
@@ -22,9 +23,9 @@ Includes ***Passport*** session authentication, ***Morgan*** console/file loggin
 
 ### Deploy to Production
  1. Recommend using pm2 to ensure Restart button works
- 2. Update `pm2.json` info (ie. `name`, `cwd`, `*_file`)
- 3. Create production `.env`
- 4. Run using `pm2 start pm2.json`
+ 2. Update `ecosystem.config.js` if needed
+ 3. Create production `.env` _(see below guide)_
+ 4. Run using `npm run pm2`, stop with `npm run pm2`
 
 ---
 
@@ -75,7 +76,9 @@ Includes ***Passport*** session authentication, ***Morgan*** console/file loggin
 ---
 
 ## .env Variables
-##### _Can be set via `/admin/settings`. Defaults are in [brackets]._
+Rename `.env.demo.dev`/`.prod` to `.env` as a starting point depending on environment.
+
+##### _Can also be set via `/admin/settings`. Defaults are in [brackets]._
 ```
 NODE_ENV=[development]|production|test
 port=[8080]
@@ -91,4 +94,9 @@ LOG_DIR=[<project-dir>/.logs]
 ---
 
 ### Credits
-Backend Favicon: [Backend icons created by kerismaker - Flaticon](https://www.flaticon.com/free-icons/backend)
+ - **Logo Image**: [Backend icons created by kerismaker - Flaticon](https://www.flaticon.com/free-icons/backend)
+ - **Framework**: [Express](https://expressjs.com/)
+ - **Database**: [SQLite3](https://www.sqlite.org/index.html) + [SQLCipher](https://www.zetetic.net/sqlcipher/)
+ - **Authentication**: [Passport](https://www.passportjs.org/)
+ - **HTML Templating**: [Pug](https://pugjs.org/api/getting-started.html)
+ - **Logging**: [Winston](https://github.com/winstonjs/winston) & [Morgan](https://github.com/expressjs/morgan)
