@@ -1,22 +1,27 @@
 {
-  "name": "my-project-server",
+  "name": "server-scaffolding",
   "version": "0.1.0",
   "description": "Backend server with CRUD API, simple web GUI & built-in user management",
   "main": "./src/internal/server.js",
   "scripts": {
-    "start": "nodemon ./src/internal/server.js",
-    "start-pm2": "pm2 start pm2.config.js && pm2 logs",
-    "stop-pm2": "pm2 delete pm2.config.js",
-    "start-node": "node ./src/internal/server.js",
+    "dev": "nodemon ./src/internal/server.js",
+    "start": "pm2 start ecosystem.config.js && pm2 logs",
+    "stop": "pm2 delete ecosystem.config.js",
+    "reload": "pm2 reload ecosystem.config.js && pm2 logs",
+    "trace-sync": "node --trace-sync-io ./src/internal/server.js",
     "inspect": "nodemon --inspect ./src/internal/server.js",
     "test": "jest ./src/"
   },
   "keywords": [],
   "author": "bathtaters",
   "license": "BSD-3-Clause",
+  "private": true,
   "repository": {
     "type": "git",
     "url": "https://github.com/bathtaters/server-scaffolding"
+  },
+  "engines": {
+    "node": "18.6.0"
   },
   "dependencies": {
     "@journeyapps/sqlcipher": "^5.3.1",
@@ -30,6 +35,7 @@
     "express-session": "^1.17.3",
     "express-validator": "^6.14.1",
     "hat": "^0.0.3",
+    "helmet": "^5.1.0",
     "morgan": "^1.10.0",
     "passport": "^0.6.0",
     "passport-http-bearer": "^1.0.1",
