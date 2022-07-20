@@ -5,6 +5,7 @@ const { generateToken, testPassword } = require('../utils/auth.utils')
 const errors = require('../config/errors.internal')
 const logger = require('../libs/log')
 const { access, timestampKeyRegEx } = require('../config/users.cfg')
+const { isPm2 } = require('../../config/meta')
 
 
 class Users extends Model {
@@ -68,7 +69,7 @@ class Users extends Model {
   }
 
   async checkPassword(username, password, accessLevel) {
-    if (!(await this.count()))
+    if (!isPm2 && !(await this.count()))
       return this.add({ username, password, access: accessInt(accessLevel) })
         .then((id) => id && this.get(id))
         .then((data) => {

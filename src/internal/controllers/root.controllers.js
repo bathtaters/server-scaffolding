@@ -1,6 +1,7 @@
 const Users = require('../models/Users')
 const { forwardOnAuth } = require('../middleware/auth.middleware')
 const { access } = require('../config/users.cfg')
+const { isPm2 } = require('../../config/meta')
 const limits = require('../../config/models.cfg').limits._users
 const urls = require('../../config/urls.cfg').gui
 
@@ -12,7 +13,7 @@ exports.loginPage = [
     res.render('login', {
       title: 'Login',
       hideNav: true,
-      isUser,
+      isUser: isPm2 || isUser,
       limits,
       failureMessage: req.flash('error'),
       postURL: urls.root.login,
