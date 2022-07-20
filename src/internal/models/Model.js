@@ -128,19 +128,23 @@ class Model {
   }
    
   
-  async update(id, data, idKey = null) {
-    if (id == null) return Promise.reject(errors.noID())
+  async update(id, data, idKey = null, onChangeCb = null) {
+    if (id == null) throw errors.noID()
 
     if (this.setAdapter) data = await this.setAdapter(data)
     data = sanitizeSchemaData(data, this.schema)
-    const keys = Object.keys(data)
-    if (!keys.length) return Promise.reject(errors.noData())
+    if (!Object.keys(data).length) throw errors.noData()
 
-    const count = await this.count(id, idKey || this.primaryId)
-    if (!count) throw errors.noEntry(id)
+    const current = await this[onChangeCb ? 'get' : 'count'](id, idKey || this.primaryId, true)
+    if (!current) throw errors.noEntry(id)
+
+    if (onChangeCb) {
+      const updated = await onChangeCb(data, current)
+      if (updated) data = updated
+    }
       
     await services.run(getDb(),
-      `UPDATE ${this.title} SET ${keys.map(k => `${k} = ?`).join(', ')} WHERE ${idKey || this.primaryId} = ?`,
+      `UPDATE ${this.title} SET ${Object.keys(data).map(k => `${k} = ?`).join(', ')} WHERE ${idKey || this.primaryId} = ?`,
       [...Object.values(data), id]
     )
     return { success: true }
