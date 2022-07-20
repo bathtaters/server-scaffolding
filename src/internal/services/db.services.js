@@ -1,5 +1,5 @@
 const logger = require('../libs/log')
-const { noDb } = require('../config/errors.internal')
+const { noDb, sqlError } = require('../config/errors.internal')
 
 function exec(db, sql) {
   return new Promise((res,rej) => {
@@ -7,7 +7,7 @@ function exec(db, sql) {
     db.exec('BEGIN TRANSACTION; '+sql+'; COMMIT;', (err) => {
       if (err) {
         logger.error(err, { label: 'SQL rollback' })
-        return db.run('ROLLBACK', rbErr => rej(rbErr || err))
+        return db.run('ROLLBACK', rbErr => rej(sqlError(rbErr || err, sql)))
       }
       return res()
     })
@@ -16,27 +16,27 @@ function exec(db, sql) {
 function all(db, sql, params = []) {
   return new Promise((res,rej) => {
     if (!db) return rej(noDb())
-    db.all(sql, params, (err,row) => err ? rej(err) : res(row))
+    db.all(sql, params, (err,row) => err ? rej(sqlError(err,sql,params)) : res(row))
   })
 }
 function run(db, sql, params = []) {
   return new Promise((res,rej) => {
     if (!db) return rej(noDb())
-    db.run(sql, params, (err) => err ? rej(err) : res())
+    db.run(sql, params, (err) => err ? rej(sqlError(err,sql,params)) : res())
   })
 }
 function get(db, sql, params = []) {
   return new Promise((res,rej) => {
     if (!db) return rej(noDb())
-    db.get(sql, params, (err,row) => err ? rej(err) : res(row))
+    db.get(sql, params, (err,row) => err ? rej(sqlError(err,sql,params)) : res(row))
   })
 }
 function getLastId(db, sql, params = []) {
   return new Promise((res,rej) => {
     if (!db) return rej(noDb())
     db.serialize(() => {
-      db.run(sql, params, (err) => err && rej(err))
-      db.get('SELECT last_insert_rowid() id', [], (err, row) => err ? rej(err) : res(row && row.id))
+      db.run(sql, params, (err) => err && rej(sqlError(err,sql,params)))
+      db.get('SELECT last_insert_rowid() id', [], (err, row) => err ? rej(sqlError(err,sql,params)) : res(row && row.id))
     })
   })
 }
@@ -59,13 +59,13 @@ function encrypt(db, sqlSecret, version = '4') {
       db.run(`PRAGMA cipher_compatibility = ${version}`, (err) => {
         if (err) {
           logger.error(err, { label: 'init DB encryption' })
-          return rej(err)
+          return rej(sqlError(err,`PRAGMA cipher_compatibility = ${version}`,params))
         }
       })
       db.run(`PRAGMA key = '${sqlSecret}'`, (err) => {
         if (err) {
           logger.error(err, { label: 'encrypting DB' })
-          return rej(err)
+          return rej(sqlError(err,`PRAGMA key = '<sqlSecret>'`,params))
         }
         logger.verbose('Database encryption enabled')
         return res(db)

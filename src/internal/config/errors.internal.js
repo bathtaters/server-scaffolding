@@ -1,4 +1,8 @@
 const createError = require('http-errors')
+const appendToError = (error, { message, stack, ...errorProps }) => Object.assign(error, errorProps, {
+  message: `${error.message || ''}${error.message ? ' ' : ''}${ message || ''}`,
+  stack: `${error.stack || ''}${error.stack ? '\n' : ''}${ stack || ''}`,
+})
 
 // Common HTTP codes --
 //    400: no/invalid data from client
@@ -36,6 +40,7 @@ module.exports = {
   badModels: (models) => createError(500, `Invalid model list: [${typeof models}] ${JSON.stringify(models)}.`),
   loginMessages: {
     noUser:     { fail: 'Incorrect username or user was deleted' },
+    isLocked:   { fail: 'User is locked out due to too many failed attempts' },
     noPassword: { fail: 'Password not created (Contact administrator)' },
     noAccess:   { fail: 'Insufficient access level' },
     noMatch:    { fail: 'Incorrect password or misspelled username' },
@@ -48,6 +53,7 @@ module.exports = {
   badAction: (action) => createError(400, `Invalid action: ${action || '[None]'}.`),
 
   // Other Errors
+  sqlError: (err, sql, params) => appendToError(createError(502, err.message || err), { name: 'sqlError', stack: `\tCmd: ${sql}\n\t\t[${(params || []).join(', ')}]` }),
   badUsername: (username, reason) => createError(409, `Cannot set name ${username || 'for user'}: ${reason}`),
   deleteAdmin: () => createError(403, "Cannot remove the only admin. Add another admin then retry, or reset User Table to remove all users."),
   noUndo: () => createError(500, "Undo queue is empty"),
