@@ -6,6 +6,6 @@ exports.disconnect = () => new Promise((res, rej) => { pm2.disconnect((err) => e
 
 exports.list = () => new Promise((res, rej) => { pm2.list((err, list) => err ? rej(err) : res(list)) })
 
-exports.restart = (procId, updateEnv = false) => new Promise((res, rej) => {
+exports.restart = (procId, updateEnv = true) => new Promise((res, rej) => {
   pm2.restart(procId, { updateEnv }, (err) => err ? rej(err) : res())
 })

@@ -1,13 +1,16 @@
 const { connect, disconnect, list, restart } = require('../utils/pm2.promises')
 const logger = require('../libs/log')
 const { name } = require('../../config/meta')
-const { terminateServer } = require('../services/init.services')
 
-function restartInstance({ pm_id, pid, pm2_env }, updateEnv = false, isSelf = false) {
+async function restartInstance({ pm_id, pid, pm2_env }, isSelf = false) {
   process.env.NODE_APP_INSTANCE = pm2_env.NODE_APP_INSTANCE
+  
+  const current = await list().then((list) => list.find((proc) => proc.pid === pid))
 
-  logger.verbose(`Closing instance ${process.env.NODE_APP_INSTANCE} [${pm_id} ${pid}]${isSelf ? ' (self)' : ''}`)
-  return restart(pm_id, updateEnv)
+  if (!current) return logger.warn(`Instance ${pm2_env.NODE_APP_INSTANCE} [${pm_id} ${pid}]${isSelf ? ' (self)' : ''} has already shutdown.`)
+  logger.verbose(`Closing instance ${pm2_env.NODE_APP_INSTANCE} [${pm_id} ${pid}]${isSelf ? ' (self)' : ''}`)
+
+  return restart(current.pm_id)
 }
 
 async function restartWithEnv(env) {
@@ -25,12 +28,11 @@ async function restartWithEnv(env) {
       self = proc
       continue
     }
-    await restartInstance(proc, true)
+    await restartInstance(proc)
   }
 
   // Restart self
-  await terminateServer()
-  return self && restartInstance(self, true, true)
+  return self && restartInstance(self, true)
 }
 
 exports.restartCluster = (withEnv = {}) => connect().then(() => restartWithEnv(withEnv)).finally(disconnect)
