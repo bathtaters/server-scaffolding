@@ -4,7 +4,7 @@ include components/form.mixins.pug
 
 block scripts
   script(src="/javascripts/profile.client.js")
-  script(src="/javascripts/togglePassword.js")
+  script(src="/javascripts/password.client.js")
 
 block content
   table.horizontal
@@ -17,7 +17,7 @@ block content
       tr
         each val, key in tableFields
           -var rowCls = key !== 'cors' ? '' : userData.regExCors ? 'cors-regex' : userData.arrayCors ? 'cors-array' : ''
-          td(data-label=val)= userData[key] || '&nbsp;'
+          td(data-label=val) #{key in userData ? userData[key] : ''}!{'&nbsp;'}
 
   hr
 
