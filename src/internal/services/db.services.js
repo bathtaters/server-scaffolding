@@ -1,7 +1,9 @@
 const logger = require('../libs/log')
+const { noDb } = require('../config/errors.internal')
 
 function exec(db, sql) {
   return new Promise((res,rej) => {
+    if (!db) return rej(noDb())
     db.exec('BEGIN TRANSACTION; '+sql+'; COMMIT;', (err) => {
       if (err) {
         logger.error(err, { label: 'SQL rollback' })
@@ -13,21 +15,25 @@ function exec(db, sql) {
 }
 function all(db, sql, params = []) {
   return new Promise((res,rej) => {
+    if (!db) return rej(noDb())
     db.all(sql, params, (err,row) => err ? rej(err) : res(row))
   })
 }
 function run(db, sql, params = []) {
   return new Promise((res,rej) => {
+    if (!db) return rej(noDb())
     db.run(sql, params, (err) => err ? rej(err) : res())
   })
 }
 function get(db, sql, params = []) {
   return new Promise((res,rej) => {
+    if (!db) return rej(noDb())
     db.get(sql, params, (err,row) => err ? rej(err) : res(row))
   })
 }
 function getLastId(db, sql, params = []) {
   return new Promise((res,rej) => {
+    if (!db) return rej(noDb())
     db.serialize(() => {
       db.run(sql, params, (err) => err && rej(err))
       db.get('SELECT last_insert_rowid() id', [], (err, row) => err ? rej(err) : res(row && row.id))
@@ -48,6 +54,7 @@ function reset(db, schema, force) {
 
 function encrypt(db, sqlSecret, version = '4') {
   return new Promise((res,rej) => {
+    if (!db) return rej(noDb())
     db.serialize(() => {
       db.run(`PRAGMA cipher_compatibility = ${version}`, (err) => {
         if (err) {

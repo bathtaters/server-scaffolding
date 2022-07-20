@@ -13,6 +13,7 @@ module.exports = {
   // Basic Errors
   unknown: () => createError(500, "Unknown server error.") ,
   unknownDb: () => createError(502, "Unknwon database error."),
+  noDb: () => createError(502, "Unable to connect to database."),
   shutdown: () => createError(503, "Server is currently shutting down.", { headers: { "retry-after": 3 * 60 } }) ,
   missing: () => createError(404, "Resource not found."),
   test: (msg) => createError(418, msg || "API is not a Teapot."),
