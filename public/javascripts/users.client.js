@@ -38,14 +38,23 @@ $( 'tr.tableRow' ).on('click', function() {
     }
 
     if (key !== 'access' && key !== 'models') {
-      $( '#' + key ).val($(this).text());
+      var elem = $('#' + key);
+      var val = $(this).text();
+      
+      if (elem.attr('type') === 'checkbox') {
+        // Solo checkboxes
+        elem.prop('checked', val.toLowerCase() !== 'false' && val != false);
+      } else {
+        // Other input
+        elem.val(val);
+      }
       return true;
     }
 
     $( 'input.'+key+'Checks' ).prop('checked', false);
     var checks = $(this).text().split(', ')
-
-    // Simple checkboxes
+    
+    // Grouped checkboxes
     if (key !== 'models') {
       checks.forEach(function(accessType) {
         $( 'input.'+key+'Checks#'+accessType ).prop('checked', true);

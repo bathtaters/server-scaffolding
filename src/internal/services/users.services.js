@@ -3,8 +3,10 @@ const { generateToken, encodePassword } = require('../utils/auth.utils')
 const { access, definitions } = require('../config/users.cfg')
 const errors = require('../config/errors.internal')
 
-exports.getAdapter = ({ id, token, username, access, cors, key, guiTime, apiTime, models }) => ({
-  id, token, username, access, guiTime, apiTime,
+exports.getAdapter = ({ id, token, username, access, cors, key, models, guiTime, apiTime, failTime, apiCount, guiCount, failCount, locked }) => ({
+  id, token, username, access, locked,
+  guiTime, apiTime, failTime,
+  guiCount, apiCount, failCount,
   models: models ? JSON.parse(models) : [],
   password: Boolean(key),
   cors: decodeCors(cors),
@@ -31,6 +33,7 @@ exports.addAdapter = ({
   models = definitions.defaults.models,
   password,
 }, idKey = 'id') => ({
+  ...definitions.defaults,
   [idKey]: generateToken(),
   token: generateToken(),
   username, access, password, cors, models,
@@ -40,10 +43,12 @@ exports.guiAdapter = (user) => {
   if (!user) return []
   if (Array.isArray(user)) return user.map(exports.guiAdapter)
 
-  if ('access'  in user) user.access  = accessArray(user.access).join(', ')
-  if ('models'  in user) user.models  = getModelsString(user.models)
-  if ('guiTime' in user) user.guiTime = user.guiTime ? new Date(user.guiTime).toLocaleString() : '-'
-  if ('apiTime' in user) user.apiTime = user.apiTime ? new Date(user.apiTime).toLocaleString() : '-'
+  if ('access'   in user) user.access   = accessArray(user.access).join(', ')
+  if ('models'   in user) user.models   = getModelsString(user.models)
+  if ('locked'   in user) user.locked   = Boolean(user.locked)
+  user.guiTime  = `${user.guiTime  ? new Date(user.guiTime ).toLocaleString() : '-'} [${user.guiCount  || 0}]`
+  user.apiTime  = `${user.apiTime  ? new Date(user.apiTime ).toLocaleString() : '-'} [${user.apiCount  || 0}]`
+  user.failTime = `${user.failTime ? new Date(user.failTime).toLocaleString() : '-'} [${user.failCount || 0}]`
 
   return 'cors'  in user ? ({
     ...user,
@@ -57,6 +62,7 @@ exports.preValidateAdapter = (formData, isSearch) => {
   if (isSearch) delete formData.models
   else if (formData.models && typeof formData.models === 'string') formData.models = formData.models.split(',')
   if (formData.access && typeof formData.access === 'string') formData.access = formData.access.split(',')
+  if (!formData.locked) formData.locked = 'false'
   return formData
 }
 
