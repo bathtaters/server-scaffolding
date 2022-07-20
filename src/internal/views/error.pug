@@ -1,5 +1,8 @@
 extends components/container
 
+block scripts
+  script(src="/javascripts/back.client.js")
+
 block content
   .container
     h2.responsive-margin
@@ -10,4 +13,4 @@ block content
     p.responsive-padding= error.message
     if showStack
       pre= error.stack
-    a.button(href="javascript:history.back()") Back
+    a.button#back-button(href="javascript:history.back()") Back
