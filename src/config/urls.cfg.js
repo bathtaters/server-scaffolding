@@ -6,7 +6,7 @@ module.exports = {
   },
   minicss: {
     // href: "/stylesheets/mini-dark.min.css", // Local copy
-    href: "https://cdn.rawgit.com/Chalarangelo/mini.css/v3.0.1/dist/mini-dark.min.css",
+    href: "https://cdn.jsdelivr.net/gh/Chalarangelo/mini.css@v3.0.1/dist/mini-dark.min.css",
     // href: "https://cdnjs.cloudflare.com/ajax/libs/mini.css/2.3.7/mini-dark.css", // WRONG STYLES
   },
 
