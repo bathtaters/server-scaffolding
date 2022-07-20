@@ -17,7 +17,7 @@ jest.mock('../../utils/users.utils', () => ({
 }))
 jest.mock('../../utils/auth.utils', () => ({
   generateToken: () => 'generateToken',
-  encodePassword: (password) => ({ key: 'encodePassword:'+password, salt: 'encodeSalt' })
+  encodePassword: (password) => Promise.resolve({ key: 'encodePassword:'+password, salt: 'encodeSalt' })
 }))
 jest.mock('../../config/users.cfg', () => ({
   access: {},
@@ -60,20 +60,20 @@ describe('User setAdapter', () => {
     password: 'PASSWORD',
   } })
 
-  it('strinigifys models', () => {
-    expect(setAdapter(testObj)).toHaveProperty('models','{"a":1,"b":2,"c":3}')
+  it('strinigifys models', async () => {
+    expect(await setAdapter(testObj)).toHaveProperty('models','{"a":1,"b":2,"c":3}')
   })
-  it('encodes access', () => {
-    expect(setAdapter(testObj)).toHaveProperty('access','accessInt:ACCESS')
+  it('encodes access', async () => {
+    expect(await setAdapter(testObj)).toHaveProperty('access','accessInt:ACCESS')
   })
-  it('encodes cors', () => {
-    expect(setAdapter(testObj)).toHaveProperty('cors','encodeCors:CORS')
+  it('encodes cors', async () => {
+    expect(await setAdapter(testObj)).toHaveProperty('cors','encodeCors:CORS')
   })
-  it('normalizes username', () => {
-    expect(setAdapter(testObj)).toHaveProperty('username','uname')
+  it('normalizes username', async () => {
+    expect(await setAdapter(testObj)).toHaveProperty('username','uname')
   })
-  it('encodes password', () => {
-    const result = setAdapter(testObj)
+  it('encodes password', async () => {
+    const result = await setAdapter(testObj)
     expect(result).toHaveProperty('key','encodePassword:PASSWORD')
     expect(result).toHaveProperty('salt','encodeSalt')
     expect(result).not.toHaveProperty('password')

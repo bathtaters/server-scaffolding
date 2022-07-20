@@ -10,13 +10,13 @@ exports.getAdapter = ({ id, token, username, access, cors, key, guiTime, apiTime
   cors: decodeCors(cors),
 })
 
-exports.setAdapter = (data) => {
+exports.setAdapter = async (data) => {
   if ('models' in data) data.models = JSON.stringify(data.models || {})
   if ('access' in data) data.access = accessInt(data.access)
   if ('cors' in data) data.cors = encodeCors(data.cors)
   if ('username' in data) data.username = data.username.toLowerCase()
   if (data.password) {
-    const { key, salt } = encodePassword(data.password)
+    const { key, salt } = await encodePassword(data.password)
     data.key = key
     data.salt = salt
   }

@@ -70,7 +70,7 @@ class Model {
 
 
   async find(matchData, partialMatch = false) {
-    if (this.setAdapter) matchData = this.setAdapter(matchData)
+    if (this.setAdapter) matchData = await this.setAdapter(matchData)
     matchData = sanitizeSchemaData(matchData, this.schema)
 
     const searchData = Object.entries(matchData)
@@ -113,7 +113,7 @@ class Model {
   
   
   async add(data) {
-    if (this.setAdapter) data = this.setAdapter(data)
+    if (this.setAdapter) data = await this.setAdapter(data)
     data = sanitizeSchemaData(data, this.schema)
     if (this.defaults) data = { ...this.defaults, ...data }
     
@@ -131,7 +131,7 @@ class Model {
   async update(id, data, idKey = null) {
     if (id == null) return Promise.reject(errors.noID())
 
-    if (this.setAdapter) data = this.setAdapter(data)
+    if (this.setAdapter) data = await this.setAdapter(data)
     data = sanitizeSchemaData(data, this.schema)
     const keys = Object.keys(data)
     if (!keys.length) return Promise.reject(errors.noData())
