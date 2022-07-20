@@ -1,4 +1,5 @@
 const pkg = require('./package.json')
+const serverCfg = require('./src/internal/config/server.cfg')
 
 const prodOptions = {
   name             : pkg.name,
@@ -6,15 +7,16 @@ const prodOptions = {
   args             : [],
   script           : pkg.main,
   node_args        : ["--harmony", "--stack-size=1024"],
-  instances        : "max",
+  instances        : serverCfg.processCount,
   exec_interpreter : "node",
-  exec_mode        : "fork",
+  exec_mode        : serverCfg.isCluster ? "cluster" : "fork",
   autorestart      : true,
   stop_exit_codes  : [0],
   max_restarts     : 10,
   max_memory_restart:"150M",
   min_uptime       : "90s",
-  kill_timeout     : 4000,
+  restart_delay    : 100,
+  kill_timeout     : serverCfg.gracefulExitOptions.suicideTimeout + 100,
   exp_backoff_restart_delay: "100",
   watch            : false,
   vizion           : false,
@@ -26,7 +28,7 @@ const prodOptions = {
 
 const devOptions = {
   ...prodOptions,
-  instances        : 2,
+  // instances        : 2,
 }
 
 require('dotenv').config()
