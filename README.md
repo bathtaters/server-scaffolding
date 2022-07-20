@@ -29,6 +29,38 @@ Includes ***Passport*** session authentication, ***Morgan*** console/file loggin
 
 ---
 
+## .env Variables
+Rename `.env.demo.dev`/`.prod` to `.env` as a starting point depending on environment.
+
+##### _Can also be set via `/admin/settings`. Defaults are in [brackets]._
+```
+NODE_ENV=[development]|production|test
+port=[8080]
+LOG_CONSOLE=verbose|http|[info]|warn|error|none
+LOG_FILE=verbose|http|info|[warn]|error|none
+LOG_HTTP=debug|combined|[common]|dev|short|tiny|none
+SESSION_SECRET=[secret]
+DB_SECRET=[secret]
+DB_DIR=[<project-dir>/.db]
+LOG_DIR=[<project-dir>/.logs]
+```
+
+---
+
+## npm Scripts
+##### _Call using `npm [script]`._
+| Script | Description |
+|------|------|
+|`run dev`|Start single server instance that will auto-restart on file updates|
+|`start`|Start PM2 server instances _(Runs in bgd if you exit terminal)_|
+|`stop`|Stop all bgd PM2 server instances|
+|`restart`|Full PM2 restart _(Updates env)_|
+|`run reload`|0-downtime PM2 reload _(Doesn't update env)_|
+|`test`|Run Jest tests|
+|`run unlock-user [name]`|Unlock user _(Users.unlock.js must be enabled first)_|
+
+---
+
 ## Automatic API Routes
 `[Domain]/api/[model]/...`
 ##### _Header must include `{ Authorization: "Bearer <token>" }` with valid API token._
@@ -72,24 +104,6 @@ Includes ***Passport*** session authentication, ***Morgan*** console/file loggin
 |`/users`|User table editor|
 |`/logs`|Index of log files|
 |`/logs/[log]`|Basic log viewer|
-
----
-
-## .env Variables
-Rename `.env.demo.dev`/`.prod` to `.env` as a starting point depending on environment.
-
-##### _Can also be set via `/admin/settings`. Defaults are in [brackets]._
-```
-NODE_ENV=[development]|production|test
-port=[8080]
-LOG_CONSOLE=verbose|http|[info]|warn|error|none
-LOG_FILE=verbose|http|info|[warn]|error|none
-LOG_HTTP=debug|combined|[common]|dev|short|tiny|none
-SESSION_SECRET=[secret]
-DB_SECRET=[secret]
-DB_DIR=[<project-dir>/.db]
-LOG_DIR=[<project-dir>/.logs]
-```
 
 ---
 
