@@ -1,5 +1,6 @@
 const { name, version, author, license, releaseYear, repoLink } = require('./meta')
 const { capitalizeHyphenated } = require('../internal/utils/common.utils')
+const { jquery, minicss } = require('./urls.cfg')
 
 const title = capitalizeHyphenated(name)
 
@@ -37,4 +38,11 @@ module.exports = {
   mask: [ 'password', 'confirm' ],
   MASK_CHAR: '*',
   
+  // Helmet options
+  guiCSP: {
+    defaultSrc: ["'self'"],
+    scriptSrc: ["'self'", jquery.src],
+    styleSrc: ["'self'", "'unsafe-inline'", minicss.href],
+    upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
+  }
 }

@@ -1,9 +1,11 @@
 // Constants
 const { rootPath } = require('../config/meta')
 const urls = require('../config/urls.cfg')
+const { guiCSP } = require('../config/gui.cfg')
 // Module Dependencies
 const express = require('express')
 const { join } = require('path')
+const helmet = require('helmet')
 const { initializeServer } = require('./services/init.services')
 const customServer = require('../server.init')
 const { notRoute } = require('./utils/common.utils')
@@ -24,10 +26,13 @@ const server = express()
 server.set('trust proxy', 1)
 server.set('views', [join(rootPath, 'src', 'views'), join(rootPath, 'src', 'internal', 'views')])
 server.set('view engine', 'pug')
+if (process.env.NODE_ENV === 'production') server.disable('x-powered-by')
 customServer.setup && customServer.setup(server)
 
 // Server-level Middleware
 server.use(exitMiddleware(server))
+server.use(notRoute(urls.api.prefix), helmet({ contentSecurityPolicy: { directives: guiCSP } }))
+server.use(urls.api.prefix, helmet())
 server.use(express.json())
 server.use(express.urlencoded({ extended: false }))
 server.use(express.static(join(rootPath, 'public')))
