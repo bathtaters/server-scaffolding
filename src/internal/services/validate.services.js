@@ -1,7 +1,7 @@
 const logger = require('../libs/log')
 const validCfg = require('../../config/models.cfg')
-const { errorMsgs } = require("../config/validate.cfg")
-const { getTypeArray, dateOptions, escapedLength, isBoolean, parseBoolean } = require('../utils/validate.utils')
+const { errorMsgs, dateOptions } = require("../config/validate.cfg")
+const { getTypeArray, escapedLength, isBoolean, parseBoolean } = require('../utils/validate.utils')
 
 // Obscure 'min' field (For allowing partial validation on searches) from limit
 const hidingMin = ({ min, ...other }) => other
@@ -93,8 +93,8 @@ function getSchema(key, typeStr, limits, isIn, forceOptional = false, disableMin
       ptr.toInt = true
       break
     case 'boolean':
-      ptr.custom = { options: isBoolean, errorMessage: errorMsgs.boolean }
-      ptr.customSanitizer = { options: parseBoolean }
+      ptr.custom = { options: isBoolean(), errorMessage: errorMsgs.boolean }
+      ptr.customSanitizer = { options: parseBoolean() }
       break
     case 'datetime':
       ptr.isISO8601 = { options: dateOptions.time, errorMessage: errorMsgs.datetime }

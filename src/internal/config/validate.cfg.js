@@ -1,4 +1,19 @@
+const strictDatetime = true // Use strict date/time parsing
+
 module.exports = {
+
+  boolOptions: {
+    true:  [true,  1, '1', 'true', 'yes',  'on'],
+    false: [false, 0, '0', 'false', 'no', 'off', ''],
+    types: ['string', 'number', 'boolean'],
+    loose: true, // case-insensitive & convert using Boolean() [false: anything not in 'false' => true]
+  },
+
+  dateOptions: {
+    date: { format: 'YYYY-MM-DD', strict: strictDatetime, delimiters: ['-'] },
+    time: { strict: strictDatetime, strictSeparator: strictDatetime },
+  },
+
   errorMsgs: {
     // Static
     exists:   'must be included',
@@ -23,5 +38,5 @@ module.exports = {
       } (must be between ${
         min || 'anything'} & ${max || 'anything'}${isStr ? ' characters' : ''
       })`,
-  }
+  },
 }
