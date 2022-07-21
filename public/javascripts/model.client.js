@@ -13,7 +13,15 @@ $( 'input#clearForm' ).on('click', function() { $( 'input[type="hidden"]' ).val(
 /* Select row for editing */
 $( 'tr.tableRow' ).on('click', function() {
   $(this).children('td').each(function() {
-    $( '#'+$(this).attr('data-key') ).val($(this).text());
+      var elem = $( '#'+$(this).attr('data-key') );
+      var val = $(this).text();
+      
+      if (elem.attr('type') === 'checkbox') {
+        elem.prop('checked', val.toLowerCase() !== 'false' && val != false);
+      } else {
+        elem.val(val);
+      }
+      return true;
   });
 });
 

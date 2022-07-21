@@ -1,6 +1,6 @@
 const { openDb, getDb } = require('../libs/db')
 const services = require('../services/db.services')
-const { sanitizeSchemaData, schemaFromConfig, appendAndSort } = require('../utils/db.utils')
+const { sanitizeSchemaData, schemaFromConfig, boolsFromConfig, appendAndSort } = require('../utils/db.utils')
 const { defaults: configDefaults, limits: configLimits } = require('../../config/models.cfg')
 const { hasDupes, caseInsensitiveObject } = require('../utils/common.utils')
 const errors = require('../config/errors.internal')
@@ -23,6 +23,7 @@ class Model {
     this.limits = limits != null ? limits : configLimits[title]
     this.primaryId = primaryId
     this.bitmapFields = []
+    this.boolFields = boolsFromConfig(title)
     this.getAdapter = typeof getAdapter === 'function' ? getAdapter : null
     this.setAdapter = typeof setAdapter === 'function' ? setAdapter : null
 

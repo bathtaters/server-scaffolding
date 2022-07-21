@@ -33,6 +33,7 @@ module.exports = {
     [/INTEGER|REAL/i, 'number'],
     [/TEXT|BLOB/i, 'text'],
   ],
+  boolInputType: 'checkbox',
   
   // Mask values when reporting errors for these values
   mask: [ 'password', 'confirm' ],

@@ -1,5 +1,6 @@
 const errors = require('../config/errors.internal')
 const { extractId } = require('../utils/db.utils')
+const parseBoolean = require('../utils/validate.utils').parseBoolean(true)
 const searchURL = require('../../config/urls.cfg').gui.basic.find
 
 exports.labels = [ 'Search', 'Add', 'Update', 'Remove', 'Reset' ]
@@ -54,6 +55,6 @@ exports.modelActions = (Model) => ({
 
 // Filter function for Object
 const defaultFilter = (val,key) => val != null && val !== ''
-exports.filterFormData = (formData, filterCb = defaultFilter) => Object.entries(formData).reduce(
-  (filtered, [key, val]) => filterCb(val,key) ? Object.assign(filtered, { [key]: val }) : filtered
-, {})
+exports.filterFormData = (formData, boolFields = [], filterCb = defaultFilter) => Object.entries(formData).reduce(
+  (filtered, [key, val]) => filterCb(val,key) ? Object.assign(filtered, { [key]: boolFields.includes(key) ? parseBoolean(val) : val }) : filtered
+, boolFields.reduce((obj, key) => Object.assign(obj, { [key]: false }), {}))

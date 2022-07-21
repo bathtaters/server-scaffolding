@@ -40,6 +40,7 @@ button.toggle-password.small {
 }
 
 /* CSS Grid styling (for form.mixin checkboxes) */
+fieldset > .row { align-items: flex-end; }
 .grid {
   display: grid;
   justify-items: center;

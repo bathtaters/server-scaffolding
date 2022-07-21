@@ -1,4 +1,4 @@
-const { varNameDict, sql2html, MASK_CHAR } = require('../../config/gui.cfg')
+const { varNameDict, sql2html, MASK_CHAR, boolInputType } = require('../../config/gui.cfg')
 
 exports.varName = (str) =>  typeof str !== 'string' ? str : Object.keys(varNameDict).includes(str) ? varNameDict[str] :
   str.charAt(0) === '_' ? exports.varName(str.slice(1)) :
@@ -20,10 +20,10 @@ exports.getTableFields = (schema, idKey) => {
 }
 
 // Convert SQLite data types to HTML input types
-exports.getSchema = (schema, idKey) => Object.entries(schema || {}).reduce((res, [key, val]) =>
+exports.getSchema = (schema, idKey, boolKeys) => Object.entries(schema || {}).reduce((res, [key, val]) =>
   key.toLowerCase() === idKey.toLowerCase() ? res : Object.assign(res, {
     // Key = Field Name: Val = input.type OR schemaType if no matches in sql2html
-    [key]: (sql2html.find(([re]) => re.test(val)) || {1:val})[1]
+    [key]: boolKeys.includes(key) ? boolInputType : (sql2html.find(([re]) => re.test(val)) || {1:val})[1]
   })
 , {})
 

@@ -17,6 +17,9 @@ exports.sanitizeSchemaData = (data, schema=null) => {
   , {})
 }
 
+exports.boolsFromConfig = (modelName) => !configTypes[modelName] ? [] :
+  Object.keys(configTypes[modelName]).filter((key) => getTypeArray(configTypes[modelName][key])[1] === 'boolean')
+
 exports.schemaFromConfig = (modelName, primaryKey) => {
   if (!configTypes[modelName]) return
 

@@ -18,6 +18,7 @@ module.exports = {
       name: "string",
       number: "float",
       comment: "string*?",
+      isOn: "boolean",
     },
   },
 
@@ -31,6 +32,7 @@ module.exports = {
     test: {
       name: "None",
       number: -1,
+      isOn: true,
     },
   },
 
