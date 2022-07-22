@@ -76,7 +76,7 @@ exports.modelsArrayToObj = (modelArr) => {
 }
 
 exports.getModelsString = (modelObj) => Object.entries(modelObj)
-  .map(([key, int]) => `${key}${wrapAccess(exports.modelAccessStr(int))}`).join(', ')
+  .map(([key, int]) => `${key} ${wrapAccess(exports.modelAccessStr(int))}`).join(', ')
 
 
 /* ---- CORS ADAPTERS ---- */

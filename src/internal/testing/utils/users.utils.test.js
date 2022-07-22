@@ -169,17 +169,17 @@ describe('modelsArrayToObj', () => {
 
 describe('getModelsString', () => {
   it('single model/access', () => {
-    expect(getModelsString({ test: 1 })).toBe('test[a]')
-    expect(getModelsString({ test: 2 })).toBe('test[b]')
+    expect(getModelsString({ test: 1 })).toBe('test [a]')
+    expect(getModelsString({ test: 2 })).toBe('test [b]')
   })
   it('multi model', () => {
-    expect(getModelsString({ testA: 1, testB: 2 })).toBe('testA[a], testB[b]')
+    expect(getModelsString({ testA: 1, testB: 2 })).toBe('testA [a], testB [b]')
   })
   it('multi access', () => {
-    expect(getModelsString({ test: 3 })).toBe('test[ab]')
+    expect(getModelsString({ test: 3 })).toBe('test [ab]')
   })
   it('no access', () => {
-    expect(getModelsString({ test: 0 })).toBe('test[-]')
+    expect(getModelsString({ test: 0 })).toBe('test [-]')
   })
 })
 
