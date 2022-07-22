@@ -3,12 +3,16 @@ const logger = require('../../libs/log')
 const warnSpy = jest.spyOn(logger, 'warn')
 const services = require('../../services/validate.services')
 const schemaSpy = jest.spyOn(services, 'getSchema')
-const { isBoolean, parseBoolean } = require('../../utils/validate.utils')
 
-// Mock Config
+// Mocks
 jest.mock('../../../config/models.cfg', () => ({
   types:  { setA: { a: 'type1', b: 'type2' }, setB: { c: 'type3', d: 'type4' }, },
   limits: { setA: { a: 'lims1', b: 'lims2' }, setB: { c: 'lims3' }, },
+}))
+jest.mock('../../utils/validate.utils', () => ({
+  ...jest.requireActual('../../utils/validate.utils'),
+  isBoolean: () => 'isBooleanFunc',
+  parseBoolean: () => 'parseBooleanFunc',
 }))
 
 // USES UNMOCKED VALIDATE.UTILS -- Ensure that passes the test first
@@ -369,8 +373,8 @@ describe('getSchema', () => {
     })
     it('boolean', () => {
       const result = services.getSchema('test','boolean',null,['isIn'],false)
-      expect(result.test).toHaveProperty('custom', { options: isBoolean, errorMessage: expect.any(String) })
-      expect(result.test).toHaveProperty('customSanitizer', { options: parseBoolean })
+      expect(result.test).toHaveProperty('custom', { options: 'isBooleanFunc', errorMessage: expect.any(String) })
+      expect(result.test).toHaveProperty('customSanitizer', { options: 'parseBooleanFunc' })
     })
     it('datetime', () => {
       const result = services.getSchema('test','datetime',null,['isIn'],false)

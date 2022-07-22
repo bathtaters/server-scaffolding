@@ -108,91 +108,115 @@ describe('formSettingsToValidate', () => {
 
 // Check custom Bool validator/sanitizer
 describe('isBoolean', () => {
-  it('succeeds on booleans', () => {
-    expect(isBoolean(true)).toBe(true)
-    expect(isBoolean(false)).toBe(true)
+  const isBoolStrict = isBoolean(false)
+  const isBoolLoose = isBoolean(true)
+
+  it('strict only succeeds for boolOpts.true/false', () => {
+    expect(isBoolStrict(21)).toBe(true)
+    expect(isBoolStrict(12)).toBe(true)
+    expect(isBoolStrict('testTrue')).toBe(true)
+    expect(isBoolStrict('testFalse')).toBe(true)
+    expect(isBoolStrict('otherTrue')).toBe(true)
+    expect(isBoolStrict('otherFalse')).toBe(true)
+    expect(isBoolStrict(0)).toBe(false)
+    expect(isBoolStrict(2)).toBe(false)
+    expect(isBoolStrict(210)).toBe(false)
+    expect(isBoolStrict(-12)).toBe(false)
+    expect(isBoolStrict('testTrue2')).toBe(false)
+    expect(isBoolStrict('otherFals')).toBe(false)
+    expect(isBoolStrict('notIncluded')).toBe(false)
+    expect(isBoolLoose('true')).toBe(false)
+    expect(isBoolLoose('false')).toBe(false)
+    expect(isBoolStrict(true)).toBe(false)
+    expect(isBoolStrict(false)).toBe(false)
   })
-  it('succeeds on boolean strings', () => {
-    expect(isBoolean('true')).toBe(true)
-    expect(isBoolean('false')).toBe(true)
-    expect(isBoolean('')).toBe(true)
+  it('loose succeeds if string in boolOpts.true/false', () => {
+    expect(isBoolLoose('testTrue')).toBe(true)
+    expect(isBoolLoose('testFalse')).toBe(true)
+    expect(isBoolLoose('otherTrue')).toBe(true)
+    expect(isBoolLoose('otherFalse')).toBe(true)
+    expect(isBoolLoose('testTrue2')).toBe(false)
+    expect(isBoolLoose('otherFals')).toBe(false)
+    expect(isBoolLoose('notIncluded')).toBe(false)
+    expect(isBoolLoose('true')).toBe(false)
+    expect(isBoolLoose('false')).toBe(false)
   })
-  it('succeeds on 0/1 ints', () => {
-    expect(isBoolean(0)).toBe(true)
-    expect(isBoolean(1)).toBe(true)
-  })
-  it('succeeds on 0/1 strings', () => {
-    expect(isBoolean('0')).toBe(true)
-    expect(isBoolean('1')).toBe(true)
-  })
-  it('succeeds on other boolean strings', () => {
-    expect(isBoolean('yes')).toBe(true)
-    expect(isBoolean('no')).toBe(true)
-    expect(isBoolean('on')).toBe(true)
-    expect(isBoolean('off')).toBe(true)
-  })
-  it('fails on non-boolean strings', () => {
-    expect(isBoolean('truthy')).toBe(false)
-    expect(isBoolean('a')).toBe(false)
-    expect(isBoolean('TEST')).toBe(false)
-  })
-  it('fails on non-boolean types', () => {
-    expect(isBoolean({ test: true })).toBe(false)
-    expect(isBoolean([ 1, 2, 3 ])).toBe(false)
-    expect(isBoolean(null)).toBe(false)
-    expect(isBoolean(undefined)).toBe(false)
-  })
-  it('check loose matches', () => {
-    expect(isBoolean('FALSE')).toBe(looseBools)
-    expect(isBoolean('ofF')).toBe(looseBools)
-    expect(isBoolean(12)).toBe(looseBools)
+  it('loose succeeds if val type in boolOpts.types', () => {
+    expect(isBoolLoose(21)).toBe(true)
+    expect(isBoolLoose(1)).toBe(true)
+    expect(isBoolLoose(-123)).toBe(true)
+    expect(isBoolLoose(12345)).toBe(true)
+    expect(isBoolLoose(() => {})).toBe(false)
+    expect(isBoolLoose({ a: 1 })).toBe(false)
+    expect(isBoolLoose([ 1, 2, 3 ])).toBe(false)
+    expect(isBoolLoose()).toBe(false)
+    expect(isBoolLoose(null)).toBe(false)
+    expect(isBoolLoose(12n)).toBe(false)
+    expect(isBoolLoose(true)).toBe(false)
+    expect(isBoolLoose(false)).toBe(false)
   })
 })
 describe('parseBoolean', () => {
-  it('parses booleans', () => {
-    expect(parseBoolean(true)).toBe(true)
-    expect(parseBoolean(false)).toBe(false)
-  })
-  it('parses boolean strings', () => {
-    expect(parseBoolean('true')).toBe(true)
-    expect(parseBoolean('false')).toBe(false)
-    expect(parseBoolean('')).toBe(false)
-  })
-  it('parses 0/1 ints', () => {
-    expect(parseBoolean(0)).toBe(false)
-    expect(parseBoolean(1)).toBe(true)
-  })
-  it('parses 0/1 strings', () => {
-    expect(parseBoolean('0')).toBe(false)
-    expect(parseBoolean('1')).toBe(true)
-  })
-  it('parses other boolean strings', () => {
-    expect(parseBoolean('yes')).toBe(true)
-    expect(parseBoolean('no')).toBe(false)
-    expect(parseBoolean('on')).toBe(true)
-    expect(parseBoolean('off')).toBe(false)
-  })
-  it('parses non-boolean strings', () => {
-    expect(parseBoolean('truthy')).toBe(true)
-    expect(parseBoolean('a')).toBe(true)
-    expect(parseBoolean('TEST')).toBe(true)
-  })
-  it('parses non-boolean types', () => {
-    expect(parseBoolean({ test: true })).toBe(true)
-    expect(parseBoolean([ 1, 2, 3 ])).toBe(true)
-    expect(parseBoolean(12)).toBe(true)
-  })
-  it('parses loose matches', () => {
-    expect(parseBoolean('FALSE')).toBe(!looseBools)
-    expect(parseBoolean('ofF')).toBe(!looseBools)
-    expect(parseBoolean(null)).toBe(!looseBools)
-    expect(parseBoolean(undefined)).toBe(!looseBools)
-  })
-})
+  const parseStrict = parseBoolean(false)
+  const parseLoose = parseBoolean(true)
 
-describe('dateOptions', () => {
-  it('hasDate', () => { expect(dateOptions).toHaveProperty('date') })
-  it('hasTime', () => { expect(dateOptions).toHaveProperty('time') })
+  it('strict converts boolOpts.false to false', () => {
+    expect(parseStrict(12)).toBe(false)
+    expect(parseStrict('testFalse')).toBe(false)
+    expect(parseStrict('otherFalse')).toBe(false)
+  })
+  it('strict converts boolOpts.true to true', () => {
+    expect(parseStrict(21)).toBe(true)
+    expect(parseStrict('testTrue')).toBe(true)
+    expect(parseStrict('otherTrue')).toBe(true)
+  })
+  it('strict fallsback to true', () => {
+    expect(parseStrict('')).toBe(true)
+    expect(parseStrict('otherFals')).toBe(true)
+    expect(parseStrict('testFalseA')).toBe(true)
+    expect(parseStrict('anyOtherString...')).toBe(true)
+    expect(parseStrict(1)).toBe(true)
+    expect(parseStrict(-123)).toBe(true)
+    expect(parseStrict(12345)).toBe(true)
+    expect(parseStrict(() => {})).toBe(true)
+    expect(parseStrict({ a: 1 })).toBe(true)
+    expect(parseStrict([ 1, 2, 3 ])).toBe(true)
+    expect(parseStrict()).toBe(true)
+    expect(parseStrict(null)).toBe(true)
+    expect(parseStrict(12n)).toBe(true)
+    expect(parseStrict(true)).toBe(true)
+    expect(parseStrict(false)).toBe(true)
+  })
+  it('loose converts boolOpts.false strings to false', () => {
+    expect(parseLoose('testFalse')).toBe(false)
+    expect(parseLoose('otherFalse')).toBe(false)
+  })
+  it('loose converts boolOpts.true to true', () => {
+    expect(parseLoose('testTrue')).toBe(true)
+    expect(parseLoose('otherTrue')).toBe(true)
+  })
+  it('loose is case-insensitive', () => {
+    expect(parseLoose('TESTTRUE')).toBe(true)
+    expect(parseLoose('testFALSE')).toBe(false)
+    expect(parseLoose('OtHerTRuE')).toBe(true)
+    expect(parseLoose('otherfalse')).toBe(false)
+  })
+  it('loose uses Boolean() for non-strings', () => {
+    expect(parseLoose(0)).toBe(false)
+    expect(parseLoose(12)).toBe(true)
+    expect(parseLoose(-123)).toBe(true)
+    expect(parseLoose(12345)).toBe(true)
+    expect(parseLoose(() => {})).toBe(true)
+    expect(parseLoose({})).toBe(true)
+    expect(parseLoose({ a: 1 })).toBe(true)
+    expect(parseLoose([])).toBe(true)
+    expect(parseLoose()).toBe(false)
+    expect(parseLoose(null)).toBe(false)
+    expect(parseLoose(0n)).toBe(false)
+    expect(parseLoose(12n)).toBe(true)
+    expect(parseLoose(true)).toBe(true)
+    expect(parseLoose(false)).toBe(false)
+  })
 })
 
 describe('deepUnescape', () => {
@@ -281,4 +305,12 @@ jest.mock('validator', () => ({ default: {
 }}))
 jest.mock('../../utils/common.utils', () => ({
   deepMap: jest.fn((val,cb) => cb(val))
+}))
+jest.mock('../../config/validate.cfg', () => ({
+  boolOptions: {
+    true:  [21, 'testTrue',  'otherTrue'],
+    false: [12, 'testFalse', 'otherFalse'],
+    types: ['string', 'number'],
+    loose: true,
+  },
 }))
