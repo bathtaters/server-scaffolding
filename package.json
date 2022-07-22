@@ -10,7 +10,7 @@
     "reload": "pm2 reload ecosystem.config.js && pm2 logs",
     "trace-sync": "node --trace-sync-io ./src/internal/server.js",
     "inspect": "nodemon --inspect ./src/internal/server.js",
-    "unlock-user": "node ./src/internal/models/Users.unlock.js",
+    "unlock-user": "node ./src/internal/utils/Users.unlock.js",
     "test": "jest ./src/"
   },
   "keywords": [],

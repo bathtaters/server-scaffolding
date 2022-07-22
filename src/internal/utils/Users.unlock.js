@@ -12,9 +12,9 @@ async function main() {
 
   let exitCode = 0
   try {
-    const Users = require('./Users')
+    const Users = require('../models/Users')
     await Users.isInitialized
-    await Users.incFailCount(null, true, username, 'username')
+    await Users.incFailCount({ username }, { reset: true, idKey: 'username' })
   } catch (err) {
     logger.error(`Unable to unlock ${username}.`)
     logger.error(err)
