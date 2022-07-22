@@ -136,7 +136,7 @@ class Model {
     data = sanitizeSchemaData(data, this.schema)
     if (!Object.keys(data).length) throw errors.noData()
 
-    const current = await this[onChangeCb ? 'get' : 'count'](id, idKey || this.primaryId, true)
+    const current = await this[onChangeCb ? 'get' : 'count'](id, idKey, true)
     if (!current) throw errors.noEntry(id)
 
     if (onChangeCb) {
