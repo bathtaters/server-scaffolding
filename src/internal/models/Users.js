@@ -13,21 +13,20 @@ class Users extends Model {
     super('_users', { schema: schemaAdapter, defaults: false, getAdapter, setAdapter })
     this.bitmapFields.push('access')
     this.validTimestamps = Object.keys(this.schema).filter((k) => timestampKeyRegEx.test(k)).map((k) => k.match(timestampKeyRegEx)[1])
-    this.bgThread = Promise.resolve()
   }
 
   async get(id, idKey, raw = false, updateTimestamp = null, skipCounter = false) {
     if (updateTimestamp && !this.validTimestamps.includes(updateTimestamp)) 
       return logger.warn(`Ignoring request to update invalid '${updateTimestamp}Timestamp': ${id}`)
 
-    const user = super.get(id, idKey || this.primaryId, raw)
+    const user = await super.get(id, idKey || this.primaryId, raw)
 
     if (!id && Array.isArray(user)) return user
     if (!user) return user
 
     if (updateTimestamp && user[this.primaryId]) {
       const counter = skipCounter ? {} : { [`${updateTimestamp}Count`]: (user[`${updateTimestamp}Count`] || 0) + 1 }
-      this.bgThread = await super.update(user[this.primaryId], { [`${updateTimestamp}Time`]: new Date().toJSON(), ...counter })
+      await super.update(user[this.primaryId], { [`${updateTimestamp}Time`]: new Date().toJSON(), ...counter })
     }
     return user
   }
@@ -80,16 +79,6 @@ class Users extends Model {
     return super.update(id, { token: generateToken() })
   }
 
-  async incFailCount(user, reset = false, id = null, idKey = null) {
-    if (!user && !id) throw errors.noID()
-    if (!user) user = await super.get(id, idKey, true)
-    if (!user) throw errors.noEntry(id)
-    
-    if (reset) return super.update(user.id, { failCount: 0, failTime: null, locked: false, guiCount: (user.guiCount || 0) + 1 })
-    if (isPastWindow(user)) return super.update(user.id, { failCount: 1, failTime: new Date().toJSON(), locked: false })
-    return super.update(user.id, { failCount: (user.failCount || 0) + 1, failTime: new Date().toJSON(), locked: isLocked(user) })
-  }
-
   async checkPassword(username, password, accessLevel) {
     if (!isPm2 && !(await this.count()))
       return this.add({ username, password, access: accessInt(accessLevel) })
@@ -100,7 +89,13 @@ class Users extends Model {
         })
     
     return super.get(username.toLowerCase(), 'username', true).then(
-      testPassword(password, accessInt(accessLevel), (pass, user) => this.incFailCount(user, pass))
+      testPassword(
+        password, accessInt(accessLevel),
+        (pass, user) => this.incFailCount(user, {
+          reset: pass,
+          updateCB: (data, { guiCount = 0 }) => { data.guiCount = guiCount + 1 }
+        })
+      )
     )
   }
 
@@ -124,6 +119,20 @@ class Users extends Model {
     return super.get().then((users) => users.every((user) =>
       user[this.primaryId] === ignoreId || user.username !== username) ? 0 : 'Username already exists'
     )
+  }
+
+  async incFailCount(userData, { reset = false, idKey, updateCb } = {}) {
+    let user = userData
+    if (!user || (idKey && !(idKey in user))) throw errors.noID()
+    if (idKey) user = await this.get(user[idKey], idKey, true)
+    if (!user) throw errors.noEntry(userData[idKey || this.primaryId])
+    
+    let newData = reset ? { failCount: 0, failTime: null, locked: false } :
+      isPastWindow(user) ? { failCount: 1, failTime: new Date().toJSON(), locked: false } :
+      { failCount: (user.failCount || 0) + 1, failTime: new Date().toJSON(), locked: isLocked(user) }
+    
+    if (updateCb) newData = updateCb(newData, user) || newData
+    return super.update(user[this.primaryId], newData, this.primaryId)
   }
 }
 
