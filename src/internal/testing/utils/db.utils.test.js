@@ -1,9 +1,10 @@
-const { extractId, appendAndSort, sanitizeSchemaData, schemaFromConfig } = require('../../utils/db.utils')
+const { extractId, appendAndSort, sanitizeSchemaData, boolsFromConfig, schemaFromConfig } = require('../../utils/db.utils')
 
 jest.mock('../../utils/validate.utils', () => ({ getTypeArray: (type) => [type, type] }))
 jest.mock('../../../config/models.cfg', () => ({ types: {
   test1: { a: 'string', b: 'int', c: 'object' },
   test2: { d: 'float',  e: 'boolean' },
+  test3: { f: 'string',  g: 'boolean', h: 'int', i: 'boolean' },
 }}))
 const configSchema = {
   test1: { a: 'TEXT', b: 'INTEGER', c: 'TEXT' },
@@ -46,9 +47,21 @@ describe('sanitizeSchemaData', () => {
   })
 })
 
+describe('boolsFromConfig', () => {
+  it('builds list of all booleans in object', () => {
+    expect(boolsFromConfig('test2')).toEqual(['e'])
+    expect(boolsFromConfig('test3')).toEqual(['g','i'])
+  })
+  it('always returns array', () => {
+    expect(boolsFromConfig('test1')).toEqual([])
+    expect(boolsFromConfig('other')).toEqual([])
+    expect(boolsFromConfig(1)).toEqual([])
+  })
+})
+
 describe('schemaFromConfig', () => {
   it('fails if modelName not in config', () => {
-    expect(schemaFromConfig('test3')).toBeUndefined()
+    expect(schemaFromConfig('other')).toBeUndefined()
     expect(schemaFromConfig('test4')).toBeUndefined()
   })
   it('converts types', () => {

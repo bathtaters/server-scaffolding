@@ -4,6 +4,7 @@ jest.mock('../../../config/gui.cfg', () => ({
   varNameDict: { testDict: 'TEST' },
   sql2html: [ [/SQL/, 'html'], [/TEST/, 'new'], ],
   MASK_CHAR: '*',
+  boolInputType: 'BOOL_CFG',
 }))
 
 describe('varName', () => {
@@ -50,6 +51,10 @@ describe('getSchema', () => {
   it('filters out idKey', () => {
     expect(Object.keys(getSchema({ a: '1', b: '2', c: '3' }, 'a'))).toEqual(['b','c'])
     expect(Object.keys(getSchema({ a: '1', b: '2', c: '3' }, 'b'))).toEqual(['a','c'])
+  })
+  it('forces boolKeys to cfg.boolInputType', () => {
+    expect(getSchema({ a: 'SQL', b: 'TEST', c: 'MORE_SQL!' },'',['b','c']))
+      .toEqual({ a: 'html', b: 'BOOL_CFG', c: 'BOOL_CFG' })
   })
 })
 

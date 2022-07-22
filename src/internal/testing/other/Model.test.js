@@ -71,6 +71,10 @@ describe('Model constructor', () => {
     expect(model.getAdapter).toBeFalsy()
     expect(model.setAdapter).toBeFalsy()
   })
+  it('adds boolean schema keys to boolFields', () => {
+    const model = new Model('test', { ...options, getAdapter: 'test', setAdapter: 12 })
+    expect(model.boolFields).toEqual(['bools'])
+  })
   it('isInit resolves to true on success', () => {
     expect.assertions(1)
     return expect(new Model('test', { ...options }).isInitialized)
@@ -512,6 +516,40 @@ describe('Model update', () => {
       expect(sanitizeSchemaData).toBeCalledWith({ data: 1 }, modelOptions.schema)
     })
   })
+  it('calls changeCb with before/after data', () => {
+    expect.assertions(3)
+    const callback = jest.fn()
+    services.get.mockResolvedValueOnce({ data: 'old' })
+    return TestModel.update('inp', { data: 'new' }, 'key', callback).then(() => {
+      expect(callback).toBeCalledTimes(1)
+      expect(callback).toBeCalledWith({ data: 'new' }, { data: 'old' })
+      expect(modelOptions.getAdapter).toBeCalledTimes(0) // get(raw=true)
+    })
+  })
+  it('passes changeCb result to SQL', () => {
+    expect.assertions(2)
+    const callback = jest.fn(() => ({ changedKey: 'changedVal' }))
+    return TestModel.update('inp', { data: 1 }, 'key', callback).then(() => {
+      expect(services.run).toBeCalledTimes(1)
+      expect(services.run).toBeCalledWith(
+        expect.anything(),
+        expect.stringContaining('changedKey'),
+        expect.arrayContaining(['changedVal'])
+      )
+    })
+  })
+  it('uses original data if changeCb returns falsy', () => {
+    expect.assertions(2)
+    const callback = jest.fn()
+    return TestModel.update('inp', { inputKey: 'inputVal' }, 'key', callback).then(() => {
+      expect(services.run).toBeCalledTimes(1)
+      expect(services.run).toBeCalledWith(
+        expect.anything(),
+        expect.stringContaining('inputKey'),
+        expect.arrayContaining(['inputVal'])
+      )
+    })
+  })
   it('rejects on missing ID', () => {
     expect.assertions(1)
     return TestModel.update(null, { data: 1 }, 'key').catch((err) => {
@@ -751,7 +789,8 @@ jest.mock('../../services/db.services', () => ({
 }))
 
 jest.mock('../../utils/db.utils', () => ({
-  sanitizeSchemaData: jest.fn((schema) => schema),
+  sanitizeSchemaData: jest.fn((o) => o),
   schemaFromConfig: jest.fn(() => ({ config: 'SCHEMA' })),
+  boolsFromConfig: () => ['bools'],
   appendAndSort: jest.fn((list) => list),
 }))
