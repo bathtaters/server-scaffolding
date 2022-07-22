@@ -62,7 +62,6 @@ exports.preValidateAdapter = (formData, isSearch) => {
   if (isSearch) delete formData.models
   else if (formData.models && typeof formData.models === 'string') formData.models = formData.models.split(',')
   if (formData.access && typeof formData.access === 'string') formData.access = formData.access.split(',')
-  if (!formData.locked) formData.locked = 'false'
   return formData
 }
 
