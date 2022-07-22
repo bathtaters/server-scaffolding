@@ -1,4 +1,11 @@
 const Users = require('../../models/Users')
+const { rateLimiter } = require('../../config/users.cfg')
+const errors = require('../../config/errors.internal')
+
+jest.mock('../../config/users.cfg', () => ({
+  ...jest.requireActual('../../config/users.cfg'),
+  rateLimiter: { autoUnlock: false, maxFails: 10, failWindow: 1000 }
+}))
 
 const getUserTime = (id, timePrefix) => Users.get(id).then((data) => data[timePrefix+'Time'] && new Date(data[timePrefix+'Time']).getTime())
 
@@ -29,6 +36,34 @@ describe('test Users model', () => {
       expect(await Users.checkPassword(uname, pword, 'gui')).toEqual(expect.objectContaining({ id: userId }))
       expect(await Users.checkPassword(uname, pword, 'admin')).toEqual({ fail: expect.any(String) })
     })
+
+    it('tests lock status', async () => {
+      expect(await Users.update(userId, { access: ['gui'], locked: true })).toEqual({ success: true })
+      expect(await Users.checkPassword(uname, pword, 'gui')).toEqual({ fail: expect.any(String) })
+      
+      expect(await Users.update(userId, { locked: false })).toEqual({ success: true })
+      expect(await Users.checkPassword(uname, pword, 'gui')).toEqual(expect.objectContaining({ id: userId }))
+    })
+
+    it('calls incFailCount on fail', async () => {
+      const incFailSpy = jest.spyOn(Users, 'incFailCount')
+      expect(await Users.checkPassword(uname, 'wrong', 'gui')).toHaveProperty('fail')
+      expect(incFailSpy).toBeCalledTimes(1)
+      expect(incFailSpy).toBeCalledWith(
+        expect.objectContaining({ id: userId }),
+        expect.objectContaining({ reset: false })
+      )
+    })
+
+    it('calls incFailCount on success', async () => {
+      const incFailSpy = jest.spyOn(Users, 'incFailCount')
+      expect(await Users.checkPassword(uname, pword, 'gui')).toHaveProperty('id', userId)
+      expect(incFailSpy).toBeCalledTimes(1)
+      expect(incFailSpy).toBeCalledWith(
+        expect.objectContaining({ id: userId }),
+        expect.objectContaining({ reset: true })
+      )
+    })
   })
 
 
@@ -49,10 +84,16 @@ describe('test Users model', () => {
       expect(await Users.checkToken(userToken, 'api')).toEqual(expect.objectContaining({ id: userId }))
       expect(await Users.checkToken(userToken, 'gui')).toBeFalsy()
     })
+    it('tests lock status', async () => {
+      expect(await Users.update(userId, { locked: true })).toEqual({ success: true })
+      expect(await Users.checkToken(userToken, 'api')).toBeFalsy()
+      expect(await Users.update(userId, { locked: false })).toEqual({ success: true })
+      expect(await Users.checkToken(userToken, 'api')).toEqual(expect.objectContaining({ id: userId }))
+    })
     it('updates apiTimestamp', async () => {
       const getSpy = jest.spyOn(Users, 'get')
       expect(await Users.checkToken(userToken, 'api')).toEqual(expect.objectContaining({ id: userId }))
-      expect(getSpy).toBeCalledWith(expect.any(String), expect.any(String), 'api')
+      expect(getSpy).toBeCalledWith(expect.any(String), expect.any(String), expect.any(Boolean), 'api')
     })
   })
 
@@ -64,7 +105,7 @@ describe('test Users model', () => {
 
     it('Add & Update username use it', async () => {
       expect(validSpy).toBeCalledTimes(0)
-      userId = await Users.add({ username: 'original' })
+      userId = await Users.add({ username: 'original', password: 'origpass' })
       expect(validSpy).toBeCalledTimes(1)
       await Users.update(userId, { username: uname })
       expect(validSpy).toBeCalledTimes(2)
@@ -87,7 +128,7 @@ describe('test Users model', () => {
 
   describe('regenToken', () => {
     let userId
-    beforeAll(async () => { userId = await Users.add({ username: uname }) })
+    beforeAll(async () => { userId = await Users.add({ username: uname, password: pword }) })
     afterAll(() => Users.remove(userId))
 
     it('Regenerates token', async () => {
@@ -99,9 +140,140 @@ describe('test Users model', () => {
   })
 
 
+  describe('incFailCount', () => {
+    let userId, userData
+    
+    beforeEach(async () => {
+      if (userId) await Users.remove(userId)
+      userId = await Users.add({ username: uname, password: pword, failCount: 0, locked: false })
+      userData = await Users.get(userId)
+    })
+    afterAll(() => Users.remove(userId))
+
+    it('uses injected userObj if provided', async () => {
+      const getSpy = jest.spyOn(Users, 'get')
+      const testStart = new Date().getTime()
+      expect(getSpy).toBeCalledTimes(1)
+
+      expect(await Users.incFailCount(userData)).toEqual({ success: true })
+      expect(getSpy).toBeCalledTimes(1)
+      userData = await Users.get(userId)
+      expect(userData).toHaveProperty('failCount', 1)
+      expect(new Date(userData.failTime).getTime()).toBeGreaterThanOrEqual(testStart)
+    })
+
+    it('looks up user if idKey provided', async () => {
+      const getSpy = jest.spyOn(Users, 'get')
+      const testStart = new Date().getTime()
+      expect(getSpy).toBeCalledTimes(1)
+
+      expect(await Users.incFailCount({ id: userId }, { idKey: 'id' })).toEqual({ success: true })
+      expect(getSpy).toBeCalledTimes(2)
+      userData = await Users.get(userId)
+      expect(userData).toHaveProperty('failCount', 1)
+      expect(new Date(userData.failTime).getTime()).toBeGreaterThanOrEqual(testStart)
+    })
+
+    it('resets counter/time/lock if reset=true', async () => {
+      expect(await Users.update(userId, { locked: true })).toEqual({ success: true })
+      userData = await Users.get(userId)
+      expect(userData).toHaveProperty('failCount', 10)
+      expect(userData).toHaveProperty('failTime', expect.any(String))
+      expect(userData).toHaveProperty('locked', 1)
+
+      expect(await Users.incFailCount(userData, { reset: true })).toEqual({ success: true })
+      userData = await Users.get(userId)
+      expect(userData).toHaveProperty('failCount', 0)
+      expect(userData).toHaveProperty('failTime', null)
+      expect(userData).toHaveProperty('locked', 0)
+    })
+
+    it('locks if count >= max', async () => {
+      expect(await Users.update(userId, { failCount: 9 })).toEqual({ success: true })
+      userData = await Users.get(userId)
+
+      expect(await Users.incFailCount(userData)).toEqual({ success: true })
+      userData = await Users.get(userId)
+      expect(userData).toHaveProperty('failCount', 10)
+      expect(userData).toHaveProperty('locked', 1)
+    })
+
+    it('resets then adds 1 if past window', async () => {
+      expect(await Users.incFailCount(userData)).toEqual({ success: true })
+      expect(await Users.update(userId, { failCount: 5 })).toEqual({ success: true })
+      await new Promise((res) => setTimeout(res, 1010))
+      userData = await Users.get(userId)
+
+      expect(await Users.incFailCount(userData)).toEqual({ success: true })
+      userData = await Users.get(userId)
+      expect(userData).toHaveProperty('failCount', 1)
+    })
+
+    it('autoUnlocks if enabled & past window', async () => {
+      rateLimiter.autoUnlock = true
+      expect(await Users.update(userId, { locked: true })).toEqual({ success: true })
+      await new Promise((res) => setTimeout(res, 1010))
+      userData = await Users.get(userId)
+
+      expect(await Users.incFailCount(userData)).toEqual({ success: true })
+      userData = await Users.get(userId)
+      expect(userData).toHaveProperty('locked', 0)
+      expect(userData).toHaveProperty('failCount', 1)
+    })
+
+    it('remains locked autoUnlock=false', async () => {
+      rateLimiter.autoUnlock = false
+      expect(await Users.update(userId, { locked: true })).toEqual({ success: true })
+      await new Promise((res) => setTimeout(res, 1010))
+      userData = await Users.get(userId)
+
+      expect(await Users.incFailCount(userData)).toEqual({ success: true })
+      userData = await Users.get(userId)
+      expect(userData.failCount).toBeGreaterThanOrEqual(10)
+      expect(userData).toHaveProperty('locked', 1)
+    })
+
+    it('calls updateCb and uses result', async () => {
+      const updateCb = jest.fn(() => ({ failCount: 12 }))
+      expect(await Users.incFailCount(userData, { updateCb })).toEqual({ success: true })
+
+      userData = await Users.get(userId)
+      expect(updateCb).toBeCalledTimes(1)
+      expect(updateCb).toBeCalledWith(
+        { failCount: 1, failTime: expect.any(String), locked: false },
+        expect.objectContaining({ id: userData.id })
+      )
+      expect(userData).toHaveProperty('failCount', 12)
+    })
+
+    it('uses original update if updateCb returns falsy', async () => {
+      const updateCb = jest.fn()
+      expect(await Users.incFailCount(userData, { updateCb })).toEqual({ success: true })
+
+      userData = await Users.get(userId)
+      expect(updateCb).toBeCalledTimes(1)
+      expect(updateCb).toBeCalledWith(
+        { failCount: 1, failTime: expect.any(String), locked: false },
+        expect.objectContaining({ id: userData.id })
+      )
+      expect(userData).toHaveProperty('failCount', 1)
+    })
+
+    it('throws on no user or id or user not found', async () => {
+      expect.assertions(3)
+      await expect(Users.incFailCount())
+        .rejects.toEqual(errors.noID())
+      await expect(Users.incFailCount({}, { idKey: 'id' }))
+        .rejects.toEqual(errors.noID())
+      await expect(Users.incFailCount({ id: 'fail' }, { idKey: 'id' }))
+        .rejects.toEqual(errors.noEntry('fail'))
+    })
+  })
+
+
   describe('extended CRUD', () => {
     let userId, extraId
-    beforeAll(async () => { userId = await Users.add({ username: uname }) })
+    beforeAll(async () => { userId = await Users.add({ username: uname, access: [] }) })
     afterAll(() => Users.create(true))
 
     it('Adds timestamps on get', async () => {
@@ -109,18 +281,62 @@ describe('test Users model', () => {
       expect(await getUserTime(userId, 'api')).toBeFalsy()
       expect(await getUserTime(userId, 'gui')).toBeFalsy()
 
-      await Users.get(userId, null, 'api')
-      await Users.bgThread
+      await Users.get(userId, null, false, 'api')
       expect(await getUserTime(userId, 'gui')).toBeFalsy()
       const aTime = await getUserTime(userId, 'api')
       expect(aTime).toBeGreaterThanOrEqual(startTime)
       expect(aTime).toBeLessThanOrEqual(new Date().getTime())
 
-      await Users.get(userId, null, 'gui')
-      await Users.bgThread
+      await Users.get(userId, null, false, 'gui')
       const gTime = await getUserTime(userId, 'gui')
       expect(gTime).toBeGreaterThanOrEqual(startTime)
       expect(gTime).toBeLessThanOrEqual(new Date().getTime())
+    })
+
+    it('Adds to visit counter', async () => {
+      const aStart = await Users.get(userId).then(({ apiCount }) => apiCount)
+      const gStart = await Users.get(userId).then(({ guiCount }) => guiCount)
+
+      await Users.get(userId, null, false, 'api', false)
+      expect(await Users.get(userId).then(({ apiCount }) => apiCount)).toBe(aStart + 1)
+      expect(await Users.get(userId).then(({ guiCount }) => guiCount)).toBe(gStart)
+
+      await Users.get(userId, null, false, 'gui', false)
+      expect(await Users.get(userId).then(({ apiCount }) => apiCount)).toBe(aStart + 1)
+      expect(await Users.get(userId).then(({ guiCount }) => guiCount)).toBe(gStart + 1)
+    })
+
+    it('Skips add to visit counter', async () => {
+      const aStart = await Users.get(userId).then(({ apiCount }) => apiCount)
+      const gStart = await Users.get(userId).then(({ guiCount }) => guiCount)
+
+      await Users.get(userId, null, false, 'api', true)
+      expect(await Users.get(userId).then(({ apiCount }) => apiCount)).toBe(aStart)
+      expect(await Users.get(userId).then(({ guiCount }) => guiCount)).toBe(gStart)
+
+      await Users.get(userId, null, false, 'gui', true)
+      expect(await Users.get(userId).then(({ apiCount }) => apiCount)).toBe(aStart)
+      expect(await Users.get(userId).then(({ guiCount }) => guiCount)).toBe(gStart)
+    })
+
+    it('Updating lock sets failTime/failCount', async () => {
+      expect(await Users.get(userId)).toMatchObject({
+        locked: 0,
+        failTime: null,
+        failCount: 0,
+      })
+      expect(await Users.update(userId, { locked: true })).toEqual({ success: true })
+      expect(await Users.get(userId)).toMatchObject({
+        locked: 1,
+        failTime: expect.any(String),
+        failCount: rateLimiter.maxFails,
+      })
+      expect(await Users.update(userId, { locked: false })).toEqual({ success: true })
+      expect(await Users.get(userId)).toMatchObject({
+        locked: 0,
+        failTime: null,
+        failCount: 0,
+      })
     })
 
     it('Cannot enable GUI/admin access w/ no password', async () => {

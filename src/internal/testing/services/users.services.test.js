@@ -102,13 +102,17 @@ describe('User addAdapter', () => {
 })
 
 describe('User guiAdapter', () => {
-  const localeDateString = /^\d{1,2}\/\d{1,2}\/\d{4}, \d{1,2}:\d{2}:\d{2} [AP]M$/
+  const dateCountRegex = /^\d{1,2}\/\d{1,2}\/\d{4}, \d{1,2}:\d{2}:\d{2} [AP]M \[\d+\]$$/
   beforeEach(() => { testObj = {
     models: 'MODELS',
     access: 'ACCESS',
     cors: 'CORS',
-    guiTime: '2022-03-04T05:06:07',
-    apiTime: '2021-02-13T14:25:36',
+    guiCount:  11,
+    apiCount:  23,
+    failCount: 2,
+    guiTime:  '2022-03-04T05:06:07',
+    apiTime:  '2021-02-13T14:25:36',
+    failTime: '2022-06-21T12:16:41',
   } })
 
   it('decodes access', () => {
@@ -119,8 +123,9 @@ describe('User guiAdapter', () => {
   })
   it('formats dates', () => {
     let result = guiAdapter(testObj)
-    expect(result).toHaveProperty('guiTime', expect.stringMatching(localeDateString))
-    expect(result).toHaveProperty('apiTime', expect.stringMatching(localeDateString))
+    expect(result).toHaveProperty('guiTime',  expect.stringMatching(dateCountRegex))
+    expect(result).toHaveProperty('apiTime',  expect.stringMatching(dateCountRegex))
+    expect(result).toHaveProperty('failTime', expect.stringMatching(dateCountRegex))
   })
   it('decodes cors', () => {
     expect(guiAdapter(testObj)).toHaveProperty('cors', 'displayCors:CORS')
@@ -134,7 +139,8 @@ describe('User guiAdapter', () => {
   })
   it('array adapts each entry', () => {
     expect(guiAdapter([{ access: 'ACC' }, { models: 'MODS' }])).toEqual([
-      { access: 'accessArray, ACC' }, { models: 'getModelsString:MODS' }
+      expect.objectContaining({ access: 'accessArray, ACC' }),
+      expect.objectContaining({ models: 'getModelsString:MODS' }),
     ])
   })
   it('null returns empty array', () => {

@@ -12,6 +12,12 @@ describe('Test User Authentication', () => {
 
 
   describe('GUI Authentication', () => {
+    test('Login fails while locked', async () => {
+      await updateUser(userInfo, { access: ['api','gui'], locked: true })
+      await request.post('/login').send(creds).expect(302).expect('Location', failRedir)
+      await updateUser(userInfo, { locked: false })
+      await request.post('/login').send(creds).expect(302).expect('Location', successRedir)
+    })
     test('API login fails', async () => {
       await updateUser(userInfo, { access: ['api'] })
       await request.post('/login').send(creds).expect(302).expect('Location', failRedir)
@@ -74,6 +80,12 @@ describe('Test User Authentication', () => {
     let header
     beforeAll(() => { header = { Authorization: `Bearer ${userInfo.token}` } })
 
+    test('User request fails while locked', async () => {
+      await updateUser(userInfo, { access: ['api','gui'], models: { default: read | write }, locked: true })
+      await request.get(apiPrefix).set(header).expect(403)
+      await updateUser(userInfo, { locked: false })
+      await request.get(apiPrefix).set(header).expect(200).expect('Content-Type', /json/)
+    })
     test('GUI User request fails', async () => {
       await updateUser(userInfo, { access: ['gui'], models: { default: read | write } })
       await request.get(apiPrefix).set(header).expect(403)
@@ -137,6 +149,12 @@ describe('Test User Authentication', () => {
   describe('Admin Authentication', () => {
     test('Admin can login to GUI', async () => {
       await updateUser(userInfo, { access: ['admin'] })
+      await request.post('/login').send(creds).expect(302).expect('Location', successRedir)
+    })
+    test('Admin fails GUI login while locked', async () => {
+      await updateUser(userInfo, { locked: true })
+      await request.post('/login').send(creds).expect(302).expect('Location', failRedir)
+      await updateUser(userInfo, { locked: false })
       await request.post('/login').send(creds).expect(302).expect('Location', successRedir)
     })
   })
