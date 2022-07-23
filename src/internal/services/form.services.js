@@ -1,6 +1,7 @@
 const errors = require('../config/errors.internal')
 const { extractId } = require('../utils/db.utils')
-const parseBoolean = require('../utils/validate.utils').parseBoolean(true)
+const { deepUnescape, parseBoolean } = require('../utils/validate.utils')
+const parseBool = parseBoolean(true)
 const searchURL = require('../../config/urls.cfg').gui.basic.find
 
 exports.labels = [ 'Search', 'Add', 'Update', 'Remove', 'Reset' ]
@@ -22,7 +23,7 @@ exports.modelActions = (Model) => ({
     if (!formData || !Object.keys(formData).length) return ''
     Model.boolFields.forEach((key) => { if (!formData[key]) delete formData[key] })
     if (!Object.keys(formData).length) return ''
-    return `${searchURL}?${new URLSearchParams(formData).toString()}`
+    return `${searchURL}?${new URLSearchParams(deepUnescape(formData)).toString()}`
   },
 
   // ADD
@@ -56,5 +57,5 @@ exports.modelActions = (Model) => ({
 // Filter function for Object
 const defaultFilter = (val,key) => val != null && val !== ''
 exports.filterFormData = (formData, boolFields = [], filterCb = defaultFilter) => Object.entries(formData).reduce(
-  (filtered, [key, val]) => filterCb(val,key) ? Object.assign(filtered, { [key]: boolFields.includes(key) ? parseBoolean(val) : val }) : filtered
+  (filtered, [key, val]) => filterCb(val,key) ? Object.assign(filtered, { [key]: boolFields.includes(key) ? parseBool(val) : val }) : filtered
 , boolFields.reduce((obj, key) => Object.assign(obj, { [key]: false }), {}))

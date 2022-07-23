@@ -1,4 +1,13 @@
 const { labels, labelsByAccess, modelActions, filterFormData } = require('../../services/form.services')
+const { deepUnescape } = require('../../utils/validate.utils')
+const errors = require('../../config/errors.internal')
+const prefix = require('../../../config/urls.cfg').gui.basic.find
+
+jest.mock('../../utils/db.utils', () => ({ extractId: (data, id) => [id,data] }))
+jest.mock('../../utils/validate.utils', () => ({
+  parseBoolean: () => () => 'parsed',
+  deepUnescape: jest.fn((o) => o)
+}))
 
 describe('labels', () => {
   it('is string array', () => {
@@ -23,7 +32,6 @@ describe('labelsByAccess', () => {
   })
 })
 
-jest.mock('../../utils/validate.utils', () => ({ parseBoolean: () => () => 'parsed' }))
 describe('filterFormData', () => {
   it('removes null values', () => {
     expect(filterFormData({ a: 1, b: null, c: 3 })).toEqual({ a: 1, c: 3 })
@@ -48,10 +56,6 @@ describe('filterFormData', () => {
   })
 })
 
-
-const errors = require('../../config/errors.internal')
-const prefix = require('../../../config/urls.cfg').gui.basic.find
-jest.mock('../../utils/db.utils', () => ({ extractId: (data, id) => [id,data] }))
 
 describe('modelActions', () => {
 
@@ -88,6 +92,13 @@ describe('modelActions', () => {
         search({}).then((res) => expect(res).toBe('')),
         search().then((res) => expect(res).toBe(''))
       ])
+    })
+    it('deep unescapes input', () => {
+      expect.assertions(2)
+      return search({ a: 1, b: '2', c: true }).then(() => {
+        expect(deepUnescape).toBeCalledTimes(1)
+        expect(deepUnescape).toBeCalledWith({ a: 1, b: '2', c: true })
+      })
     })
   })
 
