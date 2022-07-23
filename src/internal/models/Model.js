@@ -82,7 +82,7 @@ class Model {
 
     let text = [], params = []
     searchData.forEach(([key,val]) => {
-      if (!partialMatch || typeof val === 'number') {
+      if (!partialMatch) {
         text.push(`${key} = ?`)
         return params.push(val)
         
@@ -99,7 +99,11 @@ class Model {
       } if (typeof val === 'string') {
         text.push(`${key} LIKE ?`)
         return params.push(`%${val}%`)
-      }
+
+      } if (typeof val === 'number') {
+        text.push(`${key} = ?`)
+        return params.push(val)
+      } // Force exact match for numbers
       throw errors.badPartial(`${typeof val} (${key})`)
     })
     

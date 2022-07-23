@@ -331,6 +331,16 @@ describe('Model find', () => {
       TestModel.bitmapFields.pop()
     })
   })
+  it('forces exact match on number', () => {
+    expect.assertions(2)
+    return TestModel.find({ num: 7 }, true).then(() => {
+      expect(services.all).toBeCalledTimes(1)
+      expect(services.all).toBeCalledWith(
+        expect.anything(), expect.stringContaining('WHERE num = ?'), [7]
+      )
+      TestModel.bitmapFields.pop()
+    })
+  })
   it('returns result array on success', () => {
     expect.assertions(1)
     return TestModel.find({ data: 1 }).then((ret) => {
@@ -378,8 +388,8 @@ describe('Model find', () => {
   })
   it('rejects on non-string partial match', () => {
     expect.assertions(1)
-    return TestModel.find({ data: 1 }, true).catch((err) => {
-      expect(err).toEqual(errors.badPartial('number (data)'))
+    return TestModel.find({ data: [] }, true).catch((err) => {
+      expect(err).toEqual(errors.badPartial('object (data)'))
     })
   })
 })
@@ -776,7 +786,10 @@ jest.mock('../../libs/db', () => ({
   getDb: jest.fn(() => 'DB'), openDb: jest.fn().mockResolvedValue(true)
 }))
 
-jest.mock('../../utils/validate.utils', () => ({ deepUnescape: jest.fn((val) => val) }))
+jest.mock('../../utils/validate.utils', () => ({
+  deepUnescape: jest.fn((val) => val),
+  parseBoolean: () => () => false,
+}))
 
 jest.mock('../../utils/common.utils', () => ({
   hasDupes: jest.fn(() => false),
