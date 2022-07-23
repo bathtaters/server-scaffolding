@@ -6,7 +6,7 @@ module.exports = {
   // Data types
   types: {
     _users: userDefinitions.types,
-    test: testDefinitions.schema,
+    test: testDefinitions.types,
     
     base: {
       id: "int",

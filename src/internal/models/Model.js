@@ -1,29 +1,32 @@
 const { openDb, getDb } = require('../libs/db')
 const services = require('../services/db.services')
-const { sanitizeSchemaData, schemaFromConfig, boolsFromConfig, appendAndSort } = require('../utils/db.utils')
-const { defaults: configDefaults, limits: configLimits } = require('../../config/models.cfg')
+const { sanitizeSchemaData, schemaFromTypes, boolsFromTypes, appendAndSort } = require('../utils/db.utils')
+const { types: configTypes, defaults: configDefaults, limits: configLimits } = require('../../config/models.cfg')
 const { hasDupes, caseInsensitiveObject } = require('../utils/common.utils')
 const errors = require('../config/errors.internal')
-const { deepUnescape } = require('../utils/validate.utils')
+const { deepUnescape, parseBoolean } = require('../utils/validate.utils')
+const parseBool = parseBoolean(true)
 
 class Model {
 
-  constructor(title, { schema, defaults, limits, primaryId = 'id', getAdapter, setAdapter } = {}) {
-    if (!schema) schema = schemaFromConfig(title, primaryId)
-    if (typeof schema === 'function') schema = schema(schemaFromConfig(title, primaryId), title, primaryId)
+  constructor(title, { sqlSchema, types, defaults, limits, primaryId = 'id', getAdapter, setAdapter } = {}) {
+    if (types == null) types = configTypes[title]
 
-    if (!schema) throw new Error(`Schema for ${title} not provided and does not exist in validation.json.`)
-    if (hasDupes(Object.keys(schema).map((k) => k.toLowerCase()))) throw new Error(`Schema for ${title} contains duplicate key names: ${Object.keys(schema).join(', ')}`)
+    if (typeof sqlSchema === 'function') sqlSchema = sqlSchema(schemaFromTypes(types, primaryId), types, primaryId, title)
+    else if (!sqlSchema) sqlSchema = schemaFromTypes(types, primaryId)
+    if (!sqlSchema) throw new Error(`Schema for ${title} not provided and does not exist in models.cfg.`)
+    if (hasDupes(Object.keys(sqlSchema).map((k) => k.toLowerCase())))
+      throw new Error(`Schema for ${title} contains duplicate key names: ${Object.keys(sqlSchema).join(', ')}`)
 
-    if (!schema[primaryId]) schema[primaryId] = 'INTEGER PRIMARY KEY'
+    if (!sqlSchema[primaryId]) sqlSchema[primaryId] = 'INTEGER PRIMARY KEY'
 
     this.title = title
-    this.schema = sanitizeSchemaData(schema)
+    this.schema = sanitizeSchemaData(sqlSchema)
     this.defaults = defaults != null ? defaults : configDefaults[title]
     this.limits = limits != null ? limits : configLimits[title]
     this.primaryId = primaryId
     this.bitmapFields = []
-    this.boolFields = boolsFromConfig(title)
+    this.boolFields = boolsFromTypes(types)
     this.getAdapter = typeof getAdapter === 'function' ? getAdapter : null
     this.setAdapter = typeof setAdapter === 'function' ? setAdapter : null
 
@@ -79,13 +82,18 @@ class Model {
 
     let text = [], params = []
     searchData.forEach(([key,val]) => {
-      if (!partialMatch) {
+      if (!partialMatch || typeof val === 'number') {
         text.push(`${key} = ?`)
         return params.push(val)
         
       } if (this.bitmapFields.includes(key)) {
         val = +val
         text.push(`${key} ${val ? '&' : '='} ?`)
+        return params.push(val)
+
+      } if (this.boolFields.includes(key)) {
+        val = +parseBool(val)
+        text.push(`${key} = ?`)
         return params.push(val)
 
       } if (typeof val === 'string') {

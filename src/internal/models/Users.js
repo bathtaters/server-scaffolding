@@ -10,7 +10,7 @@ const { isPm2 } = require('../../config/meta')
 
 class Users extends Model {
   constructor() { 
-    super('_users', { schema: schemaAdapter, defaults: false, getAdapter, setAdapter })
+    super('_users', { sqlSchema: schemaAdapter, defaults: false, getAdapter, setAdapter })
     this.bitmapFields.push('access')
     this.validTimestamps = Object.keys(this.schema).filter((k) => timestampKeyRegEx.test(k)).map((k) => k.match(timestampKeyRegEx)[1])
   }

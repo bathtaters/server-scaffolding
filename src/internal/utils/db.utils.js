@@ -1,4 +1,3 @@
-const configTypes = require('../../config/models.cfg').types
 const { getTypeArray } = require('./validate.utils')
 
 exports.extractId = (data, idKey) => {
@@ -17,21 +16,25 @@ exports.sanitizeSchemaData = (data, schema=null) => {
   , {})
 }
 
-exports.boolsFromConfig = (modelName) => !configTypes[modelName] ? [] :
-  Object.keys(configTypes[modelName]).filter((key) => getTypeArray(configTypes[modelName][key])[1] === 'boolean')
+exports.boolsFromTypes = (typeObj) => {
+  if (!typeObj) return []
+  return Object.keys(typeObj).filter((key) => getTypeArray(typeObj[key])[1] === 'boolean')
+}
 
-exports.schemaFromConfig = (modelName, primaryKey) => {
-  if (!configTypes[modelName]) return
+exports.schemaFromTypes = (typeObj, primaryKey) => {
+  if (!typeObj) return
 
   let schema = {}
-  Object.entries(configTypes[modelName]).forEach(([key, val]) => {
-    const valType = getTypeArray(val)[1]
+  Object.entries(typeObj).forEach(([key, val]) => {
+    const valType = getTypeArray(val)[1] || val
     switch(valType) {
       case 'float':
+      case 'real':
         schema[key] = 'REAL'
         break
       case 'boolean':
       case 'int':
+      case 'integer':
         schema[key] = 'INTEGER'
         break
       default:

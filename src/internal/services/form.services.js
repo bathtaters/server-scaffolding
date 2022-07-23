@@ -18,11 +18,11 @@ exports.labelsByAccess = (accessTypes) => exports.labels.filter((action) => acce
 exports.modelActions = (Model) => ({
 
   // SEARCH
-  [exports.labels[0]]: (formData) => {
-    return Promise.resolve(
-      !formData || !Object.keys(formData).length ? '' :
-        `${searchURL}?${new URLSearchParams(formData).toString()}`
-    )
+  [exports.labels[0]]: async (formData) => {
+    if (!formData || !Object.keys(formData).length) return ''
+    Model.boolFields.forEach((key) => { if (!formData[key]) delete formData[key] })
+    if (!Object.keys(formData).length) return ''
+    return `${searchURL}?${new URLSearchParams(formData).toString()}`
   },
 
   // ADD

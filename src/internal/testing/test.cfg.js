@@ -7,7 +7,7 @@ module.exports = {
   testLog: 'none',
 
   modelDefinitions: {
-    schema: {
+    types: {
       testId: "int",
       name: "string",
       number: "float",

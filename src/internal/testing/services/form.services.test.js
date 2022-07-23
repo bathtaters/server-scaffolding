@@ -57,6 +57,7 @@ describe('modelActions', () => {
 
   const spies = {
     primaryId: 'a',
+    boolFields: [],
     create: jest.fn(() => Promise.resolve(true)),
     add:    jest.fn(() => Promise.resolve(true)),
     update: jest.fn(() => Promise.resolve(true)),

@@ -3,12 +3,12 @@ const services = require('../../services/db.services')
 const { openDb, getDb } = require('../../libs/db')
 const { hasDupes, caseInsensitiveObject } = require('../../utils/common.utils')
 const { deepUnescape } = require('../../utils/validate.utils')
-const { sanitizeSchemaData, schemaFromConfig, appendAndSort } = require('../../utils/db.utils')
+const { sanitizeSchemaData, schemaFromTypes, appendAndSort } = require('../../utils/db.utils')
 const errors = require('../../config/errors.internal')
 
 const { deepCopy } = require('../test.utils')
 const modelOptions = {
-  schema: { SCHEMA: true, defId: 'ID' },
+  sqlSchema: { SCHEMA: true, defId: 'ID' },
   defaults: { data: 'DEFAULT' },
   limits: 'LIMITS',
   primaryId: 'defId',
@@ -35,21 +35,28 @@ describe('Model constructor', () => {
     expect(sanitizeSchemaData).toBeCalledTimes(1)
     expect(sanitizeSchemaData).toBeCalledWith({ SCHEMA: true, defId: 'ID' })
   })
-  it('uses schemaFromConfig when no schema', () => {
-    new Model('test', { ...options })
-    expect(schemaFromConfig).toBeCalledTimes(0)
-    expect(new Model('test', { ...options, schema: null }).schema)
-      .toEqual({ config: 'SCHEMA', defId: expect.any(String) })
-    expect(schemaFromConfig).toBeCalledTimes(1)
-    expect(schemaFromConfig).toBeCalledWith('test', 'defId')
+  it('uses schema when it present & not a function', () => {
+    expect(new Model('test', { ...options, sqlSchema: { custom: 'SCHEMA' } }).schema)
+      .toEqual({ custom: 'SCHEMA', defId: expect.any(String) })
+    expect(schemaFromTypes).toBeCalledTimes(0)
   })
-  it('uses schema(schemaFromConfig) when schema is function', () => {
-    const schema = jest.fn((sch) => sch)
-    new Model('test', { ...options, schema })
-    expect(schema).toBeCalledTimes(1)
-    expect(schema).toBeCalledWith(
+  it('uses schemaFromTypes(types) when no schema', () => {
+    schemaFromTypes.mockReturnValueOnce({ config: 'SCHEMA' })
+    expect(new Model('test', { ...options, types: 'TYPES', sqlSchema: null }).schema)
+      .toEqual({ config: 'SCHEMA', defId: expect.any(String) })
+    expect(schemaFromTypes).toBeCalledTimes(1)
+    expect(schemaFromTypes).toBeCalledWith('TYPES', 'defId')
+  })
+  it('uses schema(schemaFromTypes(types)) when schema is function', () => {
+    const sqlSchema = jest.fn((sch) => sch)
+    schemaFromTypes.mockReturnValueOnce({ config: 'SCHEMA' })
+    new Model('test', { ...options, types: 'TYPES', sqlSchema })
+    expect(schemaFromTypes).toBeCalledTimes(1)
+    expect(schemaFromTypes).toBeCalledWith('TYPES', 'defId')
+    expect(sqlSchema).toBeCalledTimes(1)
+    expect(sqlSchema).toBeCalledWith(
       { config: 'SCHEMA', defId: expect.any(String) },
-      'test', 'defId'
+      'TYPES', 'defId', 'test'
     )
   })
   it('checks schema for duplicate keys (case-insensitive)', () => {
@@ -96,10 +103,11 @@ describe('Model constructor', () => {
       })
     })
   })
-  it('error when no schema and no schemaFromConfig', () => {
-    expect(() => new Model('test', { ...options, schema: null })).not.toThrowError()
-    schemaFromConfig.mockReturnValueOnce(null)
-    expect(() => new Model('test', { ...options, schema: null })).toThrowError()
+  it('error when no schema and no schemaFromTypes', () => {
+    schemaFromTypes.mockReturnValueOnce({ config: 'SCHEMA' })
+    expect(() => new Model('test', { ...options, sqlSchema: null })).not.toThrowError()
+    schemaFromTypes.mockReturnValueOnce(null)
+    expect(() => new Model('test', { ...options, sqlSchema: null })).toThrowError()
   })
   it('error when duplicate keys in schema', () => {
     expect(() => new Model('test', { ...options })).not.toThrowError()
@@ -343,7 +351,7 @@ describe('Model find', () => {
     expect.assertions(2)
     return TestModel.find({ data: 1 }).then(() => {
       expect(sanitizeSchemaData).toBeCalledTimes(1)
-      expect(sanitizeSchemaData).toBeCalledWith({ data: 1 }, modelOptions.schema)
+      expect(sanitizeSchemaData).toBeCalledWith({ data: 1 }, modelOptions.sqlSchema)
     })
   })
   it('unescapes return value', () => {
@@ -456,7 +464,7 @@ describe('Model add', () => {
     expect.assertions(2)
     return TestModel.add({ data: 1 }).then(() => {
       expect(sanitizeSchemaData).toBeCalledTimes(1)
-      expect(sanitizeSchemaData).toBeCalledWith({ data: 1 }, modelOptions.schema)
+      expect(sanitizeSchemaData).toBeCalledWith({ data: 1 }, modelOptions.sqlSchema)
     })
   })
   it('unescapes return value', () => {
@@ -513,7 +521,7 @@ describe('Model update', () => {
     expect.assertions(2)
     return TestModel.update('inp', { data: 1 }, 'key').then(() => {
       expect(sanitizeSchemaData).toBeCalledTimes(1)
-      expect(sanitizeSchemaData).toBeCalledWith({ data: 1 }, modelOptions.schema)
+      expect(sanitizeSchemaData).toBeCalledWith({ data: 1 }, modelOptions.sqlSchema)
     })
   })
   it('calls changeCb with before/after data', () => {
@@ -777,7 +785,7 @@ jest.mock('../../utils/common.utils', () => ({
 }))
 
 jest.mock('../../../config/models.cfg', () => ({
-  defaults: { test: 'CFGDEFS' }, limits: { test: 'CFGLIMS' }
+  types: {}, defaults: { test: 'CFGDEFS' }, limits: { test: 'CFGLIMS' }
 }))
 
 jest.mock('../../services/db.services', () => ({
@@ -790,7 +798,7 @@ jest.mock('../../services/db.services', () => ({
 
 jest.mock('../../utils/db.utils', () => ({
   sanitizeSchemaData: jest.fn((o) => o),
-  schemaFromConfig: jest.fn(() => ({ config: 'SCHEMA' })),
-  boolsFromConfig: () => ['bools'],
+  schemaFromTypes: jest.fn((s) => s),
+  boolsFromTypes: () => ['bools'],
   appendAndSort: jest.fn((list) => list),
 }))

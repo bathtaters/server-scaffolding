@@ -1,12 +1,12 @@
-const { extractId, appendAndSort, sanitizeSchemaData, boolsFromConfig, schemaFromConfig } = require('../../utils/db.utils')
+const { extractId, appendAndSort, sanitizeSchemaData, boolsFromTypes, schemaFromTypes } = require('../../utils/db.utils')
 
 jest.mock('../../utils/validate.utils', () => ({ getTypeArray: (type) => [type, type] }))
-jest.mock('../../../config/models.cfg', () => ({ types: {
+const testTypes = {
   test1: { a: 'string', b: 'int', c: 'object' },
   test2: { d: 'float',  e: 'boolean' },
   test3: { f: 'string',  g: 'boolean', h: 'int', i: 'boolean' },
-}}))
-const configSchema = {
+}
+const testSchema = {
   test1: { a: 'TEXT', b: 'INTEGER', c: 'TEXT' },
   test2: { d: 'REAL',  e: 'INTEGER' },
 }
@@ -47,31 +47,27 @@ describe('sanitizeSchemaData', () => {
   })
 })
 
-describe('boolsFromConfig', () => {
+describe('boolsFromTypes', () => {
   it('builds list of all booleans in object', () => {
-    expect(boolsFromConfig('test2')).toEqual(['e'])
-    expect(boolsFromConfig('test3')).toEqual(['g','i'])
+    expect(boolsFromTypes(testTypes.test2)).toEqual(['e'])
+    expect(boolsFromTypes(testTypes.test3)).toEqual(['g','i'])
   })
   it('always returns array', () => {
-    expect(boolsFromConfig('test1')).toEqual([])
-    expect(boolsFromConfig('other')).toEqual([])
-    expect(boolsFromConfig(1)).toEqual([])
+    expect(boolsFromTypes(testTypes.test1)).toEqual([])
+    expect(boolsFromTypes(testTypes.other)).toEqual([])
+    expect(boolsFromTypes(1)).toEqual([])
   })
 })
 
-describe('schemaFromConfig', () => {
-  it('fails if modelName not in config', () => {
-    expect(schemaFromConfig('other')).toBeUndefined()
-    expect(schemaFromConfig('test4')).toBeUndefined()
-  })
+describe('schemaFromTypes', () => {
   it('converts types', () => {
-    expect(schemaFromConfig('test1')).toEqual(configSchema.test1)
-    expect(schemaFromConfig('test2')).toEqual(configSchema.test2)
+    expect(schemaFromTypes(testTypes.test1)).toEqual(testSchema.test1)
+    expect(schemaFromTypes(testTypes.test2)).toEqual(testSchema.test2)
   })
   it('flags primaryKey', () => {
-    expect(schemaFromConfig('test1','a').a).toContain('PRIMARY KEY')
-    expect(schemaFromConfig('test2','e').e).toContain('PRIMARY KEY')
-    Object.values(schemaFromConfig('test1')).forEach((type) => {
+    expect(schemaFromTypes(testTypes.test1,'a').a).toContain('PRIMARY KEY')
+    expect(schemaFromTypes(testTypes.test2,'e').e).toContain('PRIMARY KEY')
+    Object.values(schemaFromTypes('test1')).forEach((type) => {
       expect(type).not.toContain('PRIMARY KEY')
     })
   })
