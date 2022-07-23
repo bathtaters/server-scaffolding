@@ -4,7 +4,7 @@ const { boolOptions } = require('../config/validate.cfg')
 
 // Decode validation types to [fullStr, typeStr, leaveWhiteSpace (*), isArray ([]), isOptional (?)]
 const typeRegex = /^([^[?*]+)(\*)?(\[\])?(\?)?$/
-exports.getTypeArray = (typeStr) => typeStr && typeStr.match(typeRegex)
+exports.getTypeArray = (typeStr) => typeStr && typeStr.toLowerCase().match(typeRegex)
 
 // Get validation & limits from html object { key, type, limits }
 const html2Valid = ({ type, limits }, key, isIn = 'body') => ({
