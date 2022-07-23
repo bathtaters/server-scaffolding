@@ -1,21 +1,9 @@
 const Users = require('../models/Users')
-const AllModels = require('../../models/_all')
+const Test = require('./Test.model')
 
-exports.getModelTestData = (idx = 0) => {
-  const Model = AllModels[idx]
-  if (!Model) throw new Error('No model w/ a non-primary key exists for testing!')
-
-  const testKey = Object.keys(Model.schema).find((key) => key !== Model.primaryId && ['TEXT', 'INTEGER'].includes(Model.schema[key]))
-  if (!testKey) return exports.getModelTestData(idx + 1)
-
-  return {
-    Model,
-    testKey,
-    testIsInt: Model.schema[testKey] === 'INTEGER',
-    idKey: Model.primaryId,
-    apiPrefix: '/api/' + Model.title,
-    guiPrefix: '/gui/db/' + Model.title,
-  }
+exports.testModelData = {
+  Model: Test, testKey: 'comment', idKey: Test.primaryId,
+  prefix: { api: '/api/test', gui: '/gui/db/test' },
 }
 
 exports.updateUser = (userInfo, newInfo) =>
