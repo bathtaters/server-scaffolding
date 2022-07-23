@@ -13,7 +13,7 @@ block form
   .row
     each val, key in schema
       .col-sm
-        +formInput(key, val, limits[key], defaults[key], tableFields[key])
+        +formInput(key, val, limits[key], searchData ? searchData[key] : defaults[key], tableFields[key])
 
 
 block table

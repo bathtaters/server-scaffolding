@@ -25,10 +25,9 @@ $( 'tr.tableRow' ).on('click', function() {
   });
 });
 
+
 /* Enable/Disable search restrictions */
 $(function() {
-  var idElem = $( '#primary-key input' );
-
   $( 'input[min]' ).each(function() {
     var min = $(this).attr('min');
     if (+min > 0) { $(this).attr('data-min', min); }
@@ -38,35 +37,58 @@ $(function() {
     if (+min > 0) { $(this).attr('data-minLength', min); }
   });
 
-  function enableSearch() {
-    idElem.attr('readonly', false);
-    $( 'input#swapId' ).attr('disabled', true);
-    $( 'input#actionSwap' ).attr('disabled', true);
-    $( 'input[type="submit"]:not(#actionSearch)' ).attr('disabled', true);
-    $( 'input[data-min]' ).each(function() { $(this).attr('min', false); });
-    $( 'input[data-minLength]' ).each(function() { $(this).attr('minLength', false); });
-  }
-
-  function disableSearch() {
-    idElem.attr('readonly', true);
-    $( 'input#swapId' ).attr('disabled', false);
-    $( 'input#actionSwap' ).attr('disabled', false);
-    $( 'input[type="submit"]' ).attr('disabled', false);
-    $( 'input[data-min]' ).each(function() { $(this).attr('min', $(this).attr('data-min')); });
-    $( 'input[data-minLength]' ).each(function() { $(this).attr('minLength', $(this).attr('data-minLength')); });
-  }
-
-  if ($( 'input#searchMode' ).prop('checked')) { enableSearch(); }
-  if($( 'input#forceSearch' ).val()) { enableSearch(); }
-  
-  $( 'input#clearForm' ).on('click', function() { disableSearch(); });
-
-  $( 'input#searchMode' ).on('input', function() {
-    if ($(this).prop('checked')) { enableSearch(); }
-    else { disableSearch(); }
-  });
-
+  if ($( 'input#searchMode' ).prop('checked')) { $.setSearch(true); }
+  if($( 'input#forceSearch' ).val()) { $.setSearch(true); }
 });
+
+$.setSearch = function(enable) {
+  $( '#primary-key input' ).attr('readonly', !enable);
+  $( 'input#swapId' ).attr('disabled', enable);
+  $( 'input#actionSwap' ).attr('disabled', enable);
+  $( 'input[type="submit"]:not(#actionSearch)' ).attr('disabled', enable);
+  $( 'input[data-min]' ).each(function() { $(this).attr('min', !enable && $(this).attr('data-min')); });
+  $( 'input[data-minLength]' ).each(function() { $(this).attr('minLength', !enable && $(this).attr('data-minLength')); });
+}
+
+$( 'input#searchMode' ).on('input', function() {
+  if ($(this).prop('checked')) { $.setSearch(true); }
+  else { $.setSearch(false); }
+});
+
+
+/* Clear button logic */
+$( function() {
+  $( 'input[type="text"], input[type="number"]' ).each(function() {
+    $(this).val();
+    $(this).attr('data-default' , $(this).val())
+  });
+  $( 'input[type="checkbox"]' ).each(function() {
+    if ($(this).attr('id') === 'searchMode') return;
+    $(this).attr('data-default', $(this).prop('checked'))
+  });
+})
+
+$.resetInputs = function(clear) {
+  $( 'input[type="text"], input[type="number"]' ).each(function() {
+    $(this).val(clear ? '' : $(this).attr('data-default'));
+  });
+  $( 'input[type="checkbox"]' ).each(function() {
+    if ($(this).attr('id') === 'searchMode') return;
+    $(this).prop('checked', !clear && $(this).attr('data-default') !== 'false');
+  });
+}
+
+$( 'input#clearForm' ).on('click', function(ev) {
+  ev.preventDefault()
+  if ($( 'input#searchMode' ).prop('checked')) {
+    $.setSearch(true);
+    $.resetInputs(true);
+  } else {
+    $.setSearch(false);
+    $.resetInputs(false);
+  }
+});
+
 
 /* Swap two IDs */
 $( '#actionSwap' ).on('click', function() {
