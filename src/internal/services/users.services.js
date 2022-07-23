@@ -65,11 +65,7 @@ exports.preValidateAdapter = (formData, isSearch) => {
   return formData
 }
 
-exports.schemaAdapter = (schema) => {
-  delete schema.password
-  schema = { ...schema, key: 'TEXT', salt: 'TEXT' }
-  return schema
-}
+exports.schemaAdapter = ({ password, ...schema }) => ({ ...schema, key: 'TEXT', salt: 'TEXT' })
 
 const confirmPassword = (formData, action) => {
   if ((action === 'Add' || action === 'Update') && 'password' in formData) {
