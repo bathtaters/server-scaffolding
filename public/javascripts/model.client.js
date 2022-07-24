@@ -58,22 +58,19 @@ $( 'input#searchMode' ).on('input', function() {
 
 /* Clear button logic */
 $( function() {
-  $( 'input[type="text"], input[type="number"]' ).each(function() {
-    $(this).val();
+  $( 'textarea:not(.ignoreClear), input[type="text"]:not(.ignoreClear), input[type="number"]:not(.ignoreClear)' ).each(function() {
     $(this).attr('data-default' , $(this).val())
   });
-  $( 'input[type="checkbox"]' ).each(function() {
-    if ($(this).attr('id') === 'searchMode') return;
+  $( 'input[type="checkbox"]:not(.ignoreClear)' ).each(function() {
     $(this).attr('data-default', $(this).prop('checked'))
   });
 })
 
 $.resetInputs = function(clear) {
-  $( 'input[type="text"], input[type="number"]' ).each(function() {
+  $( 'textarea:not(.ignoreClear), input[type="text"]:not(.ignoreClear), input[type="number"]:not(.ignoreClear)' ).each(function() {
     $(this).val(clear ? '' : $(this).attr('data-default'));
   });
-  $( 'input[type="checkbox"]' ).each(function() {
-    if ($(this).attr('id') === 'searchMode') return;
+  $( 'input[type="checkbox"]:not(.ignoreClear)' ).each(function() {
     $(this).prop('checked', !clear && $(this).attr('data-default') !== 'false');
   });
 }
