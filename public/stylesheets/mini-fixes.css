@@ -39,6 +39,12 @@ form.plain fieldset { background: var(--form-back-color); }
 .collapse > label.row { display: flex; height: auto; }
 .collapse > [type="checkbox"] { position: initial; display: none; }
 
+/* Fix tooltips on disabled */
+.tooltip[disabled]:hover::after,
+.tooltip[disabled]:hover::before {
+  display: none;
+}
+
 /* Fix button styling */
 button, .button, [role="button"],
 [type="button"], [type="submit"], [type="reset"] {
