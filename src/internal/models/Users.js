@@ -4,13 +4,13 @@ const { addAdapter, getAdapter, setAdapter, schemaAdapter } = require('../servic
 const { generateToken, testPassword, isLocked, isPastWindow } = require('../utils/auth.utils')
 const errors = require('../config/errors.internal')
 const logger = require('../libs/log')
-const { access, rateLimiter, timestampKeyRegEx } = require('../config/users.cfg')
+const { access, rateLimiter, timestampKeyRegEx, definitions } = require('../config/users.cfg')
 const { isPm2 } = require('../../config/meta')
 
 
 class Users extends Model {
   constructor() { 
-    super('_users', { sqlSchema: schemaAdapter, defaults: false, getAdapter, setAdapter })
+    super('_users', { ...definitions, sqlSchema: schemaAdapter, getAdapter, setAdapter })
     this.bitmapFields.push('access')
     this.validTimestamps = Object.keys(this.schema).filter((k) => timestampKeyRegEx.test(k)).map((k) => k.match(timestampKeyRegEx)[1])
   }
