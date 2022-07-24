@@ -64,7 +64,7 @@ module.exports = {
     defaults: {
       username: "user",
       access: [ 'api', 'gui' ],
-      models: { [allModelsKey]: 3 },
+      models: { [allModelsKey]: ['read','write'] },
       cors: '*',
       failCount: 0,
       guiCount:  0,
