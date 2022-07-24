@@ -65,8 +65,7 @@ $( 'tr.tableRow' ).on('click', function() {
     // Table checkboxes
     var i = checks.length;
     while (i-- > 0) {
-
-      var check = checks[i].match(/^([^[]+)\[([^\]]+)\]$/);
+      var check = checks[i].match(/^([^[\s]+)\s*\[([^\]]+)\]$/);
       if (!check || !check[1]) { continue; }
 
       var anyChecked = false;
@@ -147,6 +146,7 @@ $( '#actionRegen' ).click(function() {
   });
 });
 
+
 /* Enable/Disable search restrictions */
 $(function() {
   $( 'input[min]' ).each(function() {
@@ -158,31 +158,54 @@ $(function() {
     if (+min > 0) { $(this).attr('data-minLength', min); }
   });
 
-  function enableSearch() {
-    $( 'input#token' ).attr('readonly', false);
-    $( 'input#password' ).attr('disabled', true);
-    $( 'input#confirm' ).attr('disabled', true);
-    $( 'input[type="submit"]:not(#actionSearch)' ).attr('disabled', true);
-    $( 'input[data-min]' ).each(function() { $(this).attr('min', false); });
-    $( 'input[data-minLength]' ).each(function() { $(this).attr('minLength', false); });
-  }
+  if ($( 'input#searchMode' ).prop('checked')) { $.setSearch(true); }
+  if($( 'input#forceSearch' ).val()) { $.setSearch(true); }
+});
 
-  function disableSearch() {
-    $( 'input#token' ).attr('readonly', true);
-    $( 'input#password' ).attr('disabled', false);
-    $( 'input#confirm' ).attr('disabled', false);
-    $( 'input[type="submit"]' ).attr('disabled', false);
-    $( 'input[data-min]' ).each(function() { $(this).attr('min', $(this).attr('data-min')); });
-    $( 'input[data-minLength]' ).each(function() { $(this).attr('minLength', $(this).attr('data-minLength')); });
-  }
+$.setSearch = function(enable) {
+  if (enable) $( 'input#expandModels' ).prop('checked', false)
+  $( 'input#token' ).attr('readonly', !enable);
+  $( 'input#password' ).attr('disabled', enable);
+  $( 'input#confirm' ).attr('disabled', enable);
+  $( 'input#expandModels' ).attr('disabled', enable);
+  $( 'label[for="expandModels"]' ).attr('disabled', enable);
+  $( 'input[type="submit"]:not(#actionSearch)' ).attr('disabled', enable);
+  $( 'input[data-min]' ).each(function() { $(this).attr('min', !enable && $(this).attr('data-min')); });
+  $( 'input[data-minLength]' ).each(function() { $(this).attr('minLength', !enable && $(this).attr('data-minLength')); });
+}
 
-  if ($( 'input#searchMode' ).prop('checked')) { enableSearch(); }
+$( 'input#searchMode' ).on('input', function() {
+  if ($(this).prop('checked')) { $.setSearch(true); }
+  else { $.setSearch(false); }
+});
 
-  $( 'input#clearForm' ).on('click', function() { disableSearch(); });
 
-  $( 'input#searchMode' ).on('input', function() {
-    if ($(this).prop('checked')) { enableSearch(); }
-    else { disableSearch(); }
+/* Clear button logic */
+$( function() {
+  $( 'textarea:not(.ignoreClear), input[type="text"]:not(.ignoreClear), input[type="number"]:not(.ignoreClear)' ).each(function() {
+    $(this).attr('data-default' , $(this).val())
   });
+  $( 'input[type="checkbox"]:not(.ignoreClear)' ).each(function() {
+    $(this).attr('data-default', $(this).prop('checked'))
+  });
+})//*/
 
+$.resetInputs = function(clear) {
+  $( 'textarea:not(.ignoreClear), input[type="text"]:not(.ignoreClear), input[type="number"]:not(.ignoreClear)' ).each(function() {
+    $(this).val(clear ? '' : $(this).attr('data-default'));
+  });
+  $( 'input[type="checkbox"]:not(.ignoreClear)' ).each(function() {
+    $(this).prop('checked', !clear && $(this).attr('data-default') !== 'false');
+  });
+}
+
+$( 'input#clearForm' ).on('click', function(ev) {
+  ev.preventDefault()
+  if ($( 'input#searchMode' ).prop('checked')) {
+    $.setSearch(true);
+    $.resetInputs(true);
+  } else {
+    $.setSearch(false);
+    $.resetInputs(false);
+  }
 });
