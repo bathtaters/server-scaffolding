@@ -3,7 +3,7 @@ extends components/container
 block content
   h1 Log Files
   ul
-    if !log || !log.length
+    if !logs || !logs.length
       p: i.dim - None -
     each log in logs
       li: a(href=baseURL+log)= log
