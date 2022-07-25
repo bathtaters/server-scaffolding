@@ -18,7 +18,7 @@ exports.sanitizeSchemaData = (data, schema=null) => {
 
 exports.boolsFromTypes = (typeObj) => {
   if (!typeObj) return []
-  return Object.keys(typeObj).filter((key) => getTypeArray(typeObj[key])[1] === 'boolean')
+  return Object.keys(typeObj).filter((key) => getTypeArray(typeObj[key]).type === 'boolean')
 }
 
 exports.schemaFromTypes = (typeObj, primaryKey) => {
@@ -26,8 +26,7 @@ exports.schemaFromTypes = (typeObj, primaryKey) => {
 
   let schema = {}
   Object.entries(typeObj).forEach(([key, val]) => {
-    const valType = getTypeArray(val)[1] || val
-    switch(valType) {
+    switch(getTypeArray(val).type || val) {
       case 'float':
       case 'real':
         schema[key] = 'REAL'

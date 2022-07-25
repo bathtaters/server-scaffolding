@@ -3,8 +3,19 @@ const { deepMap } = require('./common.utils')
 const { boolOptions } = require('../config/validate.cfg')
 
 // Decode validation types to [fullStr, typeStr, leaveWhiteSpace (*), isArray ([]), isOptional (?)]
-const typeRegex = /^([^[?*]+)(\*)?(\[\])?(\?)?$/
-exports.getTypeArray = (typeStr) => typeStr && typeStr.toLowerCase().match(typeRegex)
+const typeRegex = /^([^[?*]+)([?*]|\[\])?([?*]|\[\])?([?*]|\[\])?$/
+exports.getTypeArray = (typeStr) => {
+  if (!typeStr) return {}
+  const match = typeStr.toLowerCase().match(typeRegex)
+  if (!match) return {}
+  const opts = match.slice(2,5)
+  return {
+    string: match[0], type: match[1],
+    isOptional: opts.includes('?'),
+    isArray: opts.includes('[]'),
+    hasSpaces: opts.includes('*'),
+  }
+}
 
 // Get validation & limits from html object { key, type, limits }
 const html2Valid = ({ type, limits }, key, isIn = 'body') => ({

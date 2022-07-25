@@ -1,6 +1,6 @@
 const { 
   getTypeArray, formSettingsToValidate,
-  isBoolean, parseBoolean, looseBools, dateOptions,
+  isBoolean, parseBoolean,
   escapedLength, deepUnescape
 } = require('../../utils/validate.utils')
 
@@ -9,39 +9,46 @@ const { deepMap } = require('../../utils/common.utils')
 
 describe('getTypeArray', () => {
   it('nothing', () => {
-    expect(getTypeArray()).toBeFalsy()
-    expect(getTypeArray('')).toBeFalsy()
+    expect(getTypeArray()).toEqual({})
+    expect(getTypeArray('')).toEqual({})
+    expect(getTypeArray('test*[]?test')).toEqual({})
   })
-  it('[0] = input', () => {
-    expect(getTypeArray('test')[0]).toBe('test')
-    expect(getTypeArray('test*[]?')[0]).toBe('test*[]?')
+  it('.string = input', () => {
+    expect(getTypeArray('test').string).toBe('test')
+    expect(getTypeArray('test*[]?').string).toBe('test*[]?')
   })
-  it('[1] = typeStr', () => {
-    expect(getTypeArray('test')[1]).toBe('test')
-    expect(getTypeArray('test*[]?')[1]).toBe('test')
+  it('.type = typeStr', () => {
+    expect(getTypeArray('test').type).toBe('test')
+    expect(getTypeArray('test*[]?').type).toBe('test')
   })
-  it('[2] = leaveWhiteSpace', () => {
-    expect(getTypeArray('test')[2]).toBeFalsy()
-    expect(getTypeArray('test*')[2]).toBe('*')
-    expect(getTypeArray('test[]?')[2]).toBeFalsy()
-    expect(getTypeArray('test*[]?')[2]).toBe('*')
+  it('.isOptional = isOptional', () => {
+    expect(getTypeArray('test').isOptional).toBe(false)
+    expect(getTypeArray('test?').isOptional).toBe(true)
+    expect(getTypeArray('test*[]').isOptional).toBe(false)
+    expect(getTypeArray('test*[]?').isOptional).toBe(true)
+    expect(getTypeArray('test*?[]').isOptional).toBe(true)
+    expect(getTypeArray('test?*[]').isOptional).toBe(true)
   })
-  it('[3] = isArray', () => {
-    expect(getTypeArray('test')[3]).toBeFalsy()
-    expect(getTypeArray('test[]')[3]).toBe('[]')
-    expect(getTypeArray('test*?')[3]).toBeFalsy()
-    expect(getTypeArray('test*[]?')[3]).toBe('[]')
+  it('.isArray = isArray', () => {
+    expect(getTypeArray('test').isArray).toBe(false)
+    expect(getTypeArray('test[]').isArray).toBe(true)
+    expect(getTypeArray('test*?').isArray).toBe(false)
+    expect(getTypeArray('test[]*?').isArray).toBe(true)
+    expect(getTypeArray('test*[]?').isArray).toBe(true)
+    expect(getTypeArray('test*?[]').isArray).toBe(true)
   })
-  it('[4] = isOptional', () => {
-    expect(getTypeArray('test')[4]).toBeFalsy()
-    expect(getTypeArray('test?')[4]).toBe('?')
-    expect(getTypeArray('test*[]')[4]).toBeFalsy()
-    expect(getTypeArray('test*[]?')[4]).toBe('?')
+  it('.hasSpaces = leaveWhiteSpace', () => {
+    expect(getTypeArray('test').hasSpaces).toBe(false)
+    expect(getTypeArray('test*').hasSpaces).toBe(true)
+    expect(getTypeArray('test[]?').hasSpaces).toBe(false)
+    expect(getTypeArray('test*[]?').hasSpaces).toBe(true)
+    expect(getTypeArray('test[]*?').hasSpaces).toBe(true)
+    expect(getTypeArray('test[]?*').hasSpaces).toBe(true)
   })
 })
 
 describe('formSettingsToValidate', () => {
-  it('format for additionalOnly', () => {
+  it('format for byObject', () => {
     expect(formSettingsToValidate({ a: { type: 'text', limits: 'limitsA' }, b: { type: 'number', limits: 'limitsB' } }, 'inTest'))
       .toEqual([
         { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: expect.anything() },
