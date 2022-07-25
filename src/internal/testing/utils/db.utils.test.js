@@ -71,4 +71,11 @@ describe('schemaFromTypes', () => {
       expect(type).not.toContain('PRIMARY KEY')
     })
   })
+  it('Always returns an object (even w/ null/empty input)', () => {
+    expect(schemaFromTypes(testTypes.test1,'a')).toEqual(expect.any(Object))
+    expect(schemaFromTypes(testTypes.test2)).toEqual(expect.any(Object))
+    expect(schemaFromTypes({})).toEqual({})
+    expect(schemaFromTypes(null)).toEqual({})
+    expect(schemaFromTypes()).toEqual({})
+  })
 })

@@ -22,7 +22,7 @@ exports.boolsFromTypes = (typeObj) => {
 }
 
 exports.schemaFromTypes = (typeObj, primaryKey) => {
-  if (!typeObj) return
+  if (!typeObj) return {}
 
   let schema = {}
   Object.entries(typeObj).forEach(([key, val]) => {
