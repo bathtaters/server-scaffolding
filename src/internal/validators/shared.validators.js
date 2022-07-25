@@ -1,30 +1,40 @@
+// byObject() & byModel() can create custom validation middleware
+
 const { checkSchema } = require('express-validator')
 const checkValidation = require('../middleware/validate.middleware')
-const { getSchemaFromCfg, getSchema } = require('../services/validate.services')
+const { generateSchema, appendToSchema } = require('../services/validate.services')
 const { filterDupes } = require('../utils/common.utils')
-const validCfg = require('../../config/models.cfg')
-const logger = require('../libs/log')
 
-// Validate by config/validation[route]
-//  params/body are [...keys]|{ inKey: validKey }|'all'|falsy
-//  optionalBody = make all body keys optional, unless body key is in params
-//  additional = [{ key: 'name', typeStr: 'int?', in: ['body','params',etc], limits: { min, max, etc } }, ...]
-//  also removes any keys in params from body
-exports.byRoute = (route) => (params, body = [], optionalBody = false, bodyIsQuery = false, allowPartialSearch = false, additional = null) => 
-  checkSchema(getSchemaAdapter(route, { params, [bodyIsQuery ? 'query' : 'body']: body }, optionalBody, allowPartialSearch, additional))
-    .concat(checkValidation)
+const toMiddleware = (validationSchema) => checkSchema(validationSchema).concat(checkValidation)
 
-exports.additionalOnly = (additional) => checkSchema(appendAdditional({}, additional)).concat(checkValidation)
+/**
+ * Get validation middleware using custom options
+ * @param {CustomValidation[]} objectArray - array of objects containing custom validation options
+ * @returns {function[]} Validation Middleware
+ */
+exports.byObject = (objectArray) => toMiddleware(appendToSchema({}, objectArray))
 
 
-// HELPER -- Retrieve validation schema for route based on route & keys
-function getSchemaAdapter(route, keys, optionalBodyQry, disableMin, additional) {
+/**
+ * Fetch validation middleware using associated Model types & limits (also removes any keys in params from body)
+ * @param {object} Model - Model instance to generate validation for
+ * @param {object} Model.types - Object containing Model schema w/ typeStrings (ie. { key: 'string*[]?', ... })
+ * @param {Object.<string, Limits>} [Model.limits] - Object containing keys w/ numeric/size limits
+ * @param {string[]|object} [body=[]] - Keys in body: [...keyList] OR { inputField: modelKey, ... } OR 'all' (= All keys in types)
+ * @param {object} [options] - Additional options
+ * @param {string[]|object} [options.params=[]] - Keys in params: [...keyList] OR { inputKey: modelKey, ... } OR 'all' (= All keys in types)
+ * @param {boolean} [options.optionalBody=true] - Make all body/query keys optional (params are unaffected) [default: true]
+ * @param {boolean} [options.asQueryStr=false] - Move 'body' validation to 'query' (for GET routes) [default: false]
+ * @param {boolean} [options.allowPartials=false] - Allow entering less than the minLength for strings (to validate for searches) [default: false]
+ * @param {CustomValidation[]} [options.additional] - Additional validation to append to model validation
+ * @returns {function[]} Validation Middleware
+ */
+exports.byModel = function byModel({ types, limits }, body = [], { params = [], optionalBody = true, asQueryStr = false, allowPartials = false, additional } = {}) {
+  let keys = { params, [asQueryStr ? 'query' : 'body']: body }
 
   // 'all' instead of key array will include validation for all entries
   Object.keys(keys).forEach(t => {
-    if (keys[t] === 'all') {
-      keys[t] = Object.keys(validCfg.types[route])
-    }
+    if (keys[t] === 'all') keys[t] = Object.keys(types)
   })
 
   // Build list of keys (combining unique)
@@ -34,23 +44,22 @@ function getSchemaAdapter(route, keys, optionalBodyQry, disableMin, additional) 
 
     if (typeof keys[inType] !== 'object') keys[inType] = [keys[inType]]
     else if (!Array.isArray(keys[inType])) {
-      keysDict = { ...keysDict, ...keys[inType] }
+      Object.assign(keysDict, keys[inType])
       keys[inType] = filterDupes(Object.values(keys[inType]))
     }
 
     keys[inType].forEach((key) => {
-      if(keyList[key]) keyList[key].push(inType)
-      else keyList[key] = [inType]
+      keyList[key] = keyList[key] ? keyList[key].concat(inType) : [inType]
     })
   })
 
   // Call getValidation on each entry in keyList to create validationSchema
   const schema = Object.entries(keyList).reduce((valid, [key, isIn]) =>
     Object.assign(valid,
-      getSchemaFromCfg(route, key, isIn, optionalBodyQry, disableMin)
+      generateSchema(key, types[key], limits[key], isIn, optionalBody, allowPartials)
     ),
   {})
-  if (!Object.keys(keysDict).length) return appendAdditional(schema, additional)
+  if (!Object.keys(keysDict).length) return toMiddleware(appendToSchema(schema, additional))
 
   // Re-Assign validation names based on input
   let renamedSchema = {}, missing = Object.keys(schema)
@@ -65,22 +74,29 @@ function getSchemaAdapter(route, keys, optionalBodyQry, disableMin, additional) 
   missing.forEach((key) => { renamedSchema[key] = schema[key] })
   
   // Append 'additional' schema
-  return appendAdditional(renamedSchema, additional)
+  return toMiddleware(appendToSchema(renamedSchema, additional))
 }
 
-// HELPER -- Build & Append additional validation to schema
-function appendAdditional(schema, additional) {
-  if (additional) additional.forEach(({ key, typeStr, isIn, limits }) => {
-    // Check 'isIn' value
-    if (!isIn) return logger.warn('Missing "isIn" from additional validator schema')
-    if (!Array.isArray(isIn)) isIn = [isIn]
 
-    // If key already exists, just add missing 'in' values
-    if (key in schema) return isIn.forEach((entry) => schema[key].in.includes(entry) || schema[key].in.push(entry))
 
-    // Append to schema
-    Object.entries(getSchema(key, typeStr, limits, isIn)).forEach(([key,val]) => schema[key] = val)
-  })
 
-  return schema
-}
+
+
+// JSDOC TYPE DEFINITIONS
+
+/**
+ * @typedef Limits
+ * @type {Object}
+ * @property {number} [min] - minimum value/characters/size
+ * @property {number} [max] - maximum value/characters/size
+ * @property {Limits} [elem] - limits for array elements
+ * @property {Limits} [array] - limits for array length
+ */
+/**
+ * @typedef CustomValidation
+ * @type {Object}
+ * @property {string} key - name of variable being validated
+ * @property {string} typeStr - string of variable type (ie. string*[]?)
+ * @property {string[]} isIn - location(s) of variable in HTTP request (ie. ['body','params','query'])
+ * @property {Limits} [limits] - numeric/size limits (depending on typeStr)
+ */
