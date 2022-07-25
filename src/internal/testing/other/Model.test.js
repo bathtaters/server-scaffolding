@@ -8,6 +8,7 @@ const errors = require('../../config/errors.internal')
 
 const { deepCopy } = require('../test.utils')
 const modelOptions = {
+  types: { TYPES: true },
   sqlSchema: { SCHEMA: true, defId: 'ID' },
   defaults: { data: 'DEFAULT' },
   limits: 'LIMITS',
@@ -19,11 +20,11 @@ const modelOptions = {
 describe('Model constructor', () => {
   let options
   beforeEach(() => { options = deepCopy(modelOptions) })
-
+  
   it('sets object props to options', () => {
-    const model = new Model('test', { ...options })
-    expect(model.title).toBe('test')
-    expect(model.schema).toEqual({ SCHEMA: true, defId: 'ID' })
+    const model = new Model('testModel', { ...options })
+    expect(model.title).toBe('testModel')
+    expect(model.schema).toEqual({ TYPES: true, SCHEMA: true, defId: 'ID' })
     expect(model.defaults).toEqual({ data: 'DEFAULT' })
     expect(model.limits).toBe('LIMITS')
     expect(model.primaryId).toBe('defId')
@@ -31,94 +32,93 @@ describe('Model constructor', () => {
     expect(model.setAdapter).toBe(options.setAdapter)
   })
   it('runs sanitizeSchemaData on schema', () => {
-    new Model('test', { ...options })
+    new Model('testModel', { ...options })
     expect(sanitizeSchemaData).toBeCalledTimes(1)
-    expect(sanitizeSchemaData).toBeCalledWith({ SCHEMA: true, defId: 'ID' })
+    expect(sanitizeSchemaData).toBeCalledWith({ TYPES: true, SCHEMA: true, defId: 'ID' })
   })
   it('uses schema when it present & not a function', () => {
-    expect(new Model('test', { ...options, sqlSchema: { custom: 'SCHEMA' } }).schema)
+    expect(new Model('testModel', { ...options, types: null, sqlSchema: { custom: 'SCHEMA' } }).schema)
       .toEqual({ custom: 'SCHEMA', defId: expect.any(String) })
-    expect(schemaFromTypes).toBeCalledTimes(0)
   })
   it('uses schemaFromTypes(types) when no schema', () => {
     schemaFromTypes.mockReturnValueOnce({ config: 'SCHEMA' })
-    expect(new Model('test', { ...options, types: 'TYPES', sqlSchema: null }).schema)
+    expect(new Model('testModel', { ...options, sqlSchema: null }).schema)
       .toEqual({ config: 'SCHEMA', defId: expect.any(String) })
     expect(schemaFromTypes).toBeCalledTimes(1)
-    expect(schemaFromTypes).toBeCalledWith('TYPES', 'defId')
+    expect(schemaFromTypes).toBeCalledWith({ TYPES: true, defId: expect.any(String) }, 'defId')
   })
   it('uses schema(schemaFromTypes(types)) when schema is function', () => {
     const sqlSchema = jest.fn((sch) => sch)
     schemaFromTypes.mockReturnValueOnce({ config: 'SCHEMA' })
-    new Model('test', { ...options, types: 'TYPES', sqlSchema })
+    new Model('testModel', { ...options, sqlSchema })
     expect(schemaFromTypes).toBeCalledTimes(1)
-    expect(schemaFromTypes).toBeCalledWith('TYPES', 'defId')
+    expect(schemaFromTypes).toBeCalledWith({ TYPES: true, defId: expect.any(String) }, 'defId')
     expect(sqlSchema).toBeCalledTimes(1)
-    expect(sqlSchema).toBeCalledWith(
-      { config: 'SCHEMA', defId: expect.any(String) },
-      'TYPES', 'defId', 'test'
-    )
+    expect(sqlSchema).toBeCalledWith({ config: 'SCHEMA', defId: expect.any(String) })
+  })
+  it('combines schema & types when both are objects', () => {
+    expect(new Model('testModel', { ...options, types: { base: 'TYPES' }, sqlSchema: { custom: 'SCHEMA' } }).schema)
+      .toEqual({ base: 'TYPES', custom: 'SCHEMA', defId: expect.any(String) })
+  })
+  it('schema overwrites types when both are objects', () => {
+    expect(new Model('testModel', { ...options, types: { custom: 'TYPES' }, sqlSchema: { custom: 'SCHEMA' } }).schema)
+      .toEqual({ custom: 'SCHEMA', defId: expect.any(String) })
   })
   it('checks schema for duplicate keys (case-insensitive)', () => {
-    new Model('test', { ...options })
+    new Model('testModel', { ...options })
     expect(hasDupes).toBeCalledTimes(1)
-    expect(hasDupes).toBeCalledWith(['schema', 'defid'])
+    expect(hasDupes).toBeCalledWith(expect.arrayContaining(['types', 'schema', 'defid']))
   })
   it('auto-creates primaryID if not in schema', () => {
-    expect(new Model('test', { ...options, primaryId: 'test' }).schema)
+    expect(new Model('testModel', { ...options, primaryId: 'test' }).schema)
       .toHaveProperty('test', expect.stringContaining('PRIMARY KEY'))
   })
-  it('uses config defaults/limits when not provided', () => {
-    const model = new Model('test', { ...options, defaults: null, limits: null })
-    expect(model.defaults).toBe('CFGDEFS')
-    expect(model.limits).toBe('CFGLIMS')
-  })
   it('ignores non-function get/setAdapters', () => {
-    const model = new Model('test', { ...options, getAdapter: 'test', setAdapter: 12 })
+    const model = new Model('testModel', { ...options, getAdapter: 'test', setAdapter: 12 })
     expect(model.getAdapter).toBeFalsy()
     expect(model.setAdapter).toBeFalsy()
   })
   it('adds boolean schema keys to boolFields', () => {
-    const model = new Model('test', { ...options, getAdapter: 'test', setAdapter: 12 })
+    const model = new Model('testModel', { ...options, getAdapter: 'test', setAdapter: 12 })
     expect(model.boolFields).toEqual(['bools'])
   })
   it('isInit resolves to true on success', () => {
     expect.assertions(1)
-    return expect(new Model('test', { ...options }).isInitialized)
+    return expect(new Model('testModel', { ...options }).isInitialized)
       .resolves.toBe(true)
   })
   it('runs this.create()', () => {
     expect.assertions(1)
-    return new Model('test', { ...options }).isInitialized.then(() => {
+    return new Model('testModel', { ...options }).isInitialized.then(() => {
       expect(services.reset).toBeCalledTimes(1)
     })
   })
   it('opens DB if closed', () => {
     expect.assertions(2)
-    return new Model('test', { ...options }).isInitialized.then(() => {
+    return new Model('testModel', { ...options }).isInitialized.then(() => {
       expect(openDb).toBeCalledTimes(0)
       getDb.mockReturnValueOnce(null)
-      return new Model('test', { ...options }).isInitialized.then(() => {
+      return new Model('testModel', { ...options }).isInitialized.then(() => {
         expect(openDb).toBeCalledTimes(1)
       })
     })
   })
   it('error when no schema and no schemaFromTypes', () => {
     schemaFromTypes.mockReturnValueOnce({ config: 'SCHEMA' })
-    expect(() => new Model('test', { ...options, sqlSchema: null })).not.toThrowError()
+    expect(() => new Model('testModel', { ...options, sqlSchema: null })).not.toThrowError()
     schemaFromTypes.mockReturnValueOnce(null)
-    expect(() => new Model('test', { ...options, sqlSchema: null })).toThrowError()
+    expect(() => new Model('testModel', { ...options, sqlSchema: null })).toThrowError()
   })
   it('error when duplicate keys in schema', () => {
-    expect(() => new Model('test', { ...options })).not.toThrowError()
+    expect(() => new Model('testModel', { ...options })).not.toThrowError()
     hasDupes.mockReturnValueOnce(true)
-    expect(() => new Model('test', { ...options })).toThrowError()
+    expect(() => new Model('testModel', { ...options })).toThrowError()
   })
 })
 
 
 describe('Model create', () => {
-  const TestModel = new Model('test', modelOptions)
+  const TestModel = new Model('testModel', modelOptions)
 
   it('calls reset w/ expected args', () => {
     expect.assertions(2)
@@ -126,7 +126,7 @@ describe('Model create', () => {
       expect(services.reset).toBeCalledTimes(1)
       expect(services.reset).toBeCalledWith(
         'DB',
-        { 'test': { SCHEMA: true, defId: 'ID' } },
+        { testModel: { TYPES: true, SCHEMA: true, defId: 'ID' } },
         'force'
       )
     })
@@ -141,14 +141,14 @@ describe('Model create', () => {
 
 
 describe('Model get', () => {
-  const TestModel = new Model('test', modelOptions)
+  const TestModel = new Model('testModel', modelOptions)
 
   it('uses expected SQL', () => {
     expect.assertions(2)
     return TestModel.get('inp','key').then(() => {
       expect(services.get).toBeCalledTimes(1)
       expect(services.get).toBeCalledWith(
-        'DB', 'SELECT * FROM test WHERE key = ?', ['inp']
+        'DB', 'SELECT * FROM testModel WHERE key = ?', ['inp']
       )
     })
   })
@@ -156,7 +156,7 @@ describe('Model get', () => {
     expect.assertions(2)
     return TestModel.get().then(() => {
       expect(services.all).toBeCalledTimes(1)
-      expect(services.all).toBeCalledWith('DB', 'SELECT * FROM test')
+      expect(services.all).toBeCalledWith('DB', 'SELECT * FROM testModel')
     })
   })
   it('uses defaults on missing idKey', () => {
@@ -220,14 +220,14 @@ describe('Model get', () => {
 
 
 describe('Model getPage', () => {
-  const TestModel = new Model('test', modelOptions)
+  const TestModel = new Model('testModel', modelOptions)
 
   it('uses expected SQL', () => {
     expect.assertions(2)
     return TestModel.getPage(6,12).then(() => {
       expect(services.all).toBeCalledTimes(1)
       expect(services.all).toBeCalledWith(
-        'DB', 'SELECT * FROM test LIMIT 12 OFFSET 60'
+        'DB', 'SELECT * FROM testModel LIMIT 12 OFFSET 60'
       )
     })
   })
@@ -236,7 +236,7 @@ describe('Model getPage', () => {
     return TestModel.getPage(6,12,true,'key').then(() => {
       expect(services.all).toBeCalledWith(
         expect.anything(),
-        'SELECT * FROM test ORDER BY key DESC LIMIT 12 OFFSET 60'
+        'SELECT * FROM testModel ORDER BY key DESC LIMIT 12 OFFSET 60'
       )
     })
   })
@@ -289,14 +289,14 @@ describe('Model getPage', () => {
 
 
 describe('Model find', () => {
-  const TestModel = new Model('test', modelOptions)
+  const TestModel = new Model('testModel', modelOptions)
 
   it('uses expected SQL', () => {
     expect.assertions(2)
     return TestModel.find({ data: 1, test: 2 }).then(() => {
       expect(services.all).toBeCalledTimes(1)
       expect(services.all).toBeCalledWith(
-        'DB', 'SELECT * FROM test WHERE data = ? AND test = ?', [1, 2]
+        'DB', 'SELECT * FROM testModel WHERE data = ? AND test = ?', [1, 2]
       )
     })
   })
@@ -361,7 +361,7 @@ describe('Model find', () => {
     expect.assertions(2)
     return TestModel.find({ data: 1 }).then(() => {
       expect(sanitizeSchemaData).toBeCalledTimes(1)
-      expect(sanitizeSchemaData).toBeCalledWith({ data: 1 }, modelOptions.sqlSchema)
+      expect(sanitizeSchemaData).toBeCalledWith({ data: 1 }, { TYPES: true, SCHEMA: true, defId: 'ID' })
     })
   })
   it('unescapes return value', () => {
@@ -396,7 +396,7 @@ describe('Model find', () => {
 
 
 describe('Model count', () => {
-  const TestModel = new Model('test', modelOptions)
+  const TestModel = new Model('testModel', modelOptions)
 
   it('uses expected SQL', () => {
     expect.assertions(2)
@@ -404,7 +404,7 @@ describe('Model count', () => {
       expect(services.get).toBeCalledTimes(1)
       expect(services.get).toBeCalledWith(
         'DB',
-        expect.stringMatching(/SELECT COUNT\([^)]+\) \w+ FROM test WHERE key = \?/),
+        expect.stringMatching(/SELECT COUNT\([^)]+\) \w+ FROM testModel WHERE key = \?/),
         ['inp']
       )
     })
@@ -414,7 +414,7 @@ describe('Model count', () => {
     return TestModel.count().then(() => {
       expect(services.get).toBeCalledTimes(1)
       expect(services.get).toBeCalledWith(
-        'DB', expect.stringMatching(/SELECT COUNT\([^)]+\) \w+ FROM test/), []
+        'DB', expect.stringMatching(/SELECT COUNT\([^)]+\) \w+ FROM testModel/), []
       )
     })
   })
@@ -436,14 +436,14 @@ describe('Model count', () => {
 
 
 describe('Model add', () => {
-  const TestModel = new Model('test', modelOptions)
+  const TestModel = new Model('testModel', modelOptions)
 
   it('uses expected SQL', () => {
     expect.assertions(2)
     return TestModel.add({ data: 1, test: 2 }).then(() => {
       expect(services.getLastId).toBeCalledTimes(1)
       expect(services.getLastId).toBeCalledWith(
-        'DB', 'INSERT INTO test(data,test) VALUES(?,?)', [1,2]
+        'DB', 'INSERT INTO testModel(data,test) VALUES(?,?)', [1,2]
       )
     })
   })
@@ -474,7 +474,7 @@ describe('Model add', () => {
     expect.assertions(2)
     return TestModel.add({ data: 1 }).then(() => {
       expect(sanitizeSchemaData).toBeCalledTimes(1)
-      expect(sanitizeSchemaData).toBeCalledWith({ data: 1 }, modelOptions.sqlSchema)
+      expect(sanitizeSchemaData).toBeCalledWith({ data: 1 }, { TYPES: true, SCHEMA: true, defId: 'ID' })
     })
   })
   it('unescapes return value', () => {
@@ -495,14 +495,14 @@ describe('Model add', () => {
 
 describe('Model update', () => {
   // NOTE: Requires service.get() in Model.count() to return truthy (See mock below)
-  const TestModel = new Model('test', modelOptions)
+  const TestModel = new Model('testModel', modelOptions)
 
   it('uses expected SQL', () => {
     expect.assertions(2)
     return TestModel.update('inp', { data: 1, test: 2 }, 'key').then(() => {
       expect(services.run).toBeCalledTimes(1)
       expect(services.run).toBeCalledWith(
-        'DB', 'UPDATE test SET data = ?, test = ? WHERE key = ?', [1, 2, 'inp']
+        'DB', 'UPDATE testModel SET data = ?, test = ? WHERE key = ?', [1, 2, 'inp']
       )
     })
   })
@@ -531,7 +531,7 @@ describe('Model update', () => {
     expect.assertions(2)
     return TestModel.update('inp', { data: 1 }, 'key').then(() => {
       expect(sanitizeSchemaData).toBeCalledTimes(1)
-      expect(sanitizeSchemaData).toBeCalledWith({ data: 1 }, modelOptions.sqlSchema)
+      expect(sanitizeSchemaData).toBeCalledWith({ data: 1 }, { TYPES: true, SCHEMA: true, defId: 'ID' })
     })
   })
   it('calls changeCb with before/after data', () => {
@@ -592,14 +592,14 @@ describe('Model update', () => {
 
 describe('Model remove', () => {
   // NOTE: Requires service.get() in Model.count() to return truthy (See mock below)
-  const TestModel = new Model('test', modelOptions)
+  const TestModel = new Model('testModel', modelOptions)
 
   it('uses expected SQL', () => {
     expect.assertions(2)
     return TestModel.remove('inp','key').then(() => {
       expect(services.run).toBeCalledTimes(1)
       expect(services.run).toBeCalledWith(
-        'DB', 'DELETE FROM test WHERE key = ?', ['inp']
+        'DB', 'DELETE FROM testModel WHERE key = ?', ['inp']
       )
     })
   })
@@ -634,7 +634,7 @@ describe('Model remove', () => {
 
 
 describe('Model custom', () => {
-  const TestModel = new Model('test', modelOptions)
+  const TestModel = new Model('testModel', modelOptions)
 
   it('uses input SQL', () => {
     expect.assertions(2)
@@ -691,7 +691,7 @@ describe('Model custom', () => {
 
 describe('Model getPaginationData', () => {
   // NOTE: Requires service.get() in Model.count() to return > page*size (See mock below)
-  const TestModel = new Model('test', modelOptions)
+  const TestModel = new Model('testModel', modelOptions)
   
   let input, options
   beforeEach(() => {
@@ -797,10 +797,6 @@ jest.mock('../../utils/common.utils', () => ({
   capitalizeHyphenated: jest.fn()
 }))
 
-jest.mock('../../../config/models.cfg', () => ({
-  types: {}, defaults: { test: 'CFGDEFS' }, limits: { test: 'CFGLIMS' }
-}))
-
 jest.mock('../../services/db.services', () => ({
   run:       jest.fn((db) => db ? Promise.resolve() : Promise.reject('No DB')),
   get:       jest.fn((db) => db ? Promise.resolve({ val: 'GET', c: 15 }) : Promise.reject('No DB')),
@@ -811,7 +807,7 @@ jest.mock('../../services/db.services', () => ({
 
 jest.mock('../../utils/db.utils', () => ({
   sanitizeSchemaData: jest.fn((o) => o),
-  schemaFromTypes: jest.fn((s) => s),
+  schemaFromTypes: jest.fn((t) => require('../test.utils').deepCopy(t || {})),
   boolsFromTypes: () => ['bools'],
   appendAndSort: jest.fn((list) => list),
 }))

@@ -1,29 +1,37 @@
 const { openDb, getDb } = require('../libs/db')
 const services = require('../services/db.services')
 const { sanitizeSchemaData, schemaFromTypes, boolsFromTypes, appendAndSort } = require('../utils/db.utils')
-const { types: configTypes, defaults: configDefaults, limits: configLimits } = require('../../config/models.cfg')
 const { hasDupes, caseInsensitiveObject } = require('../utils/common.utils')
 const errors = require('../config/errors.internal')
 const { deepUnescape, parseBoolean } = require('../utils/validate.utils')
 const parseBool = parseBoolean(true)
 
+/** Base class for creating Database Models */
 class Model {
 
-  constructor(title, { sqlSchema, types, defaults, limits, primaryId = 'id', getAdapter, setAdapter } = {}) {
-    if (types == null) types = configTypes[title]
+  /**
+   * Creates a new database model and loads it into the database
+   * @param  {string} title - Name of database table
+   * @param  {ModelOptions} options - Additional options
+   */
+  constructor(title, { types, limits, defaults, primaryId = 'id', getAdapter, setAdapter, sqlSchema } = {}) {
+    if (!types && !sqlSchema) throw new Error(`${title} must be provided a Schema or Types object.`)
 
-    if (typeof sqlSchema === 'function') sqlSchema = sqlSchema(schemaFromTypes(types, primaryId), types, primaryId, title)
-    else if (!sqlSchema) sqlSchema = schemaFromTypes(types, primaryId)
-    if (!sqlSchema) throw new Error(`Schema for ${title} not provided and does not exist in models.cfg.`)
+    if (typeof sqlSchema === 'function') sqlSchema = sqlSchema(schemaFromTypes(types, primaryId))
+    else sqlSchema = Object.assign(schemaFromTypes(types, primaryId), sqlSchema || {})
+
+    if (!sqlSchema || !Object.keys(sqlSchema).length) throw new Error(`Schema for ${title} was unable to be created or has no entries.`)
     if (hasDupes(Object.keys(sqlSchema).map((k) => k.toLowerCase())))
       throw new Error(`Schema for ${title} contains duplicate key names: ${Object.keys(sqlSchema).join(', ')}`)
 
     if (!sqlSchema[primaryId]) sqlSchema[primaryId] = 'INTEGER PRIMARY KEY'
+    if (types && !types[primaryId]) types[primaryId] = 'int'
 
     this.title = title
     this.schema = sanitizeSchemaData(sqlSchema)
-    this.defaults = defaults != null ? defaults : configDefaults[title]
-    this.limits = limits != null ? limits : configLimits[title]
+    this.defaults = defaults
+    this.types = types
+    this.limits = limits
     this.primaryId = primaryId
     this.bitmapFields = []
     this.boolFields = boolsFromTypes(types)
@@ -202,3 +210,47 @@ class Model {
 }
 
 module.exports = Model
+
+
+// JSDOC TYPES
+
+/**
+ * Callback that takes in a single piece of data and returns a modified version of that data
+ * @callback Adapter
+ * @param {Object} data - input data
+ * @returns {Object} updated data
+ */
+
+/**
+ * Model options object
+ * (Requires at least one of types OR sqlSchema is entered)
+ * @typedef  {Object} ModelOptions
+ * @property {Object.<string,string>} types - Object of column types
+ *   - { [columnKey]: (colType) }
+ *   - (colType) = string, uuid, b64[url], hex, date, datetime, boolean, int, float, object, any
+ *   - (colType)[] = array of (colType)
+ *   - (colType)? = column is optional
+ *   - string* = allow symbols/spaces in string
+ * @property {Object.<string,import('../validators/shared.validators').Limits>} [limits] - Object of column limits
+ *   - { [columnKey]: { columnLimits } }
+ *   - Sets limits on numbers, string length or array size
+ * @property {Object.<string,any>} [defaults] - Object of column defaults
+ *   - { [columnKey]: defaultValue }
+ *   - Default value to use for that column if nothing provided on creation 
+ * @property {string} [primaryId=id] - columnKey for SQL primary key
+ *   - If not in type will be added as auto-incrementing INT
+ *   - default: 'id'
+ * @property {Adapter} [getAdapter] - Function called on every row retrieved from the database (ie. get)
+ *   - INPUT: Row as an object
+ *   - RETURN: Passed to user when calling a retrieve method
+ *   - default: Converts data based on Model.types
+ * @property {Adapter} [setAdapter] - Function called on every object before it is stored in the database (ie. add/update)
+ *   - INPUT: Data object called with a set method 
+ *   - REUTRN: Row object to be inserted/updated in the database
+ *   - default: Converts data based on Model.types
+ * @property {Object.<string,string>|Adapter} [sqlSchema] - Can be an Object or Function for helping create the SQL Table
+ *   - OBJECT: { [columnKey]: 'SQL TYPE' }, this will override the schema auto-generated from Model.types
+ *   - FUNCTION: called on the auto-generated SQL schema before the table is created
+ *   - - input object will be like OBJECT (above)
+ *   - - return should be of the same form
+ */
