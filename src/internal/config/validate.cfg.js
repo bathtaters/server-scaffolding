@@ -1,6 +1,7 @@
 const strictDatetime = true // Use strict date/time parsing
 
 module.exports = {
+  ignoreDisableMin: ['float'], // never remove 'min' for these types (intended for helping searches)
 
   boolOptions: {
     true:  [true,  1, '1', 'true', 'yes',  'on'],
@@ -32,11 +33,11 @@ module.exports = {
     type:      (type)      => `does not exist as ${type}`,
     missing:   (key, type) => `${key} has ${type ? 'invalid' : 'missing'} type definition: ${type || ''}`,
     missingIn: (key)       => `${key} missing 'in' array for validation`,
-    limit:     ({ min, max }, isStr = false) => 
-      `is too ${
-        isStr ? 'long/short' : 'large/small'
-      } (must be between ${
-        min || 'anything'} & ${max || 'anything'}${isStr ? ' characters' : ''
-      })`,
+    limit:     ({ min, max }, isStr = false, isArr = false) => 
+      `must ${isStr || isArr ? 'have' : 'be'} ${
+        min != null && max != null ? 
+          `between ${min} & ${max}` :
+          `${!max ? 'more' : 'less'} than ${min || max}`
+      }${isStr ? ' characters' : isArr ? ' items' : ''}`,
   },
 }
