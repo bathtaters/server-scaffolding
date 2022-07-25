@@ -1,13 +1,12 @@
 const logger = require('../libs/log')
-const validCfg = require('../../config/models.cfg')
-const { errorMsgs, dateOptions } = require("../config/validate.cfg")
+const { errorMsgs, dateOptions, ignoreDisableMin } = require("../config/validate.cfg")
 const { getTypeArray, escapedLength, isBoolean, parseBoolean } = require('../utils/validate.utils')
 
 // Obscure 'min' field (For allowing partial validation on searches) from limit
 const hidingMin = ({ min, ...other }) => other
 
-// Generate Schema object based on input
-function getSchema(key, typeStr, limits, isIn, forceOptional = false, disableMin = false) {
+// Generate Validation Schema object based on typeString/limits/etc
+function toValidationSchema(key, typeStr, limits, isIn, forceOptional = false, disableMin = false) {
   if (!isIn || !isIn.length) throw new Error(errorMsgs.missingIn(key))
 
   // Get type from typeStr
@@ -59,7 +58,7 @@ function getSchema(key, typeStr, limits, isIn, forceOptional = false, disableMin
   // Pass limits as options
   if (limits && (limits.array || limits.elem)) limits = limits.elem
   if (limits) {
-    if (disableMin) limits = hidingMin(limits) // Remove minimum
+    if (disableMin && !ignoreDisableMin.includes(type[1])) limits = hidingMin(limits) // Remove minimum
     limits = { options: limits, errorMessage: errorMsgs.limit(limits, type[1] === 'string') }
   }
 
@@ -113,9 +112,9 @@ function getSchema(key, typeStr, limits, isIn, forceOptional = false, disableMin
 }
 
 
-// Generate schema object based on ValidCfg file
-const OPTIONAL_FIELDS = ['body','query']
-function getSchemaFromCfg(set, key, isIn = ['params'], forceOptionalFields = false, disableMin = false) {
+// Generate schema object based on Types + Limits objects
+const OPTIONAL_FIELDS = Object.freeze(['body','query'])
+exports.generateSchema = function generateSchema(name, typeStr, limits, isIn = ['params'], forceOptionalFields = false, disableMin = false) {
   // Determine if optional flag should be forced
   let forceOptional = false
   if (forceOptionalFields) {
@@ -128,8 +127,24 @@ function getSchemaFromCfg(set, key, isIn = ['params'], forceOptionalFields = fal
     if (OPTIONAL_FIELDS.includes(isIn[0])) forceOptional = true
   }
 
-  return exports.getSchema(key, validCfg.types[set][key], validCfg.limits[set][key], isIn, forceOptional, disableMin)
+  return toValidationSchema(name, typeStr, limits, isIn, forceOptional, disableMin)
 }
 
-exports.getSchema = getSchema
-exports.getSchemaFromCfg = getSchemaFromCfg
+
+// Add additional validation to schema (overwrites matching keys)
+exports.appendToSchema = function appendToSchema(schema = {}, additional = []) {
+  additional.forEach(({ key, typeStr, isIn, limits }) => {
+    // Check 'isIn' value
+    if (!isIn) return logger.warn('Missing "isIn" from additional validator schema')
+    if (!Array.isArray(isIn)) isIn = [isIn]
+
+    // If key already exists, just add missing 'in' values
+    if (key in schema) return isIn.forEach((entry) => schema[key].in.includes(entry) || schema[key].in.push(entry))
+
+    // Append to schema
+    Object.entries(toValidationSchema(key, typeStr, limits, isIn)).forEach(([key,val]) => schema[key] = val)
+  })
+  return schema
+}
+
+if (process.env.NODE_ENV === 'test') exports.toValidationSchema = toValidationSchema // export for testing ONLY
