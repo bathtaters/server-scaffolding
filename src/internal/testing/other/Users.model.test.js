@@ -1,10 +1,10 @@
 const Users = require('../../models/Users')
-const { rateLimiter } = require('../../config/users.cfg')
+const { rateLimiter, definitions } = require('../../config/users.cfg')
 const errors = require('../../config/errors.internal')
 
 jest.mock('../../config/users.cfg', () => ({
   ...jest.requireActual('../../config/users.cfg'),
-  rateLimiter: { autoUnlock: false, maxFails: 10, failWindow: 1000 }
+  rateLimiter: { autoUnlock: false, maxFails: 10, failWindow: 1000 },
 }))
 
 const getUserTime = (id, timePrefix) => Users.get(id).then((data) => data[timePrefix+'Time'] && new Date(data[timePrefix+'Time']).getTime())
@@ -12,6 +12,21 @@ const getUserTime = (id, timePrefix) => Users.get(id).then((data) => data[timePr
 describe('test Users model', () => {
   const uname = 'test', pword = 'password'
   beforeAll(() => Users.isInitialized)
+
+  describe('model initialization', () => {
+    it('Uses types/limits/defaults from users.cfg', () => {
+      expect(Users.types).toBe(definitions.types)
+      expect(Users.limits).toBe(definitions.limits)
+      expect(Users.defaults).toBe(definitions.defaults)
+    })
+    it('Sets up bitmap/bool fields', () => {
+      expect(Users.bitmapFields).toEqual(['access'])
+      expect(Users.boolFields).toEqual(['locked'])
+    })
+    it('Collects validTimestamps from schema', () => {
+      expect(Users.validTimestamps.sort()).toEqual(['gui','api','fail'].sort())
+    })
+  })
 
   describe('checkPassword', () => {
     let userId

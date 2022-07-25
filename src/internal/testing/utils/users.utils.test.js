@@ -4,7 +4,7 @@ const {
   // MODELS
   modelAccessStr, hasModelAccess, modelsArrayToObj, getModelsString,
   // CORS
-  decodeCors, encodeCors, displayCors, isRegEx,
+  decodeCors, encodeCors, displayCors, isRegEx, modelAccessToInts,
 } = require('../../utils/users.utils')
 
 const errors = require('../../config/errors.internal')
@@ -102,6 +102,104 @@ describe('passwordAccess', () => {
 
 /* ---- MODEL ADAPTERS ---- */
 
+describe('modelAccessToInts', () => {
+  it('Ints passthrough', () => {
+    expect(modelAccessToInts(0)).toBe(0)
+    expect(modelAccessToInts(1)).toBe(1)
+    expect(modelAccessToInts(12345)).toBe(12345)
+    expect(modelAccessToInts(-999)).toBe(-999)
+  })
+  it('Number string to int', () => {
+    expect(modelAccessToInts('0')).toBe(0)
+    expect(modelAccessToInts('1')).toBe(1)
+    expect(modelAccessToInts('12345')).toBe(12345)
+    expect(modelAccessToInts('-999')).toBe(-999)
+  })
+  it('Access key to access value', () => {
+    expect(modelAccessToInts('none')).toBe(0)
+    expect(modelAccessToInts('alpha')).toBe(1)
+    expect(modelAccessToInts('bravo')).toBe(2)
+  })
+  it('Access letter to access value', () => {
+    expect(modelAccessToInts('a')).toBe(1)
+    expect(modelAccessToInts('b')).toBe(2)
+    expect(modelAccessToInts('-')).toBe(0)
+    expect(modelAccessToInts('n')).toBe(0)
+  })
+  it('Access letter string to combined access values', () => {
+    expect(modelAccessToInts('an')).toBe(1)
+    expect(modelAccessToInts('-b')).toBe(2)
+    expect(modelAccessToInts('ab')).toBe(3)
+    expect(modelAccessToInts('n-')).toBe(0)
+  })
+  it('Int array to combined ints', () => {
+    expect(modelAccessToInts([1,2,4])).toBe(7)
+    expect(modelAccessToInts([2])).toBe(2)
+    expect(modelAccessToInts([12,48,100])).toBe(124)
+    expect(modelAccessToInts([])).toBe(0)
+  })
+  it('Number string array to combined ints', () => {
+    expect(modelAccessToInts(['1','2','4'])).toBe(7)
+    expect(modelAccessToInts(['2'])).toBe(2)
+    expect(modelAccessToInts(['12','48','100'])).toBe(124)
+    expect(modelAccessToInts(['0'])).toBe(0)
+  })
+  it('Access key array to combined values', () => {
+    expect(modelAccessToInts(['bravo'])).toBe(2)
+    expect(modelAccessToInts(['alpha','none'])).toBe(1)
+    expect(modelAccessToInts(['alpha','bravo'])).toBe(3)
+    expect(modelAccessToInts(['none'])).toBe(0)
+  })
+  it('Access letter array to combined values', () => {
+    expect(modelAccessToInts(['b'])).toBe(2)
+    expect(modelAccessToInts(['a','n'])).toBe(1)
+    expect(modelAccessToInts(['a','b'])).toBe(3)
+    expect(modelAccessToInts(['-'])).toBe(0)
+  })
+  it('Object runs each value through function', () => {
+    expect(modelAccessToInts({
+      testA: 'alpha',
+      testB: '-',
+      testC: [1, 'n', 'bravo', '4', 'none'],
+      testD: {
+        innerA: 1234, innerB: [], innerC: '0'
+      }
+    })).toEqual({
+      testA: 1,
+      testB: 0,
+      testC: 7,
+      testD: {
+        innerA: 1234, innerB: 0, innerC: 0
+      }
+    })
+  })
+  it('Unknown strings throw error', () => {
+    expect(() => modelAccessToInts('calypso')).toThrowError(expect.objectContaining({
+      message: expect.stringContaining('modelAccessChar')
+    }))
+    expect(() => modelAccessToInts('$')).toThrowError(expect.objectContaining({
+      message: expect.stringContaining('modelAccessChar')
+    }))
+    expect(() => modelAccessToInts(['alph'])).toThrowError(expect.objectContaining({
+      message: expect.stringContaining('modelAccessChar')
+    }))
+    expect(() => modelAccessToInts(['bravoed'])).toThrowError(expect.objectContaining({
+      message: expect.stringContaining('modelAccessChar')
+    }))
+    expect(() => modelAccessToInts({ a: 1, b: '6', x: 'break' })).toThrowError(expect.objectContaining({
+      message: expect.stringContaining('modelAccessChar')
+    }))
+  })
+  it('Unknown types throw error', () => {
+    expect(() => modelAccessToInts(() => {})).toThrowError(expect.objectContaining({
+      message: expect.stringContaining('modelAccess<function>')
+    }))
+    expect(() => modelAccessToInts(Symbol('test'))).toThrowError(expect.objectContaining({
+      message: expect.stringContaining('modelAccess<symbol>')
+    }))
+  })
+})
+
 describe('modelAccessStr', () => {
   it('normal model vals', () => {
     expect(modelAccessStr(1)).toBe('a')
@@ -114,9 +212,9 @@ describe('modelAccessStr', () => {
     expect(modelAccessStr(false)).toBe('-')
   })
   it('non-int or out of range', () => {
-    expect(() => modelAccessStr('test')).toThrowError(errors.badAccess('test','modelInt'))
-    expect(() => modelAccessStr(true)).toThrowError(errors.badAccess(true,'modelInt'))
-    expect(() => modelAccessStr({})).toThrowError(errors.badAccess({},'modelInt'))
+    expect(() => modelAccessStr('test')).toThrowError(errors.badAccess('test','modelAccessInt'))
+    expect(() => modelAccessStr(true)).toThrowError(errors.badAccess(true,'modelAccessInt'))
+    expect(() => modelAccessStr({})).toThrowError(errors.badAccess({},'modelAccessInt'))
   })
 })
 

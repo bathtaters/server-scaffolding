@@ -43,11 +43,36 @@ const { models, modelsMax, allModelsKey, noModelAccessChar } = require('../confi
 
 const wrapAccess = (access) => `[${access}]`
 
+exports.modelAccessToInts = (modelAccess) => {
+  switch(typeof modelAccess) {
+    case 'number':
+      return modelAccess
+    case 'string':
+      if (!isNaN(modelAccess)) return +modelAccess
+      if (modelAccess in models) return models[modelAccess]
+      if (modelAccess.length === 1) {
+        if (modelAccess === noModelAccessChar) return models.none
+        const key = Object.keys(models).find((k) => k.charAt(0) === modelAccess)
+        if (key) return models[key]
+        throw errors.badAccess(`${modelAccess}`, 'modelAccessChar')
+      }
+      logger.warn(`Splitting up invalid modelString: ${modelAccess}`)
+      modelAccess = [...modelAccess]
+    case 'object':
+      if (!Array.isArray(modelAccess))
+        return Object.entries(modelAccess).reduce(
+          (obj, [key,val]) => ({ ...obj, [key]: exports.modelAccessToInts(val) }), {})
+      return modelAccess.reduce((int, str) => int | exports.modelAccessToInts(str), 0)
+  }
+  throw errors.badAccess(JSON.stringify(modelAccess), `modelAccess<${Array.isArray(modelAccess) ? 'array' : typeof modelAccess}>`)
+}
+
 exports.modelAccessStr = (modelInt) => {
   if (!modelInt) return noModelAccessChar
   // if (typeof modelInt === 'string' && !isNaN(modelInt)) modelInt = +modelInt
-  if (typeof modelInt !== 'number' || modelInt < 0 || modelInt > modelsMax)
-    throw errors.badAccess(modelInt, 'modelInt')
+  if (typeof modelInt !== 'number' || modelInt < 0 || modelInt > modelsMax) {
+    throw errors.badAccess(modelInt, 'modelAccessInt')
+  }
 
   return Object.keys(models).filter((key) => models[key] & modelInt)
     .map((key) => key.charAt(0)).join('') || noModelAccessChar

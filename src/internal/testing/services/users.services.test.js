@@ -1,33 +1,11 @@
+const logErrSpy = jest.spyOn(require('../../libs/log'), 'error')
 const {
   getAdapter, setAdapter, addAdapter, guiAdapter,
   preValidateAdapter, adminFormAdapter, userFormAdapter
 } = require('../../services/users.services')
+const { modelAccessToInts, decodeCors, displayCors } = require('../../utils/users.utils')
 const errors = require('../../config/errors.internal')
 
-jest.mock('../../utils/users.utils', () => ({
-  accessArray: (access) => ['accessArray', access],
-  accessInt: (access) => 'accessInt:'+access,
-  decodeCors: (cors) => 'decodeCors:'+cors,
-  encodeCors: (cors) => 'encodeCors:'+cors,
-  displayCors: (cors) => 'displayCors:'+cors,
-  isRegEx: (cors) => 'isRegEx:'+cors,
-  hasAccess: () => false,
-  getModelsString: (models) => 'getModelsString:'+models,
-  modelsArrayToObj: (models) => 'modelsArrayToObj:'+models,
-}))
-jest.mock('../../utils/auth.utils', () => ({
-  generateToken: () => 'generateToken',
-  encodePassword: (password) => Promise.resolve({ key: 'encodePassword:'+password, salt: 'encodeSalt' })
-}))
-jest.mock('../../config/users.cfg', () => ({
-  access: {},
-  definitions: { defaults: {
-    username: 'usernameDefault',
-    access: 'accessDefault',
-    models: 'modelsDefault',
-    cors: 'corsDefault',
-  }}
-}))
 
 let testObj
 
@@ -49,19 +27,31 @@ describe('User getAdapter', () => {
     expect(result).toHaveProperty('password', true)
     expect(result).not.toHaveProperty('key')
   })
+  it('Catches & avoids throwing errors', () => {
+    expect(getAdapter(testObj).hadError).toBeFalsy()
+    expect(logErrSpy).toBeCalledTimes(0)
+    decodeCors.mockImplementationOnce(() => { throw 'TEST ERROR' })
+    expect(getAdapter(testObj).hadError).toBeTruthy()
+    expect(logErrSpy).toBeCalledTimes(1)
+    expect(logErrSpy).toBeCalledWith('TEST ERROR')
+  })
 })
 
 describe('User setAdapter', () => {
   beforeEach(() => { testObj = {
-    models: { a: 1, b: 2, c: 3 },
+    models: 'MODELS',
     access: 'ACCESS',
     cors: 'CORS',
     username: 'UNAME',
     password: 'PASSWORD',
   } })
 
-  it('strinigifys models', async () => {
-    expect(await setAdapter(testObj)).toHaveProperty('models','{"a":1,"b":2,"c":3}')
+  it('runs models through modelAccessToInts', async () => {
+    expect(await setAdapter(testObj)).toHaveProperty('models','"modelAccessToInts:MODELS"')
+  })
+  it('defaults models to {}', async () => {
+    modelAccessToInts.mockReturnValueOnce(null)
+    expect(await setAdapter(testObj)).toHaveProperty('models','{}')
   })
   it('encodes access', async () => {
     expect(await setAdapter(testObj)).toHaveProperty('access','accessInt:ACCESS')
@@ -147,16 +137,28 @@ describe('User guiAdapter', () => {
     expect(guiAdapter(null)).toEqual([])
     expect(guiAdapter()).toEqual([])
   })
+  it('Catches & avoids throwing errors', () => {
+    expect(guiAdapter(testObj).hadError).toBeFalsy()
+    expect(logErrSpy).toBeCalledTimes(0)
+    displayCors.mockImplementationOnce(() => { throw 'TEST ERROR' })
+    expect(guiAdapter(testObj).hadError).toBeTruthy()
+    expect(logErrSpy).toBeCalledTimes(1)
+    expect(logErrSpy).toBeCalledWith('TEST ERROR')
+  })
 })
 
 describe('User pre-validateAdapter', () => {
   beforeEach(() => { testObj = {
     models: 'a,b,c',
     access: '1,2,3',
+    searchA: 'keep only this',
+    searchB: 'and this',
   } })
 
-  it('search doesn\'t contain models', () => {
-    expect(preValidateAdapter(testObj, true)).not.toHaveProperty('models')
+  it('search removes non-searchable keys in users.cfg', () => {
+    expect(preValidateAdapter(testObj, true)).toEqual({
+      searchA: 'keep only this', searchB: 'and this',
+    })
   })
   it('convert models csv to array', () => {
     expect(preValidateAdapter(testObj)).toHaveProperty('models', ['a','b','c'])
@@ -213,3 +215,33 @@ describe('User form adapter', () => {
     expect(() => userFormAdapter(testObj,user,'Update')).toThrowError(errors.noConfirm())
   })
 })
+
+
+// MOCKS
+
+jest.mock('../../utils/users.utils', () => ({
+  accessArray: (access) => ['accessArray', access],
+  accessInt: (access) => 'accessInt:'+access,
+  decodeCors: jest.fn((cors) => 'decodeCors:'+cors),
+  encodeCors: (cors) => 'encodeCors:'+cors,
+  displayCors: jest.fn((cors) => 'displayCors:'+cors),
+  isRegEx: (cors) => 'isRegEx:'+cors,
+  hasAccess: () => false,
+  getModelsString: (models) => 'getModelsString:'+models,
+  modelsArrayToObj: (models) => 'modelsArrayToObj:'+models,
+  modelAccessToInts: jest.fn((models) => 'modelAccessToInts:'+models),
+}))
+jest.mock('../../utils/auth.utils', () => ({
+  generateToken: () => 'generateToken',
+  encodePassword: (password) => Promise.resolve({ key: 'encodePassword:'+password, salt: 'encodeSalt' })
+}))
+jest.mock('../../config/users.cfg', () => ({
+  access: {},
+  searchableKeys: ['searchA','searchB'],
+  definitions: { defaults: {
+    username: 'usernameDefault',
+    access: 'accessDefault',
+    models: 'modelsDefault',
+    cors: 'corsDefault',
+  }}
+}))

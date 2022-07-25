@@ -87,4 +87,6 @@ module.exports = {
       cors: { min: 0, max: 2048 },
     },
   },
+
+  searchableKeys: ['username','token','access','cors','locked'], // 'models'
 }
