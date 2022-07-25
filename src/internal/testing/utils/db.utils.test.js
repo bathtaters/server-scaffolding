@@ -1,6 +1,6 @@
 const { extractId, appendAndSort, sanitizeSchemaData, boolsFromTypes, schemaFromTypes } = require('../../utils/db.utils')
 
-jest.mock('../../utils/validate.utils', () => ({ getTypeArray: (type) => [type, type] }))
+jest.mock('../../utils/validate.utils', () => ({ getTypeArray: (type) => ({ type }) }))
 const testTypes = {
   test1: { a: 'string', b: 'int', c: 'object' },
   test2: { d: 'float',  e: 'boolean' },

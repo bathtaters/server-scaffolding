@@ -11,30 +11,30 @@ function toValidationSchema(key, typeStr, limits, isIn, forceOptional = false, d
 
   // Get type from typeStr
   const type = getTypeArray(typeStr)
-  if (!type || !type[0]) throw new Error(errorMsgs.missing(key, typeStr))
-  if (forceOptional) type[4] = '?'
-  if (type[2] && type[1] !== 'string') logger.warn(`* is ignored w/ non-string type: ${type[0]}`)
+  if (!type.type) throw new Error(errorMsgs.missing(key, typeStr))
+  if (forceOptional) type.isOptional = '?'
+  if (type.hasSpaces && type.type !== 'string') logger.warn(`* is ignored w/ non-string type: ${type.string}`)
 
   // Initialize ptr & static values (errMsg/in)
   let valid = { [key]: {} }
   let ptr = valid[key]
-  ptr.errorMessage = errorMsgs.type(type[0])
+  ptr.errorMessage = errorMsgs.type(type.string)
   ptr.in = isIn
 
   // Add validation for optionals/non-optionals
-  if (type[4]) {
-    ptr.optional = { options: { nullable: true, checkFalsy: type[1] !== 'boolean' } }
+  if (type.isOptional) {
+    ptr.optional = { options: { nullable: true, checkFalsy: type.type !== 'boolean' } }
   } else {
     ptr.exists = { errorMessage: errorMsgs.exists }
     
     // Skip validation of empty strings (only if empty strings are allowed)
-    if (type[1] === 'string' && (!limits || (!limits.min && !limits.elem) || ((limits.elem || limits).min === 0))) {
+    if (type.type === 'string' && (!limits || (!limits.min && !limits.elem) || ((limits.elem || limits).min === 0))) {
       ptr.optional = { options: { checkFalsy: true } }
     }
   }
 
   // Handle validation for array elements
-  if (type[3]) {
+  if (type.isArray) {
     // Set limits
     let arrLimit
     if (limits && (limits.array || limits.elem)) {
@@ -51,22 +51,22 @@ function toValidationSchema(key, typeStr, limits, isIn, forceOptional = false, d
     ptr = valid[key+'.*']
 
     // Set statics for new entry
-    ptr.errorMessage = errorMsgs.type(type[1])
+    ptr.errorMessage = errorMsgs.type(type.type)
     ptr.in = isIn
   }
 
   // Pass limits as options
   if (limits && (limits.array || limits.elem)) limits = limits.elem
   if (limits) {
-    if (disableMin && !ignoreDisableMin.includes(type[1])) limits = hidingMin(limits) // Remove minimum
-    limits = { options: limits, errorMessage: errorMsgs.limit(limits, type[1] === 'string') }
+    if (disableMin && !ignoreDisableMin.includes(type.type)) limits = hidingMin(limits) // Remove minimum
+    limits = { options: limits, errorMessage: errorMsgs.limit(limits, type.type === 'string') }
   }
 
   // Set type-specific validators/sanitizers
-  switch (type[1]) {
+  switch (type.type) {
     case 'b64': 
     case 'b64url': // pass to string
-      ptr.isBase64 = { options: { urlSafe: type[1] === 'b64url' }, errorMessage: errorMsgs.b64 }
+      ptr.isBase64 = { options: { urlSafe: type.type === 'b64url' }, errorMessage: errorMsgs.b64 }
     case 'uuid': // pass to string
       if (!ptr.isBase64)
         ptr.isUUID = { options: 4, errorMessage: errorMsgs.uuid }
@@ -76,7 +76,7 @@ function toValidationSchema(key, typeStr, limits, isIn, forceOptional = false, d
 
     case 'string':
       ptr.isString = { errorMessage: errorMsgs.string }
-      if (!type[2]) { 
+      if (!type.hasSpaces) { 
         ptr.stripLow = true
         ptr.trim = true
       }
