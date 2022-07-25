@@ -1,6 +1,6 @@
-const validate = require('./shared.validators')
-const { title } = require('../models/Users')
+const { byModel } = require('./shared.validators')
+const Users = require('../models/Users')
 
 module.exports = {
-  login:   validate.byRoute(title)([], [ 'username', 'password' ]),
+  login:   byModel(Users, [ 'username', 'password' ]),
 }

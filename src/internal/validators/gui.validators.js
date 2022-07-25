@@ -1,5 +1,5 @@
-const profileName = require('../models/Users').title
-const { byRoute, additionalOnly } = require('./shared.validators')
+const Users = require('../models/Users')
+const { byModel, byObject } = require('./shared.validators')
 const { swap, all } = require('./api.validators')
 
 const formAdditional = [
@@ -16,10 +16,10 @@ const profileFields = { username: 'username', password: 'password', confirm: 'pa
 
 module.exports = {
   all, swap,
-  page: additionalOnly(pageAdditional),
-  find: (Model, formFields = 'all') => byRoute(Model.title)([], formFields, true, true,  true),
-  form: (Model, formFields = 'all') => byRoute(Model.title)([], formFields, true, false, false, formAdditional),
-  formNoMin: (Model, formFields = 'all') => byRoute(Model.title)([], formFields, true, false, true, formAdditional),
-  profile: byRoute(profileName)([], profileFields, true, false, false, formAdditional),
+  page: byObject(pageAdditional),
+  find:      (Model, formFields = 'all') => byModel(Model, formFields, { allowPartials: true, asQueryStr: true }),
+  form:      (Model, formFields = 'all') => byModel(Model, formFields, { additional: formAdditional }),
+  formNoMin: (Model, formFields = 'all') => byModel(Model, formFields, { additional: formAdditional, allowPartials: true }),
+  profile: byModel(Users, profileFields, { additional: formAdditional }),
   formAdditional, pageAdditional,
 }
