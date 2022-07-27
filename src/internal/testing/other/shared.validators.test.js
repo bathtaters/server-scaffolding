@@ -1,110 +1,161 @@
-// Spies & Imports
-const checkValidation = require('../../middleware/validate.middleware')
-const services = require('../../services/validate.services')
-const schemaGetSpy = jest.spyOn(services,   'getSchema')
-const schemaCfgSpy = jest.spyOn(services,   'getSchemaFromCfg')
-
 const shared = require('../../validators/shared.validators')
+const { checkSchema } = require('express-validator')
+const { filterDupes } = require('../../utils/common.utils')
+const { generateSchema, appendToSchema } = require('../../services/validate.services')
+const { deepCopy } = require('../test.utils')
 
-// Mocks
-jest.mock('express-validator', () => ({ checkSchema: jest.fn((r)=>[r]) }))
-jest.mock('../../middleware/validate.middleware', () => 'checkValidation')
-jest.mock('../../../config/models.cfg', () => ({
-  types:  { routeA: { a: 'type1', b: 'type2' }, routeB: { c: 'type3', d: 'type4' }, },
-  limits: { routeA: { a: 'lims1', b: 'lims2' }, routeB: { c: 'lims3' }, },
-}))
+const inputValues = [
+  {
+    types:  { a: 'type1', b: 'type2' },
+    limits: { a: 'lims1', b: 'lims2' },
+  },{
+    types:  { c: 'type3', d: 'type4' },
+    limits: { c: 'lims3' },
+  },
+]
 
 
-// -- BY ROUTE tests -- //
+// -- BY OBJECT tests -- //
 
-describe('byRoute', () => {
-  beforeAll(() => schemaCfgSpy.mockImplementation((_,key)=>({ [key]: true })))
-  afterAll(() => schemaCfgSpy.mockRestore())
+describe('byObject', () => {
+  it('uses appendToSchema', () => {
+    shared.byObject('TEST')
+    expect(appendToSchema).toBeCalledTimes(1)
+    expect(appendToSchema).toBeCalledWith(expect.anything(), 'TEST')
+  })
+  it('passes result to checkSchema', () => {
+    appendToSchema.mockReturnValueOnce('RESULT')
+    shared.byObject('TEST')
+    expect(checkSchema).toBeCalledTimes(1)
+    expect(checkSchema).toBeCalledWith('RESULT')
+  })
+  it('includes checkValidation', () => {
+    expect(shared.byObject('TEST'))
+      .toEqual(expect.arrayContaining(['checkValidation']))
+  })
+})
 
-  it('calls getSchemaFromCfg forEach key', () => {
-    shared.byRoute('routeA')(['a'],['a','b'],'opt')
-    expect(schemaCfgSpy).toBeCalledTimes(2)
+
+// -- BY MODEL tests -- //
+
+describe('byModel', () => {
+  let testModel
+  beforeEach(() => { testModel = deepCopy(inputValues) })
+
+  it('calls generateSchema forEach key', () => {
+    shared.byModel(testModel[0],['a','b'])
+    expect(generateSchema).toBeCalledTimes(2)
   })
 
-  it('passes route to getSchemaFromCfg', () => {
-    shared.byRoute('routeA')(['a'],['a','b'],'opt')
-    expect(schemaCfgSpy).toHaveBeenNthCalledWith(1, 
-      'routeA',
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-    )
-    expect(schemaCfgSpy).toHaveBeenNthCalledWith(2, 
-      'routeA',
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-    )
-  })
-  it('passes optionalBody to getSchemaFromCfg', () => {
-    shared.byRoute('routeA')(['a'],['a','b'],'opt')
-    expect(schemaCfgSpy).toHaveBeenNthCalledWith(1, 
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-      'opt',
-      expect.anything(),
-    )
-    expect(schemaCfgSpy).toHaveBeenNthCalledWith(2, 
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-      'opt',
-      expect.anything(),
-    )
-  })
-  it('passes partialMatch to getSchemaFromCfg', () => {
-    shared.byRoute('routeA')(['a'],['a','b'],'opt',false,'part')
-    expect(schemaCfgSpy).toHaveBeenNthCalledWith(1, 
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-      'part',
-    )
-    expect(schemaCfgSpy).toHaveBeenNthCalledWith(2, 
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-      'part',
-    )
-  })
-
-  it('passes each key to getSchemaFromCfg', () => {
-    shared.byRoute('routeA')(['a'],['a','b'],'opt')
-    expect(schemaCfgSpy).toHaveBeenNthCalledWith(1, 
-      expect.anything(),
+  it('passes keys to generateSchema', () => {
+    shared.byModel(testModel[0],['a','b'])
+    expect(generateSchema).toHaveBeenNthCalledWith(1, 
       'a',
       expect.anything(),
       expect.anything(),
       expect.anything(),
-    )
-    expect(schemaCfgSpy).toHaveBeenNthCalledWith(2, 
       expect.anything(),
+      expect.anything(),
+    )
+    expect(generateSchema).toHaveBeenNthCalledWith(2, 
       'b',
+      expect.anything(),
+      expect.anything(),
       expect.anything(),
       expect.anything(),
       expect.anything(),
     )
   })
-  it('builds isIn array for getSchemaFromCfg', () => {
-    shared.byRoute('routeA')(['a'],['a','b'],'opt')
-    expect(schemaCfgSpy).toHaveBeenNthCalledWith(1, 
+  it('passes types to generateSchema', () => {
+    shared.byModel(testModel[0],['a','b'])
+    expect(generateSchema).toHaveBeenNthCalledWith(1, 
+      expect.anything(),
+      'type1',
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+    )
+    expect(generateSchema).toHaveBeenNthCalledWith(2, 
+      expect.anything(),
+      'type2',
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+    )
+  })
+  it('passes limits to generateSchema', () => {
+    shared.byModel(testModel[0],['a','b'])
+    expect(generateSchema).toHaveBeenNthCalledWith(1, 
+      expect.anything(),
+      expect.anything(),
+      'lims1',
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+    )
+    expect(generateSchema).toHaveBeenNthCalledWith(2, 
+      expect.anything(),
+      expect.anything(),
+      'lims2',
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+    )
+  })
+
+  it('passes optionalBody to generateSchema', () => {
+    shared.byModel(testModel[0],['a','b'],{ optionalBody: 'opt' })
+    expect(generateSchema).toHaveBeenNthCalledWith(1, 
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      'opt',
+      expect.anything(),
+    )
+    expect(generateSchema).toHaveBeenNthCalledWith(2, 
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      'opt',
+      expect.anything(),
+    )
+  })
+  it('passes partialMatch to generateSchema', () => {
+    shared.byModel(testModel[0],['a','b'],{ allowPartials: 'part' })
+    expect(generateSchema).toHaveBeenNthCalledWith(1, 
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      'part',
+    )
+    expect(generateSchema).toHaveBeenNthCalledWith(2, 
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      'part',
+    )
+  })
+
+  it('builds isIn array for generateSchema', () => {
+    shared.byModel(testModel[0],['a','b'],{ params: ['a'] })
+    expect(generateSchema).toHaveBeenNthCalledWith(1, 
+      expect.anything(),
       expect.anything(),
       expect.anything(),
       ['params','body'],
       expect.anything(),
       expect.anything(),
     )
-    expect(schemaCfgSpy).toHaveBeenNthCalledWith(2, 
+    expect(generateSchema).toHaveBeenNthCalledWith(2, 
+      expect.anything(),
       expect.anything(),
       expect.anything(),
       ['body'],
@@ -114,118 +165,154 @@ describe('byRoute', () => {
   })
 
   it('ignores falsy keys', () => {
-    shared.byRoute('routeA')(['a'],0,'opt')
-    expect(schemaCfgSpy).toBeCalledWith(
-      expect.anything(),
+    shared.byModel(testModel[0],0,{ params: ['a'] })
+    expect(generateSchema).toBeCalledWith(
       'a',
+      expect.anything(),
+      expect.anything(),
       ['params'],
       expect.anything(),
       expect.anything(),
     )
-    expect(schemaCfgSpy).toBeCalledTimes(1)
+    expect(generateSchema).toBeCalledTimes(1)
   })
   it('"all" as key list uses all keys under cfg.types', () => {
-    shared.byRoute('routeB')('all',['d'],'opt')
-    expect(schemaCfgSpy).toHaveBeenNthCalledWith(1,
-      expect.anything(),
+    shared.byModel(testModel[1],'all',{ params: ['d'] })
+    expect(generateSchema).toBeCalledWith(
       'c',
-      ['params'],
+      expect.anything(),
+      expect.anything(),
+      ['body'],
       expect.anything(),
       expect.anything(),
     )
-    expect(schemaCfgSpy).toHaveBeenNthCalledWith(2,
-      expect.anything(),
+    expect(generateSchema).toBeCalledWith(
       'd',
+      expect.anything(),
+      undefined, // No limits
       ['params','body'],
       expect.anything(),
       expect.anything(),
     )
-    expect(schemaCfgSpy).toBeCalledTimes(2)
+    expect(generateSchema).toBeCalledTimes(2)
   })
-  it('converts key string to array', () => {
-    shared.byRoute('routeB')(['c'],'d','opt')
-    expect(schemaCfgSpy).toHaveBeenNthCalledWith(1,
-      expect.anything(),
+  it('converts key string to single-member array', () => {
+    shared.byModel(testModel[1],'d',{ params: 'c' })
+    expect(generateSchema).toBeCalledWith(
       'c',
+      expect.anything(),
+      expect.anything(),
       ['params'],
       expect.anything(),
       expect.anything(),
     )
-    expect(schemaCfgSpy).toHaveBeenNthCalledWith(2,
-      expect.anything(),
+    expect(generateSchema).toBeCalledWith(
       'd',
+      expect.anything(),
+      undefined, // No limits
       ['body'],
       expect.anything(),
       expect.anything(),
     )
-    expect(schemaCfgSpy).toBeCalledTimes(2)
+    expect(generateSchema).toBeCalledTimes(2)
   })
   it('normalizes input objects to value arrays', () => {
-    shared.byRoute('routeB')({ c1: 'c', c2: 'c' },{ c3: 'c', d: 'd' },'opt')
-    expect(schemaCfgSpy).toHaveBeenNthCalledWith(1,
-      expect.anything(),
+    shared.byModel(testModel[1],{ c3: 'c', d: 'd' },{ params: { c1: 'c', c2: 'c' }})
+    expect(generateSchema).toBeCalledWith(
       'c',
+      expect.anything(),
+      expect.anything(),
+      ['params', 'params', 'body'],
+      expect.anything(),
+      expect.anything(),
+    )
+    expect(generateSchema).toBeCalledWith(
+      'd',
+      expect.anything(),
+      undefined, // No limits
+      ['body'],
+      expect.anything(),
+      expect.anything(),
+    )
+    expect(generateSchema).toBeCalledTimes(2)
+  })
+  it('removes dupes from input object values', () => {
+    shared.byModel(testModel[1],{ c3: 'c', d: 'd' },{ params: { c1: 'c', c2: 'c' }})
+    expect(filterDupes).toBeCalledTimes(2)
+    expect(filterDupes).toBeCalledWith(['c','d'])
+    expect(filterDupes).toBeCalledWith(['c','c'])
+  })
+  it('mixing input object with array', () => {
+    filterDupes.mockReturnValueOnce(['c'])
+    shared.byModel(testModel[1],['c','d'],{ params: { c1: 'c', c2: 'c' }})
+    expect(generateSchema).toBeCalledWith(
+      'c',
+      expect.anything(),
+      expect.anything(),
       ['params', 'body'],
       expect.anything(),
       expect.anything(),
     )
-    expect(schemaCfgSpy).toHaveBeenNthCalledWith(2,
-      expect.anything(),
+    expect(generateSchema).toBeCalledWith(
       'd',
+      expect.anything(),
+      undefined, // No limits
       ['body'],
       expect.anything(),
       expect.anything(),
     )
-    expect(schemaCfgSpy).toBeCalledTimes(2)
+    expect(generateSchema).toBeCalledTimes(2)
   })
   
   it('builds object of results', () => {
-    expect(shared.byRoute('routeA')(['a'],['a','b'],'opt'))
-      .toEqual([{ a: true, b: true }, checkValidation])
+    expect(shared.byModel(testModel[0],['a','b'],{ params: ['a'] }))
+      .toEqual(expect.arrayContaining([{ a: true, b: true }]))
+  })
+  it('includes checkValidation in result', () => {
+    expect(shared.byModel(testModel[0],['a','b'],{ params: ['a'] }))
+      .toEqual(expect.arrayContaining(['checkValidation']))
   })
   it('results are renamed using input object keys', () => {
-    expect(shared.byRoute('routeB')({ c1: 'c', c2: 'c' },{ c3: 'c', d: 'd' },'opt'))
-      .toEqual([{ c1: true, c2: true, c3: true, d: true }, checkValidation])
+    expect(shared.byModel(testModel[1],{ c3: 'c', d: 'd' },{ params: { c1: 'c', c2: 'c' }}))
+      .toEqual(expect.arrayContaining([{ c1: true, c2: true, c3: true, d: true }]))
   })
 
   it('gets additional validation', () => {
-    schemaGetSpy.mockImplementationOnce((key,_,__,isIn)=>({ [key]: { in: isIn } }))
-    schemaGetSpy.mockImplementationOnce((key,_,__,isIn)=>({ [key]: { in: isIn } }))
-    expect(shared.byRoute('routeA')([],[],'opt',false,false,[{ key: 'c', isIn: 'X' }, { key: 'a', isIn: 'X' }]))
-      .toEqual([{ a: { in: ['X'] }, c: { in: ['X'] } }, checkValidation])
+    appendToSchema.mockReturnValueOnce('RESULT')
+    expect(shared.byModel(testModel[0],['a'],{ additional: 'TEST' }))
+      .toEqual(expect.arrayContaining(['RESULT']))
+    expect(appendToSchema).toBeCalledTimes(1)
+    expect(appendToSchema).toBeCalledWith({ a: true },'TEST')
   })
 
-  it('merges additional validation to exisiting', () => {
-    schemaGetSpy.mockImplementationOnce((key,x,y,isIn)=>({ [key]: { in: isIn } }))
-    schemaCfgSpy.mockImplementationOnce((_,key,isIn)=>({ [key]: { in: isIn } }))
-    expect(shared.byRoute('routeA')([],['a'],'opt',false,false,[{ key: 'c', isIn: 'X' }, { key: 'a', isIn: 'X' }]))
-      .toEqual([{ a: { in: ['body', 'X'] }, c: { in: ['X'] } }, checkValidation])
-  })
-
-  it('bodyIsQuery makes isIn = query', () => {
-    shared.byRoute('routeA')([],['a','c'],'opt',true)
-    expect(schemaCfgSpy).toHaveBeenNthCalledWith(1,
-      expect.anything(),
+  it('asQueryStr makes isIn = query', () => {
+    shared.byModel(testModel[0],['a','b'],{ asQueryStr: true, params: ['b'] })
+    expect(generateSchema).toBeCalledWith(
       'a',
+      expect.anything(),
+      expect.anything(),
       ['query'],
       expect.anything(),
       expect.anything(),
     )
-    expect(schemaCfgSpy).toHaveBeenNthCalledWith(2,
+    expect(generateSchema).toBeCalledWith(
+      'b',
       expect.anything(),
-      'c',
-      ['query'],
+      expect.anything(),
+      ['params','query'],
       expect.anything(),
       expect.anything(),
     )
   })
 })
 
-describe('additionalOnly', () => {
-  it('gets additional validation', () => {
-    schemaGetSpy.mockImplementationOnce((key,_,__,isIn)=>({ [key]: { in: isIn } }))
-    schemaGetSpy.mockImplementationOnce((key,_,__,isIn)=>({ [key]: { in: isIn } }))
-    expect(shared.additionalOnly([{ key: 'c', isIn: 'X' }, { key: 'a', isIn: 'X' }]))
-      .toEqual([{ a: { in: ['X'] }, c: { in: ['X'] } }, checkValidation])
-  })
-})
+
+// MOCKS
+
+jest.mock('express-validator', () => ({ checkSchema: jest.fn((r)=>[r]) }))
+jest.mock('../../middleware/validate.middleware', () => 'checkValidation')
+jest.mock('../../utils/common.utils', () => ({ filterDupes: jest.fn((o)=>o) }))
+jest.mock('../../services/validate.services', () => ({
+  generateSchema: jest.fn((key)=>({ [key]: true })),
+  appendToSchema: jest.fn((obj) => obj),
+}))
