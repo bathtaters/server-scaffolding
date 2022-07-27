@@ -25,7 +25,7 @@ function toValidationSchema(key, typeStr, limits, isIn, forceOptional = false, d
   if (type.isOptional) {
     ptr.optional = { options: { nullable: true, checkFalsy: type.type !== 'boolean' } }
   } else {
-    ptr.exists = { errorMessage: errorMsgs.exists }
+    ptr.exists = { errorMessage: errorMsgs.exists() }
     
     // Skip validation of empty strings (only if empty strings are allowed)
     if (type.type === 'string' && (!limits || (!limits.min && !limits.elem) || ((limits.elem || limits).min === 0))) {
@@ -66,16 +66,16 @@ function toValidationSchema(key, typeStr, limits, isIn, forceOptional = false, d
   switch (type.type) {
     case 'b64': 
     case 'b64url': // pass to string
-      ptr.isBase64 = { options: { urlSafe: type.type === 'b64url' }, errorMessage: errorMsgs.b64 }
+      ptr.isBase64 = { options: { urlSafe: type.type === 'b64url' }, errorMessage: errorMsgs.b64() }
     case 'uuid': // pass to string
       if (!ptr.isBase64)
-        ptr.isUUID = { options: 4, errorMessage: errorMsgs.uuid }
+        ptr.isUUID = { options: 4, errorMessage: errorMsgs.uuid() }
     case 'hex': // pass to string
       if (!ptr.isBase64 && !ptr.isUUID)
-        ptr.isHexadecimal = { errorMessage: errorMsgs.hex }
+        ptr.isHexadecimal = { errorMessage: errorMsgs.hex() }
 
     case 'string':
-      ptr.isString = { errorMessage: errorMsgs.string }
+      ptr.isString = { errorMessage: errorMsgs.string() }
       if (!type.hasSpaces) { 
         ptr.stripLow = true
         ptr.trim = true
@@ -84,26 +84,26 @@ function toValidationSchema(key, typeStr, limits, isIn, forceOptional = false, d
       if (limits) ptr.custom = escapedLength(limits)
       break
     case 'float':
-      ptr.isFloat = limits || { errorMessage: errorMsgs.float }
+      ptr.isFloat = limits || { errorMessage: errorMsgs.float() }
       ptr.toFloat = true
       break
     case 'int':
-      ptr.isInt = limits || { errorMessage: errorMsgs.int }
+      ptr.isInt = limits || { errorMessage: errorMsgs.int() }
       ptr.toInt = true
       break
     case 'boolean':
-      ptr.custom = { options: isBoolean(), errorMessage: errorMsgs.boolean }
+      ptr.custom = { options: isBoolean(), errorMessage: errorMsgs.boolean() }
       ptr.customSanitizer = { options: parseBoolean() }
       break
     case 'datetime':
-      ptr.isISO8601 = { options: dateOptions.time, errorMessage: errorMsgs.datetime }
+      ptr.isISO8601 = { options: dateOptions.time, errorMessage: errorMsgs.datetime() }
       ptr.toDate = true
       break
     case 'date':
-      ptr.isDate = { options: dateOptions.date, errorMessage: errorMsgs.date }
+      ptr.isDate = { options: dateOptions.date, errorMessage: errorMsgs.date() }
       ptr.trim = true
       break
-    case 'object': ptr.isObject = { errorMessage: errorMsgs.object } // pass to default
+    case 'object': ptr.isObject = { errorMessage: errorMsgs.object() } // pass to default
     case 'any':  // pass to default
     default: break
   }
