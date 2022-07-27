@@ -5,8 +5,8 @@ const { getTypeArray, escapedLength, isBoolean, parseBoolean } = require('../uti
 // Obscure 'min' field (For allowing partial validation on searches) from limit
 const hidingMin = ({ min, ...other }) => other
 
-// Generate Validation Schema object based on typeString/limits/etc
-function toValidationSchema(key, typeStr, limits, isIn, forceOptional = false, disableMin = false) {
+// Generate Validation Schema object based on typeString/limits/etc (exported to simplify testing)
+exports.toValidationSchema = function toValidationSchema(key, typeStr, limits, isIn, forceOptional = false, disableMin = false) {
   if (!isIn || !isIn.length) throw new Error(errorMsgs.missingIn(key))
 
   // Get type from typeStr
@@ -127,7 +127,7 @@ exports.generateSchema = function generateSchema(name, typeStr, limits, isIn = [
     if (OPTIONAL_FIELDS.includes(isIn[0])) forceOptional = true
   }
 
-  return toValidationSchema(name, typeStr, limits, isIn, forceOptional, disableMin)
+  return exports.toValidationSchema(name, typeStr, limits, isIn, forceOptional, disableMin)
 }
 
 
@@ -135,16 +135,14 @@ exports.generateSchema = function generateSchema(name, typeStr, limits, isIn = [
 exports.appendToSchema = function appendToSchema(schema = {}, additional = []) {
   additional.forEach(({ key, typeStr, isIn, limits }) => {
     // Check 'isIn' value
-    if (!isIn) return logger.warn('Missing "isIn" from additional validator schema')
+    if (!isIn) return logger.warn(`Missing "isIn" for key "${key}" from additional validator`)
     if (!Array.isArray(isIn)) isIn = [isIn]
 
     // If key already exists, just add missing 'in' values
     if (key in schema) return isIn.forEach((entry) => schema[key].in.includes(entry) || schema[key].in.push(entry))
 
     // Append to schema
-    Object.entries(toValidationSchema(key, typeStr, limits, isIn)).forEach(([key,val]) => schema[key] = val)
+    Object.entries(exports.toValidationSchema(key, typeStr, limits, isIn)).forEach(([key,val]) => schema[key] = val)
   })
   return schema
 }
-
-if (process.env.NODE_ENV === 'test') exports.toValidationSchema = toValidationSchema // export for testing ONLY
