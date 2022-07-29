@@ -4,7 +4,7 @@ const { swap, all } = require('./api.validators')
 
 const formAdditional = [
   { key: 'action', typeStr: 'string', isIn: 'body', limits: { min: 1, max: 32 } },
-  { key: 'queryString', typeStr: 'string*?', isIn: 'body', limits: { max: 32 } },
+  { key: 'pageData', typeStr: 'object?', isIn: 'body', limits: { max: 32 } },
 ]
 
 const pageAdditional = [
