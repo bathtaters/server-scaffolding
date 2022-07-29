@@ -1,5 +1,5 @@
 const { 
-  getTypeArray, formSettingsToValidate,
+  parseTypeStr, formSettingsToValidate,
   isBoolean, parseBoolean,
   escapedLength, deepUnescape
 } = require('../../utils/validate.utils')
@@ -7,43 +7,43 @@ const {
 const { unescape, escape } = require('validator').default
 const { deepMap } = require('../../utils/common.utils')
 
-describe('getTypeArray', () => {
+describe('parseTypeStr', () => {
   it('nothing', () => {
-    expect(getTypeArray()).toEqual({})
-    expect(getTypeArray('')).toEqual({})
-    expect(getTypeArray('test*[]?test')).toEqual({})
+    expect(parseTypeStr()).toEqual({})
+    expect(parseTypeStr('')).toEqual({})
+    expect(parseTypeStr('test*[]?test')).toEqual({})
   })
   it('.string = input', () => {
-    expect(getTypeArray('test').string).toBe('test')
-    expect(getTypeArray('test*[]?').string).toBe('test*[]?')
+    expect(parseTypeStr('test').string).toBe('test')
+    expect(parseTypeStr('test*[]?').string).toBe('test*[]?')
   })
   it('.type = typeStr', () => {
-    expect(getTypeArray('test').type).toBe('test')
-    expect(getTypeArray('test*[]?').type).toBe('test')
+    expect(parseTypeStr('test').type).toBe('test')
+    expect(parseTypeStr('test*[]?').type).toBe('test')
   })
   it('.isOptional = isOptional', () => {
-    expect(getTypeArray('test').isOptional).toBe(false)
-    expect(getTypeArray('test?').isOptional).toBe(true)
-    expect(getTypeArray('test*[]').isOptional).toBe(false)
-    expect(getTypeArray('test*[]?').isOptional).toBe(true)
-    expect(getTypeArray('test*?[]').isOptional).toBe(true)
-    expect(getTypeArray('test?*[]').isOptional).toBe(true)
+    expect(parseTypeStr('test').isOptional).toBe(false)
+    expect(parseTypeStr('test?').isOptional).toBe(true)
+    expect(parseTypeStr('test*[]').isOptional).toBe(false)
+    expect(parseTypeStr('test*[]?').isOptional).toBe(true)
+    expect(parseTypeStr('test*?[]').isOptional).toBe(true)
+    expect(parseTypeStr('test?*[]').isOptional).toBe(true)
   })
   it('.isArray = isArray', () => {
-    expect(getTypeArray('test').isArray).toBe(false)
-    expect(getTypeArray('test[]').isArray).toBe(true)
-    expect(getTypeArray('test*?').isArray).toBe(false)
-    expect(getTypeArray('test[]*?').isArray).toBe(true)
-    expect(getTypeArray('test*[]?').isArray).toBe(true)
-    expect(getTypeArray('test*?[]').isArray).toBe(true)
+    expect(parseTypeStr('test').isArray).toBe(false)
+    expect(parseTypeStr('test[]').isArray).toBe(true)
+    expect(parseTypeStr('test*?').isArray).toBe(false)
+    expect(parseTypeStr('test[]*?').isArray).toBe(true)
+    expect(parseTypeStr('test*[]?').isArray).toBe(true)
+    expect(parseTypeStr('test*?[]').isArray).toBe(true)
   })
   it('.hasSpaces = leaveWhiteSpace', () => {
-    expect(getTypeArray('test').hasSpaces).toBe(false)
-    expect(getTypeArray('test*').hasSpaces).toBe(true)
-    expect(getTypeArray('test[]?').hasSpaces).toBe(false)
-    expect(getTypeArray('test*[]?').hasSpaces).toBe(true)
-    expect(getTypeArray('test[]*?').hasSpaces).toBe(true)
-    expect(getTypeArray('test[]?*').hasSpaces).toBe(true)
+    expect(parseTypeStr('test').hasSpaces).toBe(false)
+    expect(parseTypeStr('test*').hasSpaces).toBe(true)
+    expect(parseTypeStr('test[]?').hasSpaces).toBe(false)
+    expect(parseTypeStr('test*[]?').hasSpaces).toBe(true)
+    expect(parseTypeStr('test[]*?').hasSpaces).toBe(true)
+    expect(parseTypeStr('test[]?*').hasSpaces).toBe(true)
   })
 })
 

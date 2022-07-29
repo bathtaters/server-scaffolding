@@ -1,6 +1,6 @@
 const logger = require('../libs/log')
 const { errorMsgs, dateOptions, ignoreDisableMin } = require("../config/validate.cfg")
-const { getTypeArray, escapedLength, isBoolean, parseBoolean } = require('../utils/validate.utils')
+const { parseTypeStr, escapedLength, isBoolean, parseBoolean } = require('../utils/validate.utils')
 
 // Obscure 'min' field (For allowing partial validation on searches) from limit
 const hidingMin = ({ min, ...other }) => other
@@ -10,7 +10,7 @@ exports.toValidationSchema = function toValidationSchema(key, typeStr, limits, i
   if (!isIn || !isIn.length) throw new Error(errorMsgs.missingIn(key))
 
   // Get type from typeStr
-  const type = getTypeArray(typeStr)
+  const type = parseTypeStr(typeStr)
   if (!type.type) throw new Error(errorMsgs.missing(key, typeStr))
   if (forceOptional) type.isOptional = '?'
   if (type.hasSpaces && type.type !== 'string') logger.warn(`* is ignored w/ non-string type: ${type.string}`)

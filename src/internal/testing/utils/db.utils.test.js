@@ -151,6 +151,6 @@ describe('adaptersFromTypes', () => {
 })
 
 jest.mock('../../utils/validate.utils', () => ({
-  getTypeArray: (type) => ({ type }),
+  parseTypeStr: (type) => ({ type }),
   parseBoolean: () => (bool) => typeof bool !== 'boolean' ? bool === 'TEST' : bool
 }))

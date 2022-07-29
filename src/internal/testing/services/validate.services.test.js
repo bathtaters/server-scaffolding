@@ -1,5 +1,5 @@
 const services = require('../../services/validate.services')
-const { getTypeArray } = require('../../utils/validate.utils')
+const { parseTypeStr } = require('../../utils/validate.utils')
 
 
 describe('generateSchema', () => {
@@ -341,20 +341,20 @@ describe('toValidationSchema', () => {
     it('optional fields', () => {
       expect(services.toValidationSchema('test','any',null,['isIn'],true).test)
         .toHaveProperty('optional', {options: {nullable: true, checkFalsy: true}})
-      getTypeArray.mockReturnValueOnce({ type: 'any', string: 'any?', isOptional: true })
+      parseTypeStr.mockReturnValueOnce({ type: 'any', string: 'any?', isOptional: true })
       expect(services.toValidationSchema('test','any?',null,['isIn'],true).test)
       .toHaveProperty('optional', {options: {nullable: true, checkFalsy: true}})
-      getTypeArray.mockReturnValueOnce({ type: 'any', string: 'any?', isOptional: true })
+      parseTypeStr.mockReturnValueOnce({ type: 'any', string: 'any?', isOptional: true })
       expect(services.toValidationSchema('test','any?',null,['isIn'],false).test)
         .toHaveProperty('optional', {options: {nullable: true, checkFalsy: true}})
     })
     it('string optionals', () => {
       expect(services.toValidationSchema('test','string',null,['isIn'],true).test)
         .toHaveProperty('optional', {options: {nullable: true, checkFalsy: true}})
-      getTypeArray.mockReturnValueOnce({ type: 'string', string: 'string?', isOptional: true })
+      parseTypeStr.mockReturnValueOnce({ type: 'string', string: 'string?', isOptional: true })
       expect(services.toValidationSchema('test','string?',null,['isIn'],true).test)
         .toHaveProperty('optional', {options: {nullable: true, checkFalsy: true}})
-      getTypeArray.mockReturnValueOnce({ type: 'string', string: 'string?', isOptional: true })
+      parseTypeStr.mockReturnValueOnce({ type: 'string', string: 'string?', isOptional: true })
       expect(services.toValidationSchema('test','string?',null,['isIn'],false).test)
         .toHaveProperty('optional', {options: {nullable: true, checkFalsy: true}})
     })
@@ -380,10 +380,10 @@ describe('toValidationSchema', () => {
       const lims = { min: 12, test: 'lims' }
       expect(services.toValidationSchema('test','int',lims,['isIn'],false,true).test.isInt)
         .toHaveProperty('options',{ test: 'lims' })
-      getTypeArray.mockReturnValueOnce({ type: 'int', string: 'int[]', isArray: true })
+      parseTypeStr.mockReturnValueOnce({ type: 'int', string: 'int[]', isArray: true })
       expect(services.toValidationSchema('test','int[]',{elem: lims},['isIn'],false,true)['test.*'].isInt)
         .toHaveProperty('options',{ test: 'lims' })
-      getTypeArray.mockReturnValueOnce({ type: 'int', string: 'int[]', isArray: true })
+      parseTypeStr.mockReturnValueOnce({ type: 'int', string: 'int[]', isArray: true })
       expect(services.toValidationSchema('test','int[]',{array: lims},['isIn'],false,true).test.isArray)
         .toHaveProperty('options',{ min: 12, test: 'lims' })
     })
@@ -391,10 +391,10 @@ describe('toValidationSchema', () => {
       const lims = { min: 12, test: 'lims' }
       expect(services.toValidationSchema('test','float',lims,['isIn'],false,true).test.isFloat)
         .toHaveProperty('options',{ min: 12, test: 'lims' })
-      getTypeArray.mockReturnValueOnce({ type: 'float', string: 'float[]', isArray: true })
+      parseTypeStr.mockReturnValueOnce({ type: 'float', string: 'float[]', isArray: true })
       expect(services.toValidationSchema('test','float[]',{elem: lims},['isIn'],false,true)['test.*'].isFloat)
         .toHaveProperty('options',{ min: 12, test: 'lims' })
-      getTypeArray.mockReturnValueOnce({ type: 'float', string: 'float[]', isArray: true })
+      parseTypeStr.mockReturnValueOnce({ type: 'float', string: 'float[]', isArray: true })
       expect(services.toValidationSchema('test','float[]',{array: lims},['isIn'],false,true).test.isArray)
         .toHaveProperty('options',{ min: 12, test: 'lims' })
     })
@@ -453,7 +453,7 @@ describe('toValidationSchema', () => {
       expect(result.test).toHaveProperty('escape', true)
     })
     it('string*', () => {
-      getTypeArray.mockReturnValueOnce({ type: 'string', string: 'string*', hasSpaces: true })
+      parseTypeStr.mockReturnValueOnce({ type: 'string', string: 'string*', hasSpaces: true })
       const result = services.toValidationSchema('test','string*',null,['isIn'],false)
       expect(result.test).toHaveProperty('isString', {errorMessage: expect.any(String)})
       expect(result.test).not.toHaveProperty('stripLow')
@@ -497,7 +497,7 @@ describe('toValidationSchema', () => {
 
   describe('array', () => {
     const getArrType = (string) => ({ string, isArray: true, type: string.replace('[]','') })
-    beforeEach(() => { getTypeArray.mockImplementationOnce(getArrType) })
+    beforeEach(() => { parseTypeStr.mockImplementationOnce(getArrType) })
 
     it('key & key.* in return', () => {
       const result = services.toValidationSchema('test','any[]',null,['isIn'],false)
@@ -520,7 +520,7 @@ describe('toValidationSchema', () => {
       expect(result.test).toHaveProperty('optional', {options: {nullable: true, checkFalsy: true}})
       expect(result.test).not.toHaveProperty('exists')
 
-      getTypeArray.mockReturnValueOnce({ type: 'any', string: 'any[]?', isArray: true, isOptional: true })
+      parseTypeStr.mockReturnValueOnce({ type: 'any', string: 'any[]?', isArray: true, isOptional: true })
       result = services.toValidationSchema('test','any[]?',null,['isIn'],false)
       expect(result.test).toHaveProperty('optional', {options: {nullable: true, checkFalsy: true}})
       expect(result.test).not.toHaveProperty('exists')
@@ -535,12 +535,12 @@ describe('toValidationSchema', () => {
       expect(result["test.*"]).not.toHaveProperty('optional')
       expect(result["test.*"]).not.toHaveProperty('exists')
 
-      getTypeArray.mockReturnValueOnce({ type: 'any', string: 'any[]?', isArray: true, isOptional: true })
+      parseTypeStr.mockReturnValueOnce({ type: 'any', string: 'any[]?', isArray: true, isOptional: true })
       result = services.toValidationSchema('test','any[]?',null,['isIn'],false)
       expect(result["test.*"]).not.toHaveProperty('optional')
       expect(result["test.*"]).not.toHaveProperty('exists')
 
-      getTypeArray.mockImplementationOnce(getArrType)
+      parseTypeStr.mockImplementationOnce(getArrType)
       result = services.toValidationSchema('test','any[]',null,['isIn'],false)
       expect(result["test.*"]).not.toHaveProperty('optional')
       expect(result["test.*"]).not.toHaveProperty('exists')
@@ -582,10 +582,10 @@ describe('toValidationSchema', () => {
     it('boolean + optional', () => {
       expect(services.toValidationSchema('test','boolean',null,['isIn'],true).test)
         .toHaveProperty('optional', {options: {nullable: true, checkFalsy: false}})
-      getTypeArray.mockReturnValueOnce({ type: 'boolean', string: 'boolean?', isOptional: true })
+      parseTypeStr.mockReturnValueOnce({ type: 'boolean', string: 'boolean?', isOptional: true })
       expect(services.toValidationSchema('test','boolean?',null,['isIn'],true).test)
         .toHaveProperty('optional', {options: {nullable: true, checkFalsy: false}})
-      getTypeArray.mockReturnValueOnce({ type: 'boolean', string: 'boolean?', isOptional: true })
+      parseTypeStr.mockReturnValueOnce({ type: 'boolean', string: 'boolean?', isOptional: true })
       expect(services.toValidationSchema('test','boolean?',null,['isIn'],false).test)
         .toHaveProperty('optional', {options: {nullable: true, checkFalsy: false}})
     })
@@ -597,14 +597,14 @@ describe('toValidationSchema', () => {
         .toHaveProperty('errorMessage', 'ErrMsg: type')
     })
     it('errorMessage on key.*', () => {
-      getTypeArray.mockReturnValueOnce({ type: 'any', string: 'any[]', isArray: true })
+      parseTypeStr.mockReturnValueOnce({ type: 'any', string: 'any[]', isArray: true })
       expect(services.toValidationSchema('test','any[]',null,['isIn'],false)['test.*'])
         .toHaveProperty('errorMessage', 'ErrMsg: type')
     })
     it('throws on missing/invalid typeStr', () => {
       expect(() => services.toValidationSchema('test',undefined,null,['isIn'],false))
         .toThrowError('ErrMsg: missing')
-      getTypeArray.mockReturnValueOnce({})
+      parseTypeStr.mockReturnValueOnce({})
       expect(() => services.toValidationSchema('test','?wrong',null,['isIn'],false))
         .toThrowError('ErrMsg: missing')
     })
@@ -616,7 +616,7 @@ describe('toValidationSchema', () => {
     })
     it('warns on using * w/o string', () => {
       const warnSpy = jest.spyOn(require('../../libs/log'), 'warn').mockImplementationOnce(() => {})
-      getTypeArray.mockReturnValueOnce({ type: 'any', string: 'any*', hasSpaces: true })
+      parseTypeStr.mockReturnValueOnce({ type: 'any', string: 'any*', hasSpaces: true })
       
       services.toValidationSchema('test','any*',null,['isIn'],false)
       expect(warnSpy).toBeCalledTimes(1)
@@ -633,7 +633,7 @@ jest.mock('../../config/validate.cfg', () => ({
   errorMsgs: new Proxy({}, { get(_,key) { return () => 'ErrMsg: '+key } }),
 }))
 jest.mock('../../utils/validate.utils', () => ({
-  getTypeArray: jest.fn((type) => ({ type, string: type })),
+  parseTypeStr: jest.fn((type) => ({ type, string: type })),
   escapedLength: (lims) => ({ ...lims, escapedLen: true }),
   isBoolean: () => 'isBooleanFunc',
   parseBoolean: () => 'parseBooleanFunc',

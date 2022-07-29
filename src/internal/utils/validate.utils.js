@@ -4,7 +4,7 @@ const { boolOptions } = require('../config/validate.cfg')
 
 // Decode validation types to [fullStr, typeStr, leaveWhiteSpace (*), isArray ([]), isOptional (?)]
 const typeRegex = /^([^[?*]+)([?*]|\[\])?([?*]|\[\])?([?*]|\[\])?$/
-exports.getTypeArray = (typeStr) => {
+exports.parseTypeStr = (typeStr) => {
   if (!typeStr) return {}
   const match = typeStr.toLowerCase().match(typeRegex)
   if (!match) return {}

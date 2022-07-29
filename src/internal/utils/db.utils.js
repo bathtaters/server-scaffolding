@@ -1,4 +1,4 @@
-const { getTypeArray, parseBoolean } = require('./validate.utils')
+const { parseTypeStr, parseBoolean } = require('./validate.utils')
 
 exports.extractId = (data, idKey) => {
   const id = data[idKey]
@@ -18,7 +18,7 @@ exports.sanitizeSchemaData = (data, schema=null) => {
 
 exports.boolsFromTypes = (typeObj) => {
   if (!typeObj) return []
-  return Object.keys(typeObj).filter((key) => getTypeArray(typeObj[key]).type === 'boolean')
+  return Object.keys(typeObj).filter((key) => parseTypeStr(typeObj[key]).type === 'boolean')
 }
 
 exports.schemaFromTypes = (typeObj, primaryKey) => {
@@ -26,7 +26,7 @@ exports.schemaFromTypes = (typeObj, primaryKey) => {
 
   let schema = {}
   Object.entries(typeObj).forEach(([key, type]) => {
-    switch(getTypeArray(type).type || type) {
+    switch(parseTypeStr(type).type || type) {
       case 'float':
       case 'real':
         schema[key] = 'REAL'
@@ -52,7 +52,7 @@ const toBool = parseBoolean(true)
 exports.adaptersFromTypes = (typeObj) => {
   let adapters = { get: {}, set: {} }
   Object.entries(typeObj).forEach(([key,type]) => {
-    switch (getTypeArray(type).type || type) {
+    switch (parseTypeStr(type).type || type) {
       case 'object':
         adapters.set[key] = (obj) => typeof obj === 'object' ? JSON.stringify(obj) : obj
         adapters.get[key] = (text) => JSON.parse(text)
