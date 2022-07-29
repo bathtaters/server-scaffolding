@@ -1,6 +1,6 @@
 const logger = require('../libs/log')
 const { errorMsgs, dateOptions, ignoreDisableMin } = require("../config/validate.cfg")
-const { parseTypeStr, escapedLength, isBoolean, parseBoolean } = require('../utils/validate.utils')
+const { parseTypeStr, isBoolean, parseBoolean } = require('../utils/validate.utils')
 
 // Obscure 'min' field (For allowing partial validation on searches) from limit
 const hidingMin = ({ min, ...other }) => other
@@ -75,13 +75,11 @@ exports.toValidationSchema = function toValidationSchema(key, typeStr, limits, i
         ptr.isHexadecimal = { errorMessage: errorMsgs.hex() }
 
     case 'string':
-      ptr.isString = { errorMessage: errorMsgs.string() }
+      ptr.isString = limits || { errorMessage: errorMsgs.string() }
       if (!type.hasSpaces) { 
         ptr.stripLow = true
         ptr.trim = true
       }
-      ptr.escape = true
-      if (limits) ptr.custom = escapedLength(limits)
       break
     case 'float':
       ptr.isFloat = limits || { errorMessage: errorMsgs.float() }
@@ -103,7 +101,7 @@ exports.toValidationSchema = function toValidationSchema(key, typeStr, limits, i
       ptr.isDate = { options: dateOptions.date, errorMessage: errorMsgs.date() }
       ptr.trim = true
       break
-    case 'object': ptr.isObject = { errorMessage: errorMsgs.object() } // pass to default
+    case 'object': ptr.isJSON = { options: { allow_primitives: true }, errorMessage: errorMsgs.object() }
     case 'any':  // pass to default
     default: break
   }
