@@ -192,16 +192,18 @@ $( 'input#searchMode' ).on('input', function() {
 
 /* Clear button logic */
 $( function() {
-  $( 'textarea:not(.ignoreClear), input[type="text"]:not(.ignoreClear), input[type="number"]:not(.ignoreClear)' ).each(function() {
+  $( 'textarea:not(.ignoreClear), input[type="text"]:not(.ignoreClear), input[type="number"]:not(.ignoreClear), '+
+    'input[type="date"]:not(.ignoreClear), input[type="time"]:not(.ignoreClear), input[type="datetime-local"]:not(.ignoreClear)' ).each(function() {
     $(this).attr('data-default' , $(this).val())
   });
   $( 'input[type="checkbox"]:not(.ignoreClear)' ).each(function() {
     $(this).attr('data-default', $(this).prop('checked'))
   });
-})//*/
+})
 
 $.resetInputs = function(clear) {
-  $( 'textarea:not(.ignoreClear), input[type="text"]:not(.ignoreClear), input[type="number"]:not(.ignoreClear)' ).each(function() {
+  $( 'textarea:not(.ignoreClear), input[type="text"]:not(.ignoreClear), input[type="number"]:not(.ignoreClear), '+
+    'input[type="date"]:not(.ignoreClear), input[type="time"]:not(.ignoreClear), input[type="datetime-local"]:not(.ignoreClear)' ).each(function() {
     $(this).val(clear ? '' : $(this).attr('data-default'));
   });
   $( 'input[type="checkbox"]:not(.ignoreClear)' ).each(function() {
