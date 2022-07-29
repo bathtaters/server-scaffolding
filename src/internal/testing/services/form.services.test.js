@@ -1,61 +1,9 @@
-const { labels, labelsByAccess, modelActions, filterFormData } = require('../../services/form.services')
-const { deepUnescape } = require('../../utils/validate.utils')
+const modelActions = require('../../services/form.services')
+const label = require('../../../config/gui.cfg').actions
 const errors = require('../../config/errors.internal')
 const prefix = require('../../../config/urls.cfg').gui.basic.find
 
 jest.mock('../../utils/db.utils', () => ({ extractId: (data, id) => [id,data] }))
-jest.mock('../../utils/validate.utils', () => ({
-  parseBoolean: () => () => 'parsed',
-  deepUnescape: jest.fn((o) => o)
-}))
-
-describe('labels', () => {
-  it('is string array', () => {
-    expect(Array.isArray(labels)).toBeTruthy()
-    labels.forEach((label) => expect(typeof label).toBe('string'))
-  })
-})
-
-describe('labelsByAccess', () => {
-  it('gets all vals', () => {
-    expect(labelsByAccess(['read','write'])).toEqual(labels)
-  })
-  it('gets read-only vals', () => {
-    expect(labelsByAccess(['read'])).toEqual(['Search'])
-  })
-  it('gets write-only vals', () => {
-    expect(labelsByAccess(['write'])).toEqual(['Add','Update','Remove','Reset'])
-  })
-  it('gets no vals w/o read/write', () => {
-    expect(labelsByAccess(['other'])).toEqual([])
-    expect(labelsByAccess([])).toEqual([])
-  })
-})
-
-describe('filterFormData', () => {
-  it('removes null values', () => {
-    expect(filterFormData({ a: 1, b: null, c: 3 })).toEqual({ a: 1, c: 3 })
-    expect(filterFormData({ a: 1, b: 2, c: undefined })).toEqual({ a: 1, b: 2 })
-  })
-  it('removes empty strings', () => {
-    expect(filterFormData({ a: 1, b: '', c: 3 })).toEqual({ a: 1, c: 3 })
-    expect(filterFormData({ a: 1, b: 2, c: '', d: '' })).toEqual({ a: 1, b: 2 })
-  })
-  it('force includes boolFields', () => {
-    expect(filterFormData({ a: 1 }, ['b','c'])).toEqual({ a: 1, b: false, c: false })
-  })
-  it('runs boolFields through parseBool', () => {
-    expect(filterFormData({ a: 1, b: 0, c: true }, ['b','c','d']))
-      .toMatchObject({ a: 1, b: 'parsed', c: 'parsed', })
-  })
-  it('allows custom filter', () => {
-    expect(filterFormData({ a: 1, b: 2, c: 3 }, [], (val) => val !== 2))
-      .toEqual({ a: 1, c: 3 })
-    expect(filterFormData({ a: 1, b: 2, c: 3 }, [], (val,key) => key !== 'c'))
-      .toEqual({ a: 1, b: 2 })
-  })
-})
-
 
 describe('modelActions', () => {
 
@@ -69,8 +17,8 @@ describe('modelActions', () => {
   }
   const actions = modelActions(spies)
 
-  describe('Search', () => {
-    const search = actions.Search
+  describe('find (Search)', () => {
+    const search = actions[label.find]
 
     it('returns string', () => {
       expect.assertions(2)
@@ -93,17 +41,10 @@ describe('modelActions', () => {
         search().then((res) => expect(res).toBe(''))
       ])
     })
-    it('deep unescapes input', () => {
-      expect.assertions(2)
-      return search({ a: 1, b: '2', c: true }).then(() => {
-        expect(deepUnescape).toBeCalledTimes(1)
-        expect(deepUnescape).toBeCalledWith({ a: 1, b: '2', c: true })
-      })
-    })
   })
 
-  describe('Add', () => {
-    const add = actions.Add
+  describe('create (Add)', () => {
+    const add = actions[label.create]
 
     it('returns falsy', () => {
       expect.assertions(1)
@@ -127,8 +68,8 @@ describe('modelActions', () => {
     })
   })
 
-  describe('Update', () => {
-    const update = actions.Update
+  describe('update (Update)', () => {
+    const update = actions[label.update]
 
     it('returns falsy', () => {
       expect.assertions(1)
@@ -151,8 +92,8 @@ describe('modelActions', () => {
     })
   })
 
-  describe('Remove', () => {
-    const remove = actions.Remove
+  describe('delete (Remove)', () => {
+    const remove = actions[label.delete]
 
     it('returns falsy', () => {
       expect.assertions(1)
@@ -169,8 +110,8 @@ describe('modelActions', () => {
     })
   })
 
-  describe('Reset', () => {
-    const reset = actions.Reset
+  describe('clear (Reset)', () => {
+    const reset = actions[label.clear]
 
     it('returns falsy', () => {
       expect.assertions(1)

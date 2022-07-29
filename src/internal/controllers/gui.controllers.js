@@ -3,9 +3,9 @@ const { getTableFields, varName, getSchema, getTypes } = require('../utils/gui.u
 const { access, tableFields, tooltips } = require('../config/users.cfg')
 const { guiAdapter } = require('../services/users.services')
 const { hasAccess, hasModelAccess } = require('../utils/users.utils')
-const { labels, labelsByAccess } = require('../services/form.services')
+const { profileLabels, labelsByAccess } = require('../utils/form.utils')
+const { pageOptions, actions } = require('../../config/gui.cfg')
 const errors = require('../config/errors.internal')
-const { pageOptions } = require('../../config/gui.cfg')
 const urls = require('../../config/urls.cfg').gui.basic
 
 const models = require('../../models/_all').map(({title}) => title)
@@ -56,7 +56,7 @@ exports.modelDb = (Model, { view = 'dbModel', partialMatch = true, overrideDbPar
       return res.render(view, {
         ...staticDbParams,
         data: formatData(data, req.user),
-        searchData: formatData(req.query, req.user, labels[0]),
+        searchData: formatData(req.query, req.user, actions.find),
         buttons: labelsByAccess([canRead ? 'read' : 'X', canWrite ? 'write' : 'X']),
         user: req.user && req.user.username,
         isAdmin: req.user && hasAccess(req.user.access, access.admin),
@@ -71,7 +71,7 @@ const staticUserParams = {
   tooltips,
   tableFields,
   idKey: Users.primaryId,
-  buttons: labels.slice(2,4),
+  buttons: profileLabels,
   limits: Users.limits || {},
   defaults: Users.defaults || {},
   postURL: urls.prefix + urls.user + urls.form,

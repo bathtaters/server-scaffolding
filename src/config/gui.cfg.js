@@ -13,6 +13,18 @@ module.exports = {
     sizeList: [5, 10, 25, 50, 100],
   },
 
+  // GUI Buttons
+  actions: {
+    // Labels
+    find: 'Search',
+    create: 'Add',
+    update: 'Update',
+    delete: 'Remove',
+    clear: 'Reset'
+  },
+  // Buttons available in gui User profile editor
+  profileActions: [ 'update', 'delete' ],
+
   // GUI Footer text
   footer: {
     full: [
