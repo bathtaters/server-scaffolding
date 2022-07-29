@@ -1,6 +1,5 @@
 const { exec } = require('child_process')
 const { settingsDefaults, getSettings, setSettings, canUndo } = require('./settings.services')
-const { deepUnescape } = require('../utils/validate.utils')
 const { restartCluster } = require('./pm2.services')
 const errors = require('../config/errors.internal')
 const { isPm2 } = require('../../config/meta')
@@ -18,7 +17,7 @@ async function getRestartFunc() {
 
 
 module.exports = {
-  Update: (settings, session) => setSettings(deepUnescape(settings), session),
+  Update: (settings, session) => setSettings(settings, session),
 
   Undo: async (_, session) => {
     if (!canUndo(session)) throw errors.noUndo()
@@ -28,7 +27,7 @@ module.exports = {
   Default: (_, session) => setSettings(settingsDefaults, session),
   
   Restart: async (settings, session) => {
-    if (settings) await setSettings(deepUnescape(settings), session)
+    if (settings) await setSettings(settings, session)
     return getRestartFunc()
   },
 }

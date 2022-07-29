@@ -1,5 +1,4 @@
-const { defaults, replaceEnvChars } = require('../config/settings.cfg')
-const { deepMap } = require('../utils/common.utils')
+const { defaults, escapeChars } = require('../config/settings.cfg')
 
 exports.getSettingsVars = (keys, envObj = process.env) => keys.reduce((obj, key) => Object.assign(obj, { [key]: key in envObj ? envObj[key] : defaults[key] }), {})
 
@@ -10,12 +9,16 @@ exports.filterOutProps = (obj, hideProps) => {
   return obj
 }
 
-const envRegEx = new RegExp(`[${replaceEnvChars[0] || ''}]`, 'g')
-exports.deepReplace = (callback) => (input) => !replaceEnvChars[0] ? (input) => input : 
-  deepMap(input, (val) =>
-    typeof val !== 'string' ? val :
-      val.replace(envRegEx, (...args) => callback(...args) || replaceEnvChars[1]).trim()
-  )
+const escaper = (input, callback) => typeof input === 'string' && escapeChars.reduce((escaped, [eschar,replchar]) =>
+  !eschar.test(escaped || input) ? escaped :
+    (escaped || input).replace(eschar, callback ? (...arg) => callback(...arg) || replchar : replchar).trim()
+  , '')
+exports.escapeSettings = (callback) => (settings) => Object.entries(settings).forEach(([key,val]) => {
+  const newKey = escaper(key, callback), newVal = escaper(val, callback)
+  if (newKey || newVal) settings[newKey || key] = newVal || val
+  if (newKey) delete settings[key]
+  if (!newVal && val && typeof val === 'object') exports.escapeSettings(callback)(val) // recur objects
+}) || settings
 
 exports.getChanged = (base, update) => base && update ?
   Object.keys(update).reduce((diff, key) =>

@@ -1,9 +1,9 @@
 const { writeFile, readFile } = require('fs/promises')
 const { parse } = require('dotenv')
 const logger = require('../libs/log')
-const { getSettingsVars, stringifyEnv, filterOutProps, getChanged, deepReplace } = require('../utils/settings.utils')
+const { getSettingsVars, stringifyEnv, filterOutProps, getChanged, escapeSettings } = require('../utils/settings.utils')
 const { debounce } = require('../utils/common.utils')
-const { defaults, formDefaults, formSettings, fileReadDebounceMs, replaceEnvMsg } = require('../config/settings.cfg')
+const { defaults, formDefaults, formSettings, fileReadDebounceMs, escapeEnvMsg } = require('../config/settings.cfg')
 const { envPath } = require('../../config/meta')
 
 const [ debouncedRead, forceNextRead ] = debounce(readFile, { interval: fileReadDebounceMs, ignoreArgs: true })
@@ -18,7 +18,7 @@ exports.getSettings = async () => {
   return getSettingsVars(Object.keys(formSettings), envObj)
 }
   
-const replaceChars = deepReplace((...args) => { logger.warn(replaceEnvMsg(...args)) }) 
+const escapeChars = escapeSettings((...args) => { logger.warn(escapeEnvMsg(...args)) })
 exports.setSettings = async (settings, session) => {
   const oldSettings = await exports.getSettings()
 
@@ -29,7 +29,7 @@ exports.setSettings = async (settings, session) => {
     session.undoSettings = (session.undoSettings || []).concat(changes)
   }
   forceNextRead()
-  return writeFile(envPath, stringifyEnv({ ...oldSettings, ...replaceChars(settings) }))
+  return writeFile(envPath, stringifyEnv({ ...oldSettings, ...escapeChars(settings) }))
 }
 
 exports.canUndo = (session) => session && Array.isArray(session.undoSettings) && session.undoSettings.length
