@@ -87,6 +87,20 @@ footer > .row {
 footer a:link { color: var(--footer-link-color); }
 
 
+/* Add missing input types */
+input { color-scheme: dark; }
+/* [type="file"], [type="image"], */
+[type="color"], [type="date"], [type="datetime-local"],
+[type="month"], [type="range"], [type="time"], [type="week"] {
+  box-sizing: border-box;
+  background: var(--input-back-color);
+  color: var(--input-fore-color);
+  border: 0.0625rem solid var(--input-border-color);
+  border-radius: var(--universal-border-radius);
+  margin: calc(var(--universal-margin) / 2);
+  padding: var(--universal-padding) calc(1.5 * var(--universal-padding));
+}
+
 /* Fix invalid input fields */
 input.invalid:not([type="button"]):not([type="submit"]):not([type="reset"]),
 input.invalid:not([type="button"]):not([type="submit"]):not([type="reset"]):focus,

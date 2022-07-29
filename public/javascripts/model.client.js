@@ -26,10 +26,17 @@ $( 'tr.tableRow' ).on('click', function() {
       var elem = $( '#'+$(this).attr('data-key') );
       var val = $(this).text();
       
-      if (elem.attr('type') === 'checkbox') {
-        elem.prop('checked', val.toLowerCase() !== 'false' && val != false);
-      } else {
-        elem.val(val);
+      switch (elem.attr('type')) {
+        case 'checkbox':
+          elem.prop('checked', val.toLowerCase() !== 'false' && val != false);
+          break;
+        case 'date':
+        case 'time':
+        case 'datetime-local':
+          elem.val(val && new Date(val).toJSON().substring(0,16));
+          break;
+        default:
+          elem.val(val);
       }
       return true;
   });

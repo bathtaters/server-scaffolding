@@ -20,4 +20,4 @@ block table
   each entry in data
     tr.tableRow
       each val, key in tableFields
-        td(data-label=val data-key=key)= boolList.includes(key) ? Boolean(entry[key]) : entry[key]
+        td(data-label=val data-key=key)= entry[key] && entry[key].toLocaleString()

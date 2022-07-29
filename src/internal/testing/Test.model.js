@@ -9,12 +9,14 @@ module.exports = new Model('test', {
     number: "float",
     comment: "string*?",
     isOn: "boolean",
+    testDate: "datetime?",
   },
 
   defaults: {
     name: "None",
     number: -1,
     isOn: true,
+    testDate: "2000-01-01T00:00",
   },
 
   limits: {
