@@ -22,7 +22,7 @@ exports.userTable = modelDb(Users, { view: 'users', formatData: guiAdapter, over
   accessLevels: Object.keys(access),
   baseURL: urls.prefix + urls.user,
   postURL: urls.prefix + urls.user + urls.form,
-  submitURLs: [urls.prefix + urls.user + urls.form + urls.find],
+  submitURLs: { Search: urls.prefix + urls.user + urls.form + urls.find },
 }})
 
 // SETTINGS
