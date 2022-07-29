@@ -1,6 +1,6 @@
 const { openDb, getDb } = require('../libs/db')
 const services = require('../services/db.services')
-const { sanitizeSchemaData, schemaFromTypes, boolsFromTypes, appendAndSort } = require('../utils/db.utils')
+const { sanitizeSchemaData, schemaFromTypes, boolsFromTypes, appendAndSort, adaptersFromTypes } = require('../utils/db.utils')
 const { hasDupes, caseInsensitiveObject } = require('../utils/common.utils')
 const errors = require('../config/errors.internal')
 const { deepUnescape, parseBoolean } = require('../utils/validate.utils')
@@ -27,6 +27,8 @@ class Model {
     if (!sqlSchema[primaryId]) sqlSchema[primaryId] = 'INTEGER PRIMARY KEY'
     if (types && !types[primaryId]) types[primaryId] = 'int'
 
+    const adaptDefs = types && (!getAdapter || !setAdapter) && adaptersFromTypes(types)
+
     this.title = title
     this.schema = sanitizeSchemaData(sqlSchema)
     this.defaults = defaults
@@ -35,8 +37,8 @@ class Model {
     this.primaryId = primaryId
     this.bitmapFields = []
     this.boolFields = boolsFromTypes(types)
-    this.getAdapter = typeof getAdapter === 'function' ? getAdapter : null
-    this.setAdapter = typeof setAdapter === 'function' ? setAdapter : null
+    this.getAdapter = typeof getAdapter === 'function' ? getAdapter : getAdapter == null ? adaptDefs.getAdapter : null
+    this.setAdapter = typeof setAdapter === 'function' ? setAdapter : setAdapter == null ? adaptDefs.setAdapter : null
 
     this.isInitialized = new Promise(async (res, rej) => {
       if (!getDb()) { await openDb() }

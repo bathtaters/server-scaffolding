@@ -1,4 +1,4 @@
-const { varName, getTableFields, getSchema, mask } = require('../../utils/gui.utils')
+const { varName, getTableFields, getTypes, getSchema, mask } = require('../../utils/gui.utils')
 
 jest.mock('../../../config/gui.cfg', () => ({
   varNameDict: { testDict: 'TEST' },
@@ -36,6 +36,25 @@ describe('getTableFields', () => {
         _testName: 'Test Name',
         testDict: 'TEST',
       })
+  })
+})
+
+describe('getTypes', () => {
+  it('defaults to "text"', () => {
+    expect(getTypes({ a: '1', b: '2', c: '3' },''))
+      .toEqual({ a: 'text', b: 'text', c: 'text' })
+  })
+  it('converts bools/numbers', () => {
+    expect(getTypes({ a: 'boolean', b: 'int', c: 'float' },''))
+      .toEqual({ a: 'checkbox', b: 'number', c: 'number' })
+  })
+  it('converts date/time types', () => {
+    expect(getTypes({ a: 'date', b: 'datetime' },''))
+      .toEqual({ a: 'date', b: 'datetime-local' })
+  })
+  it('filters out idKey', () => {
+    expect(Object.keys(getTypes({ a: '1', b: '2', c: '3' }, 'a'))).toEqual(['b','c'])
+    expect(Object.keys(getTypes({ a: '1', b: '2', c: '3' }, 'b'))).toEqual(['a','c'])
   })
 })
 

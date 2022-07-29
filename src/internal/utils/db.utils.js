@@ -1,4 +1,4 @@
-const { getTypeArray } = require('./validate.utils')
+const { getTypeArray, parseBoolean } = require('./validate.utils')
 
 exports.extractId = (data, idKey) => {
   const id = data[idKey]
@@ -25,13 +25,15 @@ exports.schemaFromTypes = (typeObj, primaryKey) => {
   if (!typeObj) return {}
 
   let schema = {}
-  Object.entries(typeObj).forEach(([key, val]) => {
-    switch(getTypeArray(val).type || val) {
+  Object.entries(typeObj).forEach(([key, type]) => {
+    switch(getTypeArray(type).type || type) {
       case 'float':
       case 'real':
         schema[key] = 'REAL'
         break
       case 'boolean':
+      case 'date':
+      case 'datetime':
       case 'int':
       case 'integer':
         schema[key] = 'INTEGER'
@@ -44,4 +46,42 @@ exports.schemaFromTypes = (typeObj, primaryKey) => {
   })
 
   return schema
+}
+
+const toBool = parseBoolean(true)
+exports.adaptersFromTypes = (typeObj) => {
+  let adapters = { get: {}, set: {} }
+  Object.entries(typeObj).forEach(([key,type]) => {
+    switch (getTypeArray(type).type || type) {
+      case 'object':
+        adapters.set[key] = (obj) => typeof obj === 'object' ? JSON.stringify(obj) : obj
+        adapters.get[key] = (text) => JSON.parse(text)
+        break
+      case 'date':
+      case 'datetime':
+        adapters.set[key] = (date) => !date ? null :
+          typeof date.getTime === 'function' ? date.getTime() :
+          typeof date === 'number' ? date : new Date(date).getTime()
+        adapters.get[key] = (num) => num && new Date(num)
+        break
+      case 'boolean':
+        adapters.set[key] = (bool) => +toBool(bool)
+        adapters.get[key] = (int) => int !== 0
+        break
+    }
+  })
+  return {
+    getAdapter: Object.keys(adapters.get).length ? (data) => {
+      typeof data === 'object' && Object.keys(data).forEach((key) => {
+        if (key in adapters.get) data[key] = adapters.get[key](data[key])
+      })
+      return data
+    } : undefined,
+    setAdapter: Object.keys(adapters.set).length ? (data) => {
+      typeof data === 'object' && Object.keys(data).forEach((key) => {
+        if (key in adapters.set) data[key] = adapters.set[key](data[key])
+      })
+      return data
+    } : undefined,
+  }
 }

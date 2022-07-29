@@ -1,5 +1,5 @@
 const Users = require('../models/Users')
-const { getTableFields, varName, getSchema } = require('../utils/gui.utils')
+const { getTableFields, varName, getSchema, getTypes } = require('../utils/gui.utils')
 const { access, tableFields, tooltips } = require('../config/users.cfg')
 const { guiAdapter } = require('../services/users.services')
 const { hasAccess, hasModelAccess } = require('../utils/users.utils')
@@ -25,7 +25,7 @@ exports.modelDb = (Model, { view = 'dbModel', partialMatch = true, overrideDbPar
     baseURL: `${urls.prefix}${urls.home}/${Model.title}`,
     postURL: `${urls.prefix}${urls.home}/${Model.title}${urls.form}`,
     submitURLs: { Search: `${urls.prefix}${urls.home}/${Model.title}${urls.form}${urls.find}` },
-    schema: getSchema(Model.schema, Model.primaryId, Model.boolFields),
+    schema: Model.types ? getTypes(Model.types, Model.primaryId) : getSchema(Model.schema, Model.primaryId, Model.boolFields),
     tableFields: getTableFields(Model.schema, Model.primaryId),
     boolList: Model.boolFields || [],
     limits: Model.limits || {},

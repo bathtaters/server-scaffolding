@@ -3,7 +3,7 @@ const services = require('../../services/db.services')
 const { openDb, getDb } = require('../../libs/db')
 const { hasDupes, caseInsensitiveObject } = require('../../utils/common.utils')
 const { deepUnescape } = require('../../utils/validate.utils')
-const { sanitizeSchemaData, schemaFromTypes, appendAndSort } = require('../../utils/db.utils')
+const { sanitizeSchemaData, schemaFromTypes, appendAndSort, adaptersFromTypes } = require('../../utils/db.utils')
 const errors = require('../../config/errors.internal')
 
 const { deepCopy } = require('../test.utils')
@@ -73,8 +73,15 @@ describe('Model constructor', () => {
     expect(new Model('testModel', { ...options, primaryId: 'test' }).schema)
       .toHaveProperty('test', expect.stringContaining('PRIMARY KEY'))
   })
-  it('ignores non-function get/setAdapters', () => {
-    const model = new Model('testModel', { ...options, getAdapter: 'test', setAdapter: 12 })
+  it('uses default get/set adapters if falsy', () => {
+    const adapts = { getAdapter: (d) => d, setAdapter: (d) => d }
+    adaptersFromTypes.mockReturnValueOnce(adapts)
+    const model = new Model('testModel', { ...options, getAdapter: null, setAdapter: undefined })
+    expect(model.getAdapter).toBe(adapts.getAdapter)
+    expect(model.setAdapter).toBe(adapts.setAdapter)
+  })
+  it('non-function, non-null get/setAdapters disables adapters', () => {
+    const model = new Model('testModel', { ...options, getAdapter: 'test', setAdapter: false })
     expect(model.getAdapter).toBeFalsy()
     expect(model.setAdapter).toBeFalsy()
   })
@@ -810,4 +817,5 @@ jest.mock('../../utils/db.utils', () => ({
   schemaFromTypes: jest.fn((t) => require('../test.utils').deepCopy(t || {})),
   boolsFromTypes: () => ['bools'],
   appendAndSort: jest.fn((list) => list),
+  adaptersFromTypes: jest.fn(() => ({ getAdapter: (data) => data, setAdapter: (data) => data })),
 }))

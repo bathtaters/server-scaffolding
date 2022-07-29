@@ -1,4 +1,5 @@
 const { varNameDict, sql2html, MASK_CHAR, boolInputType } = require('../../config/gui.cfg')
+const { getTypeArray } = require('../utils/validate.utils')
 
 exports.varName = (str) =>  typeof str !== 'string' ? str : Object.keys(varNameDict).includes(str) ? varNameDict[str] :
   str.charAt(0) === '_' ? exports.varName(str.slice(1)) :
@@ -18,6 +19,20 @@ exports.getTableFields = (schema, idKey) => {
   const tf = keys.reduce((fields, key) => Object.assign(fields, { [key]: exports.varName(key) }), {})
   return tf
 }
+
+// Convert Model types to HTML input types
+exports.getTypes = (types, idKey) => Object.entries(types).reduce((html, [key, type]) => {
+  if (key.toLowerCase() === idKey.toLowerCase()) return html
+  switch(getTypeArray(type).type || type) {
+    case 'boolean':   html[key] = 'checkbox';       break
+    case 'date':      html[key] = 'date';           break
+    case 'datetime':  html[key] = 'datetime-local'; break
+    case 'int':
+    case 'float':     html[key] = 'number';         break
+    default:          html[key] = 'text'
+  }
+  return html
+}, {})
 
 // Convert SQLite data types to HTML input types
 exports.getSchema = (schema, idKey, boolKeys = []) => Object.entries(schema || {}).reduce((res, [key, val]) =>
