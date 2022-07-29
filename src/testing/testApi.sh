@@ -4,7 +4,7 @@
 # Use predefined vars, any blank vars will be asked for before each test
 test_protocol="http"      # http/https
 test_domain="localhost"   # Set IP/domain
-test_port="8080"          # Set PORT
+test_port=""              # Set PORT
 test_token=""             # Auth token
 test_access="rw"          # Expected token access
 test_path="api/base"      # URL path to test
