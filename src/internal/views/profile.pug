@@ -28,9 +28,9 @@ block content
 
       .row
         .col-sm
-          input(type="hidden" value=userData[idKey] id=idKey name=idKey)
-            
           each val, key in { username: 'text', password: 'password', confirm: 'password' }
-            +formInput(key, val, limits[key], defaults[key], tableFields[key], '', tooltips[key])
+            +formInput(key, val, limits[key], key === 'username' && userData[key], tableFields[key], '', tooltips[key])
+            
+          input(type="hidden" value=userData[idKey] id=idKey name=idKey)
 
       +buttonRow(buttons, { Update: 'tertiary', Remove: 'secondary' })
