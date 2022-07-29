@@ -9,6 +9,8 @@ const testSchema = {
   test2: { e: 'REAL',  f: 'INTEGER' },
 }
 
+it.todo('checkInjection')
+
 describe('extractId', () => {
   it('returns ID', () => {
     expect(extractId({ a: 1, b: 2 }, 'a')[0]).toBe(1)

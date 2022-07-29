@@ -1,10 +1,10 @@
 const { openDb, getDb } = require('../libs/db')
 const services = require('../services/db.services')
-const { sanitizeSchemaData, schemaFromTypes, boolsFromTypes, appendAndSort, adaptersFromTypes } = require('../utils/db.utils')
+const { checkInjection, sanitizeSchemaData, schemaFromTypes, boolsFromTypes, appendAndSort, adaptersFromTypes } = require('../utils/db.utils')
 const { hasDupes, caseInsensitiveObject } = require('../utils/common.utils')
-const errors = require('../config/errors.internal')
 const { parseBoolean } = require('../utils/validate.utils')
 const parseBool = parseBoolean(true)
+const errors = require('../config/errors.internal')
 
 /** Base class for creating Database Models */
 class Model {
@@ -45,7 +45,6 @@ class Model {
       this.create().then((r) => r.success ? res(true) : rej(r)).catch(rej)
     })
   }
-
   
   create(overwrite = false) {
     return services.reset(getDb(), { [this.title]: this.schema }, overwrite).then(() => ({ success: true }))
@@ -59,7 +58,7 @@ class Model {
     
     else
       result = await services.get(getDb(),
-        `SELECT * FROM ${this.title} WHERE ${idKey || this.primaryId} = ?`,
+        `SELECT * FROM ${this.title} WHERE ${checkInjection(idKey, this.title) || this.primaryId} = ?`,
       [id])
 
     result = Array.isArray(result) ? result.map(caseInsensitiveObject) : caseInsensitiveObject(result)
@@ -72,10 +71,11 @@ class Model {
     if (!size) return Promise.reject(errors.noSize())
 
     const sort = reverse == null && !orderKey ? '' :
-      `ORDER BY ${orderKey || this.primaryId} ${reverse ? 'DESC' : 'ASC'} `
+      `ORDER BY ${checkInjection(orderKey, this.title) || this.primaryId} ${reverse ? 'DESC' : 'ASC'} `
 
     const result = await services.all(getDb(), 
-      `SELECT * FROM ${this.title} ${sort}LIMIT ${size} OFFSET ${(page - 1) * size}`
+      `SELECT * FROM ${this.title} ${sort}LIMIT ? OFFSET ?`,
+      [size, (page - 1) * size]
     ).then((res) => res.map(caseInsensitiveObject))
 
     return this.getAdapter ? result.map(this.getAdapter) : result
@@ -125,7 +125,7 @@ class Model {
 
 
   async count(id = null, idKey = null) {
-    const filter = id != null ? ` WHERE ${idKey || this.primaryId} = ?` : ''
+    const filter = id != null ? ` WHERE ${checkInjection(idKey, this.title) || this.primaryId} = ?` : ''
     const result = await services.get(getDb(),
       `SELECT COUNT(*) c FROM ${this.title}${filter}`,
       id != null ? [id] : []
@@ -141,7 +141,7 @@ class Model {
     
     const keys = Object.keys(data)
     if (!keys.length) return Promise.reject(errors.noData())
-  
+    
     return services.getLastId(getDb(),
       `INSERT INTO ${this.title}(${keys.join(',')}) VALUES(${keys.map(() => '?').join(',')})`,
       Object.values(data)
@@ -162,8 +162,10 @@ class Model {
     if (onChangeCb) {
       const updated = await onChangeCb(data, current)
       if (updated) data = updated
+      data = sanitizeSchemaData(data, this.schema)
+      if (!Object.keys(data).length) throw errors.noData()
     }
-      
+    
     await services.run(getDb(),
       `UPDATE ${this.title} SET ${Object.keys(data).map(k => `${k} = ?`).join(', ')} WHERE ${idKey || this.primaryId} = ?`,
       [...Object.values(data), id]
@@ -175,7 +177,7 @@ class Model {
   async remove(id, idKey = null) {
     if (id == null) return Promise.reject(errors.noID())
 
-    const count = await this.count(id, idKey || this.primaryId)
+    const count = await this.count(id, idKey)
     if (!count) throw errors.noEntry(id)
 
     await services.run(getDb(),
@@ -185,7 +187,8 @@ class Model {
   }
 
 
-  async custom(sql, params, raw = true) { 
+  async custom(sql, params, raw = true) {
+    /* WARNING!! SQL CANNOT BE CHECKED FOR INJECTION */
     const result = await services.all(getDb(), sql, params)
       .then((res) => res.map(caseInsensitiveObject))
     if (raw || !this.getAdapter) return result
@@ -207,6 +210,14 @@ class Model {
       sizes: (pageCount > 1 || total > Math.min(...sizeList)) && appendAndSort(sizeList, size),
     }
   }
+
+  // Check for injection on set
+  get title() { return this._title }
+  set title(newTitle) { this._title = checkInjection(newTitle) }
+  get primaryId() { return this._primaryId }
+  set primaryId(newId) { this._primaryId = checkInjection(newId, this.title) }
+  get schema() { return this._schema }
+  set schema(newSchema) { this._schema = checkInjection(newSchema, this.title) }
 }
 
 module.exports = Model

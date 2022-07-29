@@ -1,12 +1,13 @@
 const Model = require('./Model')
+const logger = require('../libs/log')
+const { now } = require('../libs/date')
+const { checkInjection } = require('../utils/db.utils')
 const { passwordAccess, accessInt, hasAccess } = require('../utils/users.utils')
 const { addAdapter, getAdapter, setAdapter, schemaAdapter } = require('../services/users.services')
 const { generateToken, testPassword, isLocked, isPastWindow } = require('../utils/auth.utils')
-const errors = require('../config/errors.internal')
-const logger = require('../libs/log')
-const { now } = require('../libs/date')
 const { access, rateLimiter, timestampKeyRegEx, definitions } = require('../config/users.cfg')
 const { isPm2 } = require('../../config/meta')
+const errors = require('../config/errors.internal')
 
 
 class Users extends Model {
@@ -16,11 +17,11 @@ class Users extends Model {
     this.validTimestamps = Object.keys(this.schema).filter((k) => timestampKeyRegEx.test(k)).map((k) => k.match(timestampKeyRegEx)[1])
   }
 
-  async get(id, idKey, raw = false, updateTimestamp = null, skipCounter = false) {
+  async get(id, idKey = null, raw = false, updateTimestamp = null, skipCounter = false) {
     if (updateTimestamp && !this.validTimestamps.includes(updateTimestamp)) 
       return logger.warn(`Ignoring request to update invalid '${updateTimestamp}Timestamp': ${id}`)
 
-    const user = await super.get(id, idKey || this.primaryId, raw)
+    const user = await super.get(id, idKey, raw)
 
     if (!id && Array.isArray(user)) return user
     if (!user) return user
@@ -43,7 +44,7 @@ class Users extends Model {
     return super.add(newData).then(() => newData[this.primaryId])
   }
 
-  update(id, data, idKey = this.primaryId) {
+  update(id, data, idKey = null) {
     return super.update(id, data, idKey, async (newData, oldData) => {
       if ('access' in newData && newData.access !== oldData.access) {
         if (!oldData.key && !newData.key && (passwordAccess & accessInt(newData.access)))
@@ -71,7 +72,6 @@ class Users extends Model {
   }
 
   async remove(id, idKey = null) {
-    if (!idKey) idKey = this.primaryId
     if (await this.isLastAdmin(id, idKey)) throw errors.deleteAdmin()
     return super.remove(id, idKey)
   }
@@ -106,7 +106,8 @@ class Users extends Model {
     )
   }
 
-  async isLastAdmin(id, idKey) {
+  async isLastAdmin(id, idKey = null) {
+    checkInjection(idKey, this.title)
     if (!idKey) idKey = this.primaryId
 
     const admins = await this.custom(`SELECT ${idKey} FROM ${this.title} WHERE access & ?`, [access.admin])
@@ -122,7 +123,7 @@ class Users extends Model {
     )
   }
 
-  async incFailCount(userData, { reset = false, idKey, updateCb } = {}) {
+  async incFailCount(userData, { reset = false, idKey = null, updateCb } = {}) {
     let user = userData
     if (!user || (idKey && !(idKey in user))) throw errors.noID()
     if (idKey) user = await this.get(user[idKey], idKey, true)
@@ -133,7 +134,7 @@ class Users extends Model {
       { failCount: (user.failCount || 0) + 1, failTime: now(), locked: isLocked(user) }
     
     if (updateCb) newData = updateCb(newData, user) || newData
-    return super.update(user[this.primaryId], newData, this.primaryId)
+    return super.update(user[this.primaryId], newData)
   }
 }
 
