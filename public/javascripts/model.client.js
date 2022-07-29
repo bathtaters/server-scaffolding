@@ -10,6 +10,16 @@ $( 'input#actionReset' ).on('click', function(ev) {
 /* Reset hidden fields on 'clear' */
 $( 'input#clearForm' ).on('click', function() { $( 'input[type="hidden"]' ).val(""); });
 
+/* Select buttons on <ENTER> */
+$( 'form#editForm' ).on('keydown', function(ev) {
+  if ((ev.which === 13 || ev.key === 'Enter')
+    && !['button','submit','reset'].includes($(ev.target).attr('type'))
+  ) {
+    ev.preventDefault();
+    $( '#actionSearch' ).trigger('focus');
+  }
+});
+
 /* Select row for editing */
 $( 'tr.tableRow' ).on('click', function() {
   $(this).children('td').each(function() {
