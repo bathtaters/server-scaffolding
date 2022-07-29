@@ -6,7 +6,7 @@ mixin typedInp(key, inpType, limits, defaultValue, classes, readonly)
   else if isNaN(inpType)
     input(
       name=key id=key class=classes readonly=(inpType === 'readonly' || readonly)
-      value!=(inpType !== 'checkbox' ? defaultValue : undefined)
+      value=(inpType !== 'checkbox' ? defaultValue : undefined)
       checked=(inpType === 'checkbox' ? defaultValue : undefined)
       type=(inpType === 'id' ? "number" : inpType === 'readonly' ? "text" : inpType)
       step=(inpType === 'number' ? "any" : inpType === 'id' ? "1" : undefined)
@@ -74,10 +74,9 @@ mixin buttonRow(buttons, classes = {}, urls = {}, key = 'action', buttonType = '
         formaction=(urls[action])
       )
 
-mixin pageData(page, size, id = 'queryString', pageKey = 'page', sizeKey = 'size')
+mixin pageData(page, size, id = 'pageData', pageKey = 'page', sizeKey = 'size')
   if (page || size)
-    - var qryStr = `?${pageKey}=${page || 1}` + (size ? `&${sizeKey}=${size}` : '')
-    +formInput(id, 'hidden', null, qryStr)
+    +formInput(id, 'hidden', null, JSON.stringify({ [pageKey]: page || 1, [sizeKey]: size || null }))
 
 mixin pageNav(page, size, total, sizes, prev = '<', next = '>', pageKey = 'page', sizeKey = 'size')
   .row.center

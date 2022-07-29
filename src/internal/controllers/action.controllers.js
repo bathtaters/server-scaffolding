@@ -1,10 +1,9 @@
 const Users = require('../models/Users')
 const { adminFormAdapter, userFormAdapter } = require('../services/users.services')
-const { modelActions, filterFormData } = require('../services/form.services')
+const { modelActions, filterFormData, toQueryString } = require('../services/form.services')
 const settingsActions = require('../services/settings.form')
 const { login, logout } = require('../middleware/auth.middleware')
 const { hasAccess } = require('../utils/users.utils')
-const { deepUnescape } = require('../utils/validate.utils')
 const { access } = require('../config/users.cfg')
 const { restartTimeout } = require('../config/settings.cfg')
 const errors = require('../config/errors.internal')
@@ -21,17 +20,20 @@ exports.form = function getFormController(Model, { redirectURL = '', formatData 
   const formActions = modelActions(Model)
 
   return (req,res,next) => {
-    let { action, queryString, searchMode, ...formData } = filterFormData(req.body, Model.boolFields)
+    let { action, pageData, searchMode, ...formData } = filterFormData(req.body, Model.boolFields)
 
     if (!action || !Object.keys(formActions).includes(action))
       return next(errors.badAction(action))
     
-    try { formData = formatData(formData, req.user, action) || formData }
+    try {
+      formData = formatData(formData, req.user, action) || formData
+      pageData = toQueryString(pageData)
+    }
     catch (err) { return next(err) }
 
     return formActions[action](formData).then((url) => res.redirect(
         (redirectURL || `${urls.basic.prefix}${urls.basic.home}/${Model.title}`) +
-        (!url && queryString ? deepUnescape(queryString) : url || '')
+        (url || pageData || '')
     )).catch(next)
   }
 }
@@ -56,15 +58,18 @@ const restartParams = (req) => ({
 })
 
 exports.settingsForm = (req,res,next) => {
-  const { action, queryString, ...settings } = req.body
+  let { action, pageData, ...settings } = req.body
   if (!action || !Object.keys(settingsActions).includes(action)) return next(errors.badAction(action))
 
   if (action.toLowerCase() === 'update' && !settings) return next(errors.noData('settings'))
+  
+  try { pageData = toQueryString(pageData) }
+  catch (err) { return next(err) }
 
   return settingsActions[action](settings, req.session)
     .then((restart) => {
       if (typeof restart !== 'function')
-        return res.redirect(`${urls.admin.prefix}${urls.admin.home}${queryString ? deepUnescape(queryString) : ''}`)
+        return res.redirect(`${urls.admin.prefix}${urls.admin.home}${pageData || ''}`)
       res.render('delay', restartParams(req))
       restart()
     }).catch(next)

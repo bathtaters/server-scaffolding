@@ -1,6 +1,6 @@
 const errors = require('../config/errors.internal')
 const { extractId } = require('../utils/db.utils')
-const { deepUnescape, parseBoolean } = require('../utils/validate.utils')
+const { parseBoolean } = require('../utils/validate.utils')
 const parseBool = parseBoolean(true)
 const searchURL = require('../../config/urls.cfg').gui.basic.find
 
@@ -23,7 +23,7 @@ exports.modelActions = (Model) => ({
     if (!formData || !Object.keys(formData).length) return ''
     Model.boolFields.forEach((key) => { if (!formData[key]) delete formData[key] })
     if (!Object.keys(formData).length) return ''
-    return `${searchURL}?${new URLSearchParams(deepUnescape(formData)).toString()}`
+    return `${searchURL}?${new URLSearchParams(formData).toString()}`
   },
 
   // ADD
@@ -59,3 +59,13 @@ const defaultFilter = (val,key) => val != null && val !== ''
 exports.filterFormData = (formData, boolFields = [], filterCb = defaultFilter) => Object.entries(formData).reduce(
   (filtered, [key, val]) => filterCb(val,key) ? Object.assign(filtered, { [key]: boolFields.includes(key) ? parseBool(val) : val }) : filtered
 , boolFields.reduce((obj, key) => Object.assign(obj, { [key]: false }), {}))
+
+
+// Convert object to queryString (Accepts stringified object, deletes falsy values)
+exports.toQueryString = (obj, filter = (val, key) => val) => {
+  if (!obj) return ''
+  if (typeof obj === 'string') obj = JSON.parse(obj)
+  if (typeof obj !== 'object') return ''
+  Object.keys(obj).forEach((key) => { if (!filter(obj[key], key)) delete obj[key] })
+  return Object.keys(obj).length ? `?${new URLSearchParams(obj).toString()}` : ''
+}
