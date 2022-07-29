@@ -1,6 +1,6 @@
 const { parseISO, differenceInMilliseconds, format, isDate } = require('date-fns')
 
-const locale = 'en-US'
+const locale = require('date-fns/locale').enUS
 
 module.exports = {
   parseISO, isDate,
