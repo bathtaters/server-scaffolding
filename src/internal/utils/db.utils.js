@@ -1,4 +1,5 @@
 const { parseTypeStr, parseBoolean } = require('./validate.utils')
+const { isDate } = require('../libs/date')
 
 exports.extractId = (data, idKey) => {
   const id = data[idKey]
@@ -60,8 +61,8 @@ exports.adaptersFromTypes = (typeObj) => {
       case 'date':
       case 'datetime':
         adapters.set[key] = (date) => !date ? null :
-          typeof date.getTime === 'function' ? date.getTime() :
-          typeof date === 'number' ? date : new Date(date).getTime()
+          typeof date === 'number' ? date : isDate(date) ? date.getTime() : 
+            new Date(date).getTime() // Fallback
         adapters.get[key] = (num) => num && new Date(num)
         break
       case 'boolean':

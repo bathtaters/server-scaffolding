@@ -1,3 +1,5 @@
+const { msAgo } = require('../libs/date')
+
 // Format HTTP messages
 const prettyJSON = require('winston').format.prettyPrint()
 const formatObject = (obj) => prettyJSON.transform(obj, { colorize: true })[Symbol.for('message')]
@@ -26,7 +28,7 @@ exports.httpReq = (id, { headers, params, body, session, user, ips, ip, cookies,
 exports.httpRes = (id, start, data, enc, headers, status) => formatObject({
   id,
   headers: { ...headers },
-  timeMs: new Date().getTime() - start,
+  timeMs: msAgo(start),
   status,
   data: decodeBuffer(headers['content-type'], data, enc),
 })

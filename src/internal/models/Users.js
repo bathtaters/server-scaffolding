@@ -4,6 +4,7 @@ const { addAdapter, getAdapter, setAdapter, schemaAdapter } = require('../servic
 const { generateToken, testPassword, isLocked, isPastWindow } = require('../utils/auth.utils')
 const errors = require('../config/errors.internal')
 const logger = require('../libs/log')
+const { now } = require('../libs/date')
 const { access, rateLimiter, timestampKeyRegEx, definitions } = require('../config/users.cfg')
 const { isPm2 } = require('../../config/meta')
 
@@ -26,7 +27,7 @@ class Users extends Model {
 
     if (updateTimestamp && user[this.primaryId]) {
       const counter = skipCounter ? {} : { [`${updateTimestamp}Count`]: (user[`${updateTimestamp}Count`] || 0) + 1 }
-      await super.update(user[this.primaryId], { [`${updateTimestamp}Time`]: new Date().toJSON(), ...counter })
+      await super.update(user[this.primaryId], { [`${updateTimestamp}Time`]: now(), ...counter })
     }
     return user
   }
@@ -64,7 +65,7 @@ class Users extends Model {
         newData.failTime = null
       } else if (!oldData.locked && newData.locked) {
         newData.failCount = rateLimiter.maxFails
-        newData.failTime = new Date().toJSON()
+        newData.failTime = now()
       }
     })
   }
@@ -93,7 +94,7 @@ class Users extends Model {
         password, accessInt(accessLevel),
         (pass, user) => this.incFailCount(user, {
           reset: pass,
-          updateCB: (data, { guiCount = 0 }) => { data.guiCount = guiCount + 1 }
+          updateCb: (data, { guiCount = 0 }) => ({ ...data, guiCount: guiCount + 1 })
         })
       )
     )
@@ -128,8 +129,8 @@ class Users extends Model {
     if (!user) throw errors.noEntry(userData[idKey || this.primaryId])
     
     let newData = reset ? { failCount: 0, failTime: null, locked: false } :
-      isPastWindow(user) ? { failCount: 1, failTime: new Date().toJSON(), locked: false } :
-      { failCount: (user.failCount || 0) + 1, failTime: new Date().toJSON(), locked: isLocked(user) }
+      isPastWindow(user) ? { failCount: 1, failTime: now(), locked: false } :
+      { failCount: (user.failCount || 0) + 1, failTime: now(), locked: isLocked(user) }
     
     if (updateCb) newData = updateCb(newData, user) || newData
     return super.update(user[this.primaryId], newData, this.primaryId)

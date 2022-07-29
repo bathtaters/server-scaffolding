@@ -1,3 +1,4 @@
+const { formatLong } = require('../libs/date')
 const logger = require('../libs/log')
 const {
   accessArray, accessInt, hasAccess,
@@ -60,9 +61,9 @@ exports.guiAdapter = (user) => {
     if ('access'   in user) user.access   = accessArray(user.access).join(', ')
     if ('models'   in user) user.models   = getModelsString(user.models)
     if ('locked'   in user) user.locked   = Boolean(user.locked)
-    if ('guiTime'  in user) user.guiTime  = `${user.guiTime  ? new Date(user.guiTime ).toLocaleString() : '-'} [${user.guiCount  || 0}]`
-    if ('apiTime'  in user) user.apiTime  = `${user.apiTime  ? new Date(user.apiTime ).toLocaleString() : '-'} [${user.apiCount  || 0}]`
-    if ('failTime' in user) user.failTime = `${user.failTime ? new Date(user.failTime).toLocaleString() : '-'} [${user.failCount || 0}]`
+    if ('guiTime'  in user) user.guiTime  = `${formatLong(user.guiTime) } [${user.guiCount  || 0}]`
+    if ('apiTime'  in user) user.apiTime  = `${formatLong(user.apiTime) } [${user.apiCount  || 0}]`
+    if ('failTime' in user) user.failTime = `${formatLong(user.failTime)} [${user.failCount || 0}]`
     if ('cors'     in user) {
       user.regExCors = isRegEx(user.cors)
       user.arrayCors = Array.isArray(user.cors)

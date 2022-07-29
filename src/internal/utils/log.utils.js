@@ -1,3 +1,5 @@
+const { parseISO, formatLong, formatShort } = require('../libs/date')
+
 // Get highest value log from Levels array ({ levelName: levelValue, ... })
 exports.getMaxEntry = (obj) => Object.entries(obj).reduce((max, [key, val]) => val > max[1] ? [key, val] : max, [null, Number.NEGATIVE_INFINITY])
 
@@ -8,18 +10,13 @@ exports.getAllLevels = (logObj) => logObj.reduce((levels, line) =>
 
 
 // Format log files for viewing
-const LOCALE = 'en-US'
 const formatFileTime = (timestamp) => {
   if (!timestamp) return { full: '-', short: '-' }
-  timestamp = new Date(timestamp)
+  timestamp = parseISO(timestamp)
   
   return {
-    full: timestamp.toLocaleString().replace(',',''),
-    short: `${
-      timestamp.toLocaleDateString(LOCALE, {month:'2-digit', day:'2-digit'})
-    } ${
-      timestamp.toLocaleTimeString(LOCALE, {timeStyle:'short', hour12:false})
-    }`,
+    full: formatLong(timestamp),
+    short: formatShort(timestamp),
   }
 }
 

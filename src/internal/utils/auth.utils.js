@@ -1,5 +1,6 @@
 const hat = require('hat')
 const crypto = require('crypto')
+const { msAgo } = require('../libs/date')
 const { encode, rateLimiter } = require('../config/users.cfg')
 const failureMsg = require('../config/errors.internal').loginMessages
 
@@ -8,7 +9,7 @@ exports.generateToken = () => hat()
 exports.isLocked = ({ failCount }) => (failCount || 0) + 1 >= rateLimiter.maxFails
 
 exports.isPastWindow = ({ failTime, locked }) => failTime && (rateLimiter.autoUnlock || !locked) &&
-  (new Date().getTime() - new Date(failTime).getTime() > rateLimiter.failWindow)
+  msAgo(failTime) > rateLimiter.failWindow
 
 const encrypt = (password, salt, iterations, keylen, digest) => new Promise((res, rej) => {
   crypto.pbkdf2(password, salt, iterations, keylen, digest, (err, key) => err ? rej(err) : res(key))

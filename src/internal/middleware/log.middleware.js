@@ -1,6 +1,7 @@
 const httpLogger = require('morgan')
 const randomKey = require('crypto').randomUUID
 const logger = require('../libs/log')
+const { now } = require('../libs/date')
 const { httpHdr, httpReq, httpRes } = require('../utils/http.utils')
 const { httpDebug, silent, httpMessage } = require('../config/log.cfg')
 
@@ -20,7 +21,7 @@ function loadLogMiddleware(httpFormat = null) {
 
   return function debugLogger(req, res, next) {
     /* REQUEST */
-    const start = new Date().getTime(), id = randomKey()
+    const start = now(), id = randomKey()
     logger.http(httpHdr(req, 'Request') + httpReq(id, req))
   
     /* RESPONSE */
