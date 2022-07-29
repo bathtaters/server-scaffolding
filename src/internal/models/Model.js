@@ -3,7 +3,7 @@ const services = require('../services/db.services')
 const { sanitizeSchemaData, schemaFromTypes, boolsFromTypes, appendAndSort, adaptersFromTypes } = require('../utils/db.utils')
 const { hasDupes, caseInsensitiveObject } = require('../utils/common.utils')
 const errors = require('../config/errors.internal')
-const { deepUnescape, parseBoolean } = require('../utils/validate.utils')
+const { parseBoolean } = require('../utils/validate.utils')
 const parseBool = parseBoolean(true)
 
 /** Base class for creating Database Models */
@@ -62,7 +62,6 @@ class Model {
         `SELECT * FROM ${this.title} WHERE ${idKey || this.primaryId} = ?`,
       [id])
 
-    result = deepUnescape(result)
     result = Array.isArray(result) ? result.map(caseInsensitiveObject) : caseInsensitiveObject(result)
     if (raw || !this.getAdapter) return result
     return Array.isArray(result) ? result.map(this.getAdapter) : result && this.getAdapter(result)
@@ -77,7 +76,7 @@ class Model {
 
     const result = await services.all(getDb(), 
       `SELECT * FROM ${this.title} ${sort}LIMIT ${size} OFFSET ${(page - 1) * size}`
-    ).then((res) => deepUnescape(res).map(caseInsensitiveObject))
+    ).then((res) => res.map(caseInsensitiveObject))
 
     return this.getAdapter ? result.map(this.getAdapter) : result
   }
@@ -119,7 +118,7 @@ class Model {
     
     const result = await services.all(getDb(), 
       `SELECT * FROM ${this.title} WHERE ${text.join(' AND ')}`,
-    params).then((res) => deepUnescape(res).map(caseInsensitiveObject))
+    params).then((res) => res.map(caseInsensitiveObject))
 
     return this.getAdapter ? result.map(this.getAdapter) : result
   }
@@ -143,11 +142,10 @@ class Model {
     const keys = Object.keys(data)
     if (!keys.length) return Promise.reject(errors.noData())
   
-    const result = await services.getLastId(getDb(),
+    return services.getLastId(getDb(),
       `INSERT INTO ${this.title}(${keys.join(',')}) VALUES(${keys.map(() => '?').join(',')})`,
       Object.values(data)
     )
-    return deepUnescape(result)
   }
    
   
@@ -189,7 +187,7 @@ class Model {
 
   async custom(sql, params, raw = true) { 
     const result = await services.all(getDb(), sql, params)
-      .then((res) => deepUnescape(res).map(caseInsensitiveObject))
+      .then((res) => res.map(caseInsensitiveObject))
     if (raw || !this.getAdapter) return result
     return result.map(this.getAdapter)
   }

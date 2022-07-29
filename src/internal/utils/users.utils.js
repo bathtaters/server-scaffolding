@@ -107,11 +107,10 @@ exports.getModelsString = (modelObj) => Object.entries(modelObj)
 /* ---- CORS ADAPTERS ---- */
 // Allows: String (<url>, *), URL Array, RegExp (match URL), Boolean (true/1 = all, false/0 = none)
 // Stored as a STRING, retrieved as one of the above (for cors.origin)
-const { deepUnescape } = require('./validate.utils')
 
+// CORS types
 const isJSON = /^\[[^\]]*\]$|^".*"$/
 const isRegEx = /^RegExp\(["'](.*)["']\)\s*$/
-
 const regEx = {
   stringify: (re)  => `RegExp("${re.toString().slice(1, -1)}")`,
   parse:     (str) => RegExp(str.match(isRegEx)[1] || logger.warn(`Invalid RegExp ${str}`)),
@@ -123,7 +122,7 @@ exports.decodeCors = (cors) => {
   if (cors == null) return undefined
   if (cors === "true" || cors === "false") return cors === "true"
   if (cors === "0" || cors === "1" || cors === 0 || cors === 1) return Boolean(+cors)
-  const unescCors = deepUnescape(cors)
+  const unescCors = cors
   if (regEx.canParse(unescCors)) return regEx.parse(unescCors)
   return isJSON.test(cors) ? JSON.parse(cors) : cors
 }

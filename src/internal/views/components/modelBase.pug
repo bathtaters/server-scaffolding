@@ -15,7 +15,7 @@ block content
         if key in tableFields
           .col.marginX
             b= tableFields[key] + ': '
-            span!= val
+            span= val
 
   if canRead && !canWrite
     +formInput('forceSearch', 'hidden', null, true)
