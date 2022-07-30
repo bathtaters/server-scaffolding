@@ -28,7 +28,7 @@ const prodOptions = {
 
 const devOptions = {
   ...prodOptions,
-  // instances        : 2,
+  instances        : 2,
 }
 
 require('dotenv').config()
