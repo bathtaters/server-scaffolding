@@ -1,3 +1,5 @@
+const RegEx = require('../libs/regex')
+
 const access = { api: 1, gui: 2, admin: 4, none: 0 }
 const models = { read: 1, write: 2, none: 0 }
 
@@ -29,9 +31,9 @@ module.exports = {
 
   saveLoginMs: 5 * 24 * 60 * 60 * 1000,
 
-  apiToken: { header: "Authorization", matchToken: /^Bearer (.+)$/ },
+  apiToken: { header: "Authorization", matchToken: RegEx(/^Bearer (.+)$/) },
 
-  timestampKeyRegEx: /^(.*)Time$/,
+  timestampKeyRegEx: RegEx(/^(.*)Time$/),
 
   rateLimiter,
 
@@ -89,4 +91,5 @@ module.exports = {
   },
 
   searchableKeys: ['username','token','access','cors','locked'], // 'models'
+  illegalUsername: RegEx(/[^a-zA-Z0-9_-]/),
 }

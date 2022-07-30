@@ -1,9 +1,13 @@
 const { format } = require('winston')
+const RegEx = require('../libs/regex')
 const { varName } = require('../utils/gui.utils')
 const { getMaxEntry } = require('../utils/log.utils')
 
 const levels = { error: 0, warn: 1, info: 2, http: 3, verbose: 4 }
 const colors = { error: 'red', warn: 'yellow', info: 'green', http: 'cyan', verbose: 'gray' }
+
+const regexFix = [ RegEx(/([\.\^\$\(\[])/g), RegEx(/%[^%]+%/g) ]
+const additLines = RegEx(/\s*\r?\n.*$/)
 
 module.exports = {
   levels, colors,
@@ -21,7 +25,7 @@ module.exports = {
   httpMessage: (mode) => `HTTP request logging enabled (${mode || 'DEBUG MODE'})`,
 
   // Filter for logView
-  logViewFileFilter: (filename) => RegExp(`^${filename.replace(/([\.\^\$\(\[])/g,'\\$1').replace(/%.+%/g,'.+')}$`),
+  logViewFileFilter: (filename) => RegEx(`^${filename.replace(regexFix[0],'\\$1').replace(regexFix[1],'.+')}$`),
 
   logFormat: {
     common: format.combine(
@@ -44,7 +48,7 @@ module.exports = {
   
   // Handle long log lines in Log GUI
   maxLogLine: 128,
-  trimLogMessage: (line) => line.label ? '' : line.message.trim().length ? `${(line.message.trim()).slice(0,48).replace(/\s*\r?\n.*/,'')}...` : 'View Details',
+  trimLogMessage: (line) => line.label ? '' : line.message.trim().length ? `${(line.message.trim()).slice(0,48).replace(additLines,'')}...` : 'View Details',
 
   // Get test log level from test.cfg
   testLevel: process.env.NODE_ENV === 'test' && require('../testing/test.cfg').testLog,

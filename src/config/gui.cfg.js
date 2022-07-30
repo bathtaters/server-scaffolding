@@ -1,3 +1,4 @@
+const RegEx = require('../internal/libs/regex')
 const { name, version, author, license, releaseYear, repoLink } = require('./meta')
 const { capitalizeHyphenated } = require('../internal/utils/common.utils')
 const { jquery, minicss } = require('./urls.cfg')
@@ -40,10 +41,10 @@ module.exports = {
   // Convert field names to form labels { key: 'Label Text' }
   varNameDict: { id: 'ID', swapId: 'Swap ID' },
   
-  // Convert SQLite data types to HTML <input> type [ /SQL-Type Name RegEx/, 'input.type' ]
+  // Convert SQLite data types to HTML <input> type [ /SQL-Type Name RegExp/, 'input.type' ]
   sql2html: [
-    [/INTEGER|REAL/i, 'number'],
-    [/TEXT|BLOB/i, 'text'],
+    [RegEx(/INTEGER|REAL/i), 'number'],
+    [RegEx(/TEXT|BLOB/i), 'text'],
   ],
   boolInputType: 'checkbox',
   

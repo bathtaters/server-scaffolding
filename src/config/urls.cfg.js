@@ -1,3 +1,4 @@
+const RegEx = require('../internal/libs/regex')
 module.exports = {
   jquery: {
     // src: "/javascripts/jquery-3.6.0.min.js", // Local copy
@@ -15,7 +16,7 @@ module.exports = {
     swap:   '/swap',
   },
   gui: {
-    splashRedirect: /\/(index|home)(.html?)?/,
+    splashRedirect: RegEx(/\/index(?:\.html?)?|\/home(?:\.html?)?/),
     root: {
       login:  '/login',
       logout: '/logout',

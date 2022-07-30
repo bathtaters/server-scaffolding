@@ -5,7 +5,7 @@ const { checkInjection } = require('../utils/db.utils')
 const { passwordAccess, accessInt, hasAccess } = require('../utils/users.utils')
 const { addAdapter, getAdapter, setAdapter, schemaAdapter } = require('../services/users.services')
 const { generateToken, testPassword, isLocked, isPastWindow } = require('../utils/auth.utils')
-const { access, rateLimiter, timestampKeyRegEx, definitions } = require('../config/users.cfg')
+const { access, rateLimiter, timestampKeyRegEx, illegalUsername, definitions } = require('../config/users.cfg')
 const { isPm2 } = require('../../config/meta')
 const errors = require('../config/errors.internal')
 
@@ -116,7 +116,7 @@ class Users extends Model {
   }
 
   validUsername(username, ignoreId) {
-    if (/[^a-zA-Z0-9_-]/.test(username)) return 'Cannot contain spaces or symbols (Besides underscore & hyphen)'
+    if (illegalUsername.test(username)) return 'Cannot contain spaces or symbols (Besides underscore & hyphen)'
     username = username.toLowerCase()
     return super.get().then((users) => users.every((user) =>
       user[this.primaryId] === ignoreId || user.username !== username) ? 0 : 'Username already exists'

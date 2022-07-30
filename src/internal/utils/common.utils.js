@@ -1,5 +1,8 @@
+const RegEx = require('../libs/regex')
+
 // Remove hyphens & Capitalize all words (For App Title)
-exports.capitalizeHyphenated = (str) => str.replace(/^\w/, a=>a.toUpperCase()).replace(/-(\w)/g, (_,g)=>' '+g.toUpperCase())
+const hyphenRegex = [ RegEx(/^\w/), RegEx(/-(\w)/g) ]
+exports.capitalizeHyphenated = (str) => str.replace(hyphenRegex[0], a=>a.toUpperCase()).replace(hyphenRegex[1], (_,g)=>' '+g.toUpperCase())
 
 // Filter out duplicate values from array
 exports.filterDupes = (arr) => arr.filter((val, idx) => !arr.slice(0,idx).includes(val))
@@ -8,7 +11,8 @@ exports.filterDupes = (arr) => arr.filter((val, idx) => !arr.slice(0,idx).includ
 exports.hasDupes = (array) => array.some((val, idx) => array.slice(0, idx).includes(val))
 
 // Get all routes except given route
-exports.notRoute = (url) => RegExp(`^(?!(${url})($|/.*))`)
+exports.exceptRoute = (skipPath, middleware) => Array.isArray(middleware) ? middleware.map((mw) => exports.exceptRoute(skipPath,mw)) :
+  (req,res,next) => RegEx(`^${skipPath}`,'i').test(req.path) ? next() : middleware(req,res,next)
 
 // Run callback on each item & replace with result
 exports.deepMap = (input, callback) => {

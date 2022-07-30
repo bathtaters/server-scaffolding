@@ -1,13 +1,13 @@
-const { parseTypeStr, parseBoolean } = require('./validate.utils')
 const { isDate } = require('../libs/date')
+const { parseTypeStr, parseBoolean } = require('./validate.utils')
+const { illegalKeyName } = require('../config/validate.cfg')
 const { sqlInjection } = require('../config/errors.internal')
 
-const sqlLegalChars = /^[a-zA-Z0-9_]*$/
 exports.checkInjection = (val, tableName = '') => {
   if (!val) return val
   if (Array.isArray(val)) return val.map((v) => exports.checkInjection(v, tableName))
   if (typeof val === 'object') Object.keys(val).forEach((v) => exports.checkInjection(v, tableName))
-  else if (typeof val !== 'string' || !sqlLegalChars.test(val)) throw sqlInjection(val, tableName)
+  else if (typeof val !== 'string' || illegalKeyName.test(val)) throw sqlInjection(val, tableName)
   return val
 }
 

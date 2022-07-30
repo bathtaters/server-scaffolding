@@ -1,9 +1,11 @@
+const RegEx = require('../libs/regex')
 const { varNameDict, sql2html, MASK_CHAR, boolInputType } = require('../../config/gui.cfg')
 const { parseTypeStr } = require('../utils/validate.utils')
 
+const varRegex = [ RegEx(/([A-Z])/g), RegEx(/^./) ]
 exports.varName = (str) =>  typeof str !== 'string' ? str : Object.keys(varNameDict).includes(str) ? varNameDict[str] :
   str.charAt(0) === '_' ? exports.varName(str.slice(1)) :
-  str.replace(/([A-Z])/g, ' $1').replace(/^./, (ltr) => ltr.toUpperCase())
+  str.replace(varRegex[0], ' $1').replace(varRegex[1], (ltr) => ltr.toUpperCase())
 
 // Model-specific authorization callback for Form input
 exports.formRW = ({ body }) => body.action === 'Search' ? 'read' : 'write'

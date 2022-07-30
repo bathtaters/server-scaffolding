@@ -1,3 +1,4 @@
+const RegEx = require('../libs/regex')
 const strictDatetime = true // Use strict date/time parsing
 
 module.exports = {
@@ -14,6 +15,8 @@ module.exports = {
     date: { format: 'YYYY-MM-DD', strict: strictDatetime, delimiters: ['-'] },
     time: { strict: strictDatetime, strictSeparator: strictDatetime },
   },
+
+  illegalKeyName: RegEx(/[^a-zA-Z0-9_]/), // match illegal characters for KEY names
 
   errorMsgs: {
     // Static

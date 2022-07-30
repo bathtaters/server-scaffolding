@@ -1,10 +1,11 @@
+const RegEx = require('../libs/regex')
 const { boolOptions } = require('../config/validate.cfg')
 
 // Decode validation types to [fullStr, typeStr, leaveWhiteSpace (*), isArray ([]), isOptional (?)]
-const typeRegex = /^([^[?*]+)([?*]|\[\])?([?*]|\[\])?([?*]|\[\])?$/
+const typeStrRegex = RegEx(/^([^[?*]+)(\?|\*|\[\])?(\?|\*|\[\])?(\?|\*|\[\])?$/)
 exports.parseTypeStr = (typeStr) => {
   if (!typeStr) return {}
-  const match = typeStr.toLowerCase().match(typeRegex)
+  const match = typeStr.toLowerCase().match(typeStrRegex)
   if (!match) return {}
   const opts = match.slice(2,5)
   return {

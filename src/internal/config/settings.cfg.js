@@ -1,8 +1,11 @@
+const RegEx = require('../libs/regex')
+
 const updateRootPath = (rootPath) => {
-  module.exports.tooltips.DB_DIR  = module.exports.tooltips.DB_DIR.replace( /%PATH%/g, module.exports.defaults.DB_DIR)
-  module.exports.tooltips.LOG_DIR = module.exports.tooltips.LOG_DIR.replace(/%PATH%/g, module.exports.defaults.LOG_DIR)
-  module.exports.defaults.DB_DIR  = module.exports.defaults.DB_DIR.replace( /^\.\//, rootPath + '/')
-  module.exports.defaults.LOG_DIR = module.exports.defaults.LOG_DIR.replace(/^\.\//, rootPath + '/')
+  const regex = { path: RegEx(/%PATH%/g), root: RegEx(/^\.\//) }
+  module.exports.tooltips.DB_DIR  = module.exports.tooltips.DB_DIR.replace( regex.path, module.exports.defaults.DB_DIR)
+  module.exports.tooltips.LOG_DIR = module.exports.tooltips.LOG_DIR.replace(regex.path, module.exports.defaults.LOG_DIR)
+  module.exports.defaults.DB_DIR  = module.exports.defaults.DB_DIR.replace( regex.root, rootPath + '/')
+  module.exports.defaults.LOG_DIR = module.exports.defaults.LOG_DIR.replace(regex.root, rootPath + '/')
 }
 
 module.exports = {
@@ -48,6 +51,6 @@ module.exports = {
 
   formDefaults: { DB_DIR: '', LOG_DIR: '' }, // Overrides for settings form
 
-  escapeChars: [ [/\n/g, ' '], [/=/g, '%3D']  ],
+  escapeChars: [ [RegEx(/\n/g), ' '], [RegEx(/=/g), '%3D']  ],
   escapeEnvMsg: (char, idx, val) => `Stripping illegal character '${char}' from "${val}" [${idx}]`,
 }

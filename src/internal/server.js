@@ -8,7 +8,7 @@ const { join } = require('path')
 const helmet = require('helmet')
 const { initializeServer } = require('./services/init.services')
 const customServer = require('../server.init')
-const { notRoute } = require('./utils/common.utils')
+const { exceptRoute } = require('./utils/common.utils')
 // Middleware
 const exitMiddleware = require('express-graceful-exit').middleware
 const authMiddleware = require('./middleware/auth.middleware').initAuth()
@@ -31,13 +31,13 @@ customServer.setup && customServer.setup(server)
 
 // Server-level Middleware
 server.use(exitMiddleware(server))
-server.use(notRoute(urls.api.prefix), helmet({ contentSecurityPolicy: { directives: guiCSP } }))
+server.use(exceptRoute(urls.api.prefix, helmet({ contentSecurityPolicy: { directives: guiCSP } })))
 server.use(urls.api.prefix, helmet())
 server.use(express.json())
 server.use(express.urlencoded({ extended: false }))
 server.use(express.static(join(rootPath, 'public')))
 server.use('/', express.static(join(rootPath, 'public', 'root')))
-server.use(notRoute(urls.api.prefix), authMiddleware)
+server.use(exceptRoute(urls.api.prefix, authMiddleware))
 customServer.middleware && customServer.middleware(server)
 server.use(logMiddleware())
 

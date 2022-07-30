@@ -108,14 +108,18 @@ exports.getModelsString = (modelObj) => Object.entries(modelObj)
 // Allows: String (<url>, *), URL Array, RegExp (match URL), Boolean (true/1 = all, false/0 = none)
 // Stored as a STRING, retrieved as one of the above (for cors.origin)
 
-// CORS types
-const isJSON = /^\[[^\]]*\]$|^".*"$/
-const isRegEx = /^RegExp\(["'](.*)["']\)\s*$/
+// Compile CORS RegExps
+const RegEx = require('../libs/regex')
+const jsonRegex  = RegEx(/^\[.*\]$|^".*"$/)
+const regExRegex = RegEx(/^RegExp\(["'](.*)["']\)\s*$/)
+const commaRegex = RegEx(/\s*,\s*/)
+
+// CORS library
 const regEx = {
   stringify: (re)  => `RegExp("${re.toString().slice(1, -1)}")`,
-  parse:     (str) => RegExp(str.match(isRegEx)[1] || logger.warn(`Invalid RegExp ${str}`)),
+  parse:     (str) => RegEx(str.match(regExRegex)[1] || logger.warn(`Invalid RegExp ${str}`)),
   canString: (re)  => typeof re.compile === 'function',
-  canParse:  (str) => isRegEx.test(str),
+  canParse:  (str) => regExRegex.test(str),
 }
 
 exports.decodeCors = (cors) => {
@@ -124,7 +128,7 @@ exports.decodeCors = (cors) => {
   if (cors === "0" || cors === "1" || cors === 0 || cors === 1) return Boolean(+cors)
   const unescCors = cors
   if (regEx.canParse(unescCors)) return regEx.parse(unescCors)
-  return isJSON.test(cors) ? JSON.parse(cors) : cors
+  return jsonRegex.test(cors) ? JSON.parse(cors) : cors
 }
 
 exports.encodeCors = (cors) => {
@@ -133,7 +137,7 @@ exports.encodeCors = (cors) => {
   if (regEx.canString(cors)) return regEx.stringify(cors)
   if (typeof cors === 'boolean') return cors.toString()
   if (cors === "0" || cors === "1" || cors === 0 || cors === 1) return JSON.stringify(Boolean(+cors))
-  if (cors.includes(',')) return JSON.stringify(cors.split(/\s*,\s*/))
+  if (cors.includes(',')) return JSON.stringify(cors.split(commaRegex))
   return cors
 }
 
