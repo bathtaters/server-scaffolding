@@ -1,4 +1,8 @@
-const { extractId, appendAndSort, sanitizeSchemaData, boolsFromTypes, schemaFromTypes, adaptersFromTypes } = require('../../utils/db.utils')
+const {
+  checkInjection, extractId, appendAndSort, sanitizeSchemaData,
+  boolsFromTypes, schemaFromTypes, adaptersFromTypes
+} = require('../../utils/db.utils')
+const errors = require('../../config/errors.internal')
 
 const testTypes = {
   test1: { a: 'string', b: 'int', c: 'object', d: 'datetime' },
@@ -9,7 +13,47 @@ const testSchema = {
   test2: { e: 'REAL',  f: 'INTEGER' },
 }
 
-it.todo('checkInjection')
+describe('checkInjection', () => {
+  it('throws error when illegal value', () => {
+    expect(() => checkInjection('Test.ILLEGAL!'))
+      .toThrowError(errors.sqlInjection('Test.ILLEGAL!'))
+  })
+  it('throws error when illegal type', () => {
+    expect(() => checkInjection(1234)).toThrowError(errors.sqlInjection(1234))
+    expect(() => checkInjection(() => {})).toThrowError(errors.sqlInjection(() => {}))
+  })
+  it('deep checks arrays', () => {
+    expect(() => checkInjection(['a','b',['c',['Test.ILLEGAL!']]]))
+      .toThrowError(errors.sqlInjection('Test.ILLEGAL!'))
+  })
+  it('checks only object keys', () => {
+    expect(() => checkInjection({ a: 1, b: 2, c: 3, d: 'Test.ILLEGAL!' })).not.toThrow()
+    expect(() => checkInjection({ a: 1, b: 2, c: 3, 'Test.ILLEGAL!': 4 }))
+      .toThrowError(errors.sqlInjection('Test.ILLEGAL!'))
+  })
+  it('returns value when not illegal', () => {
+    expect(checkInjection('Test')).toBe('Test')
+    expect(checkInjection('ANYTHING!')).toBe('ANYTHING!')
+    const testArr = checkInjection(['a','b',['c',['d']]])
+    expect(testArr).toBe(testArr)
+    expect(testArr).toEqual(['a','b',['c',['d']]])
+    const testObj = checkInjection({ a: 1, b: 2, c: 3, d: 4 })
+    expect(testObj).toBe(testObj)
+    expect(testObj).toEqual({ a: 1, b: 2, c: 3, d: 4 })
+  })
+  it('passes falsy values', () => {
+    expect(checkInjection('')).toBe('')
+    expect(checkInjection(0)).toBe(0)
+    expect(checkInjection(false)).toBe(false)
+    expect(checkInjection()).toBeUndefined()
+  })
+  it('passes tableName to error', () => {
+    expect(() => checkInjection('Test.ILLEGAL!','tableName'))
+      .toThrowError(errors.sqlInjection('Test.ILLEGAL!','tableName'))
+    expect(() => checkInjection(['a','b',['c',['Test.ILLEGAL!']]],'tableName'))
+      .toThrowError(errors.sqlInjection('Test.ILLEGAL!','tableName'))
+  })
+})
 
 describe('extractId', () => {
   it('returns ID', () => {
@@ -152,6 +196,7 @@ describe('adaptersFromTypes', () => {
   })
 })
 
+jest.mock('../../config/validate.cfg', () => ({ illegalKeyName: /ILLEGAL/ }))
 jest.mock('../../utils/validate.utils', () => ({
   parseTypeStr: (type) => ({ type }),
   parseBoolean: () => (bool) => typeof bool !== 'boolean' ? bool === 'TEST' : bool

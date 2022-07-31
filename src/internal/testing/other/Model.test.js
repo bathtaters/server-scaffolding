@@ -2,7 +2,7 @@ const Model = require('../../models/Model')
 const services = require('../../services/db.services')
 const { openDb, getDb } = require('../../libs/db')
 const { hasDupes, caseInsensitiveObject } = require('../../utils/common.utils')
-const { sanitizeSchemaData, schemaFromTypes, appendAndSort, adaptersFromTypes } = require('../../utils/db.utils')
+const { checkInjection, sanitizeSchemaData, schemaFromTypes, appendAndSort, adaptersFromTypes } = require('../../utils/db.utils')
 const errors = require('../../config/errors.internal')
 
 const { deepCopy } = require('../test.utils')
@@ -30,7 +30,23 @@ describe('Model constructor', () => {
     expect(model.getAdapter).toBe(options.getAdapter)
     expect(model.setAdapter).toBe(options.setAdapter)
   })
-  it.todo('Checks title/primaryId/schema for injection on set')
+  it('Checks title/primaryId/schema for injection', () => {
+    const model = new Model('testModel', { ...options })
+    expect(checkInjection).toBeCalledTimes(3)
+    expect(checkInjection).toBeCalledWith('testModel')
+    expect(checkInjection).toBeCalledWith('defId', model.title)
+    expect(checkInjection).toBeCalledWith({ TYPES: true, SCHEMA: true, defId: 'ID' }, model.title)
+    model.title = 'newTitle'
+    expect(checkInjection).toBeCalledTimes(4)
+    expect(checkInjection).toBeCalledWith('newTitle')
+    model.primaryId = 'newId'
+    expect(checkInjection).toBeCalledTimes(5)
+    expect(checkInjection).toBeCalledWith('newId', model.title)
+    model.schema = { NEW: true, newId: 'ID' }
+    expect(checkInjection).toBeCalledTimes(6)
+    expect(checkInjection).toBeCalledWith({ NEW: true, newId: 'ID' }, model.title)
+
+  })
   it('runs sanitizeSchemaData on schema', () => {
     new Model('testModel', { ...options })
     expect(sanitizeSchemaData).toBeCalledTimes(1)
@@ -174,7 +190,13 @@ describe('Model get', () => {
       )
     })
   })
-  it.todo('Runs checkInjection on idKey')
+  it('test idKey for injection', () => {
+    expect.assertions(2)
+    return TestModel.get('inp','key').then(() => {
+      expect(checkInjection).toBeCalledTimes(1)
+      expect(checkInjection).toBeCalledWith('key',TestModel.title)
+    })
+  })
   it('returns result when ID', () => {
     expect.assertions(1)
     return TestModel.get('inp','key').then((ret) => {
@@ -252,7 +274,13 @@ describe('Model getPage', () => {
       )
     })
   })
-  it.todo('Runs checkInjection on orderKey')
+  it('test orderKey for injection', () => {
+    expect.assertions(2)
+    return TestModel.getPage(6,12,false,'key').then(() => {
+      expect(checkInjection).toBeCalledTimes(1)
+      expect(checkInjection).toBeCalledWith('key',TestModel.title)
+    })
+  })
   it('returns result array on success', () => {
     expect.assertions(1)
     return TestModel.getPage(6,12).then((ret) => {
@@ -414,7 +442,13 @@ describe('Model count', () => {
       )
     })
   })
-  it.todo('Runs checkInjection on idKey')
+  it('test idKey for injection', () => {
+    expect.assertions(2)
+    return TestModel.count('inp','key').then(() => {
+      expect(checkInjection).toBeCalledTimes(1)
+      expect(checkInjection).toBeCalledWith('key',TestModel.title)
+    })
+  })
   it('returns count on success', () => {
     expect.assertions(1)
     return TestModel.count().then((ret) => {
@@ -497,7 +531,13 @@ describe('Model update', () => {
       )
     })
   })
-  it.todo('Runs checkInjection on idKey')
+  it('test idKey for injection', () => {
+    expect.assertions(2)
+    return TestModel.update('inp', { data: 1 }, 'key').then(() => {
+      expect(checkInjection).toBeCalledTimes(1)
+      expect(checkInjection).toBeCalledWith('key',TestModel.title)
+    })
+  })
   it('expected return on success', () => {
     expect.assertions(1)
     return TestModel.update('inp', { data: 1 }, 'key').then((ret) => {
@@ -552,7 +592,14 @@ describe('Model update', () => {
       )
     })
   })
-  it.todo('Re-sanitizes data after onChangeCb')
+  it('re-sanitizes data after onChangeCb', () => {
+    expect.assertions(2)
+    const callback = jest.fn(() => ({ newData: 'newVal' }))
+    return TestModel.update('inp', { inputKey: 'inputVal' }, 'key', callback).then(() => {
+      expect(sanitizeSchemaData).toBeCalledTimes(2)
+      expect(sanitizeSchemaData).toBeCalledWith({ newData: 'newVal' }, { TYPES: true, SCHEMA: true, defId: 'ID' })
+    })
+  })
   it('rejects on missing ID', () => {
     expect.assertions(1)
     return TestModel.update(null, { data: 1 }, 'key').catch((err) => {
@@ -596,7 +643,13 @@ describe('Model remove', () => {
       )
     })
   })
-  it.todo('Runs checkInjection on idKey')
+  it('test idKey for injection', () => {
+    expect.assertions(2)
+    return TestModel.remove('inp', 'key').then(() => {
+      expect(checkInjection).toBeCalledTimes(1)
+      expect(checkInjection).toBeCalledWith('key',TestModel.title)
+    })
+  })
   it('expected return on success', () => {
     expect.assertions(1)
     return TestModel.remove('inp','key').then((ret) => {

@@ -109,7 +109,44 @@ describe('test Users model', () => {
   })
 
 
-  it.todo('isLastAdmin')
+  describe('isLastAdmin', () => {
+    const isLastAdmin = jest.spyOn(Users, 'isLastAdmin')
+    let userId, otherAdmin
+    
+    beforeAll(async () => {
+      userId = await Users.add({ username: uname, password: pword, access: ['admin'] })
+    })
+    afterAll(async () => {
+      isLastAdmin.mockResolvedValueOnce(false) // force remove
+      await Users.remove(userId)
+    })
+
+    it('user is only admin', async () => {
+      expect(await Users.isLastAdmin(userId)).toBe(true)
+    })
+    it('allows checking via idKey', async () => {
+      expect(await Users.isLastAdmin(uname, 'username')).toBe(true)
+    })
+    it('user is not only admin', async () => {
+      const otherId = await Users.add({ username: 'other', password: pword, access: ['admin'] })
+      expect(await Users.isLastAdmin(userId)).toBe(false)
+      
+      isLastAdmin.mockResolvedValueOnce(false)
+      await Users.remove(otherId)
+    })
+    it('user is not admin', async () => {
+      isLastAdmin.mockResolvedValueOnce(false)
+      await Users.update(userId, { access: ['api'] })
+      expect(isLastAdmin).toBeCalledTimes(1)
+      
+      expect(await Users.isLastAdmin(userId)).toBe(false)
+    })
+    it('test idKey for injection', async () => {
+      await Users.isLastAdmin(uname, 'username')
+      expect(checkInjection).toBeCalledTimes(1)
+      expect(checkInjection).toBeCalledWith('username',Users.title)
+    })
+  })
 
 
   describe('validUsername', () => {
