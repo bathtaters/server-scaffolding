@@ -51,8 +51,7 @@ class Users extends Model {
           throw errors.noData('password for GUI access')
 
         if (accessInt(oldData.access) & access.admin && !(accessInt(newData.access) & access.admin)) {
-          const isOnly = await this.isLastAdmin(oldData.id)
-          if (isOnly) throw errors.deleteAdmin()
+          if (await this.isLastAdmin(oldData.id)) throw errors.deleteAdmin()
         }
       }
       
@@ -112,7 +111,7 @@ class Users extends Model {
 
     const admins = await this.custom(`SELECT ${idKey} FROM ${this.title} WHERE access & ?`, [access.admin])
     if (!admins) throw errors.unknownDb()
-    return admins.length < 2 && admins.find((u) => u[idKey] === id)
+    return admins.length < 2 && Boolean(admins.find((u) => u[idKey] === id))
   }
 
   validUsername(username, ignoreId) {
