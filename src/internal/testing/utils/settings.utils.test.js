@@ -1,10 +1,8 @@
-const { getSettingsVars, stringifyEnv, filterOutProps, deepReplace, getChanged } = require('../../utils/settings.utils')
-const { deepMap } = require('../../utils/common.utils')
+const { getSettingsVars, stringifyEnv, filterOutProps, escapeSettings, getChanged } = require('../../utils/settings.utils')
 
-jest.mock('../../utils/common.utils', () => ({ deepMap: jest.fn((val,cb) => cb(val)) }))
 jest.mock('../../config/settings.cfg', () => ({
   defaults: { testA: 'TEST-1', testB: 'TEST-2', testC: 'TEST-3' },
-  replaceEnvChars: ['~!', '#']
+  escapeChars: [ [/~/g, '!'], [/#/g, '+']  ]
 }))
 
 describe('getSettingsVars', () => {
@@ -52,33 +50,34 @@ describe('filterOutProps', () => {
   })
 })
 
-describe('deepReplace', () => {
+describe('escapeSettings', () => {
   const callback = jest.fn()
-  const replacer = deepReplace(callback)
+  const replacer = escapeSettings(callback)
 
-  it('calls deepMap', () => {
-    replacer('TEST')
-    expect(deepMap).toBeCalledTimes(1)
-    expect(deepMap).toBeCalledWith('TEST', expect.any(Function))
-  })
-  it('replaces each replaceChar', () => {
-    expect(replacer('~TE~ST!!')).toBe('#TE#ST##')
+  it('replaces each escapeChar', () => {
+    expect(replacer({ test: '~TE~ST##' })).toEqual({ test: '!TE!ST++' })
   })
   it('calls callback for each replaceChar', () => {
-    replacer('TE~ST!')
+    replacer({ test: 'TE~ST#' })
     expect(callback).toBeCalledTimes(2)
-    expect(callback).toBeCalledWith('~',2,'TE~ST!')
-    expect(callback).toBeCalledWith('!',5,'TE~ST!')
+    expect(callback).toBeCalledWith('~',expect.any(Number),expect.any(String))
+    expect(callback).toBeCalledWith('#',expect.any(Number),expect.any(String))
+  })
+  it('replaces escapeChar in keys', () => {
+    expect(replacer({ 'TE~ST#': 'test' })).toEqual({ 'TE!ST+': 'test' })
+    expect(callback).toBeCalledTimes(2)
+    expect(callback).toBeCalledWith('~',expect.any(Number),expect.any(String))
+    expect(callback).toBeCalledWith('#',expect.any(Number),expect.any(String))
   })
   it('skips replace on non-strings', () => {
     const arr = ['a', 'b', 'c']
-    expect(replacer()).toBeUndefined()
-    expect(replacer(12)).toBe(12)
-    expect(replacer(null)).toBeNull()
-    expect(replacer(false)).toBe(false)
-    expect(replacer({ a: 1, b: 2 })).toEqual({ a: 1, b: 2 })
-    expect(replacer(arr)).toEqual(['a','b','c'])
-    expect(replacer(arr)).toBe(arr)
+    expect(replacer({})).toEqual({})
+    expect(replacer({ test: 12 })).toEqual({ test: 12 })
+    expect(replacer({ test: null })).toEqual({ test: null })
+    expect(replacer({ test: false })).toEqual({ test: false })
+    expect(replacer({ test: { a: 1, b: 2 } })).toEqual({ test: { a: 1, b: 2 } })
+    expect(replacer({ test: arr })).toEqual({ test: ['a','b','c'] })
+    expect(replacer({ test: arr }).test).toBe(arr)
     expect(callback).toBeCalledTimes(0)
   })
 })

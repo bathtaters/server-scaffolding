@@ -2,7 +2,6 @@ const Model = require('../../models/Model')
 const services = require('../../services/db.services')
 const { openDb, getDb } = require('../../libs/db')
 const { hasDupes, caseInsensitiveObject } = require('../../utils/common.utils')
-const { deepUnescape } = require('../../utils/validate.utils')
 const { sanitizeSchemaData, schemaFromTypes, appendAndSort, adaptersFromTypes } = require('../../utils/db.utils')
 const errors = require('../../config/errors.internal')
 
@@ -31,6 +30,7 @@ describe('Model constructor', () => {
     expect(model.getAdapter).toBe(options.getAdapter)
     expect(model.setAdapter).toBe(options.setAdapter)
   })
+  it.todo('Checks title/primaryId/schema for injection on set')
   it('runs sanitizeSchemaData on schema', () => {
     new Model('testModel', { ...options })
     expect(sanitizeSchemaData).toBeCalledTimes(1)
@@ -174,6 +174,7 @@ describe('Model get', () => {
       )
     })
   })
+  it.todo('Runs checkInjection on idKey')
   it('returns result when ID', () => {
     expect.assertions(1)
     return TestModel.get('inp','key').then((ret) => {
@@ -197,14 +198,6 @@ describe('Model get', () => {
     expect.assertions(1)
     return TestModel.get('inp','key',true).then(() => {
       expect(modelOptions.getAdapter).toBeCalledTimes(0)
-    })
-  })
-  it('unescapes return value', () => {
-    deepUnescape.mockReturnValueOnce('UNESC')
-    expect.assertions(2)
-    return TestModel.get('inp','key').then((ret) => {
-      expect(deepUnescape).toBeCalledTimes(1)
-      expect(ret).toBe('UNESC')
     })
   })
   it('returns case-insensitive object', () => {
@@ -234,7 +227,8 @@ describe('Model getPage', () => {
     return TestModel.getPage(6,12).then(() => {
       expect(services.all).toBeCalledTimes(1)
       expect(services.all).toBeCalledWith(
-        'DB', 'SELECT * FROM testModel LIMIT 12 OFFSET 60'
+        'DB', 'SELECT * FROM testModel LIMIT ? OFFSET ?',
+        [12, 60]
       )
     })
   })
@@ -243,7 +237,8 @@ describe('Model getPage', () => {
     return TestModel.getPage(6,12,true,'key').then(() => {
       expect(services.all).toBeCalledWith(
         expect.anything(),
-        'SELECT * FROM testModel ORDER BY key DESC LIMIT 12 OFFSET 60'
+        'SELECT * FROM testModel ORDER BY key DESC LIMIT ? OFFSET ?',
+        [12, 60]
       )
     })
   })
@@ -252,10 +247,12 @@ describe('Model getPage', () => {
     return TestModel.getPage(6,12,false).then(() => {
       expect(services.all).toBeCalledWith(
         expect.anything(),
-        expect.stringContaining('ORDER BY defId ASC')
+        expect.stringContaining('ORDER BY defId ASC'),
+        expect.any(Array)
       )
     })
   })
+  it.todo('Runs checkInjection on orderKey')
   it('returns result array on success', () => {
     expect.assertions(1)
     return TestModel.getPage(6,12).then((ret) => {
@@ -268,14 +265,6 @@ describe('Model getPage', () => {
       expect(modelOptions.getAdapter).toBeCalledTimes(2)
       expect(modelOptions.getAdapter).toHaveBeenNthCalledWith(1, 'ALL', 0, ['ALL','RES'])
       expect(modelOptions.getAdapter).toHaveBeenNthCalledWith(2, 'RES', 1, ['ALL','RES'])
-    })
-  })
-  it('unescapes return value', () => {
-    deepUnescape.mockReturnValueOnce(['UNESC'])
-    expect.assertions(2)
-    return TestModel.getPage(6,12).then((ret) => {
-      expect(deepUnescape).toBeCalledTimes(1)
-      expect(ret).toEqual(['UNESC'])
     })
   })
   it('returns case-insensitive objects', () => {
@@ -371,14 +360,6 @@ describe('Model find', () => {
       expect(sanitizeSchemaData).toBeCalledWith({ data: 1 }, { TYPES: true, SCHEMA: true, defId: 'ID' })
     })
   })
-  it('unescapes return value', () => {
-    deepUnescape.mockReturnValueOnce(['UNESC'])
-    expect.assertions(2)
-    return TestModel.find({ data: 1 }).then((ret) => {
-      expect(deepUnescape).toBeCalledTimes(1)
-      expect(ret).toEqual(['UNESC'])
-    })
-  })
   it('returns case-insensitive objects', () => {
     caseInsensitiveObject.mockReturnValueOnce('CASEI').mockReturnValueOnce('CASEB')
     expect.assertions(2)
@@ -433,6 +414,7 @@ describe('Model count', () => {
       )
     })
   })
+  it.todo('Runs checkInjection on idKey')
   it('returns count on success', () => {
     expect.assertions(1)
     return TestModel.count().then((ret) => {
@@ -484,12 +466,6 @@ describe('Model add', () => {
       expect(sanitizeSchemaData).toBeCalledWith({ data: 1 }, { TYPES: true, SCHEMA: true, defId: 'ID' })
     })
   })
-  it('unescapes return value', () => {
-    expect.assertions(1)
-    return TestModel.add({ data: 1 }).then(() => {
-      expect(deepUnescape).toBeCalledTimes(1)
-    })
-  })
   it('rejects on no data & no defaults', () => {
     const NoDefModel = new Model('noDef', { ...modelOptions, defaults: null })
     expect.assertions(1)
@@ -521,6 +497,7 @@ describe('Model update', () => {
       )
     })
   })
+  it.todo('Runs checkInjection on idKey')
   it('expected return on success', () => {
     expect.assertions(1)
     return TestModel.update('inp', { data: 1 }, 'key').then((ret) => {
@@ -575,6 +552,7 @@ describe('Model update', () => {
       )
     })
   })
+  it.todo('Re-sanitizes data after onChangeCb')
   it('rejects on missing ID', () => {
     expect.assertions(1)
     return TestModel.update(null, { data: 1 }, 'key').catch((err) => {
@@ -610,7 +588,7 @@ describe('Model remove', () => {
       )
     })
   })
-  it('uses defaults on missing <input>', () => {
+  it('uses default on missing idKey', () => {
     expect.assertions(1)
     return TestModel.remove('inp').then(() => {
       expect(services.run).toBeCalledWith(
@@ -618,6 +596,7 @@ describe('Model remove', () => {
       )
     })
   })
+  it.todo('Runs checkInjection on idKey')
   it('expected return on success', () => {
     expect.assertions(1)
     return TestModel.remove('inp','key').then((ret) => {
@@ -677,14 +656,6 @@ describe('Model custom', () => {
       expect(modelOptions.getAdapter).toBeCalledTimes(0)
     })
   })
-  it('unescapes return value', () => {
-    deepUnescape.mockReturnValueOnce(['UNESC'])
-    expect.assertions(2)
-    return TestModel.custom('SQL','PARAMS',false).then((ret) => {
-      expect(deepUnescape).toBeCalledTimes(1)
-      expect(ret).toEqual(['UNESC'])
-    })
-  })
   it('returns case-insensitive objects', () => {
     caseInsensitiveObject.mockReturnValueOnce('CASEI').mockReturnValueOnce('CASEB')
     expect.assertions(2)
@@ -740,7 +711,8 @@ describe('Model getPaginationData', () => {
       expect(services.all).toBeCalledTimes(1)
       expect(services.all).toBeCalledWith(
         // Model.getPage(page:3, size:4) (LIMIT = size, OFFSET = (page - 1) * size)
-        expect.anything(), expect.stringContaining('LIMIT 4 OFFSET 8')
+        expect.anything(), expect.stringContaining('LIMIT ? OFFSET ?'),
+        expect.arrayContaining([4,8])
       )
     })
   })
@@ -794,7 +766,6 @@ jest.mock('../../libs/db', () => ({
 }))
 
 jest.mock('../../utils/validate.utils', () => ({
-  deepUnescape: jest.fn((val) => val),
   parseBoolean: () => () => false,
 }))
 
@@ -813,6 +784,7 @@ jest.mock('../../services/db.services', () => ({
 }))
 
 jest.mock('../../utils/db.utils', () => ({
+  checkInjection: jest.fn((o) => o),
   sanitizeSchemaData: jest.fn((o) => o),
   schemaFromTypes: jest.fn((t) => require('../test.utils').deepCopy(t || {})),
   boolsFromTypes: () => ['bools'],

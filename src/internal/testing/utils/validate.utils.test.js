@@ -1,11 +1,7 @@
 const { 
   parseTypeStr, formSettingsToValidate,
   isBoolean, parseBoolean,
-  escapedLength, deepUnescape
 } = require('../../utils/validate.utils')
-
-const { unescape, escape } = require('validator').default
-const { deepMap } = require('../../utils/common.utils')
 
 describe('parseTypeStr', () => {
   it('nothing', () => {
@@ -226,93 +222,10 @@ describe('parseBoolean', () => {
   })
 })
 
-describe('deepUnescape', () => {
-  it('calls deepMap', () => {
-    deepUnescape('TEST')
-    expect(deepMap).toBeCalledTimes(1)
-    expect(deepMap).toBeCalledWith('TEST', expect.any(Function))
-  })
-  it('calls unescape on string', () => {
-    deepUnescape('TEST')
-    expect(unescape).toBeCalledTimes(1)
-    expect(unescape).toBeCalledWith('TEST')
-  })
-  it('skips unescape on non-strings', () => {
-    deepUnescape()
-    deepUnescape(12)
-    deepUnescape(null)
-    deepUnescape(false)
-    deepUnescape({ a: 1, b: 2 })
-    deepUnescape(['a', 'b', 'c'])
-    expect(unescape).toBeCalledTimes(0)
-  })
-})
-
-// Check escapedLength accurately counts length of escaped string
-//   ex: '&' =esc=> '&amp;' ('amp' has max length of 5)
-describe('escapedLength', () => {
-  const returnVal = escapedLength({ options: { min: 1, max: 8 } }).options
-
-  it('passes errorMessage', () => {
-    expect(escapedLength({errorMessage: 'test'})).toHaveProperty('errorMessage', 'test')
-  })
-  it('true on no options', () => {
-    expect(escapedLength({options: {}}).options('test')).toBe(true)
-    expect(escapedLength({           }).options('test')).toBe(true)
-    expect(escapedLength({options: {}}).options(1     )).toBe(true)
-    expect(escapedLength({           }).options(1     )).toBe(true)
-    expect(escapedLength({options: {}}).options(      )).toBe(true)
-    expect(escapedLength({           }).options(      )).toBe(true)
-  })
-  it('false on non-string', () => {
-    expect(returnVal()).toBe(false)
-    expect(returnVal(1)).toBe(false)
-    expect(returnVal([])).toBe(false)
-    expect(returnVal({})).toBe(false)
-  })
-  it('works w/ standard string', () => {
-    expect(returnVal('')).toBe(false)
-    expect(returnVal('t')).toBe(true)
-    expect(returnVal('test')).toBe(true)
-    expect(returnVal('test str')).toBe(true)
-    expect(returnVal('long test')).toBe(false)
-    expect(returnVal('very long test')).toBe(false)
-  })
-  it('works w/ unescaped string', () => {
-    expect(returnVal('&')).toBe(true)
-    expect(returnVal('&<>"')).toBe(true)
-    expect(returnVal('"<&! />"')).toBe(true)
-    expect(returnVal('"<&! />"\'')).toBe(false)
-    expect(returnVal('"<test! & />"')).toBe(false)
-  })
-  it('works w/ escaped string', () => {
-    expect(returnVal(escape('&'))).toBe(true)
-    expect(returnVal(escape('&<>"'))).toBe(true)
-    expect(returnVal(escape('"<&! />"'))).toBe(true)
-    expect(returnVal(escape('"<&! />"\''))).toBe(false)
-    expect(returnVal(escape('"<test! & />"'))).toBe(false)
-  })
-  it('works w/ edge cases', () => {
-    expect(returnVal('&#amps;&#amps;')).toBe(true)
-    expect(returnVal('test &#amps;st')).toBe(true)
-    expect(returnVal('t&st st&#amps;')).toBe(true)
-    expect(returnVal('test &; &')).toBe(true)
-    expect(returnVal('test &; &1')).toBe(false)
-    expect(returnVal('&toolong;')).toBe(false)
-    expect(returnVal('&too long')).toBe(false)
-  })
-})
-
 
 // MOCKS
 
-jest.mock('validator', () => ({ default: {
-  unescape: jest.fn(),
-  escape: jest.requireActual('validator').default.escape
-}}))
-jest.mock('../../utils/common.utils', () => ({
-  deepMap: jest.fn((val,cb) => cb(val))
-}))
+jest.mock('../../libs/regex', () => (re) => re)
 jest.mock('../../config/validate.cfg', () => ({
   boolOptions: {
     true:  [21, 'testTrue',  'otherTrue'],

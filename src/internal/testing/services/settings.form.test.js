@@ -1,6 +1,5 @@
 const { Update, Undo, Default, Restart } = require('../../services/settings.form')
 const { setSettings, canUndo } = require('../../services/settings.services')
-const { deepUnescape } = require('../../utils/validate.utils')
 const errors = require('../../config/errors.internal')
 
 describe('settingsActions', () => {
@@ -15,11 +14,6 @@ describe('settingsActions', () => {
       await Update({ test: 'new' }, 'session')
       expect(setSettings).toBeCalledTimes(1)
       expect(setSettings).toBeCalledWith(expect.anything(), 'session')
-    })
-    it('unescapes input', async () => {
-      await Update({ test: 'new' }, 'session')
-      expect(deepUnescape).toBeCalledTimes(1)
-      expect(deepUnescape).toBeCalledWith({ test: 'new' })
     })
   })
 
@@ -46,10 +40,6 @@ describe('settingsActions', () => {
       await Undo({}, { undoSettings })
       expect(undoSettings).toHaveLength(0)
     })
-    it('does not unescape input', async () => {
-      await Undo({}, { undoSettings })
-      expect(deepUnescape).toBeCalledTimes(0)
-    })
     it('throws error when canUndo returns false', async () => {
       expect.assertions(1)
       canUndo.mockReturnValueOnce(false)
@@ -68,10 +58,6 @@ describe('settingsActions', () => {
       await Default({}, 'session')
       expect(setSettings).toBeCalledTimes(1)
       expect(setSettings).toBeCalledWith(expect.anything(), 'session')
-    })
-    it('does not unescape input', async () => {
-      await Default({}, 'session')
-      expect(deepUnescape).toBeCalledTimes(0)
     })
   })
 
@@ -108,12 +94,6 @@ describe('settingsActions', () => {
       expect(setSettings).toBeCalledTimes(1)
       expect(setSettings).toBeCalledWith(expect.anything(), 'session')
     })
-    it('unescapes input', async () => {
-      await Restart({ test: 'new' }, 'session')
-        .catch((err) => { if (err.status !== status) throw err })
-      expect(deepUnescape).toBeCalledTimes(1)
-      expect(deepUnescape).toBeCalledWith({ test: 'new' })
-    })
   })
 })
 
@@ -121,13 +101,12 @@ describe('settingsActions', () => {
 
 // MOCKS
 
+jest.mock('child_process', () => ({}))
+jest.mock('../../services/pm2.services', () => ({}))
+jest.mock('../../../config/meta', () => ({}))
 jest.mock('../../services/settings.services', () => ({
   settingsDefaults: { test: 'default' },
   getSettings: jest.fn(() => Promise.resolve({})),
   setSettings: jest.fn(() => Promise.resolve()),
   canUndo: jest.fn(() => true),
 }))
-
-jest.mock('../../utils/validate.utils', () => ({ deepUnescape: jest.fn((obj) => obj) }))
-jest.mock('../../services/pm2.services', () => ({}))
-jest.mock('../../../config/meta', () => ({}))
