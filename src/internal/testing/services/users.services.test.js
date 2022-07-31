@@ -4,6 +4,7 @@ const {
   preValidateAdapter, adminFormAdapter, userFormAdapter
 } = require('../../services/users.services')
 const { modelAccessToInts, decodeCors, displayCors } = require('../../utils/users.utils')
+const { formatLong } = require('../../libs/date')
 const errors = require('../../config/errors.internal')
 
 
@@ -113,9 +114,13 @@ describe('User guiAdapter', () => {
   })
   it('formats dates', () => {
     let result = guiAdapter(testObj)
-    expect(result).toHaveProperty('guiTime',  expect.stringMatching(dateCountRegex))
-    expect(result).toHaveProperty('apiTime',  expect.stringMatching(dateCountRegex))
-    expect(result).toHaveProperty('failTime', expect.stringMatching(dateCountRegex))
+    expect(formatLong).toBeCalledTimes(3)
+    expect(formatLong).toBeCalledWith('2022-03-04T05:06:07')
+    expect(formatLong).toBeCalledWith('2021-02-13T14:25:36')
+    expect(formatLong).toBeCalledWith('2022-06-21T12:16:41')
+    expect(result).toHaveProperty('guiTime',  'FMT_LONG [11]')
+    expect(result).toHaveProperty('apiTime',  'FMT_LONG [23]')
+    expect(result).toHaveProperty('failTime', 'FMT_LONG [2]')
   })
   it('decodes cors', () => {
     expect(guiAdapter(testObj)).toHaveProperty('cors', 'displayCors:CORS')
@@ -219,6 +224,7 @@ describe('User form adapter', () => {
 
 // MOCKS
 
+jest.mock('../../libs/date', () => ({ formatLong: jest.fn(() => 'FMT_LONG') }))
 jest.mock('../../utils/users.utils', () => ({
   accessArray: (access) => ['accessArray', access],
   accessInt: (access) => 'accessInt:'+access,
