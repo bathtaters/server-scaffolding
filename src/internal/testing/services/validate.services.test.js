@@ -358,13 +358,13 @@ describe('toValidationSchema', () => {
       expect(services.toValidationSchema('test','string?',null,['isIn'],false).test)
         .toHaveProperty('optional', {options: {nullable: true, checkFalsy: true}})
     })
-    it('limits for string/float/int (uses escapedLen in strings)', () => {
+    it('limits for string/float/int', () => {
       expect(services.toValidationSchema('test','float','lims',['isIn'],false).test.isFloat)
         .toEqual({ options: 'lims', errorMessage: expect.any(String) })
       expect(services.toValidationSchema('test','int','lims',['isIn'],false).test.isInt)
         .toEqual({ options: 'lims', errorMessage: expect.any(String) })
-      expect(services.toValidationSchema('test','string','lims',['isIn'],false).test.custom)
-        .toEqual({ options: 'lims', errorMessage: expect.any(String), escapedLen: true })
+      expect(services.toValidationSchema('test','string','lims',['isIn'],false).test.isString)
+        .toEqual({ options: 'lims', errorMessage: expect.any(String) })
     })
     it('string w/ limit.min = 0', () => {
       expect(services.toValidationSchema('test','string',{min:  0},['isIn'],false).test)
@@ -419,7 +419,6 @@ describe('toValidationSchema', () => {
       expect(result.test).toHaveProperty('isString', {errorMessage: expect.any(String)})
       expect(result.test).toHaveProperty('stripLow', true)
       expect(result.test).toHaveProperty('trim', true)
-      expect(result.test).toHaveProperty('escape', true)
     })
     it('b64', () => {
       const result = services.toValidationSchema('test','b64',null,['isIn'],false)
@@ -427,7 +426,6 @@ describe('toValidationSchema', () => {
       expect(result.test).toHaveProperty('isString', {errorMessage: expect.any(String)})
       expect(result.test).toHaveProperty('stripLow', true)
       expect(result.test).toHaveProperty('trim', true)
-      expect(result.test).toHaveProperty('escape', true)
     })
     it('b64url', () => {
       const result = services.toValidationSchema('test','b64url',null,['isIn'],false)
@@ -435,7 +433,6 @@ describe('toValidationSchema', () => {
       expect(result.test).toHaveProperty('isString', {errorMessage: expect.any(String)})
       expect(result.test).toHaveProperty('stripLow', true)
       expect(result.test).toHaveProperty('trim', true)
-      expect(result.test).toHaveProperty('escape', true)
     })
     it('hex', () => {
       const result = services.toValidationSchema('test','hex',null,['isIn'],false)
@@ -443,14 +440,12 @@ describe('toValidationSchema', () => {
       expect(result.test).toHaveProperty('isString', {errorMessage: expect.any(String)})
       expect(result.test).toHaveProperty('stripLow', true)
       expect(result.test).toHaveProperty('trim', true)
-      expect(result.test).toHaveProperty('escape', true)
     })
     it('string', () => {
       const result = services.toValidationSchema('test','string',null,['isIn'],false)
       expect(result.test).toHaveProperty('isString', {errorMessage: expect.any(String)})
       expect(result.test).toHaveProperty('stripLow', true)
       expect(result.test).toHaveProperty('trim', true)
-      expect(result.test).toHaveProperty('escape', true)
     })
     it('string*', () => {
       parseTypeStr.mockReturnValueOnce({ type: 'string', string: 'string*', hasSpaces: true })
@@ -458,7 +453,6 @@ describe('toValidationSchema', () => {
       expect(result.test).toHaveProperty('isString', {errorMessage: expect.any(String)})
       expect(result.test).not.toHaveProperty('stripLow')
       expect(result.test).not.toHaveProperty('trim')
-      expect(result.test).toHaveProperty('escape', true)
     })
     it('float', () => {
       const result = services.toValidationSchema('test','float',null,['isIn'],false)
@@ -490,7 +484,11 @@ describe('toValidationSchema', () => {
     })
     it('object', () => {
       const result = services.toValidationSchema('test','object',null,['isIn'],false)
-      expect(result.test).toHaveProperty('isObject', {errorMessage: expect.any(String)})
+      expect(result.test).toHaveProperty('isJSON', {
+        options: expect.any(Object),
+        errorMessage: expect.any(String),
+      })
+      expect(result.test.isJSON.options).toHaveProperty('allow_primitives',true)
     })
   })
 
@@ -634,7 +632,6 @@ jest.mock('../../config/validate.cfg', () => ({
 }))
 jest.mock('../../utils/validate.utils', () => ({
   parseTypeStr: jest.fn((type) => ({ type, string: type })),
-  escapedLength: (lims) => ({ ...lims, escapedLen: true }),
   isBoolean: () => 'isBooleanFunc',
   parseBoolean: () => 'parseBooleanFunc',
 }))
