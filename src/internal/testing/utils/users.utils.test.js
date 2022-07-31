@@ -9,19 +9,6 @@ const {
 
 const errors = require('../../config/errors.internal')
 
-jest.mock('../../config/users.cfg', () => ({
-  // ACCESS
-  access: { zero: 0, one: 1, two: 2, password: 4 },
-  accessMax: 7,
-  requirePassword: ['password'],
-  // MODELS
-  models: { none: 0, alpha: 1, bravo: 2 },
-  modelsMax: 7,
-  allModelsKey: 'all',
-  noModelAccessChar: '-',
-}))
-
-
 /* ---- ACCESS ADAPTERS ---- */
 
 describe('accessInt', () => {
@@ -284,7 +271,7 @@ describe('getModelsString', () => {
 
 /* ---- CORS ADAPTERS ---- */
 
-jest.mock('../../utils/validate.utils', () => ({ deepUnescape: (val) => val }))
+const RegEx = require('../../libs/regex')
 
 describe('decodeCors', () => {
   it('passes null vals', () => {
@@ -306,8 +293,11 @@ describe('decodeCors', () => {
     expect(decodeCors(0)).toBe(false)
   })
   it('parses RegEx string', () => {
-    expect(decodeCors('RegExp("abc")')).toEqual(/abc/)
-    expect(decodeCors("RegExp('1[23]')  ")).toEqual(/1[23]/)
+    RegEx.mockReturnValueOnce('_REGEX').mockReturnValueOnce('_REGEX')
+    expect(decodeCors('RegExp("abc")')).toBe('_REGEX')
+    expect(RegEx).toBeCalledWith('abc')
+    expect(decodeCors("RegExp('1[23]')  ")).toBe('_REGEX')
+    expect(RegEx).toBeCalledWith('1[23]')
   })
   it('parses array string', () => {
     expect(decodeCors('["a","b","c"]')).toEqual(['a','b','c'])
@@ -392,3 +382,20 @@ describe('isRegEx', () => {
     expect(isRegEx('RegExp("test")')).toBeFalsy()
   })
 })
+
+
+
+/* ---- MOCKS ---- */
+
+jest.mock('../../libs/regex', () => jest.fn((re) => re))
+jest.mock('../../config/users.cfg', () => ({
+  // ACCESS
+  access: { zero: 0, one: 1, two: 2, password: 4 },
+  accessMax: 7,
+  requirePassword: ['password'],
+  // MODELS
+  models: { none: 0, alpha: 1, bravo: 2 },
+  modelsMax: 7,
+  allModelsKey: 'all',
+  noModelAccessChar: '-',
+}))
