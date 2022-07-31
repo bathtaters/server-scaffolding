@@ -26,11 +26,11 @@ describe('labelsByAccess', () => {
 })
 
 describe('filterFormData', () => {
-  it('removes null values', () => {
+  it('default filter removes null values', () => {
     expect(filterFormData({ a: 1, b: null, c: 3 })).toEqual({ a: 1, c: 3 })
     expect(filterFormData({ a: 1, b: 2, c: undefined })).toEqual({ a: 1, b: 2 })
   })
-  it('removes empty strings', () => {
+  it('default filter removes empty strings', () => {
     expect(filterFormData({ a: 1, b: '', c: 3 })).toEqual({ a: 1, c: 3 })
     expect(filterFormData({ a: 1, b: 2, c: '', d: '' })).toEqual({ a: 1, b: 2 })
   })
@@ -49,4 +49,35 @@ describe('filterFormData', () => {
   })
 })
 
-it.todo('toQueryString')
+describe('toQueryString', () => {
+  const ignoreFilter = () => true
+
+  it('converts object to query string', () => {
+    expect(toQueryString({ test: 'str' }, ignoreFilter)).toBe('?test=str')
+    expect(toQueryString({ a: 1, b: 2 }, ignoreFilter)).toBe('?a=1&b=2')
+  })
+  it('returns empty string if no keys', () => {
+    expect(toQueryString()).toBe('')
+    expect(toQueryString('')).toBe('')
+    expect(toQueryString(null)).toBe('')
+    expect(toQueryString({})).toBe('')
+  })
+  it('converts stringified JSON to object', () => {
+    expect(toQueryString('{"test":"str"}', ignoreFilter)).toBe('?test=str')
+    expect(toQueryString('{"a":1,"b":2}', ignoreFilter)).toBe('?a=1&b=2')
+  })
+  it('allows custom filter', () => {
+    expect(toQueryString({ a: 1, b: 2, c: 3 }, (val) => val !== 2))
+      .toBe('?a=1&c=3')
+    expect(toQueryString({ a: 1, b: 2, c: 3 }, (val,key) => key !== 'c'))
+      .toBe('?a=1&b=2')
+  })
+  it('default filter removes null values', () => {
+    expect(toQueryString({ a: 1, b: null, c: 3 })).toBe('?a=1&c=3')
+    expect(toQueryString({ a: 1, b: 2, c: undefined })).toBe('?a=1&b=2')
+  })
+  it('default filter removes empty strings', () => {
+    expect(toQueryString({ a: 1, b: '', c: 3 })).toBe('?a=1&c=3')
+    expect(toQueryString({ a: 1, b: 2, c: '', d: '' })).toBe('?a=1&b=2')
+  })
+})
