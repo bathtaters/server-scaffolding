@@ -1,5 +1,5 @@
 const {
-  capitalizeHyphenated, filterDupes, hasDupes, notRoute,
+  capitalizeHyphenated, filterDupes, hasDupes, exceptRoute,
   deepMap, deepEquals, debounce,
   getMatchingKey, caseInsensitiveObject
 } = require('../../utils/common.utils')
@@ -37,15 +37,72 @@ describe('hasDupes', () => {
   })
 })
 
-describe('notRoute', () => {
-  it('creates RegEx that matches everything but input[/...]', () => {
-    expect(notRoute('test').test('test')).toBe(false)
-    expect(notRoute('test').test('test/')).toBe(false)
-    expect(notRoute('test').test('test/test')).toBe(false)
-    expect(notRoute('test').test('TEST')).toBe(true)
-    expect(notRoute('test').test('t')).toBe(true)
-    expect(notRoute('test').test('testtest')).toBe(true)
-    expect(notRoute('test').test('')).toBe(true)
+describe('exceptRoute', () => {
+  const next = jest.fn(), mw1 = jest.fn(), mw2 = jest.fn(), mw3 = jest.fn()
+
+  it('path starts w/ skipPath', () => {
+    exceptRoute('test',mw1)({ path: 'test' },{},next)
+    expect(next).toBeCalledTimes(1)
+    expect(mw1).toBeCalledTimes(0)
+    exceptRoute('test',mw1)({ path: 'test/' },{},next)
+    expect(next).toBeCalledTimes(2)
+    expect(mw1).toBeCalledTimes(0)
+    exceptRoute('test',mw1)({ path: 'test/path' },{},next)
+    expect(next).toBeCalledTimes(3)
+    expect(mw1).toBeCalledTimes(0)
+  })
+  it('is case-insensitive', () => {
+    exceptRoute('test',mw1)({ path: 'TEST' },{},next)
+    expect(next).toBeCalledTimes(1)
+    expect(mw1).toBeCalledTimes(0)
+    exceptRoute('test',mw1)({ path: 'TEST/' },{},next)
+    expect(next).toBeCalledTimes(2)
+    expect(mw1).toBeCalledTimes(0)
+    exceptRoute('test',mw1)({ path: 'TEST/PATH' },{},next)
+    expect(next).toBeCalledTimes(3)
+    expect(mw1).toBeCalledTimes(0)
+  })
+  it('does not match skipPath', () => {
+    exceptRoute('test',mw1)({ path: '' },{},next)
+    expect(next).toBeCalledTimes(0)
+    expect(mw1).toBeCalledTimes(1)
+    exceptRoute('test',mw1)({ path: 'tes' },{},next)
+    expect(next).toBeCalledTimes(0)
+    expect(mw1).toBeCalledTimes(2)
+    exceptRoute('test',mw1)({ path: 'other/path' },{},next)
+    expect(next).toBeCalledTimes(0)
+    expect(mw1).toBeCalledTimes(3)
+  })
+  it('passes params to middleware', () => {
+    exceptRoute('test',mw1)({ path: '' },{ res: true },next)
+    expect(mw1).toBeCalledWith({ path: '' },{ res: true },next)
+    exceptRoute('test',mw1)({ path: 'tes' },{ res: true },next)
+    expect(mw1).toBeCalledWith({ path: 'tes' },{ res: true },next)
+    exceptRoute('test',mw1)({ path: 'other/path' },{ res: true },next)
+    expect(mw1).toBeCalledWith({ path: 'other/path' },{ res: true },next)
+  })
+  it('accepts array of middleware', () => {
+    const allMw = exceptRoute('test',[mw1,mw2,mw3])
+    expect(Array.isArray(allMw)).toBe(true)
+    allMw.forEach((mw) => mw({ path: '' },{},next))
+    expect(next).toBeCalledTimes(0)
+    expect(mw1).toBeCalledTimes(1)
+    expect(mw2).toBeCalledTimes(1)
+    expect(mw3).toBeCalledTimes(1)
+  })
+  it('accepts array of middleware', () => {
+    exceptRoute('test',[mw1,mw2,mw3]).forEach((mw,idx) => mw({ path: '' },{ idx },next))
+    expect(next).toBeCalledTimes(0)
+    expect(mw1).toBeCalledWith({ path: '' },{ idx: 0 },next)
+    expect(mw2).toBeCalledWith({ path: '' },{ idx: 1 },next)
+    expect(mw3).toBeCalledWith({ path: '' },{ idx: 2 },next)
+  })
+  it('rejects middleware array if skipPath', () => {
+    exceptRoute('test',[mw1,mw2,mw3]).forEach((mw) => mw({ path: 'test' },{},next))
+    expect(next).toBeCalledTimes(3)
+    expect(mw1).toBeCalledTimes(0)
+    expect(mw2).toBeCalledTimes(0)
+    expect(mw3).toBeCalledTimes(0)
   })
 })
 
