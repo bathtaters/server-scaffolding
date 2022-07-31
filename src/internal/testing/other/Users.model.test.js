@@ -1,11 +1,7 @@
 const Users = require('../../models/Users')
 const { rateLimiter, definitions } = require('../../config/users.cfg')
+const { checkInjection } = require('../../utils/db.utils')
 const errors = require('../../config/errors.internal')
-
-jest.mock('../../config/users.cfg', () => ({
-  ...jest.requireActual('../../config/users.cfg'),
-  rateLimiter: { autoUnlock: false, maxFails: 10, failWindow: 1000 },
-}))
 
 const getUserTime = (id, timePrefix) => Users.get(id).then((data) => data[timePrefix+'Time'] && new Date(data[timePrefix+'Time']).getTime())
 
@@ -113,6 +109,9 @@ describe('test Users model', () => {
   })
 
 
+  it.todo('isLastAdmin')
+
+
   describe('validUsername', () => {
     const validSpy = jest.spyOn(Users, 'validUsername')
     let userId
@@ -193,7 +192,7 @@ describe('test Users model', () => {
       expect(await Users.update(userId, { locked: true })).toEqual({ success: true })
       userData = await Users.get(userId)
       expect(userData).toHaveProperty('failCount', 10)
-      expect(userData).toHaveProperty('failTime', expect.any(String))
+      expect(userData).toHaveProperty('failTime', expect.any(Number))
       expect(userData).toHaveProperty('locked', 1)
 
       expect(await Users.incFailCount(userData, { reset: true })).toEqual({ success: true })
@@ -255,7 +254,7 @@ describe('test Users model', () => {
       userData = await Users.get(userId)
       expect(updateCb).toBeCalledTimes(1)
       expect(updateCb).toBeCalledWith(
-        { failCount: 1, failTime: expect.any(String), locked: false },
+        { failCount: 1, failTime: expect.any(Number), locked: false },
         expect.objectContaining({ id: userData.id })
       )
       expect(userData).toHaveProperty('failCount', 12)
@@ -268,7 +267,7 @@ describe('test Users model', () => {
       userData = await Users.get(userId)
       expect(updateCb).toBeCalledTimes(1)
       expect(updateCb).toBeCalledWith(
-        { failCount: 1, failTime: expect.any(String), locked: false },
+        { failCount: 1, failTime: expect.any(Number), locked: false },
         expect.objectContaining({ id: userData.id })
       )
       expect(userData).toHaveProperty('failCount', 1)
@@ -343,7 +342,7 @@ describe('test Users model', () => {
       expect(await Users.update(userId, { locked: true })).toEqual({ success: true })
       expect(await Users.get(userId)).toMatchObject({
         locked: 1,
-        failTime: expect.any(String),
+        failTime: expect.any(Number),
         failCount: rateLimiter.maxFails,
       })
       expect(await Users.update(userId, { locked: false })).toEqual({ success: true })
@@ -380,3 +379,15 @@ describe('test Users model', () => {
     })
   })
 })
+
+
+// MOCKS
+
+jest.mock('../../utils/db.utils', () => ({
+  ...jest.requireActual('../../utils/db.utils'),
+  checkInjection: jest.fn((o) => o)
+}))
+jest.mock('../../config/users.cfg', () => ({
+  ...jest.requireActual('../../config/users.cfg'),
+  rateLimiter: { autoUnlock: false, maxFails: 10, failWindow: 1000 },
+}))
