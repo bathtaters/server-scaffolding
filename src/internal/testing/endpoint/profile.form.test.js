@@ -52,6 +52,18 @@ describe('Test User Profile Form Post', () => {
     expect(isPassword.id).toBe(userInfo.id)
   })
 
+  test('POST /regenToken', async () => {
+    const res = await request.post(`${profilePrefix}/regenToken`).expect(200).expect('Content-Type', /json/)
+      .send({
+        id: userInfo.id,
+      })
+    expect(res.body).toEqual({ success: true })
+    
+    const oldToken = userInfo.token
+    userInfo = await Users.get(userInfo.id)
+    expect(userInfo.token).not.toBe(oldToken)
+  })
+
   test('POST /form Remove', async () => {
     await request.post(`${profilePrefix}/form`).expect(302).expect('Location',profilePrefix)
       .send({

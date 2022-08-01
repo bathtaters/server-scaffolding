@@ -17,7 +17,14 @@ block content
       tr
         each val, key in tableFields
           -var rowCls = key !== 'cors' ? '' : userData.regExCors ? 'cors-regex' : userData.arrayCors ? 'cors-array' : ''
-          td(data-label=val) #{key in userData ? userData[key] : ''}!{'&nbsp;'}
+          if key !== 'token'
+            td(data-label=val) #{key in userData ? userData[key] : ''}!{'&nbsp;'}
+          else
+            td.button-input.token-cell(data-label=val)
+              span#token= userData.token || ' '
+              span.button-group
+                input.button.secondary(type='button' name='regenToken' id='regenToken' value='Regen')
+                input.button.primary(type='button' name='copyToken' id='copyToken' value='Copy')
 
   hr
 
@@ -30,7 +37,8 @@ block content
         .col-sm
           each val, key in { username: 'text', password: 'password', confirm: 'password' }
             +formInput(key, val, limits[key], key === 'username' && userData[key], tableFields[key], '', tooltips[key])
-            
-          input(type="hidden" value=userData[idKey] id=idKey name=idKey)
+          
+          span#primary-key
+            input(type="hidden" value=userData[idKey] id=idKey name=idKey)
 
       +buttonRow(buttons, { Update: 'tertiary', Remove: 'secondary' })

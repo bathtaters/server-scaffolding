@@ -28,6 +28,7 @@ module.exports = {
       swap: '/swap',
       form: '/form',
       find: '/results',
+      token: '/regenToken',
     },
     admin: {
       prefix: '/admin',

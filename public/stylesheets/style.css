@@ -48,6 +48,24 @@ fieldset > .row { align-items: flex-end; }
 }
 .grid-right { justify-self: end; }
 
+/* Format API Token cell in user profile */
+.token-cell { position: relative; }
+.token-cell > .button-group {
+  margin: 0; 
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+}
+@media screen and (max-width: 767px) {
+  .token-cell { padding-bottom: 3rem; }
+  .token-cell > .button-group {
+    flex-direction: row;
+    top: auto;
+    left: 0;
+  }
+}
+
 /* Color specialized CORs values */
 .cors-regex, .cors-array { color: lightskyblue; }
 

@@ -10,9 +10,10 @@ const { basic, root } = require('../../config/urls.cfg').gui
 
 router.use(checkAuth(root.login, access.gui))
 
-router.get( basic.home,                              controllers.dbHome)
-router.get( basic.user,                              controllers.userProfile)
-router.post(basic.user+basic.form, validate.profile, actions.userForm)
+router.get( basic.home,                               controllers.dbHome)
+router.get( basic.user,                               controllers.userProfile)
+router.post(basic.user+basic.form,  validate.profile, actions.userForm)
+router.post(basic.user+basic.token, validate.token,   actions.regenToken)
 
 const redir = basic.prefix + basic.home
 

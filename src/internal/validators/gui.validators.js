@@ -21,5 +21,6 @@ module.exports = {
   form:      (Model, formFields = 'all') => byModel(Model, formFields, { additional: formAdditional }),
   formNoMin: (Model, formFields = 'all') => byModel(Model, formFields, { additional: formAdditional, allowPartials: true }),
   profile: byModel(Users, profileFields, { additional: formAdditional }),
+  token:   byModel(Users, [Users.primaryId]),
   formAdditional, pageAdditional,
 }
