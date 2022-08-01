@@ -132,7 +132,7 @@ $( 'input#confirm, input#password' ).on('input', function() {
 });
 
 /* Regenerate API ID */
-$( '#actionRegen' ).click(function() {
+$( '#actionRegen' ).on('click', function() {
   var idElem = $( '#primary-key input' );
   var idVal = idElem.val();
   if (!idVal) return window.alert('Select a row to update...');
