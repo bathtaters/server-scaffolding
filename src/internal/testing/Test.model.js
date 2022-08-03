@@ -24,6 +24,6 @@ module.exports = new Model('test', {
     name: { min: 2, max: 100 },
     number: { min: -999, max: 999 },
     comment: { min: 0, max: 1000 },
-    boolList: { array: { max: 20 } },
+    objectList: { array: { max: 20 } },
   },
 })
