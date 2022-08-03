@@ -27,7 +27,6 @@ exports.modelDb = (Model, { view = 'dbModel', partialMatch = true, overrideDbPar
     submitURLs: { Search: `${urls.prefix}${urls.home}/${Model.title}${urls.form}${urls.find}` },
     schema: Model.types ? getTypes(Model.types, Model.primaryId) : getSchema(Model.schema, Model.primaryId, Model.boolFields),
     tableFields: getTableFields(Model.schema, Model.primaryId),
-    boolList: Model.boolFields || [],
     limits: Model.limits || {},
     defaults: Model.defaults || {},
     ...overrideDbParams,
