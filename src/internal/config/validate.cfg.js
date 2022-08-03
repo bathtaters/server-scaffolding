@@ -37,11 +37,9 @@ module.exports = {
     type:      (type)      => `does not exist as ${type}`,
     missing:   (key, type) => `${key} has ${type ? 'invalid' : 'missing'} type definition: ${type || ''}`,
     missingIn: (key)       => `${key} missing 'in' array for validation`,
-    limit:     ({ min, max }, isStr = false, isArr = false) => 
-      `must ${isStr || isArr ? 'have' : 'be'} ${
-        min != null && max != null ? 
-          `between ${min} & ${max}` :
-          `${!max ? 'more' : 'less'} than ${min || max}`
-      }${isStr ? ' characters' : isArr ? ' items' : ''}`,
+    limit:     ({ min, max }, type) => 
+      `must be ${type ? type+' ' : ''}${min != null && max != null ? 
+          `between ${min} & ${max}` : `${!max ? 'more' : 'less'} than ${min || max}`
+      }${type === 'string' ? ' characters' : type === 'array' ? ' items' : ''}`,
   },
 }
