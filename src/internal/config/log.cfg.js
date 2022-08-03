@@ -6,7 +6,7 @@ const { getMaxEntry } = require('../utils/log.utils')
 const levels = { error: 0, warn: 1, info: 2, http: 3, verbose: 4 }
 const colors = { error: 'red', warn: 'yellow', info: 'green', http: 'cyan', verbose: 'gray' }
 
-const regexFix = [ RegEx(/([\.\^\$\(\[])/g), RegEx(/%[^%]+%/g) ]
+const varRegex = RegEx(/%[^%]+%/g)
 const additLines = RegEx(/\s*\r?\n.*$/)
 
 module.exports = {
@@ -25,7 +25,7 @@ module.exports = {
   httpMessage: (mode) => `HTTP request logging enabled (${mode || 'DEBUG MODE'})`,
 
   // Filter for logView
-  logViewFileFilter: (filename) => RegEx(`^${filename.replace(regexFix[0],'\\$1').replace(regexFix[1],'.+')}$`),
+  logViewFileFilter: (filename) => RegEx(`^${RegEx.escapeRegexPattern(filename).replace(varRegex,'.+')}$`),
 
   logFormat: {
     common: format.combine(
