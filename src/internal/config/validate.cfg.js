@@ -32,6 +32,7 @@ module.exports = {
     datetime: () => 'not a valid timestamp',
     date:     () => 'not a valid date',
     object:   () => 'not a valid object',
+    array:    () => 'not a valid array',
     // Variable
     type:      (type)      => `does not exist as ${type}`,
     missing:   (key, type) => `${key} has ${type ? 'invalid' : 'missing'} type definition: ${type || ''}`,

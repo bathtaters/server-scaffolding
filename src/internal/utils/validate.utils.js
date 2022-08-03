@@ -1,5 +1,6 @@
 const RegEx = require('../libs/regex')
 const { boolOptions } = require('../config/validate.cfg')
+const { splitUnenclosed } = require('../utils/common.utils')
 
 // Decode validation types to [fullStr, typeStr, leaveWhiteSpace (*), isArray ([]), isOptional (?)]
 const typeStrRegex = RegEx(/^([^[?*]+)(\?|\*|\[\])?(\?|\*|\[\])?(\?|\*|\[\])?$/)
@@ -38,3 +39,18 @@ exports.isBoolean = (loose = boolOptions.loose) => !loose ? (val) => allBools.in
 exports.parseBoolean = (loose = boolOptions.loose) => !loose ? (val) => !boolOptions.false.includes(val) :
   (val) => typeof val === 'string' ? !falseBools.includes(val.toLowerCase()) : Boolean(val)
 
+// Array validation
+const arrJson = RegEx(/^\[.*\]$/)
+const splitter = splitUnenclosed(',', { trim: true, enclosures: ['{}','[]','""',"''"] })
+
+exports.parseArray = (optional = true) => optional ?
+  (str) => Array.isArray(str) ? str : typeof str !== 'string' ||  !str  ?  null  : arrJson.test(str) ? splitter(str.slice(1,str.length-1)) : splitter(str) :
+  (str) => Array.isArray(str) ? str : typeof str !== 'string' ? null : !str ? [] : arrJson.test(str) ? splitter(str.slice(1,str.length-1)) : splitter(str)
+
+exports.toArraySchema = (schema) => Object.keys(schema).reduce((arrSchema, key) => {
+  if ('toArray' in schema[key]) {
+    arrSchema[key] = { in: schema[key].in, customSanitizer: { options: exports.parseArray(schema[key].toArray) } }
+    delete schema[key].toArray
+  }
+  return arrSchema
+}, {})

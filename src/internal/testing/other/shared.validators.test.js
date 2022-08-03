@@ -26,12 +26,13 @@ describe('byObject', () => {
   it('passes result to checkSchema', () => {
     appendToSchema.mockReturnValueOnce('RESULT')
     shared.byObject('TEST')
-    expect(checkSchema).toBeCalledTimes(1)
     expect(checkSchema).toBeCalledWith('RESULT')
   })
-  it('includes checkValidation', () => {
+  it('includes checkValidation & arraySchema', () => {
     expect(shared.byObject('TEST'))
       .toEqual(expect.arrayContaining(['checkValidation']))
+    expect(shared.byObject('TEST'))
+      .toEqual(expect.arrayContaining(['arraySchema']))
   })
 })
 
@@ -268,9 +269,11 @@ describe('byModel', () => {
     expect(shared.byModel(testModel[0],['a','b'],{ params: ['a'] }))
       .toEqual(expect.arrayContaining([{ a: true, b: true }]))
   })
-  it('includes checkValidation in result', () => {
+  it('includes checkValidation & arraySchema in result', () => {
     expect(shared.byModel(testModel[0],['a','b'],{ params: ['a'] }))
       .toEqual(expect.arrayContaining(['checkValidation']))
+    expect(shared.byModel(testModel[0],['a','b'],{ params: ['a'] }))
+      .toEqual(expect.arrayContaining(['arraySchema']))
   })
   it('results are renamed using input object keys', () => {
     expect(shared.byModel(testModel[1],{ c3: 'c', d: 'd' },{ params: { c1: 'c', c2: 'c' }}))
@@ -312,6 +315,7 @@ describe('byModel', () => {
 jest.mock('express-validator', () => ({ checkSchema: jest.fn((r)=>[r]) }))
 jest.mock('../../middleware/validate.middleware', () => 'checkValidation')
 jest.mock('../../utils/common.utils', () => ({ filterDupes: jest.fn((o)=>o) }))
+jest.mock('../../utils/validate.utils', () => ({ toArraySchema: () => 'arraySchema' }))
 jest.mock('../../services/validate.services', () => ({
   generateSchema: jest.fn((key)=>({ [key]: true })),
   appendToSchema: jest.fn((obj) => obj),

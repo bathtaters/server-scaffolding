@@ -1,7 +1,8 @@
+const validateUtils = require('../../utils/validate.utils')
 const { 
   parseTypeStr, formSettingsToValidate,
-  isBoolean, parseBoolean,
-} = require('../../utils/validate.utils')
+  isBoolean, parseBoolean, parseArray, toArraySchema,
+} = validateUtils
 
 describe('parseTypeStr', () => {
   it('nothing', () => {
@@ -222,10 +223,110 @@ describe('parseBoolean', () => {
   })
 })
 
+describe('parseArray', () => {
+  it('uses splitUnenclosed', () => {
+    expect(parseArray()('TEST')).toBe('SPLIT_UNENC')
+  })
+
+  describe('optional = true', () => {
+    const parser = parseArray(true)
+    it('empty string', () => {
+      expect(parser('')).toBeNull()
+    })
+    it('enclosed array', () => {
+      expect(parser('[1,2,3]')).toEqual(['1','2','3'])
+      expect(parser('["add","bad","cab"]')).toEqual(['"add"','"bad"','"cab"'])
+    })
+    it('comma-seperated list', () => {
+      expect(parser('1,2,3')).toEqual(['1','2','3'])
+      expect(parser('add,bad,cab')).toEqual(['add','bad','cab'])
+    })
+    it('array object', () => {
+      expect(parser([1,2,3])).toEqual([1,2,3])
+      expect(parser(['add','bad','cab'])).toEqual(['add','bad','cab'])
+    })
+    it('not a string', () => {
+      expect(parser()).toBeNull()
+      expect(parser(123)).toBeNull()
+      expect(parser(true)).toBeNull()
+      expect(parser({ a: 1, b: 2, c: 3 })).toBeNull()
+    })
+  })
+  describe('optional = false', () => {
+    const parser = parseArray(false)
+    it('empty string', () => {
+      expect(parser('')).toEqual([]) // always returns array if passed string
+    })
+    it('enclosed array', () => {
+      expect(parser('[1,2,3]')).toEqual(['1','2','3'])
+      expect(parser('["add","bad","cab"]')).toEqual(['"add"','"bad"','"cab"'])
+    })
+    it('comma-seperated list', () => {
+      expect(parser('1,2,3')).toEqual(['1','2','3'])
+      expect(parser('add,bad,cab')).toEqual(['add','bad','cab'])
+    })
+    it('array object', () => {
+      expect(parser([1,2,3])).toEqual([1,2,3])
+      expect(parser(['add','bad','cab'])).toEqual(['add','bad','cab'])
+    })
+    it('not a string', () => {
+      expect(parser()).toBeNull()
+      expect(parser(123)).toBeNull()
+      expect(parser(true)).toBeNull()
+      expect(parser({ a: 1, b: 2, c: 3 })).toBeNull()
+    })
+  })
+})
+
+describe('toArraySchema', () => {
+  const parserSpy = jest.spyOn(validateUtils, 'parseArray')
+  it('Only returns entries w/ "toArray"', () => {
+    expect(Object.keys(toArraySchema({
+      a: { test: true }, b: { toArray: true },
+      c: { toArray: false }, d: { test: false }, 
+    }))).toEqual(['b', 'c'])
+  })
+  it('Copies "in" value from input', () => {
+    expect(toArraySchema({
+      a: { toArray: true, in: 'A_IN_VAL' },
+      b: { toArray: true, in: 'B_IN_VAL' },
+    })).toEqual({
+      a: expect.objectContaining({ in: 'A_IN_VAL' }),
+      b: expect.objectContaining({ in: 'B_IN_VAL' }),
+    })
+  })
+  it('Sets "customSanitizer" to parseArray', () => {
+    parserSpy.mockReturnValueOnce('PARSE_ARRAY').mockReturnValueOnce('PARSE_ARRAY')
+    expect(toArraySchema({ a: { toArray: true }, b: { toArray: true } })).toEqual({
+      a: expect.objectContaining({ customSanitizer: { options: 'PARSE_ARRAY' } }),
+      b: expect.objectContaining({ customSanitizer: { options: 'PARSE_ARRAY' } }),
+    })
+  })
+  it('Constructs parseArray w/ "toArray" value', () => {
+    toArraySchema({ a: { toArray: 'TO_ARR_A' }, b: { toArray: 'TO_ARR_B' } })
+    expect(parserSpy).toBeCalledWith('TO_ARR_A')
+    expect(parserSpy).toBeCalledWith('TO_ARR_B')
+  })
+  it('Deletes "toArray" from input', () => {
+    const input = { a: { toArray: true, in: 'A' }, b: { toArray: true, in: 'B' } }
+    toArraySchema(input)
+    expect(input.a).not.toHaveProperty('toArray')
+    expect(input.b).not.toHaveProperty('toArray')
+  })
+  it('Always returns object', () => {
+    expect(toArraySchema({})).toEqual({})
+    expect(toArraySchema({ a: {}, b: {} })).toEqual({})
+    expect(toArraySchema({ a: { in: 'A' }, b: { in: 'B' } })).toEqual({})
+  })
+})
+
 
 // MOCKS
 
 jest.mock('../../libs/regex', () => (re) => re)
+jest.mock('../../utils/common.utils', () => ({
+  splitUnenclosed: (delim) => (str) => str !== 'TEST' ? str.split(delim) : 'SPLIT_UNENC'
+}))
 jest.mock('../../config/validate.cfg', () => ({
   boolOptions: {
     true:  [21, 'testTrue',  'otherTrue'],

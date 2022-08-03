@@ -78,12 +78,7 @@ exports.guiAdapter = (user) => {
   return user
 }
 
-exports.preValidateAdapter = (formData, isSearch) => {
-  if (isSearch) stripNonSearchProps(formData)
-  if (formData.models && typeof formData.models === 'string') formData.models = formData.models.split(',')
-  if (formData.access && typeof formData.access === 'string') formData.access = formData.access.split(',')
-  return formData
-}
+exports.preValidateAdapter = (formData, isSearch) => (isSearch && stripNonSearchProps(formData)) || formData
 
 exports.schemaAdapter = ({ password, ...schema }) => ({ ...schema, key: 'TEXT', salt: 'TEXT' })
 

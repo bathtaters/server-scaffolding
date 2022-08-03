@@ -43,6 +43,38 @@ exports.deepEquals = (a, b, compareFunc = (a,b) => a === b) => {
   return keys.every((key) => exports.deepEquals(a[key], b[key]))
 }
 
+// Advanced string splitter (Returns split function from options), enclosures should be open/close char for each enclosure
+exports.splitUnenclosed = (splitDelimiter, { trim = true, escape = '\\', enclosures = ['()','{}','""',"''",'[]','<>'] } = {}) => {
+  const delimRegex = RegEx('^' + (splitDelimiter.source || RegEx.escapeRegexPattern(splitDelimiter)))
+  const [ open, close ] = enclosures.reduce((arrs, item) => [0,1].forEach((i) => { arrs[i] += item[i] }) || arrs, ['',''])
+  const updateCounter = (char, counter) => {
+    let i 
+    (i = close.indexOf(char)) > -1 && counter[i] ?  --counter[i] :
+    (i =  open.indexOf(char)) > -1 && ++counter[i]
+    return char
+  }
+  const appendStr = (next, array) => {
+    (next = trim ? next.trim() : next) && array.push(next)
+    return ''
+  }
+  
+  return (text) => {
+    if (typeof text !== 'string') return text
+
+    let array = [], next = ''
+    for (let match, counter = enclosures.map(() => 0); text; text = text.slice(1)) {
+      if ((match = text.match(delimRegex)) && !Object.values(counter).some((n) => n)) {
+        if (match[0].length > 1) text = text.slice(match[0].length - 1)
+        next = appendStr(next, array)
+      }
+      else if (text.charAt(0) === escape) (next += text.charAt(1), text = text.slice(1))
+      else next += updateCounter(text.charAt(0), counter)
+    }
+    appendStr(next, array)
+    return array
+  }
+}
+
 // Get debounced version of func & func to force next call to use original func
 const EMPTY = Symbol('EMPTY')
 exports.debounce = (func, { interval = 1000, ignoreArgs = false } = {}) => {

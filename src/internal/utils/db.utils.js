@@ -1,5 +1,5 @@
 const { isDate } = require('../libs/date')
-const { parseTypeStr, parseBoolean } = require('./validate.utils')
+const { parseTypeStr, parseBoolean, parseArray } = require('./validate.utils')
 const { illegalKeyName } = require('../config/validate.cfg')
 const { sqlInjection } = require('../config/errors.internal')
 
@@ -27,9 +27,10 @@ exports.sanitizeSchemaData = (data, schema=null) => {
   , {})
 }
 
+const isNonArrayBool = ({ type, isArray }) => type === 'boolean' && !isArray
 exports.boolsFromTypes = (typeObj) => {
   if (!typeObj) return []
-  return Object.keys(typeObj).filter((key) => parseTypeStr(typeObj[key]).type === 'boolean')
+  return Object.keys(typeObj).filter((key) => isNonArrayBool(parseTypeStr(typeObj[key])))
 }
 
 exports.schemaFromTypes = (typeObj, primaryKey) => {
@@ -37,7 +38,9 @@ exports.schemaFromTypes = (typeObj, primaryKey) => {
 
   let schema = {}
   Object.entries(typeObj).forEach(([key, type]) => {
-    switch(parseTypeStr(type).type || type) {
+    const typeObj = parseTypeStr(type)
+    if (typeObj.isArray) typeObj.type = 'array'
+    switch (typeObj.type || type) {
       case 'float':
       case 'real':
         schema[key] = 'REAL'
@@ -54,32 +57,54 @@ exports.schemaFromTypes = (typeObj, primaryKey) => {
     }
 
     if (key === primaryKey) schema[key] += ' PRIMARY KEY'
+    if (!typeObj.isOptional) schema[key] += ' NOT NULL'
   })
 
   return schema
 }
 
 const toBool = parseBoolean(true)
+const toArray = parseArray(true)
 exports.adaptersFromTypes = (typeObj) => {
   let adapters = { get: {}, set: {} }
   Object.entries(typeObj).forEach(([key,type]) => {
-    switch (parseTypeStr(type).type || type) {
+    const typeObj = parseTypeStr(type)
+    switch (typeObj.type || type) {
+      case 'integer':
+        adapters.set[key] = (text) => typeof text === 'string' ? parseInt(text)   : text
+        break
+      case 'float':
+        adapters.set[key] = (text) => typeof text === 'string' ? parseFloat(text) : text
+        break
       case 'object':
-        adapters.set[key] = (obj) => typeof obj === 'object' ? JSON.stringify(obj) : obj
-        adapters.get[key] = (text) => JSON.parse(text)
+        adapters.set[key] = (obj)  => typeof obj  === 'object' ? JSON.stringify(obj) : obj
+        adapters.get[key] = (text) => typeof text === 'string' ? JSON.parse(text)    : text
         break
       case 'date':
       case 'datetime':
         adapters.set[key] = (date) => !date ? null :
           typeof date === 'number' ? date : isDate(date) ? date.getTime() : 
-            new Date(date).getTime() // Fallback
+            !isNaN(date) ? +date : new Date(date).getTime() // Fallback
         adapters.get[key] = (num) => num && new Date(num)
         break
       case 'boolean':
         adapters.set[key] = (bool) => +toBool(bool)
         adapters.get[key] = (int) => int !== 0
         break
-    }
+      }
+
+      if (typeObj.isArray) {
+        const entrySet = typeObj.type !== 'object' ? adapters.set[key] : adapters.get[key],
+          entryGet = typeObj.type !== 'object' && adapters.get[key]
+        adapters.set[key] = typeof entrySet === 'function' ?
+          (arr) => typeof arr === 'string' ? JSON.stringify(toArray(arr).map(entrySet)) :
+            Array.isArray(arr) ? JSON.stringify(arr.map(entrySet)) : null :
+          (arr) => typeof arr === 'string' ? JSON.stringify(toArray(arr)) :
+            Array.isArray(arr) ? JSON.stringify(arr) : null
+        adapters.get[key] = typeof entryGet === 'function' ? 
+          (text) => !text ? null : JSON.parse(text).map(entryGet) : 
+          (text) => !text ? null : JSON.parse(text)
+      }
   })
   return {
     getAdapter: Object.keys(adapters.get).length ? (data) => {

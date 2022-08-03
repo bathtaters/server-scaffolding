@@ -1,5 +1,5 @@
 const Users = require('../models/Users')
-const { getTableFields, varName, getSchema, getTypes } = require('../utils/gui.utils')
+const { getTableFields, varName, getSchema, getTypes, formatGuiData } = require('../utils/gui.utils')
 const { access, tableFields, tooltips } = require('../config/users.cfg')
 const { guiAdapter } = require('../services/users.services')
 const { hasAccess, hasModelAccess } = require('../utils/users.utils')
@@ -18,7 +18,7 @@ exports.dbHome = (req, res) => res.render('dbHome', {
   models: models.filter((modelName) => req.user && hasModelAccess(req.user.models, modelName)),
 })
 
-exports.modelDb = (Model, { view = 'dbModel', partialMatch = true, overrideDbParams = {}, formatData = (data) => data } = {}) => {
+exports.modelDb = (Model, { view = 'dbModel', partialMatch = true, overrideDbParams = {}, formatData = formatGuiData } = {}) => {
   const staticDbParams = {
     title: varName(Model.title),
     idKey: Model.primaryId,

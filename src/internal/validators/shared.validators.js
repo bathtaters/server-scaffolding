@@ -3,9 +3,10 @@
 const { checkSchema } = require('express-validator')
 const checkValidation = require('../middleware/validate.middleware')
 const { generateSchema, appendToSchema } = require('../services/validate.services')
+const { toArraySchema } = require('../utils/validate.utils')
 const { filterDupes } = require('../utils/common.utils')
 
-const toMiddleware = (validationSchema) => checkSchema(validationSchema).concat(checkValidation)
+const toMiddleware = (validationSchema) => checkSchema(toArraySchema(validationSchema)).concat(checkSchema(validationSchema)).concat(checkValidation)
 
 /**
  * Get validation middleware using custom options

@@ -12,7 +12,7 @@ exports.toValidationSchema = function toValidationSchema(key, typeStr, limits, i
   // Get type from typeStr
   const type = parseTypeStr(typeStr)
   if (!type.type) throw new Error(errorMsgs.missing(key, typeStr))
-  if (forceOptional) type.isOptional = '?'
+  if (forceOptional && !type.isOptional) type.isOptional = 'force'
   if (type.hasSpaces && type.type !== 'string') logger.warn(`* is ignored w/ non-string type: ${type.string}`)
 
   // Initialize ptr & static values (errMsg/in)
@@ -44,7 +44,8 @@ exports.toValidationSchema = function toValidationSchema(key, typeStr, limits, i
       arrLimit = limits
       limits = null
     }
-    ptr.isArray = { options: arrLimit, errorMessage: errorMsgs.limit(arrLimit || 'array') }
+    ptr.isArray = arrLimit ? { options: arrLimit, errorMessage: errorMsgs.limit(arrLimit) } : { errorMessage: errorMsgs.array() }
+    ptr.toArray = type.isOptional
     
     // Create entry & update ptr
     valid[key+'.*'] = {}
@@ -73,7 +74,6 @@ exports.toValidationSchema = function toValidationSchema(key, typeStr, limits, i
     case 'hex': // pass to string
       if (!ptr.isBase64 && !ptr.isUUID)
         ptr.isHexadecimal = { errorMessage: errorMsgs.hex() }
-
     case 'string':
       ptr.isString = limits || { errorMessage: errorMsgs.string() }
       if (!type.hasSpaces) { 

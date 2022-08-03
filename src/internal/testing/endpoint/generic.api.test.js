@@ -88,5 +88,7 @@ describe('Test model API', () => {
     }))
   })
 
-  test.todo('Test Validation (Add ARRAY option)')
+  test.todo('Test Validation')
+
+  test.todo('Test ARRAY Validation (after implemented)')
 })

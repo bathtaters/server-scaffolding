@@ -1,7 +1,7 @@
 const {
   capitalizeHyphenated, filterDupes, hasDupes, exceptRoute,
   deepMap, deepEquals, debounce,
-  getMatchingKey, caseInsensitiveObject
+  getMatchingKey, caseInsensitiveObject, splitUnenclosed
 } = require('../../utils/common.utils')
 
 describe('capitalizeHyphenated', () => {
@@ -239,6 +239,68 @@ describe('deepEquals', () => {
     expect(deepEquals(1, '1', looseCompare)).toBeTruthy()
     expect(deepEquals(null, undefined)).toBeFalsy()
     expect(deepEquals(null, undefined, looseCompare)).toBeTruthy()
+  })
+})
+
+describe('splitUnenclosed', () => {
+  it('splits based on delimiter', () => {
+    const splitter = splitUnenclosed('|', { enclosures: [], trim: false, escape: '\\' })
+    expect(splitter('1|2|3')).toEqual(['1','2','3'])
+    expect(splitter('add|bad|cab')).toEqual(['add','bad','cab'])
+  })
+  it('allows multi-char delimiter', () => {
+    const splitter = splitUnenclosed('-/-', { enclosures: [], trim: false, escape: '\\' })
+    expect(splitter('1-/-2-/-3')).toEqual(['1','2','3'])
+    expect(splitter('add-/-bad-/cab-/-dab')).toEqual(['add','bad-/cab','dab'])
+  })
+  it('allows regex delimiter', () => {
+    const splitter = splitUnenclosed(/arg?/, { enclosures: [], trim: false, escape: '\\' })
+    expect(splitter('1ar2arg3')).toEqual(['1','2','3'])
+    expect(splitter('addargbadarcab')).toEqual(['add','bad','cab'])
+  })
+  it('trims whitespace around delimiter', () => {
+    const splitter = splitUnenclosed('|', { enclosures: [], trim: true, escape: '\\' })
+    expect(splitter('1 |  2  |3')).toEqual(['1','2','3'])
+    expect(splitter('  add|\nbad\t\t|cab     ')).toEqual(['add','bad','cab'])
+    
+  })
+  it('keeps whitespace around delimiter', () => {
+    const splitter = splitUnenclosed('|', { enclosures: [], trim: false, escape: '\\' })
+    expect(splitter('1 |  2  |3')).toEqual(['1 ','  2  ','3'])
+    expect(splitter('  add|\nbad\t\t|cab     ')).toEqual(['  add','\nbad\t\t','cab     '])
+    
+  })
+  it('skips empty values', () => {
+    const splitter = splitUnenclosed('|', { enclosures: [], trim: false, escape: '\\' })
+    expect(splitter('1|2||3|')).toEqual(['1','2','3'])
+    expect(splitter('||add||||bad|cab')).toEqual(['add','bad','cab'])
+  })
+  it('skips empty values post trim', () => {
+    const trimSplit = splitUnenclosed('|', { enclosures: [], trim: true, escape: '\\' })
+    expect(trimSplit('1|2| ')).toEqual(['1','2'])
+    const noTrim = splitUnenclosed('|', { enclosures: [], trim: false, escape: '\\' })
+    expect(noTrim('1|2| ')).toEqual(['1','2',' '])
+  })
+  it('splits around enclosures', () => {
+    const splitter = splitUnenclosed('|', { enclosures: ['^$','**'], trim: false, escape: '\\' })
+    expect(splitter('1|^2|3|4$|5')).toEqual(['1','^2|3|4$','5'])
+    expect(splitter('add|ba^^d|cab$|da$b|ed')).toEqual(['add','ba^^d|cab$|da$b','ed'])
+    expect(splitter('1|^2|3*|4$|5*|6')).toEqual(['1','^2|3*|4$|5*','6'])
+  })
+  it('ignores escaped enclosures + hides escape char (unless escaped)', () => {
+    const splitter = splitUnenclosed('|', { enclosures: ['^$','**'], trim: false, escape: '(' })
+    expect(splitter('1|(^2|3|4$|5')).toEqual(['1','^2','3','4$','5'])
+    expect(splitter('1|^2|3(*|4$|5|6(*')).toEqual(['1','^2|3*|4$','5','6*'])
+    expect(splitter('(1|^2|((3)|4$|((5')).toEqual(['1','^2|(3)|4$','(5'])
+  })
+  it('passes non-strings', () => {
+    const splitter = splitUnenclosed('|', { enclosures: [], trim: false, escape: '\\' })
+    expect(splitter({ a: 1, b: 2 })).toEqual({ a: 1, b: 2 })
+    expect(splitter([1,2,3])).toEqual([1,2,3])
+    expect(splitter(123)).toBe(123)
+    expect(splitter(true)).toBe(true)
+    expect(splitter()).toBeUndefined()
+    expect(splitter(splitter)).toBe(splitter)
   })
 })
 

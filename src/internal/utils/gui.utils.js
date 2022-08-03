@@ -1,6 +1,7 @@
 const RegEx = require('../libs/regex')
 const { varNameDict, sql2html, MASK_CHAR, boolInputType } = require('../../config/gui.cfg')
 const { parseTypeStr } = require('../utils/validate.utils')
+const { isDate } = require('../libs/date')
 
 const varRegex = [ RegEx(/([A-Z])/g), RegEx(/^./) ]
 exports.varName = (str) =>  typeof str !== 'string' ? str : Object.keys(varNameDict).includes(str) ? varNameDict[str] :
@@ -22,10 +23,32 @@ exports.getTableFields = (schema, idKey) => {
   return tf
 }
 
+// Default 'formatData' callback for GUI
+exports.formatGuiData = (data) => {
+  data && data.forEach((row) => {
+    Object.entries(row).forEach(([key,val]) => {
+      if (Array.isArray(val)) {
+        row[key] = val.map((e) => {
+          switch (typeof e) {
+            case 'string': return e
+            case 'object': if (e && !isDate(e)) return JSON.stringify(e)
+            default: return e != null ? e.toLocaleString() : `${e}`
+          }
+        }).join(', ')
+      } else if (typeof val === 'object' && val && !isDate(val)) {
+        row[key] = JSON.stringify(val)
+      }
+    })
+  })
+  return data
+}
+
 // Convert Model types to HTML input types
 exports.getTypes = (types, idKey) => Object.entries(types).reduce((html, [key, type]) => {
   if (key.toLowerCase() === idKey.toLowerCase()) return html
-  switch(parseTypeStr(type).type || type) {
+  const typeObj = parseTypeStr(type)
+  if (typeObj.isArray) typeObj.type = 'array'
+  switch (typeObj.type || type) {
     case 'boolean':   html[key] = 'checkbox';       break
     case 'date':      html[key] = 'date';           break
     case 'datetime':  html[key] = 'datetime-local'; break

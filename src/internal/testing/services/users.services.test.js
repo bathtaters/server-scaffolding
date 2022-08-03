@@ -165,12 +165,6 @@ describe('User pre-validateAdapter', () => {
       searchA: 'keep only this', searchB: 'and this',
     })
   })
-  it('convert models csv to array', () => {
-    expect(preValidateAdapter(testObj)).toHaveProperty('models', ['a','b','c'])
-  })
-  it('convert access csv to array', () => {
-    expect(preValidateAdapter(testObj)).toHaveProperty('access', ['1','2','3'])
-  })
 })
 
 describe('Admin form adapter', () => {

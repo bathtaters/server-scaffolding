@@ -504,7 +504,8 @@ describe('toValidationSchema', () => {
     })
     it('array has basic props', () => {
       const result = services.toValidationSchema('test','any[]',null,['isIn'],false)
-      expect(result.test).toHaveProperty('isArray', {errorMessage: expect.any(String), options: null})
+      expect(result.test).toHaveProperty('toArray')
+      expect(result.test).toHaveProperty('isArray', {errorMessage: expect.any(String)})
       expect(result.test).toHaveProperty('in', ['isIn'])
     })
     it('elements basic props', () => {
@@ -527,6 +528,12 @@ describe('toValidationSchema', () => {
       const result = services.toValidationSchema('test','any[]',null,['isIn'],false)
       expect(result.test).toHaveProperty('exists', {errorMessage: expect.any(String)})
       expect(result.test).not.toHaveProperty('optional')
+    })
+    it('array passes isOptional to toArray', () => {
+      parseTypeStr('')
+      parseTypeStr.mockReturnValueOnce({ type: 'any', string: 'any[]', isArray: true, isOptional: 'isOpt' })
+      const result = services.toValidationSchema('test','any[]',null,['isIn'],false)
+      expect(result.test).toHaveProperty('toArray', 'isOpt')
     })
     it('elements missing optional props', () => {
       let result = services.toValidationSchema('test','any[]',null,['isIn'],true)

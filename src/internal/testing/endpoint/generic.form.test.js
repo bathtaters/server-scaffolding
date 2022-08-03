@@ -70,5 +70,7 @@ describe('Test User Profile Form Post', () => {
     expect(await Model.get(testId)).toBeFalsy()
   })
 
-  test.todo('Test Validation + adding differnt types (Add ARRAY data to TEST)')
+  test.todo('Test Validation')
+  
+  test.todo('Test ARRAY Validation (after implemented)')
 })
