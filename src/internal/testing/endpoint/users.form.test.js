@@ -1,6 +1,5 @@
 const server = require('../../server')
 const request = require('supertest-session')(server)
-const RegEx = require('../../libs/regex')
 
 const Users = require('../../models/Users')
 const { createUser } = require('../endpoint.utils')
@@ -116,7 +115,7 @@ describe('Test Users Form Post', () => {
         cors: 'RegExp("abc")',
       })
     userInfo = await Users.get(userInfo.id)
-    expect(userInfo.cors).toStrictEqual(RegEx('abc'))
+    expect(userInfo.cors).toHaveProperty('source','abc')
   })
   
   test('Update Model Access', async () => {

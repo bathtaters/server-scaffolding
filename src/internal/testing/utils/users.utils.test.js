@@ -293,11 +293,8 @@ describe('decodeCors', () => {
     expect(decodeCors(0)).toBe(false)
   })
   it('parses RegEx string', () => {
-    RegEx.mockReturnValueOnce('_REGEX').mockReturnValueOnce('_REGEX')
-    expect(decodeCors('RegExp("abc")')).toBe('_REGEX')
-    expect(RegEx).toBeCalledWith('abc')
-    expect(decodeCors("RegExp('1[23]')  ")).toBe('_REGEX')
-    expect(RegEx).toBeCalledWith('1[23]')
+    expect(decodeCors('RegExp("abc")').source).toBe('abc')
+    expect(decodeCors("RegExp('1[23]')  ").source).toBe('1[23]')
   })
   it('parses array string', () => {
     expect(decodeCors('["a","b","c"]')).toEqual(['a','b','c'])
@@ -387,7 +384,6 @@ describe('isRegEx', () => {
 
 /* ---- MOCKS ---- */
 
-jest.mock('../../libs/regex', () => jest.fn((re) => re))
 jest.mock('../../config/users.cfg', () => ({
   // ACCESS
   access: { zero: 0, one: 1, two: 2, password: 4 },
