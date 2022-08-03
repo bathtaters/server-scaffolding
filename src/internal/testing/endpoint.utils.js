@@ -2,7 +2,7 @@ const Users = require('../models/Users')
 const Test = require('./Test.model')
 
 exports.testModelData = {
-  Model: Test, testKey: 'comment', idKey: Test.primaryId,
+  Model: Test, testKey: 'name', idKey: Test.primaryId,
   prefix: { api: '/api/test', gui: '/gui/db/test' },
 }
 
