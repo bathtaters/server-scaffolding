@@ -14,13 +14,13 @@ module.exports = new Model('test', {
   },
 
   defaults: {
-    name: "None",
     number: -1,
     isOn: true,
-    testDate: "2000-01-01T00:00",
+    testDate: "2000-01-02T00:00",
   },
 
   limits: {
+    testId: { min: 0, max: 9999 },
     name: { min: 2, max: 100 },
     number: { min: -999, max: 999 },
     comment: { min: 0, max: 1000 },

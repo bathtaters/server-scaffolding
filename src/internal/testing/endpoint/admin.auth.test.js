@@ -41,19 +41,19 @@ describe('Test User Authentication', () => {
     })
     test('User GUI allows write', async () => {
       await updateUser(userInfo, { models: { [Model.title]: read | write } })
-      await request.post(`${url.gui}/form`).send({ action: "Add", [testKey]: "1" })
+      await request.post(`${url.gui}/form`).send({ action: "Add", [testKey]: "N1" })
         .expect(302).expect('Location', url.gui)
   
       await updateUser(userInfo, { models: { [Model.title]: write } })
-      await request.post(`${url.gui}/form`).send({ action: "Add", [testKey]: "2" })
+      await request.post(`${url.gui}/form`).send({ action: "Add", [testKey]: "N2" })
         .expect(302).expect('Location', url.gui)
     })
     test('User GUI disallows writes', async () => {
       await updateUser(userInfo, { models: { [Model.title]: 0 } })
-      await request.post(`${url.gui}/form`).send({ action: "Add", [testKey]: "3" }).expect(403)
+      await request.post(`${url.gui}/form`).send({ action: "Add", [testKey]: "N3" }).expect(403)
   
       await updateUser(userInfo, { models: { [Model.title]: read } })
-      await request.post(`${url.gui}/form`).send({ action: "Add", [testKey]: "4" }).expect(403)
+      await request.post(`${url.gui}/form`).send({ action: "Add", [testKey]: "N4" }).expect(403)
     })
     test('User GUI disallows reads', async () => {
       await updateUser(userInfo, { models: { [Model.title]: 0 } })
@@ -66,12 +66,12 @@ describe('Test User Authentication', () => {
 
     test('Missing model access falls back to default', async () => {
       await updateUser(userInfo, { models: { default: read } })
-      await request.post(`${url.gui}/form`).send({ action: "Add", [testKey]: "9" }).expect(403)
+      await request.post(`${url.gui}/form`).send({ action: "Add", [testKey]: "N9" }).expect(403)
       await request.post(`${url.gui}/form`).send({ action: "Search" }).expect(302).expect('Location', url.gui)
       
       await updateUser(userInfo, { models: { default: write } })
       await request.post(`${url.gui}/form`).send({ action: "Search" }).expect(403)
-      await request.post(`${url.gui}/form`).send({ action: "Add", [testKey]: "6" })
+      await request.post(`${url.gui}/form`).send({ action: "Add", [testKey]: "N6" })
         .expect(302).expect('Location', url.gui)
     })
   })
@@ -110,12 +110,12 @@ describe('Test User Authentication', () => {
     test('User API allows write', async () => {
       await updateUser(userInfo, { models: { default: write } })
       let res = await request.post(url.api).set(header).expect(200).expect('Content-Type', /json/)
-        .send({ [testKey]: "5" })
+        .send({ [testKey]: "N5" })
       expect(res.body).toEqual({ [idKey]: expect.anything() })
   
       await updateUser(userInfo, { models: { default: read | write } })
       res = await request.post(url.api).set(header).expect(200).expect('Content-Type', /json/)
-        .send({ [testKey]: "6" })
+        .send({ [testKey]: "N6" })
       expect(res.body).toEqual({ [idKey]: expect.anything() })
     })
     test('User API disallows read', async () => {
@@ -127,22 +127,22 @@ describe('Test User Authentication', () => {
     })
     test('User API disallows write', async () => {
       await updateUser(userInfo, { models: { default: 0 } })
-      await request.post(url.api).set(header).expect(403).send({ [testKey]: "7" })
+      await request.post(url.api).set(header).expect(403).send({ [testKey]: "N7" })
       
       await updateUser(userInfo, { models: { default: read } })
-      await request.post(url.api).set(header).expect(403).send({ [testKey]: "8" })
+      await request.post(url.api).set(header).expect(403).send({ [testKey]: "N8" })
     })
 
     test('Missing model access falls back to default', async () => {
       await updateUser(userInfo, { models: { default: read } })
-      await request.post(url.api).set(header).expect(403).send({ [testKey]: "0" })
+      await request.post(url.api).set(header).expect(403).send({ [testKey]: "N0" })
       let res = await request.get(url.api).set(header).expect(200).expect('Content-Type', /json/)
       expect(res.body).toEqual(expect.any(Array))
       
       await updateUser(userInfo, { models: { default: write } })
       await request.get(url.api).set(header).expect(403)
       res = await request.post(url.api).set(header).expect(200).expect('Content-Type', /json/)
-        .send({ [testKey]: "6" })
+        .send({ [testKey]: "N6" })
       expect(res.body).toEqual({ [idKey]: expect.anything() })
     })
   })
