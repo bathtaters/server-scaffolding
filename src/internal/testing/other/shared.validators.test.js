@@ -11,7 +11,12 @@ const inputValues = [
   },{
     types:  { c: 'type3', d: 'type4' },
     limits: { c: 'lims3' },
-  },
+  },{
+    primaryId: 'g',
+    types:  { e: 'type5', f: 'type6', g: 'type7' },
+    defaults: { f: 'default6' },
+    limits: {}
+  }
 ]
 
 
@@ -163,6 +168,35 @@ describe('byModel', () => {
       expect.anything(),
       expect.anything(),
     )
+  })
+
+  it('force optional for primaryId or keys w/ defaults', () => {
+    shared.byModel(testModel[2],['e','f','g'],{ optionalBody: false })
+    expect(generateSchema).toBeCalledWith(
+      'e',
+      expect.anything(),
+      undefined,
+      expect.anything(),
+      false,
+      expect.anything(),
+    )
+    expect(generateSchema).toBeCalledWith(
+      'f',
+      expect.anything(),
+      undefined,
+      expect.anything(),
+      true,
+      expect.anything(),
+    )
+    expect(generateSchema).toBeCalledWith(
+      'g',
+      expect.anything(),
+      undefined,
+      expect.anything(),
+      true,
+      expect.anything(),
+    )
+    expect(generateSchema).toBeCalledTimes(3)
   })
 
   it('ignores falsy keys', () => {

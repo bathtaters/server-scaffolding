@@ -30,7 +30,7 @@ exports.byObject = (objectArray) => toMiddleware(appendToSchema({}, objectArray)
  * @param {CustomValidation[]} [options.additional] - Additional validation to append to model validation
  * @returns {function[]} Validation Middleware
  */
-exports.byModel = function byModel({ types, limits }, body = [], { params = [], optionalBody = true, asQueryStr = false, allowPartials = false, additional } = {}) {
+exports.byModel = function byModel({ types, limits, defaults, primaryId }, body = [], { params = [], optionalBody = true, asQueryStr = false, allowPartials = false, additional } = {}) {
   let keys = { params, [asQueryStr ? 'query' : 'body']: body }
 
   // 'all' instead of key array will include validation for all entries
@@ -54,10 +54,13 @@ exports.byModel = function byModel({ types, limits }, body = [], { params = [], 
     })
   })
 
+  // Build list of forced optional (Anything w/ default and primaryId)
+  const forceOptionalKeys = !optionalBody && Object.keys(defaults || {}).concat(primaryId || [])
+
   // Call getValidation on each entry in keyList to create validationSchema
   const schema = Object.entries(keyList).reduce((valid, [key, isIn]) =>
     Object.assign(valid,
-      generateSchema(key, types[key], limits[key], isIn, optionalBody, allowPartials)
+      generateSchema(key, types[key], limits[key], isIn, optionalBody || forceOptionalKeys.includes(key), allowPartials)
     ),
   {})
   if (!Object.keys(keysDict).length) return toMiddleware(appendToSchema(schema, additional))
