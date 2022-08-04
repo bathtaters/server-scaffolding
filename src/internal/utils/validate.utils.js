@@ -44,8 +44,8 @@ const arrJson = RegEx(/^\[.*\]$/)
 const splitter = splitUnenclosed(',', { trim: true, enclosures: ['{}','[]','""',"''"] })
 
 exports.parseArray = (optional = true) => optional ?
-  (str) => Array.isArray(str) ? str : typeof str !== 'string' ||  !str  ?  null  : arrJson.test(str) ? splitter(str.slice(1,str.length-1)) : splitter(str) :
-  (str) => Array.isArray(str) ? str : typeof str !== 'string' ? null : !str ? [] : arrJson.test(str) ? splitter(str.slice(1,str.length-1)) : splitter(str)
+  (str) => Array.isArray(str) ? str : str == null || str === '' ? null : typeof str !== 'string' ? [str] : arrJson.test(str) ? splitter(str.slice(1,str.length-1)) : splitter(str) :
+  (str) => Array.isArray(str) ? str : str == null || str === '' ? []   : typeof str !== 'string' ? [str] : arrJson.test(str) ? splitter(str.slice(1,str.length-1)) : splitter(str)
 
 exports.toArraySchema = (schema) => Object.keys(schema).reduce((arrSchema, key) => {
   if ('toArray' in schema[key]) {

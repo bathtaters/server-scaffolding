@@ -230,8 +230,10 @@ describe('parseArray', () => {
 
   describe('optional = true', () => {
     const parser = parseArray(true)
-    it('empty string', () => {
+    it('empty string/null/undef', () => {
       expect(parser('')).toBeNull()
+      expect(parser(null)).toBeNull()
+      expect(parser()).toBeNull()
     })
     it('enclosed array', () => {
       expect(parser('[1,2,3]')).toEqual(['1','2','3'])
@@ -246,16 +248,17 @@ describe('parseArray', () => {
       expect(parser(['add','bad','cab'])).toEqual(['add','bad','cab'])
     })
     it('not a string', () => {
-      expect(parser()).toBeNull()
-      expect(parser(123)).toBeNull()
-      expect(parser(true)).toBeNull()
-      expect(parser({ a: 1, b: 2, c: 3 })).toBeNull()
+      expect(parser(123)).toEqual([123])
+      expect(parser(true)).toEqual([true])
+      expect(parser({ a: 1, b: 2, c: 3 })).toEqual([{ a: 1, b: 2, c: 3 }])
     })
   })
   describe('optional = false', () => {
     const parser = parseArray(false)
-    it('empty string', () => {
+    it('empty string/null/undef', () => {
       expect(parser('')).toEqual([]) // always returns array if passed string
+      expect(parser(null)).toEqual([]) // always returns array if passed string
+      expect(parser()).toEqual([]) // always returns array if passed string
     })
     it('enclosed array', () => {
       expect(parser('[1,2,3]')).toEqual(['1','2','3'])
@@ -270,10 +273,9 @@ describe('parseArray', () => {
       expect(parser(['add','bad','cab'])).toEqual(['add','bad','cab'])
     })
     it('not a string', () => {
-      expect(parser()).toBeNull()
-      expect(parser(123)).toBeNull()
-      expect(parser(true)).toBeNull()
-      expect(parser({ a: 1, b: 2, c: 3 })).toBeNull()
+      expect(parser(123)).toEqual([123])
+      expect(parser(true)).toEqual([true])
+      expect(parser({ a: 1, b: 2, c: 3 })).toEqual([{ a: 1, b: 2, c: 3 }])
     })
   })
 })
