@@ -64,7 +64,7 @@ describe('generateSchema', () => {
         expect.anything(),
         expect.anything(),
         expect.anything(),
-        false,
+        0,
         expect.anything(),
       )
     })
@@ -82,7 +82,7 @@ describe('generateSchema', () => {
   })
 
   describe('optional = true', () => {
-    it('isIn is "body"', () => {
+    it('isIn is not "body"', () => {
       services.generateSchema('NAME', 'TYPE', 'LIMITS', ['body'], true, false)
       expect(schemaSpy).toBeCalledWith(
         expect.anything(),
@@ -115,128 +115,14 @@ describe('generateSchema', () => {
         expect.anything(),
       )
     })
-    it('isIn contains "body"', () => {
-      schemaSpy.mockClear()
-      services.generateSchema('NAME', 'TYPE', 'LIMITS', ['isIn','body'], true, false)
+    it('isIn is "params"', () => {
+      services.generateSchema('NAME', 'TYPE', 'LIMITS', ['params'], true, false)
       expect(schemaSpy).toBeCalledWith(
         expect.anything(),
         expect.anything(),
         expect.anything(),
         expect.anything(),
         false,
-        expect.anything(),
-      )
-    })
-    it('isIn contains "query"', () => {
-      services.generateSchema('NAME', 'TYPE', 'LIMITS', ['isIn','query'], true, false)
-      expect(schemaSpy).toBeCalledWith(
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        false,
-        expect.anything(),
-      )
-    })
-    it('isIn is empty', () => {
-      services.generateSchema('NAME', 'TYPE', 'LIMITS', [], true, false)
-      expect(schemaSpy).toBeCalledWith(
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        false,
-        expect.anything(),
-      )
-    })
-  })
-
-  describe('isIn filtered when optional = true', () => {
-    it('isIn contains "body"', () => {
-      services.generateSchema('NAME', 'TYPE', 'LIMITS', ['isIn','body'], true, false)
-      expect(schemaSpy).toBeCalledWith(
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        ['isIn'],
-        expect.anything(),
-        expect.anything(),
-      )
-    })
-    it('isIn contains "query"', () => {
-      services.generateSchema('NAME', 'TYPE', 'LIMITS', ['isIn','query'], true, false)
-      expect(schemaSpy).toBeCalledWith(
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        ['isIn'],
-        expect.anything(),
-        expect.anything(),
-      )
-    })
-    it('isIn contains "body" & "query"', () => {
-      services.generateSchema('NAME', 'TYPE', 'LIMITS', ['query','isIn','body'], true, false)
-      expect(schemaSpy).toBeCalledWith(
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        ['isIn'],
-        expect.anything(),
-        expect.anything(),
-      )
-    })
-    it('isIn does not contain "body" or "query"', () => {
-      services.generateSchema('NAME', 'TYPE', 'LIMITS', ['isInA','isInB'], true, false)
-      expect(schemaSpy).toBeCalledWith(
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        ['isInA','isInB'],
-        expect.anything(),
-        expect.anything(),
-      )
-    })
-    it('isIn is "body"', () => {
-      services.generateSchema('NAME', 'TYPE', 'LIMITS', ['body'], true, false)
-      expect(schemaSpy).toBeCalledWith(
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        ['body'],
-        expect.anything(),
-        expect.anything(),
-      )
-    })
-    it('isIn is "query"', () => {
-      services.generateSchema('NAME', 'TYPE', 'LIMITS', ['query'], true, false)
-      expect(schemaSpy).toBeCalledWith(
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        ['query'],
-        expect.anything(),
-        expect.anything(),
-      )
-    })
-    it('isIn is exactly "body" and "query"', () => {
-      services.generateSchema('NAME', 'TYPE', 'LIMITS', ['body','query'], true, false)
-      expect(schemaSpy).toBeCalledWith(
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        ['body','query'],
-        expect.anything(),
-        expect.anything(),
-      )
-    })
-    it('isIn is empty', () => {
-      services.generateSchema('NAME', 'TYPE', 'LIMITS', [], true, false)
-      expect(schemaSpy).toBeCalledWith(
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        [],
-        expect.anything(),
         expect.anything(),
       )
     })
@@ -363,7 +249,7 @@ describe('toValidationSchema', () => {
         .toEqual({ options: 'lims', errorMessage: expect.any(String) })
       expect(services.toValidationSchema('test','int','lims',['isIn'],false).test.isInt)
         .toEqual({ options: 'lims', errorMessage: expect.any(String) })
-      expect(services.toValidationSchema('test','string','lims',['isIn'],false).test.isString)
+      expect(services.toValidationSchema('test','string','lims',['isIn'],false).test.isLength)
         .toEqual({ options: 'lims', errorMessage: expect.any(String) })
     })
     it('string w/ limit.min = 0', () => {
@@ -488,7 +374,7 @@ describe('toValidationSchema', () => {
         options: expect.any(Object),
         errorMessage: expect.any(String),
       })
-      expect(result.test.isJSON.options).toHaveProperty('allow_primitives',true)
+      expect(result.test.isJSON.options).toHaveProperty('allow_primitives',false)
     })
   })
 

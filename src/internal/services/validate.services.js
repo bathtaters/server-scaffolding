@@ -44,7 +44,9 @@ exports.toValidationSchema = function toValidationSchema(key, typeStr, limits, i
       arrLimit = limits
       limits = null
     }
-    ptr.isArray = arrLimit ? { options: arrLimit, errorMessage: errorMsgs.limit(arrLimit) } : { errorMessage: errorMsgs.array() }
+    ptr.isArray = arrLimit ?
+      { options: arrLimit, errorMessage: errorMsgs.limit(arrLimit, 'array') } :
+      { errorMessage: errorMsgs.array() }
     ptr.toArray = type.isOptional
     
     // Create entry & update ptr
@@ -60,7 +62,7 @@ exports.toValidationSchema = function toValidationSchema(key, typeStr, limits, i
   if (limits && (limits.array || limits.elem)) limits = limits.elem
   if (limits) {
     if (disableMin && !ignoreDisableMin.includes(type.type)) limits = hidingMin(limits) // Remove minimum
-    limits = { options: limits, errorMessage: errorMsgs.limit(limits, type.type === 'string') }
+    limits = { options: limits, errorMessage: errorMsgs.limit(limits, type.type) }
   }
 
   // Set type-specific validators/sanitizers
@@ -75,7 +77,8 @@ exports.toValidationSchema = function toValidationSchema(key, typeStr, limits, i
       if (!ptr.isBase64 && !ptr.isUUID)
         ptr.isHexadecimal = { errorMessage: errorMsgs.hex() }
     case 'string':
-      ptr.isString = limits || { errorMessage: errorMsgs.string() }
+      ptr.isString = { errorMessage: errorMsgs.string() }
+      if (limits) ptr.isLength = limits
       if (!type.hasSpaces) { 
         ptr.stripLow = true
         ptr.trim = true
@@ -101,7 +104,7 @@ exports.toValidationSchema = function toValidationSchema(key, typeStr, limits, i
       ptr.isDate = { options: dateOptions.date, errorMessage: errorMsgs.date() }
       ptr.trim = true
       break
-    case 'object': ptr.isJSON = { options: { allow_primitives: true }, errorMessage: errorMsgs.object() }
+    case 'object': ptr.isJSON = { options: { allow_primitives: false }, errorMessage: errorMsgs.object() }
     case 'any':  // pass to default
     default: break
   }
@@ -111,22 +114,13 @@ exports.toValidationSchema = function toValidationSchema(key, typeStr, limits, i
 
 
 // Generate schema object based on Types + Limits objects
-const OPTIONAL_FIELDS = Object.freeze(['body','query'])
-exports.generateSchema = function generateSchema(name, typeStr, limits, isIn = ['params'], forceOptionalFields = false, disableMin = false) {
-  // Determine if optional flag should be forced
-  let forceOptional = false
-  if (forceOptionalFields) {
-    // Remove body & query tags if other tags
-    if (isIn.length > 1) {
-      isIn = isIn.filter((field) => !OPTIONAL_FIELDS.includes(field))
-      if (!isIn.length) isIn = OPTIONAL_FIELDS
-    }
-    // Force optional flag
-    if (OPTIONAL_FIELDS.includes(isIn[0])) forceOptional = true
-  }
-
-  return exports.toValidationSchema(name, typeStr, limits, isIn, forceOptional, disableMin)
-}
+const IGNORE_OPTIONAL = Object.freeze(['params'])
+exports.generateSchema = (name, typeStr, limits, isIn = ['params'], forceOptionalFields = false, disableMin = false) =>
+  exports.toValidationSchema(
+    name, typeStr, limits, isIn,
+    forceOptionalFields && !isIn.some((key) => IGNORE_OPTIONAL.includes(key)),
+    disableMin
+  )
 
 
 // Add additional validation to schema (overwrites matching keys)
