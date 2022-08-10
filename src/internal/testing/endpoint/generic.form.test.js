@@ -5,7 +5,7 @@ jest.mock('../../../models/_all', () => [ require('../Test.model') ])
 
 const { Model, testKey, idKey, prefix } = testModelData
 const creds = { username: 'test', password: 'password' }
-const formUrl = `${prefix.gui}/form`
+const formUrl = `${prefix.gui}/form/`
 
 describe('Test User Profile Form Post', () => {
   let testId = 'NULL', otherId = 'NULL'
@@ -18,11 +18,8 @@ describe('Test User Profile Form Post', () => {
   })
 
   test('Form Add', async () => {
-    await request.post(formUrl).expect(302).expect('Location',prefix.gui)
-      .send({
-        _action: "Add",
-        [testKey]: "test"
-      })
+    await request.post(formUrl+'add').expect(302).expect('Location',prefix.gui)
+      .send({ [testKey]: "test" })
     
     testId = await Model.get()
       .then((list) => (list && list[0] && list[0][idKey]) ?? 'NULL')
@@ -31,12 +28,8 @@ describe('Test User Profile Form Post', () => {
   })
 
   test('Form Update', async () => {
-    await request.post(formUrl).expect(302).expect('Location',prefix.gui)
-      .send({
-        _action: "Update",
-        [idKey]: testId,
-        [testKey]: "new"
-      })
+    await request.post(formUrl+'update').expect(302).expect('Location',prefix.gui)
+      .send({ [idKey]: testId, [testKey]: "new" })
 
     expect(await Model.get(testId)).toHaveProperty(testKey, "new")
   })
@@ -55,10 +48,10 @@ describe('Test User Profile Form Post', () => {
   })
 
   test('Form Search', async () => {
-    await request.post(formUrl).expect(302)
+    await request.post(formUrl+'search').expect(302)
       .expect('Location', `${prefix.gui}/results?${testKey}=text&${idKey}=12`)
       // .expect('Location', `${prefix.gui}/results?${idKey}=12&${testKey}=text`)
-      .send({ _action: "Search", [testKey]: "text", [idKey]: 12 })
+      .send({ [testKey]: "text", [idKey]: 12 })
   })
 
   // VALIDATION
@@ -83,133 +76,130 @@ describe('Test User Profile Form Post', () => {
     expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^swap must be int/))
   })
   test('VALIDATION - String type', async () => {
-    let res = await request.post(formUrl).expect(400)
-      .send({ _action: "Update", [idKey]: testId, name: { a: 1, b: 2, c: 3 } })
+    let res = await request.post(formUrl+'update').expect(400)
+      .send({ [idKey]: testId, name: { a: 1, b: 2, c: 3 } })
     expect(res.text).toMatch(/Validation Error/)
     expect(res.text).toMatch(/name not a valid string/)
-    res = await request.post(formUrl).expect(400)
-      .send({ _action: "Update", [idKey]: testId, name: 12345 })
+    res = await request.post(formUrl+'update').expect(400)
+      .send({ [idKey]: testId, name: 12345 })
     expect(res.text).toMatch(/Validation Error/)
     expect(res.text).toMatch(/name not a valid string/)
-    res = await request.post(formUrl).expect(400)
-      .send({ _action: "Update", [idKey]: testId, name: true })
+    res = await request.post(formUrl+'update').expect(400)
+      .send({ [idKey]: testId, name: true })
     expect(res.text).toMatch(/Validation Error/)
     expect(res.text).toMatch(/name not a valid string/)
   })
   test('VALIDATION - String min/max', async () => {
-    let res = await request.post(formUrl).expect(400)
-      .send({ _action: "Update", [idKey]: testId, name: 'a' })
+    let res = await request.post(formUrl+'update').expect(400)
+      .send({ [idKey]: testId, name: 'a' })
     expect(res.text).toMatch(/Validation Error/)
     expect(res.text).toMatch(/name must be string/)
-    res = await request.post(formUrl).expect(400)
-      .send({ _action: "Update", [idKey]: testId, name: 'b'.repeat(101) })
+    res = await request.post(formUrl+'update').expect(400)
+      .send({ [idKey]: testId, name: 'b'.repeat(101) })
     expect(res.text).toMatch(/Validation Error/)
     expect(res.text).toMatch(/name must be string/)
   })
   test('VALIDATION - Boolean type', async () => {
-    let res = await request.post(formUrl).expect(400)
-      .send({ _action: "Update", [idKey]: testId, isOn: 'test' })
+    let res = await request.post(formUrl+'update').expect(400)
+      .send({ [idKey]: testId, isOn: 'test' })
     expect(res.text).toMatch(/Validation Error/)
     expect(res.text).toMatch(/isOn not a valid boolean/)
-    res = await request.post(formUrl).expect(400)
-      .send({ _action: "Update", [idKey]: testId, isOn: [] })
+    res = await request.post(formUrl+'update').expect(400)
+      .send({ [idKey]: testId, isOn: [] })
     expect(res.text).toMatch(/Validation Error/)
     expect(res.text).toMatch(/isOn not a valid boolean/)
   })
   test('VALIDATION - Float type', async () => {
-    let res = await request.post(formUrl).expect(400)
-      .send({ _action: "Update", [idKey]: testId, number: 'test' })
+    let res = await request.post(formUrl+'update').expect(400)
+      .send({ [idKey]: testId, number: 'test' })
     expect(res.text).toMatch(/Validation Error/)
     expect(res.text).toMatch(/number must be float/)
-    res = await request.post(formUrl).expect(400)
-      .send({ _action: "Update", [idKey]: testId, number: { a: 1, b: 2 } })
+    res = await request.post(formUrl+'update').expect(400)
+      .send({ [idKey]: testId, number: { a: 1, b: 2 } })
     expect(res.text).toMatch(/Validation Error/)
     expect(res.text).toMatch(/number must be float/)
-    res = await request.post(formUrl).expect(302).expect('Location',prefix.gui)
-      .send({ _action: "Update", [idKey]: testId, number: "12.34" })
+    res = await request.post(formUrl+'update').expect(302).expect('Location',prefix.gui)
+      .send({ [idKey]: testId, number: "12.34" })
     expect(await Model.get(testId)).toHaveProperty('number', 12.34)
   })
   test('VALIDATION - Float min/max', async () => {
-    let res = await request.post(formUrl).expect(400)
-      .send({ _action: "Update", [idKey]: testId, number: -1234 })
+    let res = await request.post(formUrl+'update').expect(400)
+      .send({ [idKey]: testId, number: -1234 })
     expect(res.text).toMatch(/Validation Error/)
     expect(res.text).toMatch(/number must be float/)
-    res = await request.post(formUrl).expect(400)
-      .send({ _action: "Update", [idKey]: testId, number: 1234 })
+    res = await request.post(formUrl+'update').expect(400)
+      .send({ [idKey]: testId, number: 1234 })
     expect(res.text).toMatch(/Validation Error/)
     expect(res.text).toMatch(/number must be float/)
   })
   test('VALIDATION - Date type', async () => {
-    let res = await request.post(formUrl).expect(400)
-      .send({ _action: "Update", [idKey]: testId, testDate: '1659506704082' })
+    let res = await request.post(formUrl+'update').expect(400)
+      .send({ [idKey]: testId, testDate: '1659506704082' })
     expect(res.text).toMatch(/Validation Error/)
     expect(res.text).toMatch(/testDate not a valid timestamp/)
-    res = await request.post(formUrl).expect(400)
-      .send({ _action: "Update", [idKey]: testId, testDate: 1659506704082 })
+    res = await request.post(formUrl+'update').expect(400)
+      .send({ [idKey]: testId, testDate: 1659506704082 })
     expect(res.text).toMatch(/Validation Error/)
     expect(res.text).toMatch(/testDate not a valid timestamp/)
-    await request.post(formUrl).expect(302).expect('Location',prefix.gui)
-      .send({ _action: "Update", [idKey]: testId, testDate: "2020-06-11T04:38" })
+    await request.post(formUrl+'update').expect(302).expect('Location',prefix.gui)
+      .send({ [idKey]: testId, testDate: "2020-06-11T04:38" })
     expect(await Model.get(testId)).toHaveProperty('testDate', new Date("2020-06-11T04:38"))
-    await request.post(formUrl).expect(302).expect('Location',prefix.gui)
-      .send({ _action: "Update", [idKey]: testId, testDate: new Date("2021-12-16T09:14") })
+    await request.post(formUrl+'update').expect(302).expect('Location',prefix.gui)
+      .send({ [idKey]: testId, testDate: new Date("2021-12-16T09:14") })
     expect(await Model.get(testId)).toHaveProperty('testDate', new Date("2021-12-16T09:14"))
   })
   test('VALIDATION - Array type', async () => {
-    await request.post(formUrl).expect(302).expect('Location',prefix.gui)
-      .send({ _action: "Update", [idKey]: testId, objectList: '{"a":1}' })
+    await request.post(formUrl+'update').expect(302).expect('Location',prefix.gui)
+      .send({ [idKey]: testId, objectList: '{"a":1}' })
     expect(await Model.get(testId)).toHaveProperty('objectList', [{ a: 1 }])
-    await request.post(formUrl).expect(302).expect('Location',prefix.gui)
-      .send({ _action: "Update", [idKey]: testId, objectList: '{"a":1},{"b":2,"c":3}' })
+    await request.post(formUrl+'update').expect(302).expect('Location',prefix.gui)
+      .send({ [idKey]: testId, objectList: '{"a":1},{"b":2,"c":3}' })
     expect(await Model.get(testId)).toHaveProperty('objectList', [{ a: 1 }, { b: 2, c: 3 }])
-    await request.post(formUrl).expect(302).expect('Location',prefix.gui)
-      .send({ _action: "Update", [idKey]: testId, objectList: '[{"a":1}, {"b":2,"c":3}]' })
+    await request.post(formUrl+'update').expect(302).expect('Location',prefix.gui)
+      .send({ [idKey]: testId, objectList: '[{"a":1}, {"b":2,"c":3}]' })
     expect(await Model.get(testId)).toHaveProperty('objectList', [{ a: 1 }, { b: 2, c: 3 }])
-    await request.post(formUrl).expect(302).expect('Location',prefix.gui)
-      .send({ _action: "Update", [idKey]: testId, objectList: ['{"a":1}', '{"b":2,"c":3}'] })
+    await request.post(formUrl+'update').expect(302).expect('Location',prefix.gui)
+      .send({ [idKey]: testId, objectList: ['{"a":1}', '{"b":2,"c":3}'] })
     expect(await Model.get(testId)).toHaveProperty('objectList', [{ a: 1 }, { b: 2, c: 3 }])
   })
   test('VALIDATION - Array max', async () => {
-    let res = await request.post(formUrl).expect(400)
-      .send({ _action: "Update", [idKey]: testId, objectList: Array(21).fill('{}') })
+    let res = await request.post(formUrl+'update').expect(400)
+      .send({ [idKey]: testId, objectList: Array(21).fill('{}') })
     expect(res.text).toMatch(/Validation Error/)
     expect(res.text).toMatch(/objectList must be array/)
   })
   test('VALIDATION - Object type', async () => {
-    let res = await request.post(formUrl).expect(400)
-      .send({ _action: "Update", [idKey]: testId, objectList: ['test'] })
+    let res = await request.post(formUrl+'update').expect(400)
+      .send({ [idKey]: testId, objectList: ['test'] })
     expect(res.text).toMatch(/Validation Error/)
     expect(res.text).toMatch(/objectList\[0\] not a valid object/)
-    res = await request.post(formUrl).expect(400)
-      .send({ _action: "Update", [idKey]: testId, objectList: ['{"a":false}',false] })
+    res = await request.post(formUrl+'update').expect(400)
+      .send({ [idKey]: testId, objectList: ['{"a":false}',false] })
     expect(res.text).toMatch(/Validation Error/)
     expect(res.text).toMatch(/objectList\[1\] not a valid object/)
-    res = await request.post(formUrl).expect(400)
-      .send({ _action: "Update", [idKey]: testId, objectList: [{ a: 1 }] })
+    res = await request.post(formUrl+'update').expect(400)
+      .send({ [idKey]: testId, objectList: [{ a: 1 }] })
     expect(res.text).toMatch(/Validation Error/)
     expect(res.text).toMatch(/objectList\[0\] not a valid object/)
   })
 
   test('Form Remove', async () => {
-    await request.post(formUrl).expect(302).expect('Location',prefix.gui)
-      .send({
-        _action: "Remove",
-        [idKey]: testId,
-      })
+    await request.post(formUrl+'remove').expect(302).expect('Location',prefix.gui)
+      .send({ [idKey]: testId })
     expect(await Model.get(testId)).toBeFalsy()
   })
 
   test('VALIDATION - required', async () => {
     // ERROR <502>: SQLite Error - NOT NULL constraint
-    let res = await request.post(formUrl).expect(400)
-      .send({ _action: "Add", number: 24 })
+    let res = await request.post(formUrl+'add').expect(400)
+      .send({ number: 24 })
     expect(res.text).toMatch(/Validation Error/)
     expect(res.text).toMatch(/name must be included/)
   })
 
   test('VALIDATION - defaults', async () => {
-    await request.post(formUrl).expect(302).expect('Location',prefix.gui)
-      .send({ _action: "Add", name: "test" })
+    await request.post(formUrl+'add').expect(302).expect('Location',prefix.gui)
+      .send({ name: "test" })
     
     const newId = await Model.get()
       .then((list) => (list && list[0] && list[0][idKey]) ?? 'NULL')

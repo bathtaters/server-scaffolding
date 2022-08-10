@@ -18,12 +18,8 @@ describe('Test Users Form Post', () => {
   })
 
   test('POST /form Add', async () => {
-    await request.post(`${userPrefix}/form`).expect(302).expect('Location',userPrefix)
-      .send({
-        _action: "Add",
-        username: "apiuser",
-        access: ["api"],
-      })
+    await request.post(`${userPrefix}/form/add`).expect(302).expect('Location',userPrefix)
+      .send({ username: "apiuser", access: ["api"] })
     userInfo = await Users.get("apiuser", 'username')
     expect(userInfo).toBeTruthy()
     expect(userInfo.username).toBe("apiuser")
@@ -31,42 +27,25 @@ describe('Test Users Form Post', () => {
   })
 
   test('POST /form Update', async () => {
-    await request.post(`${userPrefix}/form`).expect(302).expect('Location',userPrefix)
-      .send({
-        _action: "Update",
-        id: userInfo.id,
-        username: "newuser"
-      })
+    await request.post(`${userPrefix}/form/update`).expect(302).expect('Location',userPrefix)
+      .send({ id: userInfo.id, username: "newuser" })
     userInfo = await Users.get(userInfo.id)
     expect(userInfo.username).toBe("newuser")
   })
 
   test('GUI/Admin access w/o password', async () => {
-    await request.post(`${userPrefix}/form`).expect(400)
-      .send({
-        _action: "Update",
-        id: userInfo.id,
-        access: ['admin'],
-      })
-    await request.post(`${userPrefix}/form`).expect(400)
-      .send({
-        _action: "Update",
-        id: userInfo.id,
-        access: ['gui','api'],
-      })
+    await request.post(`${userPrefix}/form/update`).expect(400)
+      .send({ id: userInfo.id, access: ['admin'] })
+    await request.post(`${userPrefix}/form/update`).expect(400)
+      .send({ id: userInfo.id, access: ['gui','api'] })
   })
 
   test('Password requires confirm', async () => {
-    await request.post(`${userPrefix}/form`).expect(400)
-      .send({
-        _action: "Update",
-        id: userInfo.id,
-        password: "password123",
-      })
+    await request.post(`${userPrefix}/form/update`).expect(400)
+      .send({ id: userInfo.id, password: "password123" })
     
-    await request.post(`${userPrefix}/form`).expect(302).expect('Location',userPrefix)
+    await request.post(`${userPrefix}/form/update`).expect(302).expect('Location',userPrefix)
       .send({
-        _action: "Update",
         id: userInfo.id,
         password: "password123",
         confirm: "password123",
@@ -77,72 +56,46 @@ describe('Test Users Form Post', () => {
   })
 
   test('GUI/Admin access w/ password', async () => {
-    await request.post(`${userPrefix}/form`).expect(302).expect('Location',userPrefix)
-      .send({
-        _action: "Update",
-        id: userInfo.id,
-        access: ['admin'],
-      })
+    await request.post(`${userPrefix}/form/update`).expect(302).expect('Location',userPrefix)
+      .send({ id: userInfo.id, access: ['admin'] })
     userInfo = await Users.get(userInfo.id)
     expect(userInfo.access).toBe("4")
 
-    await request.post(`${userPrefix}/form`).expect(302).expect('Location',userPrefix)
-      .send({
-        _action: "Update",
-        id: userInfo.id,
-        access: ['gui','api'],
-      })
+    await request.post(`${userPrefix}/form/update`).expect(302).expect('Location',userPrefix)
+      .send({ id: userInfo.id, access: ['gui','api'] })
     userInfo = await Users.get(userInfo.id)
     expect(userInfo.access).toBe("3")
   })
 
   test('Set CORS array', async () => {
-    await request.post(`${userPrefix}/form`).expect(302).expect('Location',userPrefix)
-      .send({
-        _action: "Update",
-        id: userInfo.id,
-        cors: "a,b,c",
-      })
+    await request.post(`${userPrefix}/form/update`).expect(302).expect('Location',userPrefix)
+      .send({ id: userInfo.id, cors: "a,b,c" })
     userInfo = await Users.get(userInfo.id)
     expect(userInfo.cors).toStrictEqual(["a","b","c"])
   })
 
   test('Set CORS RegEx', async () => {
-    await request.post(`${userPrefix}/form`).expect(302).expect('Location',userPrefix)
-      .send({
-        _action: "Update",
-        id: userInfo.id,
-        cors: 'RegExp("abc")',
-      })
+    await request.post(`${userPrefix}/form/update`).expect(302).expect('Location',userPrefix)
+      .send({ id: userInfo.id, cors: 'RegExp("abc")' })
     userInfo = await Users.get(userInfo.id)
     expect(userInfo.cors).toHaveProperty('source','abc')
   })
   
   test('Update Model Access', async () => {
     expect(userInfo.models).toEqual({ default: 3 })
-    await request.post(`${userPrefix}/form`).expect(302).expect('Location',userPrefix)
-      .send({
-        _action: "Update",
-        id: userInfo.id,
-        models: ['default-none'],
-      })
+    await request.post(`${userPrefix}/form/update`).expect(302).expect('Location',userPrefix)
+      .send({ id: userInfo.id, models: ['default-none'] })
     userInfo = await Users.get(userInfo.id)
     expect(userInfo.models).toEqual({ default: 0 })
-    await request.post(`${userPrefix}/form`).expect(302).expect('Location',userPrefix)
-      .send({
-        _action: "Update",
-        id: userInfo.id,
-        models: ['default-read','default-write'],
-      })
+    await request.post(`${userPrefix}/form/update`).expect(302).expect('Location',userPrefix)
+      .send({ id: userInfo.id, models: ['default-read','default-write'] })
     userInfo = await Users.get(userInfo.id)
     expect(userInfo.models).toEqual({ default: 3 })
   })
 
   test('POST /regenToken', async () => {
     const res = await request.post(`${userPrefix}/regenToken`).expect(200).expect('Content-Type', /json/)
-      .send({
-        id: userInfo.id,
-      })
+      .send({ id: userInfo.id })
     expect(res.body).toEqual({ success: true })
     
     const oldToken = userInfo.token
@@ -151,20 +104,14 @@ describe('Test Users Form Post', () => {
   })
 
   test('POST /form Remove', async () => {
-    await request.post(`${userPrefix}/form`).expect(302).expect('Location',userPrefix)
-      .send({
-        _action: "Remove",
-        id: userInfo.id,
-      })
+    await request.post(`${userPrefix}/form/remove`).expect(302).expect('Location',userPrefix)
+      .send({ id: userInfo.id })
     userInfo = await Users.get(userInfo.id)
     expect(userInfo).toBeFalsy()
   })
 
   test('POST /form Reset', async () => {
-    await request.post(`${userPrefix}/form`).expect(302).expect('Location',userPrefix)
-      .send({
-        _action: "Reset",
-      })
+    await request.post(`${userPrefix}/form/reset`).expect(302).expect('Location',userPrefix)
     userInfo = await Users.get()
     expect(userInfo).toEqual([])
   })

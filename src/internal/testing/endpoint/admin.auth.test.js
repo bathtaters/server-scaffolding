@@ -32,46 +32,44 @@ describe('Test User Authentication', () => {
 
     test('User GUI allows read', async () => {
       await updateUser(userInfo, { models: { [Model.title]: read | write } })
-      await request.post(`${url.gui}/form`).send({ _action: "Search" })
-        .expect(302).expect('Location', url.gui)
+      await request.post(`${url.gui}/form/search`).expect(302).expect('Location', url.gui)
   
       await updateUser(userInfo, { models: { [Model.title]: read } })
-      await request.post(`${url.gui}/form`).send({ _action: "Search" })
-        .expect(302).expect('Location', url.gui)
+      await request.post(`${url.gui}/form/search`).expect(302).expect('Location', url.gui)
     })
     test('User GUI allows write', async () => {
       await updateUser(userInfo, { models: { [Model.title]: read | write } })
-      await request.post(`${url.gui}/form`).send({ _action: "Add", [testKey]: "N1" })
+      await request.post(`${url.gui}/form/add`).send({ [testKey]: "N1" })
         .expect(302).expect('Location', url.gui)
   
       await updateUser(userInfo, { models: { [Model.title]: write } })
-      await request.post(`${url.gui}/form`).send({ _action: "Add", [testKey]: "N2" })
+      await request.post(`${url.gui}/form/add`).send({ [testKey]: "N2" })
         .expect(302).expect('Location', url.gui)
     })
     test('User GUI disallows writes', async () => {
       await updateUser(userInfo, { models: { [Model.title]: 0 } })
-      await request.post(`${url.gui}/form`).send({ _action: "Add", [testKey]: "N3" }).expect(403)
+      await request.post(`${url.gui}/form/add`).send({ [testKey]: "N3" }).expect(403)
   
       await updateUser(userInfo, { models: { [Model.title]: read } })
-      await request.post(`${url.gui}/form`).send({ _action: "Add", [testKey]: "N4" }).expect(403)
+      await request.post(`${url.gui}/form/add`).send({ [testKey]: "N4" }).expect(403)
     })
     test('User GUI disallows reads', async () => {
       await updateUser(userInfo, { models: { [Model.title]: 0 } })
-      await request.post(`${url.gui}/form`).send({ _action: "Search" }).expect(403)
+      await request.post(`${url.gui}/form/search`).expect(403)
   
       await updateUser(userInfo, { models: { [Model.title]: write } })
-      await request.post(`${url.gui}/form`).send({ _action: "Search" }).expect(403)
+      await request.post(`${url.gui}/form/search`).expect(403)
     })
 
 
     test('Missing model access falls back to default', async () => {
       await updateUser(userInfo, { models: { default: read } })
-      await request.post(`${url.gui}/form`).send({ _action: "Add", [testKey]: "N9" }).expect(403)
-      await request.post(`${url.gui}/form`).send({ _action: "Search" }).expect(302).expect('Location', url.gui)
+      await request.post(`${url.gui}/form/add`).expect(403).send({ [testKey]: "N9" })
+      await request.post(`${url.gui}/form/search`).expect(302).expect('Location', url.gui)
       
       await updateUser(userInfo, { models: { default: write } })
-      await request.post(`${url.gui}/form`).send({ _action: "Search" }).expect(403)
-      await request.post(`${url.gui}/form`).send({ _action: "Add", [testKey]: "N6" })
+      await request.post(`${url.gui}/form/search`).expect(403)
+      await request.post(`${url.gui}/form/add`).send({ [testKey]: "N6" })
         .expect(302).expect('Location', url.gui)
     })
   })

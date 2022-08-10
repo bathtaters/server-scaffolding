@@ -20,12 +20,8 @@ describe('Test User Profile Form Post', () => {
 
   test('POST /form Update', async () => {
     creds.username = "newuser"
-    await request.post(`${profilePrefix}/form`).expect(302).expect('Location',profilePrefix)
-      .send({
-        _action: "Update",
-        id: userInfo.id,
-        username: creds.username
-      })
+    await request.post(`${profilePrefix}/form/update`).expect(302).expect('Location',profilePrefix)
+      .send({ id: userInfo.id, username: creds.username })
 
     userInfo = await Users.get(userInfo.id)
     expect(userInfo.username).toBe(userInfo.username)
@@ -33,16 +29,11 @@ describe('Test User Profile Form Post', () => {
 
   test('Password requires confirm', async () => {
     creds.password = "password123"
-    await request.post(`${profilePrefix}/form`).expect(400)
-      .send({
-        _action: "Update",
-        id: userInfo.id,
-        password: creds.password,
-      })
+    await request.post(`${profilePrefix}/form/update`).expect(400)
+      .send({ id: userInfo.id, password: creds.password })
     
-    await request.post(`${profilePrefix}/form`).expect(302).expect('Location',profilePrefix)
+    await request.post(`${profilePrefix}/form/update`).expect(302).expect('Location',profilePrefix)
       .send({
-        _action: "Update",
         id: userInfo.id,
         password: creds.password,
         confirm: creds.password,
@@ -54,9 +45,7 @@ describe('Test User Profile Form Post', () => {
 
   test('POST /regenToken', async () => {
     const res = await request.post(`${profilePrefix}/regenToken`).expect(200).expect('Content-Type', /json/)
-      .send({
-        id: userInfo.id,
-      })
+      .send({ id: userInfo.id })
     expect(res.body).toEqual({ success: true })
     
     const oldToken = userInfo.token
@@ -65,11 +54,8 @@ describe('Test User Profile Form Post', () => {
   })
 
   test('POST /form Remove', async () => {
-    await request.post(`${profilePrefix}/form`).expect(302).expect('Location',profilePrefix)
-      .send({
-        _action: "Remove",
-        id: userInfo.id,
-      })
+    await request.post(`${profilePrefix}/form/remove`).expect(302).expect('Location',profilePrefix)
+      .send({ id: userInfo.id, })
     userInfo = await Users.get(userInfo.id)
     expect(userInfo).toBeFalsy()
   })
