@@ -231,9 +231,9 @@ describe('parseArray', () => {
   describe('optional = true', () => {
     const parser = parseArray(true)
     it('empty string/null/undef', () => {
-      expect(parser('')).toBeNull()
+      expect(parser('')).toBe('')
       expect(parser(null)).toBeNull()
-      expect(parser()).toBeNull()
+      expect(parser()).toBeUndefined()
     })
     it('enclosed array', () => {
       expect(parser('[1,2,3]')).toEqual(['1','2','3'])
