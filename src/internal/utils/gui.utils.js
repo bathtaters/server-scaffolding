@@ -9,7 +9,7 @@ exports.varName = (str) =>  typeof str !== 'string' ? str : Object.keys(varNameD
   str.replace(varRegex[0], ' $1').replace(varRegex[1], (ltr) => ltr.toUpperCase())
 
 // Model-specific authorization callback for Form input
-exports.formRW = ({ body }) => body.action === 'Search' ? 'read' : 'write'
+exports.formRW = ({ body }) => body._action === 'Search' ? 'read' : 'write'
 
 // Get KEYS from schema
 exports.getTableFields = (schema, idKey) => {
@@ -25,20 +25,20 @@ exports.getTableFields = (schema, idKey) => {
 
 // Default 'formatData' callback for GUI
 exports.formatGuiData = (data) => {
-  data && data.forEach((row) => {
-    Object.entries(row).forEach(([key,val]) => {
-      if (Array.isArray(val)) {
-        row[key] = val.map((e) => {
-          switch (typeof e) {
-            case 'string': return e
-            case 'object': if (e && !isDate(e)) return JSON.stringify(e)
-            default: return e != null ? e.toLocaleString() : `${e}`
-          }
-        }).join(', ')
-      } else if (typeof val === 'object' && val && !isDate(val)) {
-        row[key] = JSON.stringify(val)
-      }
-    })
+  if (Array.isArray(data)) data.forEach((row) => exports.formatGuiData(row))
+  
+  else if (typeof data === 'object' && data) Object.entries(data).forEach(([key,val]) => {
+    if (Array.isArray(val)) {
+      data[key] = val.map((e) => {
+        switch (typeof e) {
+          case 'string': return e
+          case 'object': if (e && !isDate(e)) return JSON.stringify(e)
+          default: return e != null ? e.toLocaleString() : `${e}`
+        }
+      }).join(', ')
+    } else if (typeof val === 'object' && val && !isDate(val)) {
+      data[key] = JSON.stringify(val)
+    }
   })
   return data
 }

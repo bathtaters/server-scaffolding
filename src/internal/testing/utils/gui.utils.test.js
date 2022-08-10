@@ -49,6 +49,10 @@ describe('formatGuiData', () => {
     expect(formatGuiData([{ test: ['1','','30'] }])[0].test)
       .toBe('1, , 30')
   })
+  it('stringifies simple object', () => {
+    expect(formatGuiData({ test: { a: 1, b: 2, c: 'cab', d: 'dab' } }).test)
+      .toBe('{"a":1,"b":2,"c":"cab","d":"dab"}')
+  })
   it('changes object array to stringified list', () => {
     expect(formatGuiData([{ test: [{ a: 1, b: 2 },{ c: 'cab', d: 'dab' }] }])[0].test)
       .toBe('{"a":1,"b":2}, {"c":"cab","d":"dab"}')
