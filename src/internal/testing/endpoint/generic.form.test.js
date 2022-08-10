@@ -190,7 +190,6 @@ describe('Test User Profile Form Post', () => {
   })
 
   test('VALIDATION - required', async () => {
-    // ERROR <502>: SQLite Error - NOT NULL constraint
     let res = await request.post(formUrl+'add').expect(400)
       .send({ number: 24 })
     expect(res.text).toMatch(/Validation Error/)

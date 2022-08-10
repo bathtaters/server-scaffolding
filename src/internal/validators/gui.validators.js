@@ -16,9 +16,9 @@ const profileFields = { [Users.primaryId]: Users.primaryId, username: 'username'
 
 const actionOptions = ({ primaryId }, action, fields = 'all') => {
   switch(action) {
-    case actions.create: return [fields,      { additional: formAdditional }]
-    case actions.update: return [fields,      { additional: formAdditional, optionalBody: true }]
-    case actions.find:   return [fields,      { additional: formAdditional, optionalBody: true, allowPartials: true }]
+    case actions.find:   return [fields,      { additional: formAdditional, allowPartials: true }]
+    case actions.create: return [fields,      { additional: formAdditional, optionalBody: false }]
+    case actions.update: return [fields,      { additional: formAdditional }]
     case actions.delete: return [[primaryId], { additional: formAdditional }]
     case actions.clear:  return [[],          { additional: formAdditional }]
   }
@@ -29,8 +29,8 @@ module.exports = {
   all, swap,
   form:    (Model, action, formFields = 'all') => byModel(Model, ...actionOptions(Model, action, formFields)),
   profile: (action) => byModel(Users, ...actionOptions(Users, action, profileFields)),
-  find:    (Model, formFields = 'all') => byModel(Model, formFields, { optionalBody: true, allowPartials: true, asQueryStr: true }),
+  find:    (Model, formFields = 'all') => byModel(Model, formFields, { allowPartials: true, asQueryStr: true }),
   page:    byObject(pageAdditional),
-  token:   byModel(Users, [Users.primaryId]),
+  token:   byModel(Users, [Users.primaryId], { optionalBody: false }),
   formAdditional, pageAdditional,
 }
