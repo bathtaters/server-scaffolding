@@ -6,8 +6,13 @@ const parseBool = parseBoolean(true)
 exports.profileLabels = profileActions.map((action) => actions[action])
 
 // Get list of button labels based on access
-const actionAccess = (action) => action === actions.find ? 'read' : 'write'
-exports.labelsByAccess = (accessTypes) => Object.values(actions).filter((action) => accessTypes.includes(actionAccess(action)))
+exports.actionAccess = (action) => action === actions.find ? 'read' : 'write'
+exports.labelsByAccess = (accessTypes) => Object.values(actions).filter((action) => accessTypes.includes(exports.actionAccess(action)))
+
+// Get links to post from base URL
+exports.actionURLs = (baseURL, actionList = Object.values(actions)) => actionList.reduce(
+  (urls,action) => Object.assign(urls, { [action]: baseURL + action.toLowerCase() })
+, {})
 
 // Default filter for filterFormData & toQueryString
 const defaultFilter = (val,key) => val != null && val !== ''

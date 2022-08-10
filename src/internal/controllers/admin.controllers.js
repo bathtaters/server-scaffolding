@@ -8,6 +8,7 @@ const { getSettings, getForm, canUndo } = require('../services/settings.services
 const settingsActions = require('../services/settings.form')
 const { logList, logFile } = require('../services/log.services')
 const { getAllLevels } = require('../utils/log.utils')
+const { actionURLs } = require('../utils/form.utils')
 const urls = require('../../config/urls.cfg').gui.admin
 const { colors, maxLogLine, trimLogMessage } = require('../config/log.cfg')
 
@@ -21,8 +22,8 @@ exports.userTable = modelDb(Users, { view: 'users', formatData: guiAdapter, over
   schema: [],
   accessLevels: Object.keys(access),
   baseURL: urls.prefix + urls.user,
-  postURL: urls.prefix + urls.user + urls.form,
-  submitURLs: { Search: urls.prefix + urls.user + urls.form + urls.find },
+  regenURL: urls.prefix + urls.user + urls.token,
+  submitURLs: actionURLs(`${urls.prefix}${urls.user}${urls.form}/`),
 }})
 
 // SETTINGS
@@ -34,7 +35,7 @@ exports.settings = async (req, res, next) =>
     tooltips: settingsTooltips,
     canUndo: canUndo(req.session),
     buttons: Object.keys(settingsActions),
-    postURL: urls.prefix + urls.home + urls.form,
+    postURL: `${urls.prefix}${urls.home}${urls.form}`,
     user: req.user && req.user.username,
     isAdmin: req.user && hasAccess(req.user.access, access.admin),
   })

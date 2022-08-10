@@ -19,7 +19,7 @@ block form
     
     .col-sm
       div(style='text-align:right;'): i: a#copyToken.small(href="#") Copy API Key
-      +buttonInput('token', 'readonly', 'Regen', limits.token, searchData ? searchData.token : defaults.token, tableFields.token, tooltips.token)
+      +buttonInput('token', 'readonly', 'Regen', limits.token, searchData ? searchData.token : defaults.token, regenURL, tableFields.token, tooltips.token)
 
       +checkboxes('access', accessLevels, tableFields.access, null, searchData ? searchData.access : defaults.access)
 

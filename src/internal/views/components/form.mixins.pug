@@ -57,12 +57,12 @@ mixin checkboxes(key, rows, label, columns, defaults)
               checked=(defaults && defaults[row] && defaults[row].includes(col))
             )
 
-mixin buttonInput(key, inpType, button, limits, defaultValue, label, tooltip, buttonKey = '_action')
+mixin buttonInput(key, inpType, button, limits, defaultValue, url, label, tooltip, buttonKey = '_action')
   .input-group.vertical.button-input
     label(for=key aria-label=tooltip class=(tooltip ? 'tooltip' : ''))= label || varName(key)
     .button-group
       +typedInp(key, inpType, limits, defaultValue)
-      input.button(type='button' name=buttonKey id=buttonKey+button value=button)
+      input.button(type='button' name=buttonKey id=buttonKey+button value=button formaction=url)
 
 mixin buttonRow(buttons, classes = {}, urls = {}, key = '_action', buttonType = 'submit')
   .button-group

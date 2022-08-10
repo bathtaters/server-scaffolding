@@ -1,8 +1,8 @@
 const Users = require('../models/Users')
 const definition = require('../config/users.cfg').definitions.types
 const { formSettings } = require('../config/settings.cfg')
-const { byModel, byObject } = require('./shared.validators')
-const { page, find, form, formNoMin, formAdditional, token } = require('./gui.validators')
+const { byObject } = require('./shared.validators')
+const { page, find, form, formAdditional, token } = require('./gui.validators')
 const { formSettingsToValidate } = require('../utils/validate.utils')
 const { preValidateAdapter } = require('../services/users.services')
 
@@ -15,6 +15,5 @@ module.exports = {
   page, token,
   settings: byObject(formAdditional.concat(formSettingsToValidate(formSettings, 'body'))),
   find: [ preValidate(true, true)  ].concat(find(Users, formFields)),
-  form: [ preValidate(false,false) ].concat(form(Users, formFields)),
-  formNoMin: [ preValidate(false,true) ].concat(formNoMin(Users, formFields)),
+  user: (action) => [ preValidate(false,false) ].concat(form(Users, action, formFields)),
 }

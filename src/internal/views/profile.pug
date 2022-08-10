@@ -8,7 +8,6 @@ block scripts
 
 block content
   table.horizontal
-    //- caption User Profile
     thead
       tr
         each val in tableFields
@@ -23,12 +22,12 @@ block content
             td.button-input.token-cell(data-label=val)
               span#token= userData.token || ' '
               span.button-group
-                input.button.secondary(type='button' name='regenToken' id='regenToken' value='Regen')
+                input.button.secondary(type='button' name='regenToken' id='regenToken' value='Regen' formaction=regenURL)
                 input.button.primary(type='button' name='copyToken' id='copyToken' value='Copy')
 
   hr
 
-  form.plain#editForm(action=postURL method="POST")
+  form.plain#editForm(method="POST")
     fieldset
       legend.row.baseline
         h2 Update Profile
@@ -41,4 +40,4 @@ block content
           span#primary-key
             input(type="hidden" value=userData[idKey] id=idKey name=idKey)
 
-      +buttonRow(buttons, { Update: 'tertiary', Remove: 'secondary' })
+      +buttonRow(buttons, { Update: 'tertiary', Remove: 'secondary' }, submitURLs)

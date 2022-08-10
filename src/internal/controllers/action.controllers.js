@@ -20,19 +20,16 @@ exports.regenToken = (req,res,next) => Users.regenToken(req.body[Users.primaryId
 exports.form = function getFormController(Model, { redirectURL = '', formatData = (data) => data } = {}) {
   const formActions = modelActions(Model)
 
-  return (req,res,next) => {
+  return (action) => (req,res,next) => {
     let { _action, _pageData, _searchMode, ...formData } = filterFormData(req.body, Model.boolFields)
-
-    if (!_action || !Object.keys(formActions).includes(_action))
-      return next(errors.badAction(_action))
     
     try {
-      formData = formatData(formData, req.user, _action) || formData
+      formData = formatData(formData, req.user, action) || formData
       _pageData = toQueryString(_pageData)
     }
     catch (err) { return next(err) }
 
-    return formActions[_action](formData).then((url) => res.redirect(
+    return formActions[action](formData).then((url) => res.redirect(
         (redirectURL || `${urls.basic.prefix}${urls.basic.home}/${Model.title}`) +
         (url || _pageData || '')
     )).catch(next)

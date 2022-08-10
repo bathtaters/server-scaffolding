@@ -3,7 +3,7 @@ const { getTableFields, varName, getSchema, getTypes, formatGuiData } = require(
 const { access, tableFields, tooltips } = require('../config/users.cfg')
 const { guiAdapter } = require('../services/users.services')
 const { hasAccess, hasModelAccess } = require('../utils/users.utils')
-const { profileLabels, labelsByAccess } = require('../utils/form.utils')
+const { profileLabels, labelsByAccess, actionURLs } = require('../utils/form.utils')
 const { pageOptions, actions } = require('../../config/gui.cfg')
 const errors = require('../config/errors.internal')
 const urls = require('../../config/urls.cfg').gui.basic
@@ -23,8 +23,8 @@ exports.modelDb = (Model, { view = 'dbModel', partialMatch = true, overrideDbPar
     title: varName(Model.title),
     idKey: Model.primaryId,
     baseURL: `${urls.prefix}${urls.home}/${Model.title}`,
-    postURL: `${urls.prefix}${urls.home}/${Model.title}${urls.form}`,
-    submitURLs: { Search: `${urls.prefix}${urls.home}/${Model.title}${urls.form}${urls.find}` },
+    swapURL: `${urls.prefix}${urls.home}/${Model.title}${urls.swap}`,
+    submitURLs: actionURLs(`${urls.prefix}${urls.home}/${Model.title}${urls.form}/`),
     schema: Model.types ? getTypes(Model.types, Model.primaryId) : getSchema(Model.schema, Model.primaryId, Model.boolFields),
     tableFields: getTableFields(Model.schema, Model.primaryId),
     limits: Model.limits || {},
@@ -73,7 +73,8 @@ const staticUserParams = {
   buttons: profileLabels,
   limits: Users.limits || {},
   defaults: Users.defaults || {},
-  postURL: urls.prefix + urls.user + urls.form,
+  regenURL:   `${urls.prefix}${urls.user}${urls.token}`,
+  submitURLs: actionURLs(`${urls.prefix}${urls.user}${urls.form}/`),
 }
 exports.userProfile = (req, res, next) => !req.user ? next(errors.noData('user')) :
   res.render('profile', {

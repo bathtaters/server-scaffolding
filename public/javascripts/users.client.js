@@ -142,7 +142,7 @@ $( '#_actionRegen' ).on('click', function() {
 
   $.ajax({
     type:    "POST",
-    url:     $( 'form#editForm' ).attr('action').replace('/form', '/regenToken'),
+    url:     $(this).attr('formaction'),
     data:    sendData,
     success: function(data) {
         if (!data.success) { window.alert('Error regenerating API ID: '+(data.error || 'Unknown error')); }

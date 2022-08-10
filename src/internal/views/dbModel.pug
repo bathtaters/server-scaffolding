@@ -6,7 +6,7 @@ block form
       +formInput(idKey, canWrite && !canRead ? 'id' : 'readonly', limits[idKey], defaults[idKey], tableFields[idKey], 'button-group')
     if canWrite
       .col-sm
-        +buttonInput('swapId', 'id', 'Swap', limits[idKey], defaults[idKey])
+        +buttonInput('swapId', 'id', 'Swap', limits[idKey], defaults[idKey], regenURL)
     if !searchData
       +pageData(page, size)
 

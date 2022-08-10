@@ -116,7 +116,7 @@ $( '#_actionSwap' ).on('click', function() {
 
   $.ajax({
     type:    "POST",
-    url:     $( 'form#editForm' ).attr('action').replace('/form', '/swap'),
+    url:     $(this).attr('formaction'),
     data:    sendData,
     success: function(data) {
       if (!data.success) { window.alert('Error performing swap: '+(data.error || 'Unknown error')); }

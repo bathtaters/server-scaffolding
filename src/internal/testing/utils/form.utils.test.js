@@ -1,11 +1,24 @@
 const { actions } = require('../../../config/gui.cfg')
-const { profileLabels, labelsByAccess, filterFormData, toQueryString } = require('../../utils/form.utils')
+const { profileLabels, actionAccess, labelsByAccess, actionURLs, filterFormData, toQueryString } = require('../../utils/form.utils')
 jest.mock('../../utils/validate.utils', () => ({ parseBoolean: () => () => 'parsed' }))
 
 describe('profileLabels', () => {
   it('is string array', () => {
     expect(Array.isArray(profileLabels)).toBeTruthy()
     profileLabels.forEach((label) => expect(typeof label).toBe('string'))
+  })
+})
+
+describe('actionAccess', () => {
+  it('Search is read-only', () => {
+    expect(actionAccess('Search')).toBe('read')
+  })
+  it('Default is write-only', () => {
+    expect(actionAccess('Add')).toBe('write')
+    expect(actionAccess('Update')).toBe('write')
+    expect(actionAccess('Remove')).toBe('write')
+    expect(actionAccess('Reset')).toBe('write')
+    expect(actionAccess('TESTTESTEST')).toBe('write')
   })
 })
 
@@ -22,6 +35,23 @@ describe('labelsByAccess', () => {
   it('gets no vals w/o read/write', () => {
     expect(labelsByAccess(['other'])).toEqual([])
     expect(labelsByAccess([])).toEqual([])
+  })
+})
+
+describe('actionURLs', () => {
+  it('includes entire actionList as keys', () => {
+    expect(Object.keys(actionURLs('BASE/TEST/',['LinkA','LinkB','LinkC'])))
+      .toEqual(['LinkA','LinkB','LinkC'])
+  })
+  it('each url is baseURL + action (lowercase)', () => {
+    expect(actionURLs('BASE/TEST/',['LinkA','LinkB','LinkC'])).toEqual({
+      LinkA: 'BASE/TEST/linka',
+      LinkB: 'BASE/TEST/linkb',
+      LinkC: 'BASE/TEST/linkc',
+    })
+  })
+  it('defaults to use gui.cfg.actions (values)', () => {
+    expect(Object.keys(actionURLs('BASE/TEST/'))).toEqual(Object.values(actions))
   })
 })
 
