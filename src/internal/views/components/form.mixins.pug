@@ -65,7 +65,7 @@ mixin buttonInput(key, inpType, button, limits, defaultValue, label, tooltip, bu
       input.button(type='button' name=buttonKey id=buttonKey+button value=button)
 
 mixin buttonRow(buttons, classes = {}, urls = {}, key = '_action', buttonType = 'submit')
-  .row.button-group
+  .button-group
     each action in buttons
       input.large(
         type=buttonType name=key id=key+action value=action
