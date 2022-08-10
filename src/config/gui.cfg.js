@@ -1,7 +1,7 @@
 const RegEx = require('../internal/libs/regex')
 const { name, version, author, license, releaseYear, repoLink } = require('./meta')
 const { capitalizeHyphenated } = require('../internal/utils/common.utils')
-const { jquery, minicss } = require('./urls.cfg')
+const { jquery, minicss, gui: guiUrl } = require('./urls.cfg')
 
 const title = capitalizeHyphenated(name)
 
@@ -51,6 +51,12 @@ module.exports = {
   // Mask values when reporting errors for these values
   mask: [ 'password', 'confirm' ],
   MASK_CHAR: '*',
+
+  // Paths that expect JSON responses (not HTML)
+  jsonPaths: [
+    guiUrl.basic.prefix + guiUrl.basic.home + '/:model' + guiUrl.basic.swap,
+    guiUrl.basic.prefix + guiUrl.basic.user + guiUrl.basic.token,
+  ],
   
   // Helmet options
   guiCSP: {

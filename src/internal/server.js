@@ -1,7 +1,8 @@
 // Constants
 const { rootPath } = require('../config/meta')
 const urls = require('../config/urls.cfg')
-const { guiCSP } = require('../config/gui.cfg')
+const { guiCSP, jsonPaths } = require('../config/gui.cfg')
+const { jsonPaths: userJsonPaths } = require('../internal/config/users.cfg')
 // Module Dependencies
 const express = require('express')
 const { join } = require('path')
@@ -49,7 +50,7 @@ server.use(urls.gui.basic.prefix, guiRoutes)
 server.use(urls.gui.admin.prefix, adminRoutes)
 
 // Error Handling
-server.use(urls.api.prefix, errorMiddleware.json)
+server.use([urls.api.prefix, ...(jsonPaths || []), ...(userJsonPaths || [])], errorMiddleware.json)
 server.use(errorMiddleware.html)
 
 // Start server

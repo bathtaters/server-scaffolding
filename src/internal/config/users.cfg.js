@@ -1,4 +1,5 @@
 const RegEx = require('../libs/regex')
+const urls = require('../../config/urls.cfg').gui.admin
 
 const access = { api: 1, gui: 2, admin: 4, none: 0 }
 const models = { read: 1, write: 2, none: 0 }
@@ -92,4 +93,7 @@ module.exports = {
 
   searchableKeys: ['username','token','access','cors','locked'], // 'models'
   illegalUsername: RegEx(/[^a-zA-Z0-9_-]/),
+
+  // Paths that expect JSON responses (not HTML)
+  jsonPaths: [ urls.prefix + urls.user + urls.token ],
 }
