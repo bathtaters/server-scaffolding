@@ -35,7 +35,7 @@ class Users extends Model {
 
   async add(data) {
     const test = await this.validUsername(data.username)
-    if (test) throw errors.badUsername(data.username.trim(), test)
+    if (test) throw errors.badUsername((data.username || '').trim(), test)
 
     const newData = addAdapter(data, this.primaryId)
     if ((passwordAccess & accessInt(newData.access)) && !newData.password)
@@ -115,6 +115,7 @@ class Users extends Model {
   }
 
   validUsername(username, ignoreId) {
+    if (!username) return 'Must provide a username'
     if (illegalUsername.test(username)) return 'Cannot contain spaces or symbols (Besides underscore & hyphen)'
     username = username.toLowerCase()
     return super.get().then((users) => users.every((user) =>

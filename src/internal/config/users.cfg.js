@@ -50,7 +50,7 @@ module.exports = {
     types: {
       id: "hex",
       username: "string",
-      password: "string",
+      password: "string?",
       token: "hex",
       access: "string[]?",
       cors: "string*",
@@ -68,6 +68,7 @@ module.exports = {
       username: "user",
       access: [ 'api', 'gui' ],
       models: { [allModelsKey]: ['read','write'] },
+      token: null,
       cors: '*',
       failCount: 0,
       guiCount:  0,
