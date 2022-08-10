@@ -57,14 +57,14 @@ mixin checkboxes(key, rows, label, columns, defaults)
               checked=(defaults && defaults[row] && defaults[row].includes(col))
             )
 
-mixin buttonInput(key, inpType, button, limits, defaultValue, label, tooltip, buttonKey = 'action')
+mixin buttonInput(key, inpType, button, limits, defaultValue, label, tooltip, buttonKey = '_action')
   .input-group.vertical.button-input
     label(for=key aria-label=tooltip class=(tooltip ? 'tooltip' : ''))= label || varName(key)
     .button-group
       +typedInp(key, inpType, limits, defaultValue)
       input.button(type='button' name=buttonKey id=buttonKey+button value=button)
 
-mixin buttonRow(buttons, classes = {}, urls = {}, key = 'action', buttonType = 'submit')
+mixin buttonRow(buttons, classes = {}, urls = {}, key = '_action', buttonType = 'submit')
   .row.button-group
     each action in buttons
       input.large(
@@ -74,7 +74,7 @@ mixin buttonRow(buttons, classes = {}, urls = {}, key = 'action', buttonType = '
         formaction=(urls[action])
       )
 
-mixin pageData(page, size, id = 'pageData', pageKey = 'page', sizeKey = 'size')
+mixin pageData(page, size, id = '_pageData', pageKey = 'page', sizeKey = 'size')
   if (page || size)
     +formInput(id, 'hidden', null, JSON.stringify({ [pageKey]: page || 1, [sizeKey]: size || null }))
 

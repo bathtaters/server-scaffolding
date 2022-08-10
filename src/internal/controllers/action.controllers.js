@@ -21,20 +21,20 @@ exports.form = function getFormController(Model, { redirectURL = '', formatData 
   const formActions = modelActions(Model)
 
   return (req,res,next) => {
-    let { action, pageData, searchMode, ...formData } = filterFormData(req.body, Model.boolFields)
+    let { _action, _pageData, _searchMode, ...formData } = filterFormData(req.body, Model.boolFields)
 
-    if (!action || !Object.keys(formActions).includes(action))
-      return next(errors.badAction(action))
+    if (!_action || !Object.keys(formActions).includes(_action))
+      return next(errors.badAction(_action))
     
     try {
-      formData = formatData(formData, req.user, action) || formData
-      pageData = toQueryString(pageData)
+      formData = formatData(formData, req.user, _action) || formData
+      _pageData = toQueryString(_pageData)
     }
     catch (err) { return next(err) }
 
-    return formActions[action](formData).then((url) => res.redirect(
+    return formActions[_action](formData).then((url) => res.redirect(
         (redirectURL || `${urls.basic.prefix}${urls.basic.home}/${Model.title}`) +
-        (url || pageData || '')
+        (url || _pageData || '')
     )).catch(next)
   }
 }
@@ -59,18 +59,18 @@ const restartParams = (req) => ({
 })
 
 exports.settingsForm = (req,res,next) => {
-  let { action, pageData, ...settings } = req.body
-  if (!action || !Object.keys(settingsActions).includes(action)) return next(errors.badAction(action))
+  let { _action, _pageData, ...settings } = req.body
+  if (!_action || !Object.keys(settingsActions).includes(_action)) return next(errors.badAction(_action))
 
-  if (action.toLowerCase() === 'update' && !settings) return next(errors.noData('settings'))
+  if (_action.toLowerCase() === 'update' && !settings) return next(errors.noData('settings'))
   
-  try { pageData = toQueryString(pageData) }
+  try { _pageData = toQueryString(_pageData) }
   catch (err) { return next(err) }
 
-  return settingsActions[action](settings, req.session)
+  return settingsActions[_action](settings, req.session)
     .then((restart) => {
       if (typeof restart !== 'function')
-        return res.redirect(`${urls.admin.prefix}${urls.admin.home}${pageData || ''}`)
+        return res.redirect(`${urls.admin.prefix}${urls.admin.home}${_pageData || ''}`)
       res.render('delay', restartParams(req))
       restart()
     }).catch(next)

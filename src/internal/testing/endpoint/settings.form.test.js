@@ -37,7 +37,7 @@ describe('Test ENV Form Post', () => {
     settings.DB_SECRET = "testSecret"
 
     await request.post(`${settingsPrefix}/form`)
-      .send({ ...settings, action: "Update" })
+      .send({ ...settings, _action: "Update" })
       .expect(302).expect('Location',settingsPrefix)
     
     expect(writeFile).toBeCalledTimes(1)
@@ -54,7 +54,7 @@ describe('Test ENV Form Post', () => {
     settings.LOG_DIR = "%5Cpath/to/log$"
 
     await request.post(`${settingsPrefix}/form`)
-      .send({ ...settings, action: "Update" })
+      .send({ ...settings, _action: "Update" })
       .expect(302).expect('Location', settingsPrefix)
     
     expect(writeFile).toBeCalledTimes(1)
@@ -69,7 +69,7 @@ describe('Test ENV Form Post', () => {
     settings.LOG_DIR = ""
 
     await request.post(`${settingsPrefix}/form`)
-      .send({ ...settings, action: "Default" })  
+      .send({ ...settings, _action: "Default" })  
       .expect(302).expect('Location', settingsPrefix)
       
     expect(writeFile).toBeCalledTimes(1)
@@ -90,7 +90,7 @@ describe('Test ENV Form Post', () => {
 
   test('POST /form Undo', async () => {
     await request.post(`${settingsPrefix}/form`)
-      .send({ ...settings, action: "Undo" })
+      .send({ ...settings, _action: "Undo" })
       .expect(302).expect('Location', settingsPrefix)
     
     expect(writeFile).toBeCalledTimes(1)
@@ -105,7 +105,7 @@ describe('Test ENV Form Post', () => {
 
     try { while (true) {
       await request.post(`${settingsPrefix}/form`)
-        .send({ ...settings, action: "Undo" })
+        .send({ ...settings, _action: "Undo" })
         .expect(302).expect('Location', settingsPrefix)
     }}
     catch (err) {
@@ -114,13 +114,13 @@ describe('Test ENV Form Post', () => {
     }
 
     await request.post(`${settingsPrefix}/form`)
-      .send({ ...settings, action: "Undo" })
+      .send({ ...settings, _action: "Undo" })
       .expect(500)
   })
 
   test('POST /form Restart page', async () => {
     await request.post(`${settingsPrefix}/form`)
-      .send({ ...settings, action: "Restart" })
+      .send({ ...settings, _action: "Restart" })
       .expect(418) // In TEST_ENV: Restart => <418>
   })
 
@@ -129,7 +129,7 @@ describe('Test ENV Form Post', () => {
     settings.LOG_CONSOLE = "newtest"
 
     await request.post(`${settingsPrefix}/form`)
-      .send({ ...settings, action: "Restart" })
+      .send({ ...settings, _action: "Restart" })
       .expect(418) // In TEST_ENV: Restart => <418>
 
     expect(writeFile).toBeCalledTimes(1)

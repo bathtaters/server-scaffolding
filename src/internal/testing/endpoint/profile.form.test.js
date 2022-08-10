@@ -22,7 +22,7 @@ describe('Test User Profile Form Post', () => {
     creds.username = "newuser"
     await request.post(`${profilePrefix}/form`).expect(302).expect('Location',profilePrefix)
       .send({
-        action: "Update",
+        _action: "Update",
         id: userInfo.id,
         username: creds.username
       })
@@ -35,14 +35,14 @@ describe('Test User Profile Form Post', () => {
     creds.password = "password123"
     await request.post(`${profilePrefix}/form`).expect(400)
       .send({
-        action: "Update",
+        _action: "Update",
         id: userInfo.id,
         password: creds.password,
       })
     
     await request.post(`${profilePrefix}/form`).expect(302).expect('Location',profilePrefix)
       .send({
-        action: "Update",
+        _action: "Update",
         id: userInfo.id,
         password: creds.password,
         confirm: creds.password,
@@ -67,7 +67,7 @@ describe('Test User Profile Form Post', () => {
   test('POST /form Remove', async () => {
     await request.post(`${profilePrefix}/form`).expect(302).expect('Location',profilePrefix)
       .send({
-        action: "Remove",
+        _action: "Remove",
         id: userInfo.id,
       })
     userInfo = await Users.get(userInfo.id)

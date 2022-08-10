@@ -104,7 +104,7 @@ function confirmPassword(formData, action) {
   return formData
 }
 
-const keepProps = [ ...searchableKeys, 'action', 'pageData', 'searchMode' ]
+const keepProps = [ ...searchableKeys, '_action', '_pageData', '_searchMode' ]
 function stripNonSearchProps(formData) {
   Object.keys(formData).forEach((key) => {
     if (!keepProps.includes(key)) delete formData[key]

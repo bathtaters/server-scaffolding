@@ -1,7 +1,7 @@
 /// <reference path="./jquery-3.6.0.min.js" />
 
 /* Table reset confirmation */
-$( 'input#actionReset' ).on('click', function(ev) {
+$( 'input#_actionReset' ).on('click', function(ev) {
   if(!window.confirm('WARNING! This will remove all users and log you out, are you sure you want to do this?')) {
     ev.preventDefault();
   }
@@ -16,7 +16,7 @@ $( 'form#editForm' ).on('keydown', function(ev) {
     && !['button','submit','reset'].includes($(ev.target).attr('type'))
   ) {
     ev.preventDefault();
-    $( '#actionSearch' ).trigger('focus');
+    $( '#_actionSearch' ).trigger('focus');
   }
 });
 
@@ -132,7 +132,7 @@ $( 'input#confirm, input#password' ).on('input', function() {
 });
 
 /* Regenerate API ID */
-$( '#actionRegen' ).on('click', function() {
+$( '#_actionRegen' ).on('click', function() {
   var idElem = $( '#primary-key input' );
   var idVal = idElem.val();
   if (!idVal) return window.alert('Select a row to update...');
@@ -168,7 +168,7 @@ $(function() {
     if (+min > 0) { $(this).attr('data-minLength', min); }
   });
 
-  if ($( 'input#searchMode' ).prop('checked')) { $.setSearch(true); }
+  if ($( 'input#_searchMode' ).prop('checked')) { $.setSearch(true); }
   if($( 'input#forceSearch' ).val()) { $.setSearch(true); }
 });
 
@@ -179,12 +179,12 @@ $.setSearch = function(enable) {
   $( 'input#confirm' ).attr('disabled', enable);
   $( 'input#expandModels' ).attr('disabled', enable);
   $( 'label[for="expandModels"]' ).attr('disabled', enable);
-  $( 'input[type="submit"]:not(#actionSearch)' ).attr('disabled', enable);
+  $( 'input[type="submit"]:not(#_actionSearch)' ).attr('disabled', enable);
   $( 'input[data-min]' ).each(function() { $(this).attr('min', !enable && $(this).attr('data-min')); });
   $( 'input[data-minLength]' ).each(function() { $(this).attr('minLength', !enable && $(this).attr('data-minLength')); });
 }
 
-$( 'input#searchMode' ).on('input', function() {
+$( 'input#_searchMode' ).on('input', function() {
   if ($(this).prop('checked')) { $.setSearch(true); }
   else { $.setSearch(false); }
 });
@@ -213,7 +213,7 @@ $.resetInputs = function(clear) {
 
 $( 'input#clearForm' ).on('click', function(ev) {
   ev.preventDefault()
-  if ($( 'input#searchMode' ).prop('checked')) {
+  if ($( 'input#_searchMode' ).prop('checked')) {
     $.setSearch(true);
     $.resetInputs(true);
   } else {

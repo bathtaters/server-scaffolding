@@ -20,7 +20,7 @@ describe('Test Users Form Post', () => {
   test('POST /form Add', async () => {
     await request.post(`${userPrefix}/form`).expect(302).expect('Location',userPrefix)
       .send({
-        action: "Add",
+        _action: "Add",
         username: "apiuser",
         access: ["api"],
       })
@@ -33,7 +33,7 @@ describe('Test Users Form Post', () => {
   test('POST /form Update', async () => {
     await request.post(`${userPrefix}/form`).expect(302).expect('Location',userPrefix)
       .send({
-        action: "Update",
+        _action: "Update",
         id: userInfo.id,
         username: "newuser"
       })
@@ -44,13 +44,13 @@ describe('Test Users Form Post', () => {
   test('GUI/Admin access w/o password', async () => {
     await request.post(`${userPrefix}/form`).expect(400)
       .send({
-        action: "Update",
+        _action: "Update",
         id: userInfo.id,
         access: ['admin'],
       })
     await request.post(`${userPrefix}/form`).expect(400)
       .send({
-        action: "Update",
+        _action: "Update",
         id: userInfo.id,
         access: ['gui','api'],
       })
@@ -59,14 +59,14 @@ describe('Test Users Form Post', () => {
   test('Password requires confirm', async () => {
     await request.post(`${userPrefix}/form`).expect(400)
       .send({
-        action: "Update",
+        _action: "Update",
         id: userInfo.id,
         password: "password123",
       })
     
     await request.post(`${userPrefix}/form`).expect(302).expect('Location',userPrefix)
       .send({
-        action: "Update",
+        _action: "Update",
         id: userInfo.id,
         password: "password123",
         confirm: "password123",
@@ -79,7 +79,7 @@ describe('Test Users Form Post', () => {
   test('GUI/Admin access w/ password', async () => {
     await request.post(`${userPrefix}/form`).expect(302).expect('Location',userPrefix)
       .send({
-        action: "Update",
+        _action: "Update",
         id: userInfo.id,
         access: ['admin'],
       })
@@ -88,7 +88,7 @@ describe('Test Users Form Post', () => {
 
     await request.post(`${userPrefix}/form`).expect(302).expect('Location',userPrefix)
       .send({
-        action: "Update",
+        _action: "Update",
         id: userInfo.id,
         access: ['gui','api'],
       })
@@ -99,7 +99,7 @@ describe('Test Users Form Post', () => {
   test('Set CORS array', async () => {
     await request.post(`${userPrefix}/form`).expect(302).expect('Location',userPrefix)
       .send({
-        action: "Update",
+        _action: "Update",
         id: userInfo.id,
         cors: "a,b,c",
       })
@@ -110,7 +110,7 @@ describe('Test Users Form Post', () => {
   test('Set CORS RegEx', async () => {
     await request.post(`${userPrefix}/form`).expect(302).expect('Location',userPrefix)
       .send({
-        action: "Update",
+        _action: "Update",
         id: userInfo.id,
         cors: 'RegExp("abc")',
       })
@@ -122,7 +122,7 @@ describe('Test Users Form Post', () => {
     expect(userInfo.models).toEqual({ default: 3 })
     await request.post(`${userPrefix}/form`).expect(302).expect('Location',userPrefix)
       .send({
-        action: "Update",
+        _action: "Update",
         id: userInfo.id,
         models: ['default-none'],
       })
@@ -130,7 +130,7 @@ describe('Test Users Form Post', () => {
     expect(userInfo.models).toEqual({ default: 0 })
     await request.post(`${userPrefix}/form`).expect(302).expect('Location',userPrefix)
       .send({
-        action: "Update",
+        _action: "Update",
         id: userInfo.id,
         models: ['default-read','default-write'],
       })
@@ -153,7 +153,7 @@ describe('Test Users Form Post', () => {
   test('POST /form Remove', async () => {
     await request.post(`${userPrefix}/form`).expect(302).expect('Location',userPrefix)
       .send({
-        action: "Remove",
+        _action: "Remove",
         id: userInfo.id,
       })
     userInfo = await Users.get(userInfo.id)
@@ -163,7 +163,7 @@ describe('Test Users Form Post', () => {
   test('POST /form Reset', async () => {
     await request.post(`${userPrefix}/form`).expect(302).expect('Location',userPrefix)
       .send({
-        action: "Reset",
+        _action: "Reset",
       })
     userInfo = await Users.get()
     expect(userInfo).toEqual([])

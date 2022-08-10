@@ -27,7 +27,7 @@ block content
         input.small.button.button-group#clearForm(type="reset" value="Clear")
         if canRead && canWrite
           .small
-            +formInput('searchMode', 'checkbox', null, searchData, 'Search', 'ignoreClear', 'Use Search rules')
+            +formInput('_searchMode', 'checkbox', null, searchData, 'Search', 'ignoreClear', 'Use Search rules')
 
       block form
 

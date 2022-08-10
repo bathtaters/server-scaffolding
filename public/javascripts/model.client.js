@@ -1,7 +1,7 @@
 /// <reference path="./jquery-3.6.0.min.js" />
 
 /* Table reset confirmation */
-$( 'input#actionReset' ).on('click', function(ev) {
+$( 'input#_actionReset' ).on('click', function(ev) {
   if(!window.confirm('Are you sure you want to erase the entire table?')) {
     ev.preventDefault();
   }
@@ -16,7 +16,7 @@ $( 'form#editForm' ).on('keydown', function(ev) {
     && !['button','submit','reset'].includes($(ev.target).attr('type'))
   ) {
     ev.preventDefault();
-    $( '#actionSearch' ).trigger('focus');
+    $( '#_actionSearch' ).trigger('focus');
   }
 });
 
@@ -54,20 +54,20 @@ $(function() {
     if (+min > 0) { $(this).attr('data-minLength', min); }
   });
 
-  if ($( 'input#searchMode' ).prop('checked')) { $.setSearch(true); }
+  if ($( 'input#_searchMode' ).prop('checked')) { $.setSearch(true); }
   if($( 'input#forceSearch' ).val()) { $.setSearch(true); }
 });
 
 $.setSearch = function(enable) {
   $( '#primary-key input' ).attr('readonly', !enable);
   $( 'input#swapId' ).attr('disabled', enable);
-  $( 'input#actionSwap' ).attr('disabled', enable);
-  $( 'input[type="submit"]:not(#actionSearch)' ).attr('disabled', enable);
+  $( 'input#_actionSwap' ).attr('disabled', enable);
+  $( 'input[type="submit"]:not(#_actionSearch)' ).attr('disabled', enable);
   $( 'input[data-min]' ).each(function() { $(this).attr('min', !enable && $(this).attr('data-min')); });
   $( 'input[data-minLength]' ).each(function() { $(this).attr('minLength', !enable && $(this).attr('data-minLength')); });
 }
 
-$( 'input#searchMode' ).on('input', function() {
+$( 'input#_searchMode' ).on('input', function() {
   if ($(this).prop('checked')) { $.setSearch(true); }
   else { $.setSearch(false); }
 });
@@ -96,7 +96,7 @@ $.resetInputs = function(clear) {
 
 $( 'input#clearForm' ).on('click', function(ev) {
   ev.preventDefault()
-  if ($( 'input#searchMode' ).prop('checked')) {
+  if ($( 'input#_searchMode' ).prop('checked')) {
     $.setSearch(true);
     $.resetInputs(true);
   } else {
@@ -107,7 +107,7 @@ $( 'input#clearForm' ).on('click', function(ev) {
 
 
 /* Swap two IDs */
-$( '#actionSwap' ).on('click', function() {
+$( '#_actionSwap' ).on('click', function() {
   var sendData = { swap: $( 'input#swapId' ).val() };
   var idElem = $( '#primary-key input' );
   var idVal = idElem.val();

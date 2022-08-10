@@ -3,8 +3,8 @@ const { byModel, byObject } = require('./shared.validators')
 const { swap, all } = require('./api.validators')
 
 const formAdditional = [
-  { key: 'action', typeStr: 'string', isIn: 'body', limits: { min: 1, max: 32 } },
-  { key: 'pageData', typeStr: 'object?', isIn: 'body', limits: { max: 32 } },
+  { key: '_action', typeStr: 'string', isIn: 'body', limits: { min: 1, max: 32 } },
+  { key: '_pageData', typeStr: 'object?', isIn: 'body', limits: { max: 32 } },
 ]
 
 const pageAdditional = [
