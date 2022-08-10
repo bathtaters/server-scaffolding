@@ -1,5 +1,5 @@
 const RegEx = require('../internal/libs/regex')
-const { name, version, author, license, releaseYear, repoLink } = require('./meta')
+const { name, version, author, license, releaseYear, repoLink, isSecure } = require('./meta')
 const { capitalizeHyphenated } = require('../internal/utils/common.utils')
 const { jquery, minicss, gui: guiUrl } = require('./urls.cfg')
 
@@ -63,6 +63,6 @@ module.exports = {
     defaultSrc: ["'self'"],
     scriptSrc: ["'self'", jquery.src],
     styleSrc: ["'self'", "'unsafe-inline'", minicss.href],
-    upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
+    upgradeInsecureRequests: isSecure ? [] : null,
   }
 }

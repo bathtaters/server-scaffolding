@@ -1,7 +1,7 @@
 const session = require('express-session')
 const SQLiteStore = require('connect-sqlite3')(session)
 const { saveLoginMs } = require('../config/users.cfg')
-const { dbPath } = require('../../config/meta')
+const { dbPath, isSecure } = require('../../config/meta')
 const errors = require('../config/errors.internal')
 
 exports.sessionOptions = {
@@ -15,7 +15,7 @@ exports.sessionOptions = {
     httpOnly: true,
     maxAge: saveLoginMs,
     sameSite: 'strict',
-    secure: process.env.NODE_ENV === 'production',
+    secure: isSecure,
   },
 }
 

@@ -1,6 +1,7 @@
 // Constants
 const { rootPath } = require('../config/meta')
 const urls = require('../config/urls.cfg')
+const { trustProxy } = require('./config/server.cfg')
 const { guiCSP, jsonPaths } = require('../config/gui.cfg')
 const { jsonPaths: userJsonPaths } = require('../internal/config/users.cfg')
 // Module Dependencies
@@ -24,7 +25,7 @@ const rootRoutes  = require('./routes/root.routes')
 
 // Server Setup
 const server = express()
-server.set('trust proxy', 1)
+server.set('trust proxy', trustProxy)
 server.set('views', [join(rootPath, 'src', 'views'), join(rootPath, 'src', 'internal', 'views')])
 server.set('view engine', 'pug')
 if (process.env.NODE_ENV === 'production') server.disable('x-powered-by')

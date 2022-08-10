@@ -6,6 +6,7 @@
 
 # credentials
 credentials.json
+*.pem
 
 # database
 .db

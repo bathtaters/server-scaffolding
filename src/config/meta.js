@@ -1,5 +1,5 @@
 const { join } = require('path')
-const { isCluster } = require('../internal/config/server.cfg')
+const { isCluster, isSecure } = require('../internal/config/server.cfg')
 const settings = require('../internal/config/settings.cfg')
 const pkg = require('../../package.json')
 const pkgCfg = pkg.config || {}
@@ -31,7 +31,8 @@ module.exports = {
 
   port: getPort(),
   isPm2: 'NODE_APP_INSTANCE' in process.env,
-  rootPath, envPath,
+  isSecure, rootPath, envPath,
   dbPath:  join(process.env.DB_DIR  || settings.defaults.DB_DIR,  'database.db'),
   logPath: join(process.env.LOG_DIR || settings.defaults.LOG_DIR, `${pkg.name || 'server'}_%DATE%.log`),
+  credPath: { key: join(rootPath,'.key.pem'), cert: join(rootPath,'.cert.pem') },
 }

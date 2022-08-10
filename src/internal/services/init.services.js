@@ -1,3 +1,6 @@
+const http = require('http')
+const https = require('https')
+const fs = require('fs/promises')
 const { gracefulExitHandler } = require('express-graceful-exit')
 const { startup, teardown } = require('../../server.init')
 const logger = require('../libs/log')
@@ -12,7 +15,7 @@ const models = require('../../models/_all')
 
 let isClosing = false, isTerminating = false
 
-async function initializeServer(server) {
+async function initializeServer(app) {
   // Handle terminate
   let listener
 
@@ -22,7 +25,7 @@ async function initializeServer(server) {
     logger.info(`Shutting down server`)
 
     if (!listener) return terminateServer().then(() => process.exit(0))
-    return gracefulExitHandler(server, listener, shutdownOptions)
+    return gracefulExitHandler(app, listener, shutdownOptions)
   }
 
   const handleError = (err) => {
@@ -41,20 +44,34 @@ async function initializeServer(server) {
   }
   
   // Setup view vars
-  server.locals.appTitle = title
-  server.locals.footerData = footer
-  server.locals.varName = varName
-  server.locals.urls = urls
+  app.locals.appTitle = title
+  app.locals.footerData = footer
+  app.locals.varName = varName
+  app.locals.urls = urls
 
   // Setup DB & init Models
   if (!getDb()) await openDb()
   await Promise.all(Object.values(models).map((m) => m.isInitialized))
 
-  if (startup) await startup(server)
+  if (startup) await startup(app)
 
   logger.info(`${meta.name} services started`)
-  
+
+  // Get secure credentials
+  let creds = {}
+  if (meta.isSecure) {
+    logger.verbose('Loading secure server credentials')
+    try {
+      creds.key  = await fs.readFile(meta.credPath.key, 'utf8')
+      creds.cert = await fs.readFile(meta.credPath.cert, 'utf8')
+    } catch (err) {
+      logger.error(err)
+    }
+    if (!creds.key || !creds.cert) throw new Error(`Unable to read SSL credentials, ${process.env.NODE_ENV === 'development' ? 'try running "npm run dev-cert"' : 'generate SSL/TLS credentials or disable isSecure'}.`) 
+  }
+
   // Open port
+  const server = meta.isSecure ? https.createServer(creds, app) : http.createServer(app)
   listener = server.listen(meta.port, () => logger.info(`Listening on port ${meta.port}`))
 }
 
