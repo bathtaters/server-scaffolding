@@ -39,5 +39,8 @@ block content
           
           span#primary-key
             input(type="hidden" value=userData[idKey] id=idKey name=idKey)
+          
+          if csrfToken
+            span: +formInput('_csrf', 'hidden', null, csrfToken)
 
       +buttonRow(buttons, { Update: 'tertiary', Remove: 'secondary' }, submitURLs)

@@ -38,6 +38,7 @@ exports.settings = async (req, res, next) =>
     postURL: `${urls.prefix}${urls.home}${urls.form}`,
     user: req.user && req.user.username,
     isAdmin: req.user && hasAccess(req.user.access, access.admin),
+    csrfToken: req.csrfToken && req.csrfToken(),
   })
 
 // LOGS

@@ -17,6 +17,7 @@ exports.loginPage = [
       limits,
       failureMessage: req.flash('error'),
       postURL: urls.root.login,
+      csrfToken: req.csrfToken && req.csrfToken(),
     })
   ),
 ]

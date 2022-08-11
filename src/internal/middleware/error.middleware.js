@@ -17,6 +17,9 @@ const catchMissing = (req,res,next) => req.error ? next(req.error) : next(errors
 
 function normalizeError(err, req, res, next) {
   req.error = err || req.error || defaultError
+
+  if (req.error.code === 'EBADCSRFTOKEN') req.error = errors.noCSRF()
+
   if (typeof req.error === 'string') req.error = { message: req.error }
   
   req.error.message = getMsg(req.error)

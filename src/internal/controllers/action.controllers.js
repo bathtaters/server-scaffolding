@@ -21,7 +21,7 @@ exports.form = function getFormController(Model, { redirectURL = '', formatData 
   const formActions = modelActions(Model)
 
   return (action) => (req,res,next) => {
-    let { _action, _pageData, _searchMode, ...formData } = filterFormData(req.body, Model.boolFields)
+    let { _action, _pageData, _searchMode, _csrf, ...formData } = filterFormData(req.body, Model.boolFields)
     
     try {
       formData = formatData(formData, req.user, action) || formData

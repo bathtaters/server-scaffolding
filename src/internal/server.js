@@ -14,6 +14,7 @@ const { exceptRoute } = require('./utils/common.utils')
 // Middleware
 const exitMiddleware = require('express-graceful-exit').middleware
 const authMiddleware = require('./middleware/auth.middleware').initAuth()
+const csrfMiddleware  = require('./middleware/csrf.middleware')
 const logMiddleware  = require('./middleware/log.middleware')
 const errorMiddleware  = require('./middleware/error.middleware')
 // Routes
@@ -40,6 +41,7 @@ server.use(express.urlencoded({ extended: false }))
 server.use(express.static(join(rootPath, 'public')))
 server.use('/', express.static(join(rootPath, 'public', 'root')))
 server.use(exceptRoute(urls.api.prefix, authMiddleware))
+csrfMiddleware && server.use(exceptRoute(urls.api.prefix, csrfMiddleware))
 customServer.middleware && customServer.middleware(server)
 server.use(logMiddleware())
 

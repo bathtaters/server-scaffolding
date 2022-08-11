@@ -31,6 +31,9 @@ block content
 
       block form
 
+      if csrfToken
+        span: +formInput('_csrf', 'hidden', null, csrfToken)
+
       +buttonRow(buttons, { Search: 'primary', Add: 'tertiary', Update: 'tertiary', Remove: 'secondary', Reset: 'secondary' }, submitURLs)
   
   if canRead

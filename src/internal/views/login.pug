@@ -26,6 +26,9 @@ block content
               required=true minLength=limits.password.min maxLength=limits.password.max
             )
             button.toggle-password.small(type="button")
+          
+          if csrfToken
+            span: input.hidden(type="hidden" name="_csrf" id="_csrf" value=csrfToken)
 
           .button-group
             input.primary(type="submit" value=(isUser ? "Login" : "Create"))

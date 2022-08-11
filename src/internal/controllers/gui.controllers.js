@@ -44,6 +44,7 @@ exports.modelDb = (Model, { view = 'dbModel', partialMatch = true, overrideDbPar
         buttons: labelsByAccess([canRead ? 'read' : 'X', canWrite ? 'write' : 'X']),
         user: req.user && req.user.username,
         isAdmin:  req.user && hasAccess(req.user.access, access.admin),
+        csrfToken: req.csrfToken && req.csrfToken(),
         canRead, canWrite,
       })
     }).catch(next),
@@ -59,6 +60,7 @@ exports.modelDb = (Model, { view = 'dbModel', partialMatch = true, overrideDbPar
         buttons: labelsByAccess([canRead ? 'read' : 'X', canWrite ? 'write' : 'X']),
         user: req.user && req.user.username,
         isAdmin: req.user && hasAccess(req.user.access, access.admin),
+        csrfToken: req.csrfToken && req.csrfToken(),
         canRead, canWrite,
       })
     }).catch(next),
@@ -82,4 +84,5 @@ exports.userProfile = (req, res, next) => !req.user ? next(errors.noData('user')
     user: req.user.username,
     userData: guiAdapter(req.user),
     isAdmin: hasAccess(req.user.access, access.admin),
+    csrfToken: req.csrfToken && req.csrfToken(),
   })

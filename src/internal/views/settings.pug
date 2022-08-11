@@ -18,6 +18,8 @@ block content
           .col-sm
             each input, key in formCol
               +formInput(key, input.type, input.limits, settings[key], key, '', tooltips[key], input.readonly)
+        if csrfToken
+          span: +formInput('_csrf', 'hidden', null, csrfToken)
           
       .center
         br
