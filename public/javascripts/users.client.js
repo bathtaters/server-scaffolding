@@ -139,18 +139,21 @@ $( '#_actionRegen' ).on('click', function() {
 
   var sendData = {};
   sendData[idElem.attr('id')] = idVal;
+  sendData['_csrf'] = $( '#_csrf' ).val();
 
   $.ajax({
     type:    "POST",
     url:     $(this).attr('formaction'),
     data:    sendData,
     success: function(data) {
-        if (!data.success) { window.alert('Error regenerating API ID: '+(data.error || 'Unknown error')); }
+        if (!data.success) { window.alert('Error regenerating API ID: '+((data.error && data.error.message) || data.error || 'Unknown error')); }
         else { window.location.reload(); }
       },
     error:   function(jqXHR, textStatus, errorThrown) {
         window.alert("Error regenerating API ID!\n" + (
-          (jqXHR.responseJSON && jqXHR.responseJSON.error) || errorThrown + " [" + textStatus + "]"
+          (jqXHR.responseJSON && jqXHR.responseJSON.error && 
+            (jqXHR.responseJSON.error.message || jqXHR.responseJSON.error)
+          ) || errorThrown + " [" + textStatus + "]"
         ));
     }
   });

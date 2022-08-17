@@ -113,18 +113,21 @@ $( '#_actionSwap' ).on('click', function() {
   var idVal = idElem.val();
   if (!idVal || !sendData.swap) { return window.alert('Must enter Main ID & Swap IDs to swap.'); }
   sendData[idElem.attr('id')] = idVal;
+  sendData['_csrf'] = $( '#_csrf' ).val();
 
   $.ajax({
     type:    "POST",
     url:     $(this).attr('formaction'),
     data:    sendData,
     success: function(data) {
-      if (!data.success) { window.alert('Error performing swap: '+(data.error || 'Unknown error')); }
+      if (!data.success) { window.alert('Error performing swap: '+((data.error && data.error.message) || data.error || 'Unknown error')); }
       window.location.reload();
     },
     error:   function(jqXHR, textStatus, errorThrown) {
       window.alert("Error performing swap!\n" + (
-        (jqXHR.responseJSON && jqXHR.responseJSON.error) || errorThrown + " [" + textStatus + "]"
+        (jqXHR.responseJSON && jqXHR.responseJSON.error && 
+          (jqXHR.responseJSON.error.message || jqXHR.responseJSON.error)
+        ) || errorThrown + " [" + textStatus + "]"
       ));
       window.location.reload();
     }
