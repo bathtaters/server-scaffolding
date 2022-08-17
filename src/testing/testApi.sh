@@ -2,7 +2,7 @@
 # Uses cURL
 
 # Use predefined vars, any blank vars will be asked for before each test
-test_protocol="http"      # http/https
+test_protocol="https"     # http/https
 test_domain="localhost"   # Set IP/domain
 test_port=""              # Set PORT
 test_token=""             # Auth token
@@ -10,7 +10,9 @@ test_access="rw"          # Expected token access
 test_path="api/base"      # URL path to test
 test_key="data"           # Data key @ test_path to test setting/changing
 
-
+# Additional options (These can only be set here)
+test_SSL=0                # Test TLS/SSL certificate's authenticity (Set to 0 for self-signed cert, ie. for dev enviroment)
+id_key="id"               # ID key for test model (Should normally be "id")
 
 runTests() {
   # callApi(): callApi [description] [GET|POST|PULL|DELETE|etc] [url-suffix] [request.body] [response should include]
@@ -41,11 +43,26 @@ runTests() {
   # CHECK UPDATE -- not read/write = skips
   [[ "$test_access" == "rw" ]] && callApi "Check update" "GET" "$id" "" "\"${test_key}\":\"${val2}\""
 
+  # CREATE SWAP -- readonly = fails (NO id/entry)
+  [[ "$test_access" == *"w"* ]] && callApi "Create swap entry" "POST" "" "{\"${test_key}\":\"${val1}\"}" "\"${id_key}\":"
+  local swap=$([[ "$test_res" != *"\"error\":"* ]] && getVal "$test_res" || echo "")
+
+  # SWAP -- readonly = fails
+  [[ "$test_access" == *"w"* ]] && callApi "Swap entries" "POST" "swap" "{\"${id_key}\":\"${id}\",\"swap\":\"${swap}\"}" "$update_res"
+
+  # CHECK SWAP -- not read/write = skips
+  [[ "$test_access" == "rw" ]] && callApi "Check swap [$id]" "GET" "$id" "" "\"${test_key}\":\"${val1}\""
+  [[ "$test_access" == "rw" ]] && callApi "Check swap [$swap]" "GET" "$swap" "" "\"${test_key}\":\"${val2}\""
+
+  # DELETE SWAP -- readonly = fails
+  [[ "$test_access" == *"w"* ]] && callApi "Delete swap" "DELETE" "$swap" "" "$update_res"
+
   # DELETE -- readonly = fails
   [[ "$test_access" == *"w"* ]] && callApi "Delete entry" "DELETE" "$id" "" "$update_res"
 
-  # CHECK DELETE -- not read/write = skips
-  [[ "$test_access" == "rw" ]] && callApi "Check delete" "GET" "$id" "" "\"error\":"
+  # CHECK DELETES -- not read/write = skips
+  [[ "$test_access" == "rw" ]] && callApi "Check delete [$id]" "GET" "$id" "" "\"error\":"
+  [[ "$test_access" == "rw" ]] && callApi "Check delete [$swap]" "GET" "$swap" "" "\"error\":"
 
   echo "Successfully completed all tests."
   return 0
@@ -60,11 +77,13 @@ callApi() {
   local body="$4"   # JSON data to send
   local res="$5"    # RES should include (Otherwise fails if RES is blank or includes ERROR)
 
+  local insecure=""
+  [[ $test_SSL = 0 ]] && insecure="-k "
   [ -z "${id}" ] && id=""
   [ -z "${body}" ] && body="{}"
 
   echo "$desc..."
-  test_res=$(curl -d "$body" -H "Content-Type: application/json" -H "$test_token" -X "$req" "$test_url/$id")
+  test_res=$(curl $insecure-d "$body" -H "Content-Type: application/json" -H "$test_token" -X "$req" "$test_url/$id")
 
   local fail=false
   [[ -z "${test_res}" ]] && fail=true # result is not empty
