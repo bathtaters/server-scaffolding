@@ -6,7 +6,7 @@ const {
   getModelsString, modelsArrayToObj, modelAccessToInts
 } = require('../utils/users.utils')
 const { generateToken, encodePassword } = require('../utils/auth.utils')
-const { access, searchableKeys } = require('../config/users.cfg')
+const { access } = require('../config/users.cfg')
 const { adapterKey } = require('../config/models.cfg')
 const errors = require('../config/errors.internal')
 
@@ -65,8 +65,6 @@ exports.guiAdapter = (user) => {
   return user
 }
 
-exports.preValidateAdapter = (formData, isSearch) => (isSearch && stripNonSearchProps(formData)) || formData
-
 exports.adminFormAdapter = (formData, _, action) => {
   if ('models' in formData) formData.models = modelsArrayToObj(formData.models)
   return confirmPassword(formData, action)
@@ -87,11 +85,4 @@ function confirmPassword(formData, action) {
 
   delete formData.confirm
   return formData
-}
-
-const keepProps = [ ...searchableKeys, '_action', '_pageData', '_searchMode' ]
-function stripNonSearchProps(formData) {
-  Object.keys(formData).forEach((key) => {
-    if (!keepProps.includes(key)) delete formData[key]
-  })
 }

@@ -1,7 +1,7 @@
 const logErrSpy = jest.spyOn(require('../../libs/log'), 'error')
 const {
   initAdapters, addAdapter, guiAdapter,
-  preValidateAdapter, adminFormAdapter, userFormAdapter
+  adminFormAdapter, userFormAdapter
 } = require('../../services/users.services')
 const {
   modelAccessToInts, accessInt, 
@@ -165,21 +165,6 @@ describe('User guiAdapter', () => {
     expect(guiAdapter(testObj).hadError).toBeTruthy()
     expect(logErrSpy).toBeCalledTimes(1)
     expect(logErrSpy).toBeCalledWith('TEST ERROR')
-  })
-})
-
-describe('User pre-validateAdapter', () => {
-  beforeEach(() => { testObj = {
-    models: 'a,b,c',
-    access: '1,2,3',
-    searchA: 'keep only this',
-    searchB: 'and this',
-  } })
-
-  it('search removes non-searchable keys in users.cfg', () => {
-    expect(preValidateAdapter(testObj, true)).toEqual({
-      searchA: 'keep only this', searchB: 'and this',
-    })
   })
 })
 
