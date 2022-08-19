@@ -1,3 +1,4 @@
+const { matchedData } = require('express-validator')
 const Users = require('../models/Users')
 const { modelDb } = require('./gui.controllers')
 const { access, tableFields, tooltips, allModelsKey, models } = require('../config/users.cfg')
@@ -52,14 +53,17 @@ exports.logList = (req, res, next) => logList().then((logs) =>
   })
 ).catch(next)
 
-exports.logView = (req, res, next) => logFile(req.params.filename).then(({ log, prev, next }) => 
-  res.render('logView', {
-    title: req.params.filename,
-    log, prev, next,
-    colors, maxLogLine, trimLogMessage,
-    levels: getAllLevels(log),
-    baseURL: logBaseURL + '/',
-    user: req.user && req.user.username,
-    isAdmin: req.user && hasAccess(req.user.access, access.admin),
-  })
-).catch(next)
+exports.logView = (req, res, next) => {
+  const title = matchedData(req).filename
+  return logFile(title).then(({ log, prev, next }) => 
+    res.render('logView', {
+      title,
+      log, prev, next,
+      colors, maxLogLine, trimLogMessage,
+      levels: getAllLevels(log),
+      baseURL: logBaseURL + '/',
+      user: req.user && req.user.username,
+      isAdmin: req.user && hasAccess(req.user.access, access.admin),
+    })
+  ).catch(next)
+}

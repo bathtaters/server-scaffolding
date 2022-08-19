@@ -1,39 +1,45 @@
+const { matchedData } = require('express-validator')
 const errors = require('../config/errors.internal')
 const { getMatchingKey } = require('../utils/common.utils')
 
 exports.create = (Model) => function (req,res,next) {
-  if (!req.body || !Object.keys(req.body).length) return next(errors.noData())
-  return Model.add(req.body).then((id) => res.send({ [Model.primaryId]: id })).catch(next)
+  const data = matchedData(req)
+  if (!data || !Object.keys(data).length) return next(errors.noData())
+  return Model.add(data).then((id) => res.send({ [Model.primaryId]: id })).catch(next)
 }
 
 exports.read = (Model) => function (req,res,next) {
-  return Model.get(req.params[Model.primaryId]).then((data) =>
-    data ? res.send(data) : next(errors.noEntry(req.params[Model.primaryId] || '[All]'))
+  const id = matchedData(req)[Model.primaryId]
+  return Model.get(id).then((data) =>
+    data ? res.send(data) : next(errors.noEntry(id || '[All]'))
   ).catch(next)
 }
 
 exports.update = (Model) => async function (req,res,next) {
-  if (req.params[Model.primaryId] == null) return next(errors.noID())
-  if (!req.body || !Object.keys(req.body).length) return next(errors.noData())
+  const data = matchedData(req)
+  if (data[Model.primaryId] == null) return next(errors.noID())
+  if (!data || !Object.keys(data).length) return next(errors.noData())
   
-  const entry = await Model.get(req.params[Model.primaryId]).catch(next)
-  if (!entry || !entry[Model.primaryId]) return next(errors.noEntry(req.params[Model.primaryId]))
+  const entry = await Model.get(data[Model.primaryId]).catch(next)
+  if (!entry || !entry[Model.primaryId]) return next(errors.noEntry(data[Model.primaryId]))
 
-  return Model.update(entry[Model.primaryId], req.body).then(() => res.send({ success: true })).catch(next)
+  return Model.update(entry[Model.primaryId], data).then(() => res.send({ success: true })).catch(next)
 }
 
 exports.delete = (Model) => async function (req,res,next) {
-  if (req.params[Model.primaryId] == null) return next(errors.noID())
+  const id = matchedData(req)[Model.primaryId]
+  if (id == null) return next(errors.noID())
 
-  const entry = await Model.get(req.params[Model.primaryId]).catch(next)
-  if (!entry || !entry[Model.primaryId]) return next(errors.noEntry(req.params[Model.primaryId]))
+  const entry = await Model.get(id).catch(next)
+  if (!entry || !entry[Model.primaryId]) return next(errors.noEntry(id))
 
-  return Model.remove(req.params[Model.primaryId]).then(() => res.send({ success: true })).catch(next)
+  return Model.remove(id).then(() => res.send({ success: true })).catch(next)
 }
 
 const TEMP_ID = -0xFF
 exports.swap = (Model) => async function (req,res,next) {
-  const idA = req.body[getMatchingKey(req.body, Model.primaryId)], idB = req.body.swap
+  const data = matchedData(req)
+  const idA = data[getMatchingKey(data, Model.primaryId)], idB = data.swap
   if (idA == null || idB == null) return next(errors.noID())
   
   try {

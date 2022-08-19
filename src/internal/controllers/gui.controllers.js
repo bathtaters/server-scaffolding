@@ -1,3 +1,4 @@
+const { matchedData } = require('express-validator')
 const Users = require('../models/Users')
 const { getTableFields, varName, formatGuiData } = require('../utils/gui.utils')
 const { access, tableFields, tooltips } = require('../config/users.cfg')
@@ -31,7 +32,7 @@ exports.modelDb = (Model, { view = 'dbModel', partialMatch = true, overrideDbPar
   }
 
   return {
-    model: (req, res, next) => Model.getPaginationData(req.query, pageOptions).then(({ data, ...pageData}) => {
+    model: (req, res, next) => Model.getPaginationData(matchedData(req), pageOptions).then(({ data, ...pageData}) => {
       const canRead  = req.user && hasModelAccess(req.user.models, Model.title, 'read')
       const canWrite = req.user && hasModelAccess(req.user.models, Model.title, 'write')
 
@@ -47,14 +48,14 @@ exports.modelDb = (Model, { view = 'dbModel', partialMatch = true, overrideDbPar
       })
     }).catch(next),
 
-    find: (req, res, next) => Model.find(req.query, partialMatch).then((data) => {
+    find: (req, res, next) => Model.find(matchedData(req), partialMatch).then((data) => {
       const canRead  = req.user && hasModelAccess(req.user.models, Model.title, 'read')
       const canWrite = req.user && hasModelAccess(req.user.models, Model.title, 'write')
 
       return res.render(view, {
         ...staticDbParams,
         data: formatData(data, req.user),
-        searchData: formatData(req.query, req.user, actions.find),
+        searchData: formatData(matchedData(req), req.user, actions.find),
         buttons: labelsByAccess([canRead ? 'read' : 'X', canWrite ? 'write' : 'X']),
         user: req.user && req.user.username,
         isAdmin: req.user && hasAccess(req.user.access, access.admin),

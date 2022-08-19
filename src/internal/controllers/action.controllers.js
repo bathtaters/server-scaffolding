@@ -1,3 +1,4 @@
+const { matchedData } = require('express-validator')
 const Users = require('../models/Users')
 const { adminFormAdapter, userFormAdapter } = require('../services/users.services')
 const modelActions = require('../services/form.services')
@@ -17,7 +18,7 @@ exports.logout = logout(urls.root.login)
 
 exports.swap = require('./api.controllers').swap
 
-exports.regenToken = (req,res,next) => Users.regenToken(req.body[Users.primaryId]).then((r) => res.send(r)).catch(next)
+exports.regenToken = (req,res,next) => Users.regenToken(matchedData(req)[Users.primaryId]).then((r) => res.send(r)).catch(next)
 
 exports.form = function getFormController(Model, { redirectURL = '', formatData = (data) => data } = {}) {
   const formActions = modelActions(Model)
@@ -26,7 +27,7 @@ exports.form = function getFormController(Model, { redirectURL = '', formatData 
   , {})
 
   return (action) => (req,res,next) => {
-    let { _action, _pageData, _searchMode, _csrf, ...formData } = filterFormData(req.body, action === actions.find ? {} : boolBase)
+    let { _action, _pageData, _searchMode, _csrf, ...formData } = filterFormData(matchedData(req), action === actions.find ? {} : boolBase)
     
     try {
       formData = formatData(formData, req.user, action) || formData
@@ -61,7 +62,7 @@ const restartParams = (req) => ({
 })
 
 exports.settingsForm = (req,res,next) => {
-  let { _action, _pageData, ...settings } = req.body
+  let { _action, _pageData, ...settings } = matchedData(req)
   if (!_action || !Object.keys(settingsActions).includes(_action)) return next(errors.badAction(_action))
 
   if (_action.toLowerCase() === 'update' && !settings) return next(errors.noData('settings'))
