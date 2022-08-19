@@ -3,7 +3,7 @@ const logger = require('../libs/log')
 const { now } = require('../libs/date')
 const { checkInjection } = require('../utils/db.utils')
 const { passwordAccess, accessInt, hasAccess } = require('../utils/users.utils')
-const { addAdapter, getAdapter, setAdapter, schemaAdapter } = require('../services/users.services')
+const { addAdapter, initAdapters } = require('../services/users.services')
 const { generateToken, testPassword, isLocked, isPastWindow } = require('../utils/auth.utils')
 const { access, rateLimiter, timestampKeyRegEx, illegalUsername, definitions } = require('../config/users.cfg')
 const { isPm2 } = require('../../config/meta')
@@ -12,9 +12,11 @@ const errors = require('../config/errors.internal')
 
 class Users extends Model {
   constructor() { 
-    super('_users', { ...definitions, sqlSchema: schemaAdapter, getAdapter, setAdapter })
-    this.bitmapFields.push('access')
+    super('_users', definitions)
+    
     this.validTimestamps = Object.keys(this.schema).filter((k) => timestampKeyRegEx.test(k)).map((k) => k.match(timestampKeyRegEx)[1])
+
+    initAdapters(definitions)
   }
 
   async get(id, idKey = null, raw = false, updateTimestamp = null, skipCounter = false) {
@@ -40,7 +42,6 @@ class Users extends Model {
     const newData = addAdapter(data, this.primaryId)
     if ((passwordAccess & accessInt(newData.access)) && !newData.password)
       throw errors.noData('password for GUI access')
-
     return super.add(newData).then(() => newData[this.primaryId])
   }
 
@@ -87,7 +88,6 @@ class Users extends Model {
           logger.info(`Created initial user: ${data.username}`)
           return data
         })
-    
     return super.get(username.toLowerCase(), 'username', true).then(
       testPassword(
         password, accessInt(accessLevel),

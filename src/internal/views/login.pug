@@ -15,7 +15,7 @@ block content
             label(for="username") Username
             input#username(
               type="text" name="username" placeholder="Enter Username" autocomplete="username"
-              required=true minLength=limits.username.min maxLength=limits.username.max
+              required=true minLength=schema.username.limits.min maxLength=schema.username.limits.max
             )
 
           .input-group.fluid
@@ -23,7 +23,7 @@ block content
             input#password(
               type="password" name="password" placeholder="Enter Password" 
               autocomplete=(isUser ? "current-password" : "new-password")
-              required=true minLength=limits.password.min maxLength=limits.password.max
+              required=true minLength=schema.password.limits.min maxLength=schema.password.limits.max
             )
             button.toggle-password.small(type="button")
           

@@ -1,6 +1,6 @@
 const {
-  capitalizeHyphenated, filterDupes, hasDupes, exceptRoute,
-  deepMap, deepEquals, debounce,
+  capitalizeHyphenated, filterDupes, hasDupes, filterByField,
+  exceptRoute, deepMap, deepEquals, debounce,
   getMatchingKey, caseInsensitiveObject, splitUnenclosed
 } = require('../../utils/common.utils')
 
@@ -34,6 +34,25 @@ describe('hasDupes', () => {
   it('true', () => {
     expect(hasDupes([1, 2, 3, 2, 1, 4, 4])).toBe(true)
     expect(hasDupes(['t', 'T', 't', 'test', 'T'])).toBe(true)
+  })
+})
+
+describe('filterByField', () => {
+  it('returns "field" for each key', () => {
+    expect(filterByField({
+      test: { a: 1, b: 2, c: 3 },
+      data: { a: 4, b: 5, c: 6 },
+      key:  { a: 7, b: 8, c: 9 },
+    }, 'b')).toEqual({
+      test: 2, data: 5, key: 8
+    })
+  })
+  it('skips nullish values', () => {
+    expect(filterByField({
+      test: { a: 1, b: null, c: 3 },
+      data: { a: 4, b: undefined, c: 6 },
+      key:  { a: 7, c: 9 },
+    }, 'b')).toEqual({})
   })
 })
 

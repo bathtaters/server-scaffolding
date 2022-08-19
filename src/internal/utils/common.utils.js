@@ -10,6 +10,11 @@ exports.filterDupes = (arr) => arr.filter((val, idx) => !arr.slice(0,idx).includ
 // Check if array has any duplicate values
 exports.hasDupes = (array) => array.some((val, idx) => array.slice(0, idx).includes(val))
 
+// Assigns inner prop in object of objects to each outer key
+exports.filterByField = (obj, field) => Object.entries(obj).reduce(
+  (res, [key, val]) => val[field] == null ? res : Object.assign(res, { [key]: val[field] })
+, {})
+
 // Get all routes except given route
 exports.exceptRoute = (skipPath, middleware) => Array.isArray(middleware) ? middleware.map((mw) => exports.exceptRoute(skipPath,mw)) :
   (req,res,next) => RegEx(`^${skipPath}`,'i').test(req.path) ? next() : middleware(req,res,next)

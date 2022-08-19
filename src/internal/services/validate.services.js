@@ -1,40 +1,42 @@
 const logger = require('../libs/log')
 const { errorMsgs, dateOptions, ignoreDisableMin } = require("../config/validate.cfg")
-const { parseTypeStr, isBoolean, parseBoolean } = require('../utils/validate.utils')
+const { isBoolean, parseBoolean } = require('../utils/validate.utils')
+const { parseTypeStr } = require('../utils/model.utils')
 
 // Obscure 'min' field (For allowing partial validation on searches) from limit
 const hidingMin = ({ min, ...other }) => other
 
 // Generate Validation Schema object based on typeString/limits/etc (exported to simplify testing)
-exports.toValidationSchema = function toValidationSchema(key, typeStr, limits, isIn, forceOptional = false, disableMin = false) {
+exports.toValidationSchema = function toValidationSchema(
+  key, { typeStr, type, isOptional, isArray, hasSpaces, limits }, isIn, forceOptional = false, disableMin = false
+) {
   if (!isIn || !isIn.length) throw new Error(errorMsgs.missingIn(key))
 
   // Get type from typeStr
-  const type = parseTypeStr(typeStr)
-  if (!type.type) throw new Error(errorMsgs.missing(key, typeStr))
-  if (forceOptional && !type.isOptional) type.isOptional = 'force'
-  if (type.hasSpaces && type.type !== 'string') logger.warn(`* is ignored w/ non-string type: ${type.string}`)
+  if (!type) throw new Error(errorMsgs.missing(key, typeStr))
+  if (forceOptional && !isOptional) isOptional = 'force'
+  if (hasSpaces && type !== 'string') logger.warn(`* is ignored w/ non-string type: ${typeStr}`)
 
   // Initialize ptr & static values (errMsg/in)
   let valid = { [key]: {} }
   let ptr = valid[key]
-  ptr.errorMessage = errorMsgs.type(type.string)
+  ptr.errorMessage = errorMsgs.type(typeStr)
   ptr.in = isIn
 
   // Add validation for optionals/non-optionals
-  if (type.isOptional) {
-    ptr.optional = { options: { nullable: true, checkFalsy: type.type !== 'boolean' } }
+  if (isOptional) {
+    ptr.optional = { options: { nullable: true, checkFalsy: type !== 'boolean' } }
   } else {
     ptr.exists = { errorMessage: errorMsgs.exists() }
     
     // Skip validation of empty strings (only if empty strings are allowed)
-    if (type.type === 'string' && (!limits || (!limits.min && !limits.elem) || ((limits.elem || limits).min === 0))) {
+    if (type === 'string' && (!limits || (!limits.min && !limits.elem) || ((limits.elem || limits).min === 0))) {
       ptr.optional = { options: { checkFalsy: true } }
     }
   }
 
   // Handle validation for array elements
-  if (type.isArray) {
+  if (isArray) {
     // Set limits
     let arrLimit
     if (limits && (limits.array || limits.elem)) {
@@ -47,29 +49,29 @@ exports.toValidationSchema = function toValidationSchema(key, typeStr, limits, i
     ptr.isArray = arrLimit ?
       { options: arrLimit, errorMessage: errorMsgs.limit(arrLimit, 'array') } :
       { errorMessage: errorMsgs.array() }
-    ptr.toArray = type.isOptional
+    ptr.toArray = isOptional
     
     // Create entry & update ptr
     valid[key+'.*'] = {}
     ptr = valid[key+'.*']
 
     // Set statics for new entry
-    ptr.errorMessage = errorMsgs.type(type.type)
+    ptr.errorMessage = errorMsgs.type(type)
     ptr.in = isIn
   }
 
   // Pass limits as options
   if (limits && (limits.array || limits.elem)) limits = limits.elem
   if (limits) {
-    if (disableMin && !ignoreDisableMin.includes(type.type)) limits = hidingMin(limits) // Remove minimum
-    limits = { options: limits, errorMessage: errorMsgs.limit(limits, type.type) }
+    if (disableMin && !ignoreDisableMin.includes(type)) limits = hidingMin(limits) // Remove minimum
+    limits = { options: limits, errorMessage: errorMsgs.limit(limits, type) }
   }
 
   // Set type-specific validators/sanitizers
-  switch (type.type) {
+  switch (type) {
     case 'b64': 
     case 'b64url': // pass to string
-      ptr.isBase64 = { options: { urlSafe: type.type === 'b64url' }, errorMessage: errorMsgs.b64() }
+      ptr.isBase64 = { options: { urlSafe: type === 'b64url' }, errorMessage: errorMsgs.b64() }
     case 'uuid': // pass to string
       if (!ptr.isBase64)
         ptr.isUUID = { options: 4, errorMessage: errorMsgs.uuid() }
@@ -79,7 +81,7 @@ exports.toValidationSchema = function toValidationSchema(key, typeStr, limits, i
     case 'string':
       ptr.isString = { errorMessage: errorMsgs.string() }
       if (limits) ptr.isLength = limits
-      if (!type.hasSpaces) { 
+      if (!hasSpaces) { 
         ptr.stripLow = true
         ptr.trim = true
       }
@@ -115,9 +117,9 @@ exports.toValidationSchema = function toValidationSchema(key, typeStr, limits, i
 
 // Generate schema object based on Types + Limits objects
 const IGNORE_OPTIONAL = Object.freeze(['params'])
-exports.generateSchema = (name, typeStr, limits, isIn = ['params'], forceOptionalFields = false, disableMin = false) =>
+exports.generateSchema = (name, data, isIn = ['params'], forceOptionalFields = false, disableMin = false) =>
   exports.toValidationSchema(
-    name, typeStr, limits, isIn,
+    name, data, isIn,
     forceOptionalFields && !isIn.some((key) => IGNORE_OPTIONAL.includes(key)),
     disableMin
   )
@@ -125,16 +127,20 @@ exports.generateSchema = (name, typeStr, limits, isIn = ['params'], forceOptiona
 
 // Add additional validation to schema (overwrites matching keys)
 exports.appendToSchema = function appendToSchema(schema = {}, additional = []) {
-  additional.forEach(({ key, typeStr, isIn, limits }) => {
+  additional.forEach((data) => {
     // Check 'isIn' value
-    if (!isIn) return logger.warn(`Missing "isIn" for key "${key}" from additional validator`)
-    if (!Array.isArray(isIn)) isIn = [isIn]
+    if (!data.isIn) return logger.warn(`Missing "isIn" for key "${data.key}" from additional validator`)
+    if (!Array.isArray(data.isIn)) data.isIn = [data.isIn]
 
     // If key already exists, just add missing 'in' values
-    if (key in schema) return isIn.forEach((entry) => schema[key].in.includes(entry) || schema[key].in.push(entry))
+    if (data.key in schema)
+      return data.isIn.forEach((entry) => schema[data.key].in.includes(entry) || schema[data.key].in.push(entry))
 
     // Append to schema
-    Object.entries(exports.toValidationSchema(key, typeStr, limits, isIn)).forEach(([key,val]) => schema[key] = val)
+    parseTypeStr(data)
+    Object.entries(
+      exports.toValidationSchema(data.key, data, data.isIn)
+    ).forEach(([key,val]) => schema[key] = val)
   })
   return schema
 }

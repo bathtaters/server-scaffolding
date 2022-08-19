@@ -3,17 +3,18 @@ extends components/modelBase
 block form
   .row
     .col-sm#primary-key
-      +formInput(idKey, canWrite && !canRead ? 'id' : 'readonly', limits[idKey], defaults[idKey], tableFields[idKey], 'button-group')
+      +formInput(idKey, canWrite && !canRead ? 'id' : 'readonly', schema[idKey].limits, schema[idKey].default, tableFields[idKey], 'button-group')
     if canWrite
       .col-sm
-        +buttonInput('swapId', 'id', 'Swap', limits[idKey], defaults[idKey], regenURL)
+        +buttonInput('swapId', 'id', 'Swap', schema[idKey].limits, schema[idKey].default, regenURL)
     if !searchData
       +pageData(page, size)
 
   .row
     each val, key in schema
-      .col-sm
-        +formInput(key, val, limits[key], searchData ? searchData[key] : defaults[key], tableFields[key])
+      if val.html
+        .col-sm
+          +formInput(key, val.html, val.limits, searchData ? searchData[key] : val.default, tableFields[key])
 
 
 block table

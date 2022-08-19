@@ -1,6 +1,5 @@
 const { actions } = require('../../../config/gui.cfg')
 const { profileLabels, actionAccess, labelsByAccess, actionURLs, filterFormData, toQueryString } = require('../../utils/form.utils')
-jest.mock('../../utils/validate.utils', () => ({ parseBoolean: () => () => 'parsed' }))
 
 describe('profileLabels', () => {
   it('is string array', () => {
@@ -64,11 +63,11 @@ describe('filterFormData', () => {
     expect(filterFormData({ a: 1, b: '', c: 3 })).toEqual({ a: 1, c: 3 })
     expect(filterFormData({ a: 1, b: 2, c: '', d: '' })).toEqual({ a: 1, b: 2 })
   })
-  it('force includes boolFields', () => {
-    expect(filterFormData({ a: 1 }, ['b','c'])).toEqual({ a: 1, b: false, c: false })
+  it('force includes baseObject', () => {
+    expect(filterFormData({ a: 1 }, { b: 2, c: 3 })).toEqual({ a: 1, b: 2, c: 3 })
   })
-  it('runs boolFields through parseBool', () => {
-    expect(filterFormData({ a: 1, b: 0, c: true }, ['b','c','d']))
+  it('runs baseObject fields through parseBool', () => {
+    expect(filterFormData({ a: 1, b: 0, c: true }, { b: 2, c: 3, d: 4 }))
       .toMatchObject({ a: 1, b: 'parsed', c: 'parsed', })
   })
   it('allows custom filter', () => {
@@ -111,3 +110,9 @@ describe('toQueryString', () => {
     expect(toQueryString({ a: 1, b: 2, c: '', d: '' })).toBe('?a=1&b=2')
   })
 })
+
+// MOCKS
+jest.mock('../../utils/validate.utils', () => ({
+  parseBoolean: () => () => 'parsed',
+  parseArray: () => () => ['parsedA'],
+}))

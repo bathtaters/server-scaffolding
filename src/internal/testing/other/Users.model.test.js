@@ -1,7 +1,10 @@
 const Users = require('../../models/Users')
 const { rateLimiter, definitions } = require('../../config/users.cfg')
 const { checkInjection } = require('../../utils/db.utils')
+const { adapterKey } = require('../../config/models.cfg')
 const errors = require('../../config/errors.internal')
+
+// *** NOTE: Uses unmocked USER & AUTH utils *** \\
 
 const getUserTime = (id, timePrefix) => Users.get(id).then((data) => data[timePrefix+'Time'] && new Date(data[timePrefix+'Time']).getTime())
 
@@ -10,14 +13,11 @@ describe('test Users model', () => {
   beforeAll(() => Users.isInitialized)
 
   describe('model initialization', () => {
-    it('Uses types/limits/defaults from users.cfg', () => {
-      expect(Users.types).toBe(definitions.types)
-      expect(Users.limits).toBe(definitions.limits)
-      expect(Users.defaults).toBe(definitions.defaults)
+    it('Uses definitions from users.cfg', () => {
+      expect(Users.schema).toBe(definitions)
     })
-    it('Sets up bitmap/bool fields', () => {
-      expect(Users.bitmapFields).toEqual(['access'])
-      expect(Users.boolFields).toEqual(['locked'])
+    it('Sets up adapters', () => {
+      expect(Users.schema.password).toHaveProperty(adapterKey.set, expect.any(Function))
     })
     it('Collects validTimestamps from schema', () => {
       expect(Users.validTimestamps.sort()).toEqual(['gui','api','fail'].sort())
@@ -229,14 +229,14 @@ describe('test Users model', () => {
       expect(await Users.update(userId, { locked: true })).toEqual({ success: true })
       userData = await Users.get(userId)
       expect(userData).toHaveProperty('failCount', 10)
-      expect(userData).toHaveProperty('failTime', expect.any(Number))
-      expect(userData).toHaveProperty('locked', 1)
+      expect(userData).toHaveProperty('failTime', expect.any(Date))
+      expect(userData).toHaveProperty('locked', true)
 
       expect(await Users.incFailCount(userData, { reset: true })).toEqual({ success: true })
       userData = await Users.get(userId)
       expect(userData).toHaveProperty('failCount', 0)
       expect(userData).toHaveProperty('failTime', null)
-      expect(userData).toHaveProperty('locked', 0)
+      expect(userData).toHaveProperty('locked', false)
     })
 
     it('locks if count >= max', async () => {
@@ -246,7 +246,7 @@ describe('test Users model', () => {
       expect(await Users.incFailCount(userData)).toEqual({ success: true })
       userData = await Users.get(userId)
       expect(userData).toHaveProperty('failCount', 10)
-      expect(userData).toHaveProperty('locked', 1)
+      expect(userData).toHaveProperty('locked', true)
     })
 
     it('resets then adds 1 if past window', async () => {
@@ -268,7 +268,7 @@ describe('test Users model', () => {
 
       expect(await Users.incFailCount(userData)).toEqual({ success: true })
       userData = await Users.get(userId)
-      expect(userData).toHaveProperty('locked', 0)
+      expect(userData).toHaveProperty('locked', false)
       expect(userData).toHaveProperty('failCount', 1)
     })
 
@@ -281,7 +281,7 @@ describe('test Users model', () => {
       expect(await Users.incFailCount(userData)).toEqual({ success: true })
       userData = await Users.get(userId)
       expect(userData.failCount).toBeGreaterThanOrEqual(10)
-      expect(userData).toHaveProperty('locked', 1)
+      expect(userData).toHaveProperty('locked', true)
     })
 
     it('calls updateCb and uses result', async () => {
@@ -304,7 +304,7 @@ describe('test Users model', () => {
       userData = await Users.get(userId)
       expect(updateCb).toBeCalledTimes(1)
       expect(updateCb).toBeCalledWith(
-        { failCount: 1, failTime: expect.any(Number), locked: false },
+        { failCount: 1, failTime: expect.any(Number), locked: 0 },
         expect.objectContaining({ id: userData.id })
       )
       expect(userData).toHaveProperty('failCount', 1)
@@ -372,19 +372,19 @@ describe('test Users model', () => {
 
     it('Updating lock sets failTime/failCount', async () => {
       expect(await Users.get(userId)).toMatchObject({
-        locked: 0,
+        locked: false,
         failTime: null,
         failCount: 0,
       })
       expect(await Users.update(userId, { locked: true })).toEqual({ success: true })
       expect(await Users.get(userId)).toMatchObject({
-        locked: 1,
-        failTime: expect.any(Number),
+        locked: true,
+        failTime: expect.any(Date),
         failCount: rateLimiter.maxFails,
       })
       expect(await Users.update(userId, { locked: false })).toEqual({ success: true })
       expect(await Users.get(userId)).toMatchObject({
-        locked: 0,
+        locked: false,
         failTime: null,
         failCount: 0,
       })

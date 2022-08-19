@@ -2,23 +2,24 @@ const Model = require('../internal/models/Model')
 
 /* --- Simple Model --- */
 module.exports = new Model('base', {
-  types: {
-    id: "int",
-    data: "string*",
+  // Layout of Database object
+  id: {
+    // .id is automatically added as int primary key
+    typeStr: "int",
+    isPrimary: true,
+  },
+  data: {
     //  Values: string|uuid|b64(url)|hex|date|datetime|boolean|int|float|object|any
     //  Suffix: [] = array of, ? = optional
     //  string* = allow symbols/spaces
-  },
+    typeStr: "string*",
 
-  limits: {
-    // Array size / Element num/char limits
-    array: { array: { min: 1, max: 10 }, elem: { min: 4, max: 100 } },
-    // Num/Char limits
-    data: { min: 0, max: 1000 },
-  },
+    // Standard Num/Char limits
+    limits: { min: 0, max: 1000 },
+    // Array size / Element num/char limits = { array: { min: 1, max: 10 }, elem: { min: 4, max: 100 } },
 
-  defaults: {
-    data: "DEFAULT VALUE",
+    // Default value (used when adding entry if no value provided)
+    default: "DEFAULT VALUE",
   },
 })
 
@@ -27,9 +28,11 @@ module.exports = new Model('base', {
 class Base extends Model {
   constructor() {
     super('base', {
-      types: { id: "int", data: "string*" },
-      limits: { data: { min: 0, max: 1000 } },
-      defaults: { data: "DEFAULT VALUE" },
+      data: {
+        typeStr: "string*",
+        limits: { min: 0, max: 1000 },
+        default: "DEFAULT VALUE",
+      },
     })
 
     // Additional initialization

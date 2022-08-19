@@ -1,5 +1,5 @@
 const Users = require('../models/Users')
-const { getTableFields, varName, getSchema, getTypes, formatGuiData } = require('../utils/gui.utils')
+const { getTableFields, varName, formatGuiData } = require('../utils/gui.utils')
 const { access, tableFields, tooltips } = require('../config/users.cfg')
 const { guiAdapter } = require('../services/users.services')
 const { hasAccess, hasModelAccess } = require('../utils/users.utils')
@@ -25,10 +25,8 @@ exports.modelDb = (Model, { view = 'dbModel', partialMatch = true, overrideDbPar
     baseURL: `${urls.prefix}${urls.home}/${Model.title}`,
     swapURL: `${urls.prefix}${urls.home}/${Model.title}${urls.swap}`,
     submitURLs: actionURLs(`${urls.prefix}${urls.home}/${Model.title}${urls.form}/`),
-    schema: Model.types ? getTypes(Model.types, Model.primaryId) : getSchema(Model.schema, Model.primaryId, Model.boolFields),
+    schema: Model.schema,
     tableFields: getTableFields(Model.schema, Model.primaryId),
-    limits: Model.limits || {},
-    defaults: Model.defaults || {},
     ...overrideDbParams,
   }
 
@@ -73,8 +71,7 @@ const staticUserParams = {
   tableFields,
   idKey: Users.primaryId,
   buttons: profileLabels,
-  limits: Users.limits || {},
-  defaults: Users.defaults || {},
+  schema: Users.schema,
   regenURL:   `${urls.prefix}${urls.user}${urls.token}`,
   submitURLs: actionURLs(`${urls.prefix}${urls.user}${urls.form}/`),
 }

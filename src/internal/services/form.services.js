@@ -9,7 +9,6 @@ module.exports = (Model) => ({
   // SEARCH
   [actions.find]: async (formData) => {
     if (!formData || !Object.keys(formData).length) return ''
-    Model.boolFields.forEach((key) => { if (!formData[key]) delete formData[key] })
     if (!Object.keys(formData).length) return ''
     return `${searchURL}?${new URLSearchParams(formData).toString()}`
   },

@@ -1,5 +1,5 @@
 const services = require('../../services/validate.services')
-const { parseTypeStr } = require('../../utils/validate.utils')
+const { parseTypeStr } = require('../../utils/model.utils')
 
 
 describe('generateSchema', () => {
@@ -10,14 +10,13 @@ describe('generateSchema', () => {
   
   describe('input vars', () => {
     it('calls toValidationSchema', () => {
-      services.generateSchema('NAME', 'TYPE', 'LIMITS', 'isIn', false, false)
+      services.generateSchema('NAME', 'DATA', ['isIn'], false, false)
       expect(schemaSpy).toBeCalledTimes(1)
     })
     it('passes key', () => {
-      services.generateSchema('NAME', 'TYPE', 'LIMITS', 'isIn', false, false)
+      services.generateSchema('NAME', 'DATA', ['isIn'], false, false)
       expect(schemaSpy).toBeCalledWith(
         'NAME',
-        expect.anything(),
         expect.anything(),
         expect.anything(),
         expect.anything(),
@@ -25,42 +24,28 @@ describe('generateSchema', () => {
       )
     })
     it('passes typeStr', () => {
-      services.generateSchema('NAME', 'TYPE', 'LIMITS', 'isIn', false, false)
+      services.generateSchema('NAME', 'DATA', ['isIn'], false, false)
       expect(schemaSpy).toBeCalledWith(
         expect.anything(),
-        'TYPE',
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-      )
-    })
-    it('passes limits', () => {
-      services.generateSchema('NAME', 'TYPE', 'LIMITS', 'isIn', false, false)
-      expect(schemaSpy).toBeCalledWith(
-        expect.anything(),
-        expect.anything(),
-        'LIMITS',
+        'DATA',
         expect.anything(),
         expect.anything(),
         expect.anything(),
       )
     })
     it('passes isIn', () => {
-      services.generateSchema('NAME', 'TYPE', 'LIMITS', 'isIn', false, false)
+      services.generateSchema('NAME', 'DATA', ['isIn'], false, false)
       expect(schemaSpy).toBeCalledWith(
         expect.anything(),
         expect.anything(),
-        expect.anything(),
-        'isIn',
+        ['isIn'],
         expect.anything(),
         expect.anything(),
       )
     })
     it('passes falsy optional', () => {
-      services.generateSchema('NAME', 'TYPE', 'LIMITS', 'isIn', 0, false)
+      services.generateSchema('NAME', 'DATA', ['isIn'], 0, false)
       expect(schemaSpy).toBeCalledWith(
-        expect.anything(),
         expect.anything(),
         expect.anything(),
         expect.anything(),
@@ -69,9 +54,8 @@ describe('generateSchema', () => {
       )
     })
     it('passes disableMin', () => {
-      services.generateSchema('NAME', 'TYPE', 'LIMITS', 'isIn', false, 'noMin')
+      services.generateSchema('NAME', 'DATA', ['isIn'], false, 'noMin')
       expect(schemaSpy).toBeCalledWith(
-        expect.anything(),
         expect.anything(),
         expect.anything(),
         expect.anything(),
@@ -83,9 +67,8 @@ describe('generateSchema', () => {
 
   describe('optional = true', () => {
     it('isIn is not "body"', () => {
-      services.generateSchema('NAME', 'TYPE', 'LIMITS', ['body'], true, false)
+      services.generateSchema('NAME', 'DATA', ['body'], true, false)
       expect(schemaSpy).toBeCalledWith(
-        expect.anything(),
         expect.anything(),
         expect.anything(),
         expect.anything(),
@@ -94,9 +77,8 @@ describe('generateSchema', () => {
       )
     })
     it('isIn is "query"', () => {
-      services.generateSchema('NAME', 'TYPE', 'LIMITS', ['query'], true, false)
+      services.generateSchema('NAME', 'DATA', ['query'], true, false)
       expect(schemaSpy).toBeCalledWith(
-        expect.anything(),
         expect.anything(),
         expect.anything(),
         expect.anything(),
@@ -105,9 +87,8 @@ describe('generateSchema', () => {
       )
     })
     it('isIn is "body" + "query"', () => {
-      services.generateSchema('NAME', 'TYPE', 'LIMITS', ['body','query'], true, false)
+      services.generateSchema('NAME', 'DATA', ['body','query'], true, false)
       expect(schemaSpy).toBeCalledWith(
-        expect.anything(),
         expect.anything(),
         expect.anything(),
         expect.anything(),
@@ -116,9 +97,8 @@ describe('generateSchema', () => {
       )
     })
     it('isIn is "params"', () => {
-      services.generateSchema('NAME', 'TYPE', 'LIMITS', ['params'], true, false)
+      services.generateSchema('NAME', 'DATA', ['params'], true, false)
       expect(schemaSpy).toBeCalledWith(
-        expect.anything(),
         expect.anything(),
         expect.anything(),
         expect.anything(),
@@ -132,7 +112,7 @@ describe('generateSchema', () => {
 
 describe('appendToSchema', () => {
   const schemaSpy = jest.spyOn(services, 'toValidationSchema')
-  beforeAll(() => { schemaSpy.mockImplementation((key,t,l,isIn) => ({ [key]: { in: isIn } })) })
+  beforeAll(() => { schemaSpy.mockImplementation((key,d,isIn) => ({ [key]: { in: isIn } })) })
   afterAll(() => { schemaSpy.mockRestore() })
   
   let schema, addit
@@ -147,13 +127,19 @@ describe('appendToSchema', () => {
   it('runs each entry through toValidationSchema', () => {
     services.appendToSchema(schema, addit)
     expect(schemaSpy).toBeCalledTimes(2)
-    expect(schemaSpy).toBeCalledWith('c',expect.anything(),expect.anything(),expect.anything())
-    expect(schemaSpy).toBeCalledWith('d',expect.anything(),expect.anything(),expect.anything())
+    expect(schemaSpy).toBeCalledWith('c',expect.anything(),expect.anything())
+    expect(schemaSpy).toBeCalledWith('d',expect.anything(),expect.anything())
+  })
+  it('runs each entry through parseTypeStr', () => {
+    services.appendToSchema(schema, addit)
+    expect(parseTypeStr).toBeCalledTimes(2)
+    expect(parseTypeStr).toBeCalledWith(addit[0])
+    expect(parseTypeStr).toBeCalledWith(addit[1])
   })
   it('passes entry options to toValidationSchema', () => {
     services.appendToSchema(schema, addit)
-    expect(schemaSpy).toBeCalledWith('c', 'TYPE_C', 'LIMS_C', ['inC'])
-    expect(schemaSpy).toBeCalledWith('d', 'TYPE_D', '', ['inC','inD'])
+    expect(schemaSpy).toBeCalledWith('c', addit[0], ['inC'])
+    expect(schemaSpy).toBeCalledWith('d', addit[1], ['inC','inD'])
   })
   it('adds each toValidationSchema result to schema by key', () => {
     expect(services.appendToSchema(schema, addit)).toEqual({
@@ -171,7 +157,7 @@ describe('appendToSchema', () => {
       c: expect.anything(),
     })
     expect(schemaSpy).toBeCalledTimes(1)
-    expect(schemaSpy).toBeCalledWith('c',expect.anything(),expect.anything(),expect.anything())
+    expect(schemaSpy).toBeCalledWith('c',expect.anything(),expect.anything())
   })
   it('accepts isIn as string (converts to single-member array)', () => {
     addit[0].isIn = 'inE'
@@ -181,7 +167,7 @@ describe('appendToSchema', () => {
       c: { in: ['inE'] },
       d: expect.anything(),
     })
-    expect(schemaSpy).toBeCalledWith('c',expect.anything(),expect.anything(),['inE'])
+    expect(schemaSpy).toBeCalledWith('c',expect.anything(),['inE'])
   })
   it('isIn as string on matching key', () => {
     addit[1].key = 'b'
@@ -202,7 +188,7 @@ describe('appendToSchema', () => {
       d: expect.anything(),
     })
     expect(schemaSpy).toBeCalledTimes(1)
-    expect(schemaSpy).toBeCalledWith('d',expect.anything(),expect.anything(),expect.anything())
+    expect(schemaSpy).toBeCalledWith('d',expect.anything(),expect.anything())
     expect(warnSpy).toBeCalledTimes(1)
     expect(warnSpy).toBeCalledWith('Missing "isIn" for key "c" from additional validator')
   })
@@ -213,150 +199,136 @@ describe('toValidationSchema', () => {
 
   describe('input vars', () => {
     it('key in return', () => {
-      expect(services.toValidationSchema('test','any',null,['isIn'],false))
+      expect(services.toValidationSchema('test',{type: 'any'},['isIn'],false,false))
         .toHaveProperty('test', expect.any(Object))
     })
     it('isIn in return', () => {
-      expect(services.toValidationSchema('test','any',null,['isIn'],false).test)
+      expect(services.toValidationSchema('test',{type: 'any'},['isIn'],false,false).test)
         .toHaveProperty('in', ['isIn'])
     })
     it('non-optional fields', () => {
-      expect(services.toValidationSchema('test','any',null,['isIn'],false).test)
+      expect(services.toValidationSchema('test',{type: 'any'},['isIn'],false,false).test)
         .toHaveProperty('exists',{ errorMessage: expect.any(String) })
     })
     it('optional fields', () => {
-      expect(services.toValidationSchema('test','any',null,['isIn'],true).test)
+      expect(services.toValidationSchema('test',{type: 'any'},['isIn'],true,false).test)
         .toHaveProperty('optional', {options: {nullable: true, checkFalsy: true}})
-      parseTypeStr.mockReturnValueOnce({ type: 'any', string: 'any?', isOptional: true })
-      expect(services.toValidationSchema('test','any?',null,['isIn'],true).test)
+      expect(services.toValidationSchema('test',{type: 'any', isOptional: true},['isIn'],true,false).test)
       .toHaveProperty('optional', {options: {nullable: true, checkFalsy: true}})
-      parseTypeStr.mockReturnValueOnce({ type: 'any', string: 'any?', isOptional: true })
-      expect(services.toValidationSchema('test','any?',null,['isIn'],false).test)
+      expect(services.toValidationSchema('test',{type: 'any', isOptional: true},['isIn'],false,false).test)
         .toHaveProperty('optional', {options: {nullable: true, checkFalsy: true}})
     })
     it('string optionals', () => {
-      expect(services.toValidationSchema('test','string',null,['isIn'],true).test)
+      expect(services.toValidationSchema('test',{type: 'string'},['isIn'],true,false).test)
         .toHaveProperty('optional', {options: {nullable: true, checkFalsy: true}})
-      parseTypeStr.mockReturnValueOnce({ type: 'string', string: 'string?', isOptional: true })
-      expect(services.toValidationSchema('test','string?',null,['isIn'],true).test)
+      expect(services.toValidationSchema('test',{type: 'string', isOptional: true},['isIn'],true,false).test)
         .toHaveProperty('optional', {options: {nullable: true, checkFalsy: true}})
-      parseTypeStr.mockReturnValueOnce({ type: 'string', string: 'string?', isOptional: true })
-      expect(services.toValidationSchema('test','string?',null,['isIn'],false).test)
+      expect(services.toValidationSchema('test',{type: 'string', isOptional: true},['isIn'],false,false).test)
         .toHaveProperty('optional', {options: {nullable: true, checkFalsy: true}})
     })
     it('limits for string/float/int', () => {
-      expect(services.toValidationSchema('test','float','lims',['isIn'],false).test.isFloat)
+      expect(services.toValidationSchema('test',{type: 'float', limits: 'lims'},['isIn'],false,false).test.isFloat)
         .toEqual({ options: 'lims', errorMessage: expect.any(String) })
-      expect(services.toValidationSchema('test','int','lims',['isIn'],false).test.isInt)
+      expect(services.toValidationSchema('test',{type: 'int', limits: 'lims'},['isIn'],false,false).test.isInt)
         .toEqual({ options: 'lims', errorMessage: expect.any(String) })
-      expect(services.toValidationSchema('test','string','lims',['isIn'],false).test.isLength)
+      expect(services.toValidationSchema('test',{type: 'string', limits: 'lims'},['isIn'],false,false).test.isLength)
         .toEqual({ options: 'lims', errorMessage: expect.any(String) })
     })
     it('string w/ limit.min = 0', () => {
-      expect(services.toValidationSchema('test','string',{min:  0},['isIn'],false).test)
+      expect(services.toValidationSchema('test',{type: 'string', limits: {min: 0}},['isIn'],false,false).test)
         .toHaveProperty('optional', {options: {checkFalsy: true}})
-      expect(services.toValidationSchema('test','string',{min: 10},['isIn'],false).test)
+      expect(services.toValidationSchema('test',{type: 'string', limits: {min:10}},['isIn'],false,false).test)
         .not.toHaveProperty('optional')
-      expect(services.toValidationSchema('test','string',{elem:{min:  0}},['isIn'],false).test)
+      expect(services.toValidationSchema('test',{type: 'string', limits: {elem:{min: 0}}},['isIn'],false,false).test)
         .toHaveProperty('optional', {options: {checkFalsy: true}})
-      expect(services.toValidationSchema('test','string',{elem:{min: 10}},['isIn'],false).test)
+      expect(services.toValidationSchema('test',{type: 'string', limits: {elem:{min:10}}},['isIn'],false,false).test)
         .not.toHaveProperty('optional')
     })
     it('disableMin = true removes min from elem.limits', () => {
-      const lims = { min: 12, test: 'lims' }
-      expect(services.toValidationSchema('test','int',lims,['isIn'],false,true).test.isInt)
+      const limits = { min: 12, test: 'lims' }
+      expect(services.toValidationSchema('test',{type: 'int', limits},['isIn'],false,true).test.isInt)
         .toHaveProperty('options',{ test: 'lims' })
-      parseTypeStr.mockReturnValueOnce({ type: 'int', string: 'int[]', isArray: true })
-      expect(services.toValidationSchema('test','int[]',{elem: lims},['isIn'],false,true)['test.*'].isInt)
+      expect(services.toValidationSchema('test',{type: 'int', isArray: true, limits: {elem: limits}},['isIn'],false,true)['test.*'].isInt)
         .toHaveProperty('options',{ test: 'lims' })
-      parseTypeStr.mockReturnValueOnce({ type: 'int', string: 'int[]', isArray: true })
-      expect(services.toValidationSchema('test','int[]',{array: lims},['isIn'],false,true).test.isArray)
+      expect(services.toValidationSchema('test',{type: 'int', isArray: true, limits: {array: limits}},['isIn'],false,true).test.isArray)
         .toHaveProperty('options',{ min: 12, test: 'lims' })
     })
     it('disableMin does not disable min when type in ignoreDisableMin (float)', () => {
-      const lims = { min: 12, test: 'lims' }
-      expect(services.toValidationSchema('test','float',lims,['isIn'],false,true).test.isFloat)
+      const limits = { min: 12, test: 'lims' }
+      expect(services.toValidationSchema('test',{type: 'float', limits},['isIn'],false,true).test.isFloat)
         .toHaveProperty('options',{ min: 12, test: 'lims' })
-      parseTypeStr.mockReturnValueOnce({ type: 'float', string: 'float[]', isArray: true })
-      expect(services.toValidationSchema('test','float[]',{elem: lims},['isIn'],false,true)['test.*'].isFloat)
+      expect(services.toValidationSchema('test',{type: 'float', isArray: true, limits: {elem:  limits}},['isIn'],false,true)['test.*'].isFloat)
         .toHaveProperty('options',{ min: 12, test: 'lims' })
-      parseTypeStr.mockReturnValueOnce({ type: 'float', string: 'float[]', isArray: true })
-      expect(services.toValidationSchema('test','float[]',{array: lims},['isIn'],false,true).test.isArray)
+      expect(services.toValidationSchema('test',{type: 'float', isArray: true, limits: {array: limits}},['isIn'],false,true).test.isArray)
         .toHaveProperty('options',{ min: 12, test: 'lims' })
     })
     it('just uses isType = { errorMsg } if missing limits', () => {
-      expect(services.toValidationSchema('test','float',null,['isIn'],false).test.isFloat)
+      expect(services.toValidationSchema('test',{type: 'float'},['isIn'],false,false).test.isFloat)
         .toEqual({ errorMessage: expect.any(String) })
-      expect(services.toValidationSchema('test','int',null,['isIn'],false).test.isInt)
+      expect(services.toValidationSchema('test',{type:   'int'},['isIn'],false,false).test.isInt)
         .toEqual({ errorMessage: expect.any(String) })
     })
   })
 
 
   describe('types', () => {
-    // Copy constants from validateServices
-    const strictDates = true
-    const dateOptions = { format: 'YYYY-MM-DD', strict: strictDates, delimiters: ['-'] }
-
-
     it('UUID', () => {
-      const result = services.toValidationSchema('test','uuid',null,['isIn'],false)
+      const result = services.toValidationSchema('test',{type:'uuid'},['isIn'],false,false)
       expect(result.test).toHaveProperty('isUUID', {options: 4, errorMessage: expect.any(String)})
       expect(result.test).toHaveProperty('isString', {errorMessage: expect.any(String)})
       expect(result.test).toHaveProperty('stripLow', true)
       expect(result.test).toHaveProperty('trim', true)
     })
     it('b64', () => {
-      const result = services.toValidationSchema('test','b64',null,['isIn'],false)
+      const result = services.toValidationSchema('test',{type:'b64'},['isIn'],false,false)
       expect(result.test).toHaveProperty('isBase64', {options: { urlSafe: false }, errorMessage: expect.any(String)})
       expect(result.test).toHaveProperty('isString', {errorMessage: expect.any(String)})
       expect(result.test).toHaveProperty('stripLow', true)
       expect(result.test).toHaveProperty('trim', true)
     })
     it('b64url', () => {
-      const result = services.toValidationSchema('test','b64url',null,['isIn'],false)
+      const result = services.toValidationSchema('test',{type:'b64url'},['isIn'],false,false)
       expect(result.test).toHaveProperty('isBase64', {options: { urlSafe: true }, errorMessage: expect.any(String)})
       expect(result.test).toHaveProperty('isString', {errorMessage: expect.any(String)})
       expect(result.test).toHaveProperty('stripLow', true)
       expect(result.test).toHaveProperty('trim', true)
     })
     it('hex', () => {
-      const result = services.toValidationSchema('test','hex',null,['isIn'],false)
+      const result = services.toValidationSchema('test',{type:'hex'},['isIn'],false,false)
       expect(result.test).toHaveProperty('isHexadecimal', {errorMessage: expect.any(String)})
       expect(result.test).toHaveProperty('isString', {errorMessage: expect.any(String)})
       expect(result.test).toHaveProperty('stripLow', true)
       expect(result.test).toHaveProperty('trim', true)
     })
     it('string', () => {
-      const result = services.toValidationSchema('test','string',null,['isIn'],false)
+      const result = services.toValidationSchema('test',{type:'string'},['isIn'],false,false)
       expect(result.test).toHaveProperty('isString', {errorMessage: expect.any(String)})
       expect(result.test).toHaveProperty('stripLow', true)
       expect(result.test).toHaveProperty('trim', true)
     })
     it('string*', () => {
-      parseTypeStr.mockReturnValueOnce({ type: 'string', string: 'string*', hasSpaces: true })
-      const result = services.toValidationSchema('test','string*',null,['isIn'],false)
+      const result = services.toValidationSchema('test',{type: 'string', hasSpaces: true},['isIn'],false,false)
       expect(result.test).toHaveProperty('isString', {errorMessage: expect.any(String)})
       expect(result.test).not.toHaveProperty('stripLow')
       expect(result.test).not.toHaveProperty('trim')
     })
     it('float', () => {
-      const result = services.toValidationSchema('test','float',null,['isIn'],false)
+      const result = services.toValidationSchema('test',{type:'float'},['isIn'],false,false)
       expect(result.test).toHaveProperty('isFloat', {errorMessage: expect.any(String)})
       expect(result.test).toHaveProperty('toFloat', true)
     })
     it('int', () => {
-      const result = services.toValidationSchema('test','int',null,['isIn'],false)
+      const result = services.toValidationSchema('test',{type:'int'},['isIn'],false,false)
       expect(result.test).toHaveProperty('isInt', {errorMessage: expect.any(String)})
       expect(result.test).toHaveProperty('toInt', true)
     })
     it('boolean', () => {
-      const result = services.toValidationSchema('test','boolean',null,['isIn'],false)
+      const result = services.toValidationSchema('test',{type:'boolean'},['isIn'],false,false)
       expect(result.test).toHaveProperty('custom', { options: 'isBooleanFunc', errorMessage: expect.any(String) })
       expect(result.test).toHaveProperty('customSanitizer', { options: 'parseBooleanFunc' })
     })
     it('datetime', () => {
-      const result = services.toValidationSchema('test','datetime',null,['isIn'],false)
+      const result = services.toValidationSchema('test',{type:'datetime'},['isIn'],false,false)
       expect(result.test).toHaveProperty('isISO8601', {
         options: 'TIME_OPTS',
         errorMessage: expect.any(String)
@@ -364,12 +336,12 @@ describe('toValidationSchema', () => {
       expect(result.test).toHaveProperty('toDate', true)
     })
     it('date', () => {
-      const result = services.toValidationSchema('test','date',null,['isIn'],false)
+      const result = services.toValidationSchema('test',{type:'date'},['isIn'],false,false)
       expect(result.test).toHaveProperty('isDate', {options: 'DATE_OPTS', errorMessage: expect.any(String)})
       expect(result.test).toHaveProperty('trim', true)
     })
     it('object', () => {
-      const result = services.toValidationSchema('test','object',null,['isIn'],false)
+      const result = services.toValidationSchema('test',{type:'object'},['isIn'],false,false)
       expect(result.test).toHaveProperty('isJSON', {
         options: expect.any(Object),
         errorMessage: expect.any(String),
@@ -378,67 +350,60 @@ describe('toValidationSchema', () => {
     })
   })
 
-
+  const arrType = (string, isOptional, limits) => ({ string, isArray: true, isOptional, limits, type: string.replace('[]','') })
+  
   describe('array', () => {
-    const getArrType = (string) => ({ string, isArray: true, type: string.replace('[]','') })
-    beforeEach(() => { parseTypeStr.mockImplementationOnce(getArrType) })
-
     it('key & key.* in return', () => {
-      const result = services.toValidationSchema('test','any[]',null,['isIn'],false)
+      const result = services.toValidationSchema('test',arrType('any[]'),['isIn'],false,false)
       expect(result).toHaveProperty('test', expect.any(Object))
       expect(result["test.*"]).toEqual(expect.any(Object))
     })
     it('array has basic props', () => {
-      const result = services.toValidationSchema('test','any[]',null,['isIn'],false)
+      const result = services.toValidationSchema('test',arrType('any[]'),['isIn'],false,false)
       expect(result.test).toHaveProperty('toArray')
       expect(result.test).toHaveProperty('isArray', {errorMessage: expect.any(String)})
       expect(result.test).toHaveProperty('in', ['isIn'])
     })
     it('elements basic props', () => {
-      const result = services.toValidationSchema('test','any[]',null,['isIn'],false)
+      const result = services.toValidationSchema('test',arrType('any[]'),['isIn'],false,false)
       expect(result["test.*"]).not.toHaveProperty('isArray')
       expect(result["test.*"]).toHaveProperty('in', ['isIn'])
     })
 
     it('array has optional props', () => {
-      let result = services.toValidationSchema('test','any[]',null,['isIn'],true)
+      let result = services.toValidationSchema('test',arrType('any[]'),['isIn'],true,false)
       expect(result.test).toHaveProperty('optional', {options: {nullable: true, checkFalsy: true}})
       expect(result.test).not.toHaveProperty('exists')
 
-      parseTypeStr.mockReturnValueOnce({ type: 'any', string: 'any[]?', isArray: true, isOptional: true })
-      result = services.toValidationSchema('test','any[]?',null,['isIn'],false)
+      result = services.toValidationSchema('test',arrType('any[]',true),['isIn'],false,false)
       expect(result.test).toHaveProperty('optional', {options: {nullable: true, checkFalsy: true}})
       expect(result.test).not.toHaveProperty('exists')
     })
     it('array has non-optional props', () => {
-      const result = services.toValidationSchema('test','any[]',null,['isIn'],false)
+      const result = services.toValidationSchema('test',arrType('any[]'),['isIn'],false,false)
       expect(result.test).toHaveProperty('exists', {errorMessage: expect.any(String)})
       expect(result.test).not.toHaveProperty('optional')
     })
     it('array passes isOptional to toArray', () => {
-      parseTypeStr('')
-      parseTypeStr.mockReturnValueOnce({ type: 'any', string: 'any[]', isArray: true, isOptional: 'isOpt' })
-      const result = services.toValidationSchema('test','any[]',null,['isIn'],false)
+      const result = services.toValidationSchema('test',{type: 'any', isArray: true, isOptional: 'isOpt'},['isIn'],false,false)
       expect(result.test).toHaveProperty('toArray', 'isOpt')
     })
     it('elements missing optional props', () => {
-      let result = services.toValidationSchema('test','any[]',null,['isIn'],true)
+      let result = services.toValidationSchema('test',arrType('any[]'),['isIn'],true,false)
       expect(result["test.*"]).not.toHaveProperty('optional')
       expect(result["test.*"]).not.toHaveProperty('exists')
 
-      parseTypeStr.mockReturnValueOnce({ type: 'any', string: 'any[]?', isArray: true, isOptional: true })
-      result = services.toValidationSchema('test','any[]?',null,['isIn'],false)
+      result = services.toValidationSchema('test',arrType('any[]',true),['isIn'],false,false)
       expect(result["test.*"]).not.toHaveProperty('optional')
       expect(result["test.*"]).not.toHaveProperty('exists')
 
-      parseTypeStr.mockImplementationOnce(getArrType)
-      result = services.toValidationSchema('test','any[]',null,['isIn'],false)
+      result = services.toValidationSchema('test',arrType('any[]'),['isIn'],false,false)
       expect(result["test.*"]).not.toHaveProperty('optional')
       expect(result["test.*"]).not.toHaveProperty('exists')
     })
     
     it('type methods are under key.*', () => {
-      const result = services.toValidationSchema('test','float[]',null,['isIn'],false)
+      const result = services.toValidationSchema('test',arrType('float[]'),['isIn'],false,false)
       expect(result.test).not.toHaveProperty('isFloat')
       expect(result.test).not.toHaveProperty('toFloat')
       expect(result["test.*"]).toHaveProperty('isFloat', {errorMessage: expect.any(String)})
@@ -446,70 +411,63 @@ describe('toValidationSchema', () => {
     })
 
     it('limits are key.arrayLimits', () => {
-      const result = services.toValidationSchema('test','int[]','lims',['isIn'],false)
+      const result = services.toValidationSchema('test',arrType('int[]',0,'lims'),['isIn'],false,false)
       expect(result.test).toHaveProperty('isArray', {options: 'lims', errorMessage: expect.any(String)})
       expect(result["test.*"]).toHaveProperty('isInt', {errorMessage: expect.any(String)})
     })
     it('limits.array for key & limits.elem for key.*', () => {
-      const result = services.toValidationSchema('test','int[]',{array:'aLims',elem:'eLims'},['isIn'],false)
+      const result = services.toValidationSchema('test',arrType('int[]',0,{array:'aLims',elem:'eLims'}),['isIn'],false,false)
       expect(result.test).toHaveProperty('isArray', {options: 'aLims', errorMessage: expect.any(String)})
       expect(result["test.*"]).toHaveProperty('isInt', {options: 'eLims', errorMessage: expect.any(String)})
     })
     it('limits.array only', () => {
-      const result = services.toValidationSchema('test','int[]',{array:'aLims'},['isIn'],false)
+      const result = services.toValidationSchema('test',arrType('int[]',0,{array:'aLims'}),['isIn'],false,false)
       expect(result.test).toHaveProperty('isArray', {options: 'aLims', errorMessage: expect.any(String)})
       expect(result["test.*"]).toHaveProperty('isInt', {errorMessage: expect.any(String)})
     })
     it('limits.elem only', () => {
-      let result = services.toValidationSchema('test','int[]',{elem:'eLims'},['isIn'],false)
+      let result = services.toValidationSchema('test',arrType('int[]',0,{elem:'eLims'}),['isIn'],false,false)
       expect(result.test).toHaveProperty('isArray', {errorMessage: expect.any(String)})
       expect(result["test.*"]).toHaveProperty('isInt', {options: 'eLims', errorMessage: expect.any(String)})
-      result = services.toValidationSchema('test','int',{elem:'eLims'},['isIn'],false)
+      result = services.toValidationSchema('test',{type: 'int', limits: {elem:'eLims'}},['isIn'],false,false)
       expect(result.test).toHaveProperty('isInt', {options: 'eLims', errorMessage: expect.any(String)})
     })
   })
 
   describe('specifics', () => {
     it('boolean + optional', () => {
-      expect(services.toValidationSchema('test','boolean',null,['isIn'],true).test)
+      expect(services.toValidationSchema('test',{type:'boolean'},['isIn'],true,false).test)
         .toHaveProperty('optional', {options: {nullable: true, checkFalsy: false}})
-      parseTypeStr.mockReturnValueOnce({ type: 'boolean', string: 'boolean?', isOptional: true })
-      expect(services.toValidationSchema('test','boolean?',null,['isIn'],true).test)
+      expect(services.toValidationSchema('test',{type: 'boolean', isOptional: true},['isIn'],true,false).test)
         .toHaveProperty('optional', {options: {nullable: true, checkFalsy: false}})
-      parseTypeStr.mockReturnValueOnce({ type: 'boolean', string: 'boolean?', isOptional: true })
-      expect(services.toValidationSchema('test','boolean?',null,['isIn'],false).test)
+      expect(services.toValidationSchema('test',{type: 'boolean', isOptional: true},['isIn'],false,false).test)
         .toHaveProperty('optional', {options: {nullable: true, checkFalsy: false}})
     })
   })
 
   describe('errors', () => {
     it('errorMessage on key', () => {
-      expect(services.toValidationSchema('test','any',null,['isIn'],false).test)
+      expect(services.toValidationSchema('test',{type: 'any'},['isIn'],false,false).test)
         .toHaveProperty('errorMessage', 'ErrMsg: type')
     })
     it('errorMessage on key.*', () => {
-      parseTypeStr.mockReturnValueOnce({ type: 'any', string: 'any[]', isArray: true })
-      expect(services.toValidationSchema('test','any[]',null,['isIn'],false)['test.*'])
+      expect(services.toValidationSchema('test',arrType('any[]'),['isIn'],false,false)['test.*'])
         .toHaveProperty('errorMessage', 'ErrMsg: type')
     })
-    it('throws on missing/invalid typeStr', () => {
-      expect(() => services.toValidationSchema('test',undefined,null,['isIn'],false))
-        .toThrowError('ErrMsg: missing')
-      parseTypeStr.mockReturnValueOnce({})
-      expect(() => services.toValidationSchema('test','?wrong',null,['isIn'],false))
+    it('throws on missing/invalid type', () => {
+      expect(() => services.toValidationSchema('test',{},['isIn'],false,false))
         .toThrowError('ErrMsg: missing')
     })
     it('throws on missing/empty isIn', () => {
-      expect(() => services.toValidationSchema('test','any',null,undefined,false))
+      expect(() => services.toValidationSchema('test',{type: 'any'},undefined,false))
         .toThrowError('ErrMsg: missingIn')
-      expect(() => services.toValidationSchema('test','any',null,[],false))
+      expect(() => services.toValidationSchema('test',{type: 'any'},[],false,false))
         .toThrowError('ErrMsg: missingIn')
     })
     it('warns on using * w/o string', () => {
       const warnSpy = jest.spyOn(require('../../libs/log'), 'warn').mockImplementationOnce(() => {})
-      parseTypeStr.mockReturnValueOnce({ type: 'any', string: 'any*', hasSpaces: true })
       
-      services.toValidationSchema('test','any*',null,['isIn'],false)
+      services.toValidationSchema('test',{type: 'any', hasSpaces: true, typeStr: 'any*'},['isIn'],false,false)
       expect(warnSpy).toBeCalledTimes(1)
       expect(warnSpy).toBeCalledWith('* is ignored w/ non-string type: any*')
     })
@@ -523,8 +481,10 @@ jest.mock('../../config/validate.cfg', () => ({
   ignoreDisableMin: ['float'],
   errorMsgs: new Proxy({}, { get(_,key) { return () => 'ErrMsg: '+key } }),
 }))
+jest.mock('../../utils/model.utils', () => ({
+  parseTypeStr: jest.fn((data) => data),
+}))
 jest.mock('../../utils/validate.utils', () => ({
-  parseTypeStr: jest.fn((type) => ({ type, string: type })),
   isBoolean: () => 'isBooleanFunc',
   parseBoolean: () => 'parseBooleanFunc',
 }))

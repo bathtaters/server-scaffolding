@@ -47,49 +47,84 @@ module.exports = {
   },
 
   definitions: {
-    types: {
-      id: "hex",
-      username: "string",
-      password: "string?",
-      token: "hex",
-      access: "string[]?",
-      cors: "string*",
-      models: "string[]",
-      failCount: "int?",
-      failTime: "datetime?",
-      guiCount: "int?",
-      guiTime: "datetime?",
-      apiCount: "int?",
-      apiTime: "datetime?",
-      locked: "boolean",
+    id: {
+      typeStr: "hex",
+      limits: { min: 32, max: 32 },
     },
-    
-    defaults: {
-      username: "user",
-      access: [ 'api', 'gui' ],
-      models: { [allModelsKey]: ['read','write'] },
-      token: null,
-      cors: '*',
-      failCount: 0,
-      guiCount:  0,
-      apiCount:  0,
-      locked: false,
+    username: {
+      typeStr: "string",
+      default: "user",
+      limits: { min: 2, max: 255 },
     },
-  
-    limits: {
-      username: { min: 2, max: 255 },
-      password: passwordLimits,
-      confirm: passwordLimits,
-  
-      id: { min: 32, max: 32 },
-      token: { min: 32, max: 32 },
-      access: { elem: { max: 16 }, array: { max: Object.keys(access).length } },
-      models: { elem: { max: 64 }, array: { max: 100 * Object.keys(models).length } },
-      failCount: { min: 0, max: rateLimiter.maxFails + 1 },
-      guiCount:  { min: 0, max: Number.MAX_SAFE_INTEGER  },
-      apiCount:  { min: 0, max: Number.MAX_SAFE_INTEGER  },
-      cors: { min: 0, max: 2048 },
+    password: {
+      typeStr: "string?",
+      limits: passwordLimits,
+      db: false,
     },
+    confirm: {
+      typeStr: "string?",
+      limits: passwordLimits,
+      db: false,
+      dbOnly: true,
+    },
+    token: {
+      typeStr: "hex",
+      default: null,
+      limits: { min: 32, max: 32 },
+    },
+    access: {
+      typeStr: "string[]?",
+      default: [ 'api', 'gui' ],
+      limits: { elem: { max: 16 }, array: { max: Object.keys(access).length } },
+      isBitmap: true,
+      db: 'INTEGER',
+    },
+    cors: {
+      typeStr: "string*",
+      default: '*',
+      limits: { min: 0, max: 2048 },
+    },
+    models: {
+      typeStr: "string[]",
+      default: { [allModelsKey]: ['read','write'] },
+      limits: { elem: { max: 64 }, array: { max: 100 * Object.keys(models).length } },
+    },
+    failCount: {
+      typeStr: "int?",
+      default: 0,
+      limits: { min: 0, max: rateLimiter.maxFails + 1 },
+      html: false,
+    },
+    failTime: {
+      typeStr: "datetime?",
+      html: false,
+    },
+    guiCount: {
+      typeStr: "int?",
+      default: 0,
+      limits:  { min: 0, max: Number.MAX_SAFE_INTEGER  },
+      html: false,
+    },
+    guiTime: {
+      typeStr: "datetime?",
+      html: false,
+    },
+    apiCount: {
+      typeStr: "int?",
+      default: 0,
+      limits:  { min: 0, max: Number.MAX_SAFE_INTEGER  },
+      html: false,
+    },
+    apiTime: {
+      typeStr: "datetime?",
+      html: false,
+    },
+    locked: {
+      typeStr: "boolean",
+      default: false,
+    },
+    key:  { typeStr: "hex?", html: false, dbOnly: true },
+    salt: { typeStr: "hex?", html: false, dbOnly: true },
   },
 
   searchableKeys: ['username','token','access','cors','locked'], // 'models'

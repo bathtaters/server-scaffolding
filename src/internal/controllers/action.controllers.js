@@ -5,8 +5,10 @@ const settingsActions = require('../services/settings.form')
 const { login, logout } = require('../middleware/auth.middleware')
 const { filterFormData, toQueryString } = require('../utils/form.utils')
 const { hasAccess } = require('../utils/users.utils')
+const { isBool } = require('../utils/model.utils')
 const { access } = require('../config/users.cfg')
 const { restartTimeout } = require('../config/settings.cfg')
+const { actions } = require('../../config/gui.cfg')
 const errors = require('../config/errors.internal')
 const urls = require('../../config/urls.cfg').gui
 
@@ -19,9 +21,12 @@ exports.regenToken = (req,res,next) => Users.regenToken(req.body[Users.primaryId
 
 exports.form = function getFormController(Model, { redirectURL = '', formatData = (data) => data } = {}) {
   const formActions = modelActions(Model)
+  const boolBase = Object.keys(Model.schema).reduce((bools, key) => 
+    isBool(Model.schema[key]) ? Object.assign(bools, {[key]: false}) : bools
+  , {})
 
   return (action) => (req,res,next) => {
-    let { _action, _pageData, _searchMode, _csrf, ...formData } = filterFormData(req.body, Model.boolFields)
+    let { _action, _pageData, _searchMode, _csrf, ...formData } = filterFormData(req.body, action === actions.find ? {} : boolBase)
     
     try {
       formData = formatData(formData, req.user, action) || formData

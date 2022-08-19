@@ -19,7 +19,6 @@ exports.userTable = modelDb(Users, { view: 'users', formatData: guiAdapter, over
   tooltips,
   tableFields,
   modelsList,
-  schema: [],
   accessLevels: Object.keys(access),
   baseURL: urls.prefix + urls.user,
   regenURL: urls.prefix + urls.user + urls.token,

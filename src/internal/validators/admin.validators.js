@@ -1,5 +1,5 @@
 const Users = require('../models/Users')
-const definition = require('../config/users.cfg').definitions.types
+const definition = require('../config/users.cfg').definitions
 const { formSettings } = require('../config/settings.cfg')
 const { byObject } = require('./shared.validators')
 const { page, find, form, formAdditional, token } = require('./gui.validators')
@@ -9,7 +9,7 @@ const { preValidateAdapter } = require('../services/users.services')
 const preValidate = (asQueryStr = false, isSearch = false) => (req,res,next) => { preValidateAdapter(asQueryStr ? req.query : req.body, isSearch); next() }
 
 let formFields = { confirm: 'password' }
-Object.keys(definition).forEach((field) => { formFields[field] = field })
+Object.keys(definition).forEach((field) => { if (definition[field].html !== false) formFields[field] = field })
 
 module.exports = {
   page, token,

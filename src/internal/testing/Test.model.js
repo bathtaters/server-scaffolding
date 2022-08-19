@@ -1,29 +1,33 @@
 const Model = require('../models/Model')
 
 module.exports = new Model('test', {
-  primaryId: 'testId',
-
-  types: {
-    testId: "int",
-    name: "string",
-    number: "float",
-    comment: "string*?",
-    isOn: "boolean",
-    testDate: "datetime?",
-    objectList: "object[]?",
+  testId: {
+    isPrimary: true,
+    limits: { min: 0, max: 1000 },
   },
-
-  defaults: {
-    number: -1,
-    isOn: true,
-    testDate: "2000-01-02T00:00",
+  name: {
+    typeStr: "string",
+    limits: { min: 2, max: 100 },
   },
-
-  limits: {
-    testId: { min: 0, max: 9999 },
-    name: { min: 2, max: 100 },
-    number: { min: -999, max: 999 },
-    comment: { min: 0, max: 1000 },
-    objectList: { array: { max: 20 } },
+  number: {
+    typeStr: "float",
+    default: -1,
+    limits: { min: -999, max: 999 },
+  },
+  comment: {
+    typeStr: "string*?",
+    limits: { min: 0, max: 1000 },
+  },
+  isOn: {
+    typeStr: "boolean",
+    default: true,
+  },
+  testDate: {
+    typeStr: "datetime?",
+    default: "2000-01-02T00:00",
+  },
+  objectList: {
+    typeStr: "object[]?",
+    limits: { array: { max: 20 } },
   },
 })

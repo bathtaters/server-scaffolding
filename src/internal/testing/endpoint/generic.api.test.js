@@ -90,6 +90,9 @@ describe('Test model API', () => {
       .send({ name: true })
     expect(res.body.error).toHaveProperty('name','ValidationError')
     expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^name not a valid string/))
+    res = await request.put(`${prefix.api}/${testId}`).set(header).expect(200).expect('Content-Type', /json/)
+      .send({ name: 'valid' })
+    expect(await Model.get(testId)).toHaveProperty('name', 'valid')
   })
   test('VALIDATION - String min/max', async () => {
     let res = await request.put(`${prefix.api}/${testId}`).set(header).expect(400).expect('Content-Type', /json/)
@@ -110,6 +113,9 @@ describe('Test model API', () => {
       .send({ isOn: [] })
     expect(res.body.error).toHaveProperty('name','ValidationError')
     expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^isOn not a valid boolean/))
+    res = await request.put(`${prefix.api}/${testId}`).set(header).expect(200).expect('Content-Type', /json/)
+      .send({ isOn: true })
+    expect(await Model.get(testId)).toHaveProperty('isOn', true)
   })
   test('VALIDATION - Int type', async () => {
     let res = await request.put(`${prefix.api}/${testId}`).set(header).expect(400).expect('Content-Type', /json/)
@@ -203,6 +209,9 @@ describe('Test model API', () => {
       .send({ objectList: [{a: 1}] })
     expect(res.body.error).toHaveProperty('name','ValidationError')
     expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^objectList\[0\] not a valid object/))
+    res = await request.put(`${prefix.api}/${testId}`).set(header).expect(200).expect('Content-Type', /json/)
+      .send({ objectList: '{"a": 1}, {"b": 2}' })
+    expect(await Model.get(testId)).toHaveProperty('objectList', [{ a: 1 }, { b: 2 }])
   })
 
   test('DELETE /[id]', async () => {
@@ -211,10 +220,7 @@ describe('Test model API', () => {
 
     const items = await Model.get()
     expect(items).toHaveLength(1)
-    expect(items).toContainEqual(expect.objectContaining({
-      [idKey]: testId,
-      [testKey]: "new",
-    }))
+    expect(items).toContainEqual(expect.objectContaining({ [idKey]: testId }))
   })
 
   test('VALIDATION - required', async () => {

@@ -18,11 +18,10 @@ exports.actionURLs = (baseURL, actionList = Object.values(actions)) => actionLis
 const defaultFilter = (val,key) => val != null && val !== ''
 
 // Filter function for Object
-exports.filterFormData = (formData, boolFields = [], filterCb = defaultFilter) => Object.entries(formData).reduce(
+exports.filterFormData = (formData, baseObject = {}, filterCb = defaultFilter) => Object.entries(formData).reduce(
   (filtered, [key, val]) => !filterCb(val,key) ? filtered :
-    Object.assign(filtered, { [key]: boolFields.includes(key) ? parseBool(val) : val })
-
-, boolFields.reduce((obj, key) => Object.assign(obj, { [key]: false }), {})) // Force-include boolFields
+    Object.assign(filtered, { [key]: key in baseObject ? parseBool(val) : val })
+, { ...baseObject })
 
 // Convert object to queryString (Accepts stringified object, deletes null/empty values)
 exports.toQueryString = (obj, filter = defaultFilter) => {

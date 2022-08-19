@@ -1,73 +1,95 @@
 const logErrSpy = jest.spyOn(require('../../libs/log'), 'error')
 const {
-  getAdapter, setAdapter, addAdapter, guiAdapter,
+  initAdapters, addAdapter, guiAdapter,
   preValidateAdapter, adminFormAdapter, userFormAdapter
 } = require('../../services/users.services')
-const { modelAccessToInts, decodeCors, displayCors } = require('../../utils/users.utils')
+const {
+  modelAccessToInts, accessInt, 
+  encodeCors, decodeCors, displayCors,
+} = require('../../utils/users.utils')
+const { encodePassword } = require('../../utils/auth.utils')
 const { formatLong } = require('../../libs/date')
 const errors = require('../../config/errors.internal')
+const { adapterKey } = require('../../config/models.cfg')
 
 
 let testObj
 
-describe('User getAdapter', () => {
-  beforeEach(() => { testObj = {
-    models: '{"a":1,"b":2,"c":3}',
-    key: 'KEY',
-    cors: 'CORS',
-  } })
+describe('User initAdapters', () => {
+  let defs = { key: {}, access: {}, cors: {}, username: {}, password: {}, models: {} }
+  beforeAll(() => { initAdapters(defs) })
 
-  it('parses models JSON', () => {
-    expect(getAdapter(testObj)).toHaveProperty('models', { a: 1, b: 2, c: 3 })
+  it('adds adapters to each key', () => {
+    expect(defs.key   ).toHaveProperty(adapterKey.get, expect.any(Function))
+    expect(defs.cors  ).toHaveProperty(adapterKey.get, expect.any(Function))
+    expect(defs.models).toHaveProperty(adapterKey.get, expect.any(Function))
+    expect(defs.access  ).toHaveProperty(adapterKey.set, expect.any(Function))
+    expect(defs.cors    ).toHaveProperty(adapterKey.set, expect.any(Function))
+    expect(defs.username).toHaveProperty(adapterKey.set, expect.any(Function))
+    expect(defs.password).toHaveProperty(adapterKey.set, expect.any(Function))
+    expect(defs.models  ).toHaveProperty(adapterKey.set, expect.any(Function))
   })
-  it('decodes cors', () => {
-    expect(getAdapter(testObj)).toHaveProperty('cors', 'decodeCors:CORS')
-  })
-  it('masks password key', () => {
-    const result = getAdapter(testObj)
-    expect(result).toHaveProperty('password', true)
-    expect(result).not.toHaveProperty('key')
-  })
-  it('Catches & avoids throwing errors', () => {
-    expect(getAdapter(testObj).hadError).toBeFalsy()
-    expect(logErrSpy).toBeCalledTimes(0)
-    decodeCors.mockImplementationOnce(() => { throw 'TEST ERROR' })
-    expect(getAdapter(testObj).hadError).toBeTruthy()
-    expect(logErrSpy).toBeCalledTimes(1)
-    expect(logErrSpy).toBeCalledWith('TEST ERROR')
-  })
-})
 
-describe('User setAdapter', () => {
-  beforeEach(() => { testObj = {
-    models: 'MODELS',
-    access: 'ACCESS',
-    cors: 'CORS',
-    username: 'UNAME',
-    password: 'PASSWORD',
-  } })
+  it('key getAdapter adds password prop', () => {
+    let data
+    defs.key[adapterKey.get]('test', data = {})
+    expect(data).toHaveProperty('password', true)
+    defs.key[adapterKey.get](  null, data = {})
+    expect(data).toHaveProperty('password', false)
+  })
+  it('cors getAdapter uses decodeCors', () => {
+    expect(defs.cors[adapterKey.get]('corsIn')).toBe('decodeCors')
+    expect(decodeCors).toBeCalledWith('corsIn')
+  })
+  describe('models getAdapter', () => {
+    it('parses JSON', () => {
+      expect(defs.models[adapterKey.get]([{a:1},{a:2,b:3}])).toEqual([{a:1},{a:2,b:3}])
+    })
+    it('passes non-string', () => {
+      expect(defs.models[adapterKey.get]([{a:1},{a:2,b:3}])).toEqual([{a:1},{a:2,b:3}])
+    })
+    it('defaults to empty array', () => {
+      expect(defs.models[adapterKey.get]()).toEqual([])
+      expect(defs.models[adapterKey.get]('')).toEqual([])
+      expect(defs.models[adapterKey.get](null)).toEqual([])
+    })
+    it('absorbs JSON parse error', () => {
+      expect(defs.models[adapterKey.get](',illegal!')).toBe('<ERROR>')
+      expect(logErrSpy).toBeCalledTimes(1)
+    })
+  })
 
-  it('runs models through modelAccessToInts', async () => {
-    expect(await setAdapter(testObj)).toHaveProperty('models','"modelAccessToInts:MODELS"')
+  it('access setAdapter uses accessInt', () => {
+    expect(defs.access[adapterKey.set]('accessIn')).toBe('accessInt')
+    expect(accessInt).toBeCalledWith('accessIn')
   })
-  it('defaults models to {}', async () => {
-    modelAccessToInts.mockReturnValueOnce(null)
-    expect(await setAdapter(testObj)).toHaveProperty('models','{}')
+  it('cors setAdapter uses encodeCors', () => {
+    expect(defs.cors[adapterKey.set]('corsIn')).toBe('encodeCors')
+    expect(encodeCors).toBeCalledWith('corsIn')
   })
-  it('encodes access', async () => {
-    expect(await setAdapter(testObj)).toHaveProperty('access','accessInt:ACCESS')
+  it('username setAdapter forces lower case', () => {
+    expect(defs.username[adapterKey.set]('AlTCAse')).toBe('altcase')
   })
-  it('encodes cors', async () => {
-    expect(await setAdapter(testObj)).toHaveProperty('cors','encodeCors:CORS')
+  it('password setAdapter uses encodePassword', async () => {
+    let data = {}
+    encodePassword.mockResolvedValueOnce({ key: 'pwKey', salt: 'pwSalt' })
+    await defs.password[adapterKey.set]('passwordIn', data)
+    expect(encodePassword).toBeCalledWith('passwordIn')
+    expect(data).toEqual({ key: 'pwKey', salt: 'pwSalt' })
   })
-  it('normalizes username', async () => {
-    expect(await setAdapter(testObj)).toHaveProperty('username','uname')
-  })
-  it('encodes password', async () => {
-    const result = await setAdapter(testObj)
-    expect(result).toHaveProperty('key','encodePassword:PASSWORD')
-    expect(result).toHaveProperty('salt','encodeSalt')
-    expect(result).not.toHaveProperty('password')
+  describe('models setAdapter', () => {
+    it('calls modelAccessToInts', () => {
+      defs.models[adapterKey.set]('modelsIn')
+      expect(modelAccessToInts).toBeCalledWith('modelsIn')
+    })
+    it('stringifies result', () => {
+      modelAccessToInts.mockReturnValueOnce({ a: 1, b: 2 })
+      expect(defs.models[adapterKey.set]('modelsIn')).toBe('{"a":1,"b":2}')
+    })
+    it('defaults to empty object', () => {
+      modelAccessToInts.mockReturnValueOnce(null)
+      expect(defs.models[adapterKey.set]('modelsIn')).toBe('{}')
+    })
   })
 })
 
@@ -82,13 +104,6 @@ describe('User addAdapter', () => {
     const result = addAdapter({}, 'test123')
     expect(result).toHaveProperty('test123')
     expect(result).not.toHaveProperty('id')
-  })
-  it('uses defaults', () => {
-    const result = addAdapter({})
-    expect(result).toHaveProperty('username','usernameDefault')
-    expect(result).toHaveProperty('access','accessDefault')
-    expect(result).toHaveProperty('cors','corsDefault')
-    expect(result).toHaveProperty('models','modelsDefault')
   })
 })
 
@@ -123,7 +138,8 @@ describe('User guiAdapter', () => {
     expect(result).toHaveProperty('failTime', 'FMT_LONG [2]')
   })
   it('decodes cors', () => {
-    expect(guiAdapter(testObj)).toHaveProperty('cors', 'displayCors:CORS')
+    expect(guiAdapter(testObj)).toHaveProperty('cors', 'displayCors')
+    expect(displayCors).toBeCalledWith('CORS')
   })
   it('gets cors props', () => {
     const result = guiAdapter(testObj)
@@ -221,27 +237,21 @@ describe('User form adapter', () => {
 jest.mock('../../libs/date', () => ({ formatLong: jest.fn(() => 'FMT_LONG') }))
 jest.mock('../../utils/users.utils', () => ({
   accessArray: (access) => ['accessArray', access],
-  accessInt: (access) => 'accessInt:'+access,
-  decodeCors: jest.fn((cors) => 'decodeCors:'+cors),
-  encodeCors: (cors) => 'encodeCors:'+cors,
-  displayCors: jest.fn((cors) => 'displayCors:'+cors),
+  accessInt: jest.fn(() => 'accessInt'),
+  decodeCors: jest.fn(() => 'decodeCors'),
+  encodeCors: jest.fn(() => 'encodeCors'),
+  displayCors: jest.fn(() => 'displayCors'),
   isRegEx: (cors) => 'isRegEx:'+cors,
   hasAccess: () => false,
   getModelsString: (models) => 'getModelsString:'+models,
   modelsArrayToObj: (models) => 'modelsArrayToObj:'+models,
-  modelAccessToInts: jest.fn((models) => 'modelAccessToInts:'+models),
+  modelAccessToInts: jest.fn(() => 'modelAccessToInts'),
 }))
 jest.mock('../../utils/auth.utils', () => ({
   generateToken: () => 'generateToken',
-  encodePassword: (password) => Promise.resolve({ key: 'encodePassword:'+password, salt: 'encodeSalt' })
+  encodePassword: jest.fn()
 }))
 jest.mock('../../config/users.cfg', () => ({
   access: {},
   searchableKeys: ['searchA','searchB'],
-  definitions: { defaults: {
-    username: 'usernameDefault',
-    access: 'accessDefault',
-    models: 'modelsDefault',
-    cors: 'corsDefault',
-  }}
 }))

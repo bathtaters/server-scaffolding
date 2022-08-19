@@ -1,48 +1,9 @@
 const validateUtils = require('../../utils/validate.utils')
 const { 
-  parseTypeStr, formSettingsToValidate,
-  isBoolean, parseBoolean, parseArray, toArraySchema,
+  formSettingsToValidate,
+  isBoolean, parseBoolean,
+  parseArray, toArraySchema,
 } = validateUtils
-
-describe('parseTypeStr', () => {
-  it('nothing', () => {
-    expect(parseTypeStr()).toEqual({})
-    expect(parseTypeStr('')).toEqual({})
-    expect(parseTypeStr('test*[]?test')).toEqual({})
-  })
-  it('.string = input', () => {
-    expect(parseTypeStr('test').string).toBe('test')
-    expect(parseTypeStr('test*[]?').string).toBe('test*[]?')
-  })
-  it('.type = typeStr', () => {
-    expect(parseTypeStr('test').type).toBe('test')
-    expect(parseTypeStr('test*[]?').type).toBe('test')
-  })
-  it('.isOptional = isOptional', () => {
-    expect(parseTypeStr('test').isOptional).toBe(false)
-    expect(parseTypeStr('test?').isOptional).toBe(true)
-    expect(parseTypeStr('test*[]').isOptional).toBe(false)
-    expect(parseTypeStr('test*[]?').isOptional).toBe(true)
-    expect(parseTypeStr('test*?[]').isOptional).toBe(true)
-    expect(parseTypeStr('test?*[]').isOptional).toBe(true)
-  })
-  it('.isArray = isArray', () => {
-    expect(parseTypeStr('test').isArray).toBe(false)
-    expect(parseTypeStr('test[]').isArray).toBe(true)
-    expect(parseTypeStr('test*?').isArray).toBe(false)
-    expect(parseTypeStr('test[]*?').isArray).toBe(true)
-    expect(parseTypeStr('test*[]?').isArray).toBe(true)
-    expect(parseTypeStr('test*?[]').isArray).toBe(true)
-  })
-  it('.hasSpaces = leaveWhiteSpace', () => {
-    expect(parseTypeStr('test').hasSpaces).toBe(false)
-    expect(parseTypeStr('test*').hasSpaces).toBe(true)
-    expect(parseTypeStr('test[]?').hasSpaces).toBe(false)
-    expect(parseTypeStr('test*[]?').hasSpaces).toBe(true)
-    expect(parseTypeStr('test[]*?').hasSpaces).toBe(true)
-    expect(parseTypeStr('test[]?*').hasSpaces).toBe(true)
-  })
-})
 
 describe('formSettingsToValidate', () => {
   it('format for byObject', () => {

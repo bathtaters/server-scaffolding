@@ -2,7 +2,6 @@ const Users = require('../models/Users')
 const { forwardOnAuth } = require('../middleware/auth.middleware')
 const { access } = require('../config/users.cfg')
 const { isPm2 } = require('../../config/meta')
-const limits = require('../config/users.cfg').definitions.limits
 const urls = require('../../config/urls.cfg').gui
 
 exports.loginPage = [
@@ -14,7 +13,7 @@ exports.loginPage = [
       title: 'Login',
       hideNav: true,
       isUser: isPm2 || isUser,
-      limits,
+      schema: Users.schema,
       failureMessage: req.flash('error'),
       postURL: urls.root.login,
       csrfToken: req.csrfToken && req.csrfToken(),

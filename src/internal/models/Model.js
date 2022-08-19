@@ -1,8 +1,11 @@
 const { openDb, getDb } = require('../libs/db')
 const services = require('../services/db.services')
-const { checkInjection, sanitizeSchemaData, schemaFromTypes, boolsFromTypes, appendAndSort, adaptersFromTypes } = require('../utils/db.utils')
-const { hasDupes, caseInsensitiveObject } = require('../utils/common.utils')
+const { getPrimaryIdAndAdaptSchema, runAdapters } = require('../services/model.services')
+const { checkInjection, appendAndSort } = require('../utils/db.utils')
+const { caseInsensitiveObject, filterByField } = require('../utils/common.utils')
+const { isBool, sanitizeSchemaData } = require('../utils/model.utils')
 const { parseBoolean } = require('../utils/validate.utils')
+const { adapterKey } = require('../config/models.cfg')
 const parseBool = parseBoolean(true)
 const errors = require('../config/errors.internal')
 
@@ -10,35 +13,16 @@ const errors = require('../config/errors.internal')
 class Model {
 
   /**
-   * Creates a new database model and loads it into the database
+   * Creates a new database model and initializes it into the database
    * @param  {string} title - Name of database table
-   * @param  {ModelOptions} options - Additional options
+   * @param  {Object.<string,ModelDefinition>} definitions - All Model keys and their definitions
    */
-  constructor(title, { types, limits, defaults, primaryId = 'id', getAdapter, setAdapter, sqlSchema } = {}) {
-    if (!types && !sqlSchema) throw new Error(`${title} must be provided a Schema or Types object.`)
-
-    if (typeof sqlSchema === 'function') sqlSchema = sqlSchema(schemaFromTypes(types, primaryId))
-    else sqlSchema = Object.assign(schemaFromTypes(types, primaryId), sqlSchema || {})
-
-    if (!sqlSchema || !Object.keys(sqlSchema).length) throw new Error(`Schema for ${title} was unable to be created or has no entries.`)
-    if (hasDupes(Object.keys(sqlSchema).map((k) => k.toLowerCase())))
-      throw new Error(`Schema for ${title} contains duplicate key names: ${Object.keys(sqlSchema).join(', ')}`)
-
-    if (!sqlSchema[primaryId]) sqlSchema[primaryId] = 'INTEGER PRIMARY KEY'
-    if (types && !types[primaryId]) types[primaryId] = 'int'
-
-    const adaptDefs = types && (!getAdapter || !setAdapter) && adaptersFromTypes(types)
+  constructor(title, definitions) {
+    if (!definitions) throw new Error(`${title} must be provided a definitions object.`)
 
     this.title = title
-    this.schema = sanitizeSchemaData(sqlSchema)
-    this.defaults = defaults
-    this.types = types
-    this.limits = limits
-    this.primaryId = primaryId
-    this.bitmapFields = []
-    this.boolFields = boolsFromTypes(types)
-    this.getAdapter = typeof getAdapter === 'function' ? getAdapter : getAdapter == null ? adaptDefs.getAdapter : null
-    this.setAdapter = typeof setAdapter === 'function' ? setAdapter : setAdapter == null ? adaptDefs.setAdapter : null
+    this.primaryId = getPrimaryIdAndAdaptSchema(definitions, this.title)
+    this.schema = definitions
 
     this.isInitialized = new Promise(async (res, rej) => {
       if (!getDb()) { await openDb() }
@@ -47,7 +31,8 @@ class Model {
   }
   
   create(overwrite = false) {
-    return services.reset(getDb(), { [this.title]: this.schema }, overwrite).then(() => ({ success: true }))
+    const dbSchema = { [this.title]: filterByField(this.schema, 'db') }
+    return services.reset(getDb(), dbSchema, overwrite).then(() => ({ success: true }))
   }
     
 
@@ -55,15 +40,15 @@ class Model {
     let result
     if (id == null)
       result = await services.all(getDb(), `SELECT * FROM ${this.title}`)
-    
     else
       result = await services.get(getDb(),
         `SELECT * FROM ${this.title} WHERE ${checkInjection(idKey, this.title) || this.primaryId} = ?`,
       [id])
-
     result = Array.isArray(result) ? result.map(caseInsensitiveObject) : caseInsensitiveObject(result)
-    if (raw || !this.getAdapter) return result
-    return Array.isArray(result) ? result.map(this.getAdapter) : result && this.getAdapter(result)
+    if (raw) return result
+    return Array.isArray(result) ?
+      Promise.all(result.map((data) => runAdapters(adapterKey.get, data, this.schema, this.hidden))) :
+      result && runAdapters(adapterKey.get, result, this.schema, this.hidden)
   }
 
 
@@ -78,12 +63,12 @@ class Model {
       [size, (page - 1) * size]
     ).then((res) => res.map(caseInsensitiveObject))
 
-    return this.getAdapter ? result.map(this.getAdapter) : result
+    return Promise.all(result.map((data) => runAdapters(adapterKey.get, data, this.schema, this.hidden)))
   }
 
 
   async find(matchData, partialMatch = false) {
-    if (this.setAdapter) matchData = await this.setAdapter(matchData)
+    matchData = await runAdapters(adapterKey.set, matchData, this.schema)
     matchData = sanitizeSchemaData(matchData, this.schema)
 
     const searchData = Object.entries(matchData)
@@ -95,12 +80,12 @@ class Model {
         text.push(`${key} = ?`)
         return params.push(val)
         
-      } if (this.bitmapFields.includes(key)) {
+      } if (this.schema[key].isBitmap) {
         val = +val
         text.push(`${key} ${val ? '&' : '='} ?`)
         return params.push(val)
 
-      } if (this.boolFields.includes(key)) {
+      } if (isBool(this.schema[key])) {
         val = +parseBool(val)
         text.push(`${key} = ?`)
         return params.push(val)
@@ -120,7 +105,7 @@ class Model {
       `SELECT * FROM ${this.title} WHERE ${text.join(' AND ')}`,
     params).then((res) => res.map(caseInsensitiveObject))
 
-    return this.getAdapter ? result.map(this.getAdapter) : result
+    return Promise.all(result.map((data) => runAdapters(adapterKey.get, data, this.schema, this.hidden)))
   }
 
 
@@ -135,9 +120,8 @@ class Model {
   
   
   async add(data) {
-    if (this.setAdapter) data = await this.setAdapter(data)
+    data = await runAdapters(adapterKey.set, { ...this.defaults, ...data }, this.schema)
     data = sanitizeSchemaData(data, this.schema)
-    if (this.defaults) data = { ...this.defaults, ...data }
     
     const keys = Object.keys(data)
     if (!keys.length) return Promise.reject(errors.noData())
@@ -152,7 +136,7 @@ class Model {
   async update(id, data, idKey = null, onChangeCb = null) {
     if (id == null) throw errors.noID()
 
-    if (this.setAdapter) data = await this.setAdapter(data)
+    data = await runAdapters(adapterKey.set, data, this.schema)
     data = sanitizeSchemaData(data, this.schema)
     if (!Object.keys(data).length) throw errors.noData()
 
@@ -191,8 +175,8 @@ class Model {
     /* WARNING!! SQL CANNOT BE CHECKED FOR INJECTION */
     const result = await services.all(getDb(), sql, params)
       .then((res) => res.map(caseInsensitiveObject))
-    if (raw || !this.getAdapter) return result
-    return result.map(this.getAdapter)
+    if (raw) return result
+    return Promise.all(result.map((data) => runAdapters(adapterKey.get, data, this.schema, this.hidden)))
   }
 
   
@@ -216,8 +200,14 @@ class Model {
   set title(newTitle) { this._title = checkInjection(newTitle) }
   get primaryId() { return this._primaryId }
   set primaryId(newId) { this._primaryId = checkInjection(newId, this.title) }
+  get hidden() { return this._hidden }
+  get defaults() { return this._defaults }
   get schema() { return this._schema }
-  set schema(newSchema) { this._schema = checkInjection(newSchema, this.title) }
+  set schema(newSchema) {
+    this._schema = checkInjection(newSchema, this.title)
+    this._defaults = filterByField(newSchema, 'default')
+    this._hidden = Object.keys(newSchema).filter((key) => newSchema[key].dbOnly)
+  }
 }
 
 module.exports = Model
@@ -228,40 +218,49 @@ module.exports = Model
 /**
  * Callback that takes in a single piece of data and returns a modified version of that data
  * @callback Adapter
- * @param {Object} data - input data
- * @returns {Object} updated data
+ * @param {any} value - input value
+ * @param {Object} data - full input object
+ * @returns {Object} updated input value
  */
 
 /**
- * Model options object
- * (Requires at least one of types OR sqlSchema is entered)
- * @typedef  {Object} ModelOptions
- * @property {Object.<string,string>} types - Object of column types
- *   - { [columnKey]: (colType) }
- *   - (colType) = string, uuid, b64[url], hex, date, datetime, boolean, int, float, object, any
- *   - (colType)[] = array of (colType)
- *   - (colType)? = column is optional
+ * Model definitions object
+ * @typedef  {Object} ModelDefinition
+ * @property {string} typeStr - Column type (full string)
+ *   - Can be: string, uuid, b64[url], hex, date, datetime, boolean, int, float, object, any
+ *   - (type)[] = array of (type)
+ *   - (type)? = column is optional
  *   - string* = allow symbols/spaces in string
- * @property {Object.<string,import('../validators/shared.validators').Limits>} [limits] - Object of column limits
- *   - { [columnKey]: { columnLimits } }
+ * @property {import('../validators/shared.validators').Limits} [limits] - Object of column limits
+ *   - { min?, max? } | { array: { min?, max? }, elem: { min?, max? } }
  *   - Sets limits on numbers, string length or array size
- * @property {Object.<string,any>} [defaults] - Object of column defaults
- *   - { [columnKey]: defaultValue }
+ * @property {any} [default] - Default value
  *   - Default value to use for that column if nothing provided on creation 
- * @property {string} [primaryId=id] - columnKey for SQL primary key
- *   - If not in type will be added as auto-incrementing INT
- *   - default: 'id'
- * @property {Adapter} [getAdapter] - Function called on every row retrieved from the database (ie. get)
- *   - INPUT: Row as an object
- *   - RETURN: Passed to user when calling a retrieve method
- *   - default: Converts data based on Model.types
- * @property {Adapter} [setAdapter] - Function called on every object before it is stored in the database (ie. add/update)
- *   - INPUT: Data object called with a set method 
- *   - REUTRN: Row object to be inserted/updated in the database
- *   - default: Converts data based on Model.types
- * @property {Object.<string,string>|Adapter} [sqlSchema] - Can be an Object or Function for helping create the SQL Table
- *   - OBJECT: { [columnKey]: 'SQL TYPE' }, this will override the schema auto-generated from Model.types
- *   - FUNCTION: called on the auto-generated SQL schema before the table is created
- *   - - input object will be like OBJECT (above)
- *   - - return should be of the same form
+ *   - This value is run through setAdapter each time
+ * @property {string} [isPrimary] - if column is SQL primary key
+ *   - When no type/typeStr is provided, it will be set as auto-incrementing Int
+ * @property {Adapter} [getAdapter] - Function called whenever this column is retrieved from the database
+ *   - INPUT: Column value for row, Entire row as an object
+ *   - RETURN: Updated column value for user
+ *   - default: Converts data based on type
+ * @property {Adapter} [setAdapter] - Function called whenever this column is stored in the database (ie. add/update)
+ *   - INPUT: Column value for row, Entire row as an object
+ *   - RETURN: Updated column value for database
+ *   - default: Converts data based on type
+ * @property {string} [html] - Type property for HTML <input> tag in user form
+ *   - falsy value = column is only in database (Not accessible via UI)
+ *   - default: property is auto-generated based on type
+ * @property {string} [db] - Type of schema for this column in database
+ *   - falsy value = column is not in database (Only for UI validation)
+ *   - default: schema is auto-generated based on type
+ * @property {string} [dbOnly] - If column is internal to database only
+ *   - Truthy value will obscure column from non-raw get results
+ * @property {string} [type] - Column base type (w/o suffixes)
+ *   - default: parsed from typeStr
+ * @property {string} [isOptional] - If column can be empty
+ *   - default: parsed from typeStr
+ * @property {string} [isArray] - If column is an array of <type>
+ *   - default: parsed from typeStr
+ * @property {string} [hasSpaces] - If a string column will allow spaces & special characters
+ *   - default: parsed from typeStr
  */

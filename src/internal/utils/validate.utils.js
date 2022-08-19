@@ -2,21 +2,6 @@ const RegEx = require('../libs/regex')
 const { boolOptions } = require('../config/validate.cfg')
 const { splitUnenclosed } = require('../utils/common.utils')
 
-// Decode validation types to [fullStr, typeStr, leaveWhiteSpace (*), isArray ([]), isOptional (?)]
-const typeStrRegex = RegEx(/^([^[?*]+)(\?|\*|\[\])?(\?|\*|\[\])?(\?|\*|\[\])?$/)
-exports.parseTypeStr = (typeStr) => {
-  if (!typeStr) return {}
-  const match = typeStr.toLowerCase().match(typeStrRegex)
-  if (!match) return {}
-  const opts = match.slice(2,5)
-  return {
-    string: match[0], type: match[1],
-    isOptional: opts.includes('?'),
-    isArray: opts.includes('[]'),
-    hasSpaces: opts.includes('*'),
-  }
-}
-
 // Get validation & limits from html object { key, type, limits }
 const html2Valid = ({ type, limits }, key, isIn = 'body') => ({
   key, isIn,

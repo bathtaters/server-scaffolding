@@ -23,7 +23,7 @@ describe('Test Users Form Post', () => {
     userInfo = await Users.get("apiuser", 'username')
     expect(userInfo).toBeTruthy()
     expect(userInfo.username).toBe("apiuser")
-    expect(userInfo.access).toBe("1")
+    expect(userInfo.access).toBe(1)
   })
 
   test('POST /form Update', async () => {
@@ -59,12 +59,12 @@ describe('Test Users Form Post', () => {
     await request.post(`${userPrefix}/form/update`).expect(302).expect('Location',userPrefix)
       .send({ id: userInfo.id, access: ['admin'] })
     userInfo = await Users.get(userInfo.id)
-    expect(userInfo.access).toBe("4")
+    expect(userInfo.access).toBe(4)
 
     await request.post(`${userPrefix}/form/update`).expect(302).expect('Location',userPrefix)
       .send({ id: userInfo.id, access: ['gui','api'] })
     userInfo = await Users.get(userInfo.id)
-    expect(userInfo.access).toBe("3")
+    expect(userInfo.access).toBe(3)
   })
 
   test('Set CORS array', async () => {

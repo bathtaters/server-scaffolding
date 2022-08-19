@@ -8,30 +8,30 @@ block form
   .row
     .col-sm
       each val, key in { username: 'text', password: 'password', confirm: 'password' }
-        +formInput(key, val, limits[key], searchData ? searchData[key] : defaults[key], tableFields[key], '', tooltips[key])
+        +formInput(key, val, schema[key].limits, searchData ? searchData[key] : schema[key].default, tableFields[key], '', tooltips[key])
 
       .collapse
         input.ignoreClear(type="checkbox" id="expandModels" aria-hidden="true" checked=false)
         label.center.tooltip(for="expandModels" aria-hidden="true" aria-label=tooltips.models role="button")= tableFields.models
         .row
           .col.autoMargin
-            +checkboxes('models', modelsList[0], 'Models', modelsList[1], searchData ? searchData.models : defaults.models)
+            +checkboxes('models', modelsList[0], 'Models', modelsList[1], searchData ? searchData.models : schema.models.default)
     
     .col-sm
       div(style='text-align:right;'): i: a#copyToken.small(href="#") Copy API Key
-      +buttonInput('token', 'readonly', 'Regen', limits.token, searchData ? searchData.token : defaults.token, regenURL, tableFields.token, tooltips.token)
+      +buttonInput('token', 'readonly', 'Regen', schema.token.limits, searchData ? searchData.token : schema.token.default, regenURL, tableFields.token, tooltips.token)
 
-      +checkboxes('access', accessLevels, tableFields.access, null, searchData ? searchData.access : defaults.access)
+      +checkboxes('access', accessLevels, tableFields.access, null, searchData ? searchData.access : schema.access.default)
 
       .row.responsive-padding
-        +formInput('locked', 'checkbox', null, searchData ? searchData.locked : defaults.locked, tableFields.locked, '', tooltips.locked)
+        +formInput('locked', 'checkbox', null, searchData ? searchData.locked : schema.locked.default, tableFields.locked, '', tooltips.locked)
 
       span#primary-key
         +formInput(idKey, 'hidden')
       +pageData(page, size)
 
   .row: .col-sm
-      +formInput('cors', '2', limits.cors, searchData ? searchData.cors : defaults.cors, tableFields.cors, '', tooltips.cors)
+      +formInput('cors', '2', schema.cors.limits, searchData ? searchData.cors : schema.cors.default, tableFields.cors, '', tooltips.cors)
 
 block table
   each user in data

@@ -35,7 +35,7 @@ block content
       .row
         .col-sm
           each val, key in { username: 'text', password: 'password', confirm: 'password' }
-            +formInput(key, val, limits[key], key === 'username' && userData[key], tableFields[key], '', tooltips[key])
+            +formInput(key, val, schema[key].limits, key === 'username' && userData[key], tableFields[key], '', tooltips[key])
           
           span#primary-key
             input(type="hidden" value=userData[idKey] id=idKey name=idKey)

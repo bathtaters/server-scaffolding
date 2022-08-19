@@ -6,16 +6,22 @@ const { deepCopy } = require('../test.utils')
 
 const inputValues = [
   {
-    types:  { a: 'type1', b: 'type2' },
-    limits: { a: 'lims1', b: 'lims2' },
+    schema: {
+      a: { type: 'type1', limits: 'lims1' },
+      b: { type: 'type2', limits: 'lims2' },
+    },
   },{
-    types:  { c: 'type3', d: 'type4' },
-    limits: { c: 'lims3' },
+    schema: {
+      c: { type: 'type3', limits: 'lims3' },
+      d: { type: 'type4'},
+    },
   },{
     primaryId: 'g',
-    types:  { e: 'type5', f: 'type6', g: 'type7' },
-    defaults: { f: 'default6' },
-    limits: {}
+    schema: {
+      e: { type: 'type5', html: 'html5' },
+      f: { type: 'type6', default: 'default6' },
+      g: { type: 'type7' },
+    },
   }
 ]
 
@@ -61,11 +67,9 @@ describe('byModel', () => {
       expect.anything(),
       expect.anything(),
       expect.anything(),
-      expect.anything(),
     )
     expect(generateSchema).toHaveBeenNthCalledWith(2, 
       'b',
-      expect.anything(),
       expect.anything(),
       expect.anything(),
       expect.anything(),
@@ -76,16 +80,14 @@ describe('byModel', () => {
     shared.byModel(testModel[0],['a','b'])
     expect(generateSchema).toHaveBeenNthCalledWith(1, 
       expect.anything(),
-      'type1',
-      expect.anything(),
+      expect.objectContaining({ type: 'type1' }),
       expect.anything(),
       expect.anything(),
       expect.anything(),
     )
     expect(generateSchema).toHaveBeenNthCalledWith(2, 
       expect.anything(),
-      'type2',
-      expect.anything(),
+      expect.objectContaining({ type: 'type2' }),
       expect.anything(),
       expect.anything(),
       expect.anything(),
@@ -95,16 +97,14 @@ describe('byModel', () => {
     shared.byModel(testModel[0],['a','b'])
     expect(generateSchema).toHaveBeenNthCalledWith(1, 
       expect.anything(),
-      expect.anything(),
-      'lims1',
+      expect.objectContaining({ limits: 'lims1' }),
       expect.anything(),
       expect.anything(),
       expect.anything(),
     )
     expect(generateSchema).toHaveBeenNthCalledWith(2, 
       expect.anything(),
-      expect.anything(),
-      'lims2',
+      expect.objectContaining({ limits: 'lims2' }),
       expect.anything(),
       expect.anything(),
       expect.anything(),
@@ -117,12 +117,10 @@ describe('byModel', () => {
       expect.anything(),
       expect.anything(),
       expect.anything(),
-      expect.anything(),
       'opt',
       expect.anything(),
     )
     expect(generateSchema).toHaveBeenNthCalledWith(2, 
-      expect.anything(),
       expect.anything(),
       expect.anything(),
       expect.anything(),
@@ -137,11 +135,9 @@ describe('byModel', () => {
       expect.anything(),
       expect.anything(),
       expect.anything(),
-      expect.anything(),
       'part',
     )
     expect(generateSchema).toHaveBeenNthCalledWith(2, 
-      expect.anything(),
       expect.anything(),
       expect.anything(),
       expect.anything(),
@@ -155,13 +151,11 @@ describe('byModel', () => {
     expect(generateSchema).toHaveBeenNthCalledWith(1, 
       expect.anything(),
       expect.anything(),
-      expect.anything(),
       ['params','body'],
       expect.anything(),
       expect.anything(),
     )
     expect(generateSchema).toHaveBeenNthCalledWith(2, 
-      expect.anything(),
       expect.anything(),
       expect.anything(),
       ['body'],
@@ -175,7 +169,6 @@ describe('byModel', () => {
     expect(generateSchema).toBeCalledWith(
       'e',
       expect.anything(),
-      undefined,
       expect.anything(),
       false,
       expect.anything(),
@@ -183,7 +176,6 @@ describe('byModel', () => {
     expect(generateSchema).toBeCalledWith(
       'f',
       expect.anything(),
-      undefined,
       expect.anything(),
       true,
       expect.anything(),
@@ -191,7 +183,6 @@ describe('byModel', () => {
     expect(generateSchema).toBeCalledWith(
       'g',
       expect.anything(),
-      undefined,
       expect.anything(),
       true,
       expect.anything(),
@@ -204,27 +195,24 @@ describe('byModel', () => {
     expect(generateSchema).toBeCalledWith(
       'a',
       expect.anything(),
-      expect.anything(),
       ['params'],
       expect.anything(),
       expect.anything(),
     )
     expect(generateSchema).toBeCalledTimes(1)
   })
-  it('"all" as key list uses all keys under cfg.types', () => {
-    shared.byModel(testModel[1],'all',{ params: ['d'] })
+  it('"all" as key uses all keys w/ html value + primaryKey', () => {
+    shared.byModel(testModel[2],'all',{ params: ['g'] })
     expect(generateSchema).toBeCalledWith(
-      'c',
-      expect.anything(),
+      'e',
       expect.anything(),
       ['body'],
       expect.anything(),
       expect.anything(),
     )
     expect(generateSchema).toBeCalledWith(
-      'd',
+      'g',
       expect.anything(),
-      undefined, // No limits
       ['params','body'],
       expect.anything(),
       expect.anything(),
@@ -236,7 +224,6 @@ describe('byModel', () => {
     expect(generateSchema).toBeCalledWith(
       'c',
       expect.anything(),
-      expect.anything(),
       ['params'],
       expect.anything(),
       expect.anything(),
@@ -244,7 +231,6 @@ describe('byModel', () => {
     expect(generateSchema).toBeCalledWith(
       'd',
       expect.anything(),
-      undefined, // No limits
       ['body'],
       expect.anything(),
       expect.anything(),
@@ -256,7 +242,6 @@ describe('byModel', () => {
     expect(generateSchema).toBeCalledWith(
       'c',
       expect.anything(),
-      expect.anything(),
       ['params', 'params', 'body'],
       expect.anything(),
       expect.anything(),
@@ -264,7 +249,6 @@ describe('byModel', () => {
     expect(generateSchema).toBeCalledWith(
       'd',
       expect.anything(),
-      undefined, // No limits
       ['body'],
       expect.anything(),
       expect.anything(),
@@ -283,7 +267,6 @@ describe('byModel', () => {
     expect(generateSchema).toBeCalledWith(
       'c',
       expect.anything(),
-      expect.anything(),
       ['params', 'body'],
       expect.anything(),
       expect.anything(),
@@ -291,7 +274,6 @@ describe('byModel', () => {
     expect(generateSchema).toBeCalledWith(
       'd',
       expect.anything(),
-      undefined, // No limits
       ['body'],
       expect.anything(),
       expect.anything(),
@@ -327,14 +309,12 @@ describe('byModel', () => {
     expect(generateSchema).toBeCalledWith(
       'a',
       expect.anything(),
-      expect.anything(),
       ['query'],
       expect.anything(),
       expect.anything(),
     )
     expect(generateSchema).toBeCalledWith(
       'b',
-      expect.anything(),
       expect.anything(),
       ['params','query'],
       expect.anything(),

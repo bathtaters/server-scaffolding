@@ -1,56 +1,43 @@
-const { formatLong } = require('../libs/date')
 const logger = require('../libs/log')
+const { formatLong } = require('../libs/date')
 const {
   accessArray, accessInt, hasAccess,
   decodeCors, encodeCors, displayCors, isRegEx,
   getModelsString, modelsArrayToObj, modelAccessToInts
 } = require('../utils/users.utils')
 const { generateToken, encodePassword } = require('../utils/auth.utils')
-const { access, definitions, searchableKeys } = require('../config/users.cfg')
+const { access, searchableKeys } = require('../config/users.cfg')
+const { adapterKey } = require('../config/models.cfg')
 const errors = require('../config/errors.internal')
 
-exports.getAdapter = ({ id, token, username, access, cors, key, models, guiTime, apiTime, failTime, apiCount, guiCount, failCount, locked }) => {
-  let updatedFields = { hadError: true }
-  try {
-    updatedFields = {
-      models: models ? JSON.parse(models) : [],
-      cors: decodeCors(cors),
+exports.initAdapters = (definitions) => {
+  // GET ADAPTERS
+  definitions.key[adapterKey.get] = (key,data) => { data.password = Boolean(key) }
+  definitions.cors[adapterKey.get] = (cors) => decodeCors(cors)
+  definitions.models[adapterKey.get] = (models) => {
+    let updated = '<ERROR>'
+    try { updated = typeof models === 'string' && models ? JSON.parse(models) : models || [] }
+    catch (err) { err.name = 'User.get'; logger.error(err) }
+    return updated
+  }
+  // SET ADAPTERS
+  definitions.models[adapterKey.set] = (models) => JSON.stringify(modelAccessToInts(models) || {})
+  definitions.access[adapterKey.set] = (access) => accessInt(access)
+  definitions.cors[adapterKey.set] = (cors) => encodeCors(cors)
+  definitions.username[adapterKey.set] = (username) => username.toLowerCase()
+  definitions.password[adapterKey.set] = async (password, data) => {
+    if (password) {
+      const { key, salt } = await encodePassword(password)
+      data.key = key
+      data.salt = salt
     }
-  } catch (err) { err.name = 'User.get'; logger.error(err) }
-  return {
-    id, token, username, access, locked,
-    guiTime, apiTime, failTime,
-    guiCount, apiCount, failCount,
-    password: Boolean(key),
-    ...updatedFields
   }
 }
 
-exports.setAdapter = async (data) => {
-  if ('models' in data) data.models = JSON.stringify(modelAccessToInts(data.models) || {})
-  if ('access' in data) data.access = accessInt(data.access)
-  if ('cors' in data) data.cors = encodeCors(data.cors)
-  if ('username' in data) data.username = data.username.toLowerCase()
-  if (data.password) {
-    const { key, salt } = await encodePassword(data.password)
-    data.key = key
-    data.salt = salt
-  }
-  delete data.password
-  return data
-}
-
-exports.addAdapter = ({
-  username = definitions.defaults.username,
-  access = definitions.defaults.access,
-  cors = definitions.defaults.cors,
-  models = definitions.defaults.models,
-  password,
-}, idKey = 'id') => ({
-  ...definitions.defaults,
+exports.addAdapter = (data, idKey = 'id') => ({
   [idKey]: generateToken(),
   token: generateToken(),
-  username, access, password, cors, models,
+  ...data,
 })
 
 exports.guiAdapter = (user) => {
@@ -79,8 +66,6 @@ exports.guiAdapter = (user) => {
 }
 
 exports.preValidateAdapter = (formData, isSearch) => (isSearch && stripNonSearchProps(formData)) || formData
-
-exports.schemaAdapter = ({ password, ...schema }) => ({ ...schema, key: 'TEXT', salt: 'TEXT' })
 
 exports.adminFormAdapter = (formData, _, action) => {
   if ('models' in formData) formData.models = modelsArrayToObj(formData.models)
