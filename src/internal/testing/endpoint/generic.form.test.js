@@ -49,8 +49,8 @@ describe('Test User Profile Form Post', () => {
 
   test('Form Search', async () => {
     await request.post(formUrl+'search').expect(302)
-      .expect('Location', `${prefix.gui}/results?${testKey}=text&${idKey}=12`)
-      // .expect('Location', `${prefix.gui}/results?${idKey}=12&${testKey}=text`)
+      .expect('Location', `${prefix.gui}/results?${idKey}=12&${testKey}=text`)
+      // .expect('Location', `${prefix.gui}/results?${testKey}=text&${idKey}=12`)
       .send({ [testKey]: "text", [idKey]: 12 })
   })
 

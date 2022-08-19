@@ -18,9 +18,9 @@ Object.values(actionURL).forEach((action) => {
 })
 
 // Logs/Settings
-router.get(admin.logs,              controllers.logList)
-router.get(admin.logs+'/:filename', controllers.logView)
-router.get(admin.home,              controllers.settings)
-router.post(admin.home+admin.form,  validate.settings, actions.settingsForm)
+router.get(admin.home,                                   controllers.settings)
+router.get(admin.logs,                                   controllers.logList)
+router.get(`${admin.logs}/:filename`, validate.logs,     controllers.logView)
+router.post(admin.home+admin.form,    validate.settings, actions.settingsForm)
 
 module.exports = router
