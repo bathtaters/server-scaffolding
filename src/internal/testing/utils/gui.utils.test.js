@@ -1,5 +1,4 @@
-const { varName, getTableFields, getTypes, getSchema, mask, formatGuiData } = require('../../utils/gui.utils')
-const { parseTypeStr } = require('../../utils/validate.utils')
+const { varName, getTableFields, mask, formatGuiData } = require('../../utils/gui.utils')
 
 describe('varName', () => {
   it('capitalizes first char', () => {
@@ -69,49 +68,6 @@ describe('formatGuiData', () => {
   })
 })
 
-describe('getTypes', () => {
-  it('defaults to "text"', () => {
-    expect(getTypes({ a: '1', b: '2', c: '3' },''))
-      .toEqual({ a: 'text', b: 'text', c: 'text' })
-  })
-  it('converts bools/numbers', () => {
-    expect(getTypes({ a: 'boolean', b: 'int', c: 'float' },''))
-      .toEqual({ a: 'checkbox', b: 'number', c: 'number' })
-  })
-  it('converts date/time types', () => {
-    expect(getTypes({ a: 'date', b: 'datetime' },''))
-      .toEqual({ a: 'date', b: 'datetime-local' })
-  })
-  it('filters out idKey', () => {
-    expect(Object.keys(getTypes({ a: '1', b: '2', c: '3' }, 'a'))).toEqual(['b','c'])
-    expect(Object.keys(getTypes({ a: '1', b: '2', c: '3' }, 'b'))).toEqual(['a','c'])
-  })
-  it('arrays always are text', () => {
-    [...Array(6)].forEach(() => parseTypeStr.mockImplementationOnce((type) => ({ type, isArray: true })))
-    expect(getTypes({ a: 'boolean', b: 'int', c: 'float', d: 'date', e: 'datetime', f: 'string' },''))
-      .toEqual({ a: 'text', b: 'text', c: 'text', d: 'text', e: 'text', f: 'text' })
-  })
-})
-
-describe('getSchema', () => {
-  it('passes unrecognized values', () => {
-    expect(getSchema({ a: '1', b: '2', c: '3' },''))
-      .toEqual({ a: '1', b: '2', c: '3' })
-  })
-  it('translates using sql2html', () => {
-    expect(getSchema({ a: 'SQL', b: 'TEST', c: 'MORE_SQL!' },''))
-      .toEqual({ a: 'html', b: 'new', c: 'html' })
-  })
-  it('filters out idKey', () => {
-    expect(Object.keys(getSchema({ a: '1', b: '2', c: '3' }, 'a'))).toEqual(['b','c'])
-    expect(Object.keys(getSchema({ a: '1', b: '2', c: '3' }, 'b'))).toEqual(['a','c'])
-  })
-  it('forces boolKeys to cfg.boolInputType', () => {
-    expect(getSchema({ a: 'SQL', b: 'TEST', c: 'MORE_SQL!' },'',['b','c']))
-      .toEqual({ a: 'html', b: 'BOOL_CFG', c: 'BOOL_CFG' })
-  })
-})
-
 describe('mask', () => {
   it('masks by type', () => {
     expect(mask(12n)).toBe('**')
@@ -142,10 +98,8 @@ describe('mask', () => {
 
 // MOCKS
 
-jest.mock('../../utils/validate.utils', () => ({ parseTypeStr: jest.fn((type) => ({ type })) }))
+jest.mock('../../libs/date', () => ({ isDate: (dt) => typeof dt.getMonth === 'function' }))
 jest.mock('../../../config/gui.cfg', () => ({
   varNameDict: { testDict: 'TEST' },
-  sql2html: [ [/SQL/, 'html'], [/TEST/, 'new'], ],
   MASK_CHAR: '*',
-  boolInputType: 'BOOL_CFG',
 }))

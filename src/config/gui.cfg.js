@@ -41,13 +41,6 @@ module.exports = {
   // Convert field names to form labels { key: 'Label Text' }
   varNameDict: { id: 'ID', swapId: 'Swap ID' },
   
-  // Convert SQLite data types to HTML <input> type [ /SQL-Type Name RegExp/, 'input.type' ]
-  sql2html: [
-    [RegEx(/INTEGER|REAL/i), 'number'],
-    [RegEx(/TEXT|BLOB/i), 'text'],
-  ],
-  boolInputType: 'checkbox',
-  
   // Mask values when reporting errors for these values
   mask: [ 'password', 'confirm' ],
   MASK_CHAR: '*',
