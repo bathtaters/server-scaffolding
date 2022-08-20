@@ -10,6 +10,7 @@ const appendToError = (error, { message, stack, ...errorProps }) => Object.assig
 //    403: no access for client
 //    404: page doesn't exist
 //    409: conflict with existing entry
+//    429: too many requests (rate limit)
 //    500: server error
 //    502: database error
 
@@ -38,6 +39,7 @@ module.exports = {
   badAccess: (access, type = 'key') => createError(500, `Invalid access ${type}: ${access}.`),
   noModel: (model, access) => createError(403, `User does not have ${access || ''} access to ${model || 'this model'}.`),
   badModels: (models) => createError(500, `Invalid model list: [${typeof models}] ${JSON.stringify(models)}.`),
+  rateLimit: (data) => appendToError(createError(429, `Too many requests. Try again in a bit.`), { stack: JSON.stringify(data) }),
   loginMessages: {
     noUser:     { fail: 'Incorrect username or user was deleted' },
     isLocked:   { fail: 'User is locked out due to too many failed attempts' },
@@ -53,7 +55,10 @@ module.exports = {
   badAction: (action) => createError(400, `Invalid action: ${action || '[None]'}.`),
 
   // Other Errors
-  sqlError: (err, sql, params) => appendToError(createError(502, err.message || err), { name: 'sqlError', stack: `\tCmd: ${sql}\n\t\t[${(params || []).join(', ')}]` }),
+  sqlError: (err, sql, params) => appendToError(
+    createError(502, err.message || err),
+    { name: 'sqlError', stack: `\tCmd: ${sql}\n\t\t[${(Array.isArray(params) ? params : Object.values(params || {})).join(', ')}]` }
+  ),
   badUsername: (username, reason) => createError(409, `Cannot set name ${username || 'for user'}: ${reason}`),
   deleteAdmin: () => createError(403, "Cannot remove the only admin. Add another admin then retry, or reset User Table to remove all users."),
   noUndo: () => createError(500, "Undo queue is empty"),

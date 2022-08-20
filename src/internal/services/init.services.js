@@ -4,6 +4,7 @@ const fs = require('fs/promises')
 const { gracefulExitHandler } = require('express-graceful-exit')
 const { startup, teardown } = require('../../server.init')
 const logger = require('../libs/log')
+const rateMw = require('../middleware/rateLimit.middleware')
 const meta = require('../../config/meta')
 const urls = require('../../config/urls.cfg')
 const shutdownError = require('../config/errors.internal').shutdown
@@ -52,6 +53,7 @@ async function initializeServer(app) {
   // Setup DB & init Models
   if (!getDb()) await openDb()
   await Promise.all(Object.values(models).map((m) => m.isInitialized))
+  await rateMw.isInitialized
 
   if (startup) await startup(app)
 
