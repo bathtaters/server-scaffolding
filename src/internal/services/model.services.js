@@ -43,7 +43,7 @@ exports.getPrimaryIdAndAdaptSchema = function (schema, title = 'model') {
 exports.runAdapters = async (adapterKey, data, schema, hideFields) => {
   if (typeof data !== 'object') return data
   await Promise.all(Object.keys(data).map(async (key) => {
-    if (schema[key][adapterKey]) data[key] = await schema[key][adapterKey](data[key], data)
+    if (schema[key] && schema[key][adapterKey]) data[key] = await schema[key][adapterKey](data[key], data)
   }))
   hideFields && hideFields.length && hideFields.forEach((key) => { delete data[key] })
   return data
