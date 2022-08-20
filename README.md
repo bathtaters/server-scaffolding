@@ -122,5 +122,5 @@ LOG_DIR=[<project-dir>/.logs]
  ---
 
  # TO DO:
- - Follow up w/ other issues in **Snyk**
- - Deploy & add **deployment** steps to **README** (ie. NGINX, Let's Encrypt, etc)
+ - Add `Current IP` to `admin/settings` to help set **trust proxy** _(add to env settings)_
+ - Test deploy & add **deployment** steps to **README** _(ie. `NGINX`, `Let's Encrypt`, etc)_
