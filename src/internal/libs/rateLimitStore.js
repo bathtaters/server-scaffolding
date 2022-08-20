@@ -1,23 +1,11 @@
 const sqlite = require('sqlite3')
+const { join } = require('path')
 const logger = require('./log')
 const services = require('../services/db.services')
-const { join } = require('path')
-
-// How often to comb through DB and erase outdated entries
-const cleanupInterval = 6 * 60 * 60 * 1000 // 6 hrs
+const { throttle } = require('../utils/common.utils')
+const { cleanupRateLimiter } = require('../config/server.cfg')
 
 class SQLiteStore {
-	
-	// Static methods
-
-	static #now() { return new Date().getTime() }
-
-	static #dbCleanup(store, skipLog = false) {
-    const now = this.#now()
-    services.run(store.db,`DELETE FROM ${store.table} WHERE ? > expires`, [now])
-			.then(() => !skipLog && logger.verbose(`RateLimiter ${store.table} database trimmed`))
-  }
-
 
 	// Connect to DB
 
@@ -30,10 +18,10 @@ class SQLiteStore {
 
 		this.promise = services.exec(this.db, `CREATE TABLE IF NOT EXISTS ${this.table} (key PRIMARY KEY, hits, expires)`)
 		
-    let self = this
+    var self = this
 		this.promise.then(function() {
-			SQLiteStore.#dbCleanup(self, true)
-			setInterval(SQLiteStore.#dbCleanup, cleanupInterval, self).unref()
+			dbCleanup(self, true)
+			setInterval(dbCleanup, cleanupRateLimiter, self).unref()
 		})
   }
 
@@ -47,7 +35,7 @@ class SQLiteStore {
 		await services.all(this.db, 'SELECT * FROM '+this.table)
 		if (key == null) throw new Error('No key provided to rateLimiter')
 
-		const now = SQLiteStore.#now()
+		const now = getNow()
 		const expire = now + this.windowMs
 		const get = (cols) => `SELECT ${cols} FROM ${this.table} WHERE key = $key AND $now <= expires`
 
@@ -69,7 +57,7 @@ class SQLiteStore {
 
 	async decrement(key) {
 		await this.promise
-		const now = SQLiteStore.#now()
+		const now = getNow()
 		const expire = now + this.windowMs
 		const get = (cols) => `SELECT ${cols} FROM ${this.table} WHERE key = $key AND $now <= expires`
 
@@ -84,14 +72,27 @@ class SQLiteStore {
 	async resetKey(key) {
 		await this.promise
 		await services.run(this.db, `DELETE FROM ${this.table} WHERE key = ?`, [key])
-		logger.verbose(`RateLimiter reset IP ${key} from ${this.table}`)
+		logger.verbose(`Rate limiter reset IP ${key} from ${this.table}`)
 	}
 
 	async resetAll() {
 		await this.promise
 		await services.run(this.db, `DELETE FROM ${this.table}`)
-		logger.verbose(`RateLimiter reset database ${this.table}`)
+		logger.verbose(`Rate limiter reset database ${this.table}`)
 	}
 }
 
 module.exports = SQLiteStore
+
+
+// HELPERS
+
+const getNow = () => new Date().getTime()
+
+const writeLogCombo = throttle((tables) => logger.verbose(`Rate limiter database trimmed: ${tables.join(', ')}`), 1500)
+
+function dbCleanup(store, skipLog = false) {
+	const now = getNow()
+	services.run(store.db,`DELETE FROM ${store.table} WHERE ? > expires`, [now])
+		.then(() => !skipLog && writeLogCombo(store.table))
+}

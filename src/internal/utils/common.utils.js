@@ -101,6 +101,26 @@ exports.debounce = (func, { interval = 1000, ignoreArgs = false } = {}) => {
   ]
 }
 
+// Get throttled version of func
+exports.throttle = (func, interval, callback = null) => {
+	let calls = [], timer
+
+	return function throttledCall(...args) {
+		switch (args.length) {
+			case 0: break
+			case 1: calls.push(args[0]); break;
+			default: calls.push(args)
+		}
+		if (timer) clearTimeout(timer)
+
+		timer = setTimeout(() => {
+			const result = func(calls)
+			calls = []
+			callback && callback(result)
+		}, interval)
+	}
+}
+
 // Get object key case-insensitive
 exports.getMatchingKey = (object, propAnyCase) => {
   if (propAnyCase in object || typeof propAnyCase !== 'string') return propAnyCase

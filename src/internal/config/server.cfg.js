@@ -15,6 +15,9 @@ module.exports = {
 
   concurrentDB: true, // enables WAL journal mode for Sessions
 
+  // How often (in ms) erase outdated entries from rate limiter DB
+  cleanupRateLimiter: 6 * 60 * 60 * 1000, // 6 hrs
+
   rateLimits: {
     api: {
       max: 100,
