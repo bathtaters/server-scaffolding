@@ -35,6 +35,7 @@ exports.parseArray = (optional = true) => optional ?
 exports.toArraySchema = (schema) => Object.keys(schema).reduce((arrSchema, key) => {
   if ('toArray' in schema[key]) {
     arrSchema[key] = { in: schema[key].in, customSanitizer: { options: exports.parseArray(schema[key].toArray) } }
+    if (schema[key].toArray) arrSchema[key].optional = { options: { nullable: true, checkFalsy: true } }
     delete schema[key].toArray
   }
   return arrSchema
