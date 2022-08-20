@@ -1,5 +1,5 @@
 const logger = require('../libs/log')
-const { errorMsgs, dateOptions, ignoreDisableMin } = require("../config/validate.cfg")
+const { errorMsgs, dateOptions, ignoreDisableMin, defaultLimits } = require("../config/validate.cfg")
 const { isBoolean, parseBoolean } = require('../utils/validate.utils')
 const { parseTypeStr } = require('../utils/model.utils')
 
@@ -28,11 +28,6 @@ exports.toValidationSchema = function toValidationSchema(
     ptr.optional = { options: { nullable: true, checkFalsy: type !== 'boolean' } }
   } else {
     ptr.exists = { errorMessage: errorMsgs.exists() }
-    
-    // Skip validation of empty strings (only if empty strings are allowed)
-    if (type === 'string' && (!limits || (!limits.min && !limits.elem) || ((limits.elem || limits).min === 0))) {
-      ptr.optional = { options: { checkFalsy: true } }
-    }
   }
 
   // Handle validation for array elements
@@ -44,10 +39,10 @@ exports.toValidationSchema = function toValidationSchema(
       limits = limits.elem
     } else {
       arrLimit = limits
-      limits = null
+      limits = undefined
     }
-    ptr.isArray = arrLimit ?
-      { options: arrLimit, errorMessage: errorMsgs.limit(arrLimit, 'array') } :
+    ptr.isArray = arrLimit || arrLimit === undefined ?
+      { options: arrLimit || defaultLimits.array, errorMessage: errorMsgs.limit(arrLimit, 'array') } :
       { errorMessage: errorMsgs.array() }
     ptr.toArray = isOptional
     
@@ -60,8 +55,15 @@ exports.toValidationSchema = function toValidationSchema(
     ptr.in = isIn
   }
 
-  // Pass limits as options
+  // Normalize and get default limits
   if (limits && (limits.array || limits.elem)) limits = limits.elem
+  if (limits === undefined) limits = defaultLimits[type]
+
+  // Allow empty strings (only if string minimum is >= 0)
+  if (!isOptional && !isArray && type === 'string' && (!limits || !limits.min))
+    valid[key].optional = { options: { checkFalsy: true } }
+
+  // Build options object for limits
   if (limits) {
     if (disableMin && !ignoreDisableMin.includes(type)) limits = hidingMin(limits) // Remove minimum
     limits = { options: limits, errorMessage: errorMsgs.limit(limits, type) }
@@ -110,7 +112,6 @@ exports.toValidationSchema = function toValidationSchema(
     case 'any':  // pass to default
     default: break
   }
-
   return valid
 }
 

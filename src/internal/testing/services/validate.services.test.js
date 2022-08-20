@@ -1,3 +1,4 @@
+const { defaultLimits } = require('../../config/validate.cfg')
 const services = require('../../services/validate.services')
 const { parseTypeStr } = require('../../utils/model.utils')
 
@@ -262,6 +263,12 @@ describe('toValidationSchema', () => {
       expect(services.toValidationSchema('test',{type: 'float', isArray: true, limits: {array: limits}},['isIn'],false,true).test.isArray)
         .toHaveProperty('options',{ min: 12, test: 'lims' })
     })
+    it('assigns default limits if missing limits', () => {
+      defaultLimits.string = { min: 'def', max: 34 }
+      expect(services.toValidationSchema('test',{type: 'string'},['isIn'],false,false).test.isLength)
+        .toHaveProperty('options', { min: 'def', max: 34 })
+      delete defaultLimits.string
+    })
     it('just uses isType = { errorMsg } if missing limits', () => {
       expect(services.toValidationSchema('test',{type: 'float'},['isIn'],false,false).test.isFloat)
         .toEqual({ errorMessage: expect.any(String) })
@@ -432,6 +439,14 @@ describe('toValidationSchema', () => {
       result = services.toValidationSchema('test',{type: 'int', limits: {elem:'eLims'}},['isIn'],false,false)
       expect(result.test).toHaveProperty('isInt', {options: 'eLims', errorMessage: expect.any(String)})
     })
+    it('assigns default array limits if missing', () => {
+      defaultLimits.array = { min: 'defArr', max: 56 }
+      expect(services.toValidationSchema('test',arrType('int[]'),['isIn'],false,false).test.isArray)
+        .toHaveProperty('options', { min: 'defArr', max: 56 })
+      expect(services.toValidationSchema('test',arrType('int[]',0,{elem:'eLims'}),['isIn'],false,false).test.isArray)
+        .toHaveProperty('options', { min: 'defArr', max: 56 })
+      delete defaultLimits.array
+    })
   })
 
   describe('specifics', () => {
@@ -480,6 +495,7 @@ jest.mock('../../config/validate.cfg', () => ({
   dateOptions: { time: 'TIME_OPTS', date: 'DATE_OPTS' },
   ignoreDisableMin: ['float'],
   errorMsgs: new Proxy({}, { get(_,key) { return () => 'ErrMsg: '+key } }),
+  defaultLimits: {},
 }))
 jest.mock('../../utils/model.utils', () => ({
   parseTypeStr: jest.fn((data) => data),

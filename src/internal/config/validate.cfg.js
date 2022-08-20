@@ -1,6 +1,12 @@
 const RegEx = require('../libs/regex')
 const strictDatetime = true // Use strict date/time parsing
 
+const defaultLimits = {
+  int:  { min: Number.MIN_SAFE_INTEGER, max: Number.MAX_SAFE_INTEGER },
+  string: { min: 0, max: 2**30-2 },
+  array: { min: 0, max: 2**32-2 },
+}
+
 module.exports = {
   ignoreDisableMin: ['float'], // never remove 'min' for these types (intended for helping searches)
 
@@ -17,6 +23,8 @@ module.exports = {
   },
 
   illegalKeyName: RegEx(/[^a-zA-Z0-9_]/), // match illegal characters for KEY names
+
+  defaultLimits,
 
   errorMsgs: {
     // Static
@@ -38,8 +46,11 @@ module.exports = {
     missing:   (key, type) => `${key} has ${type ? 'invalid' : 'missing'} type definition: ${type || ''}`,
     missingIn: (key)       => `${key} missing 'in' array for validation`,
     limit:     ({ min, max }, type) => 
-      `must be ${type ? type+' ' : ''}${min != null && max != null ? 
-          `between ${min} & ${max}` : `${!max ? 'more' : 'less'} than ${min || max}`
+      `must be ${type ? type+' ' : ''}${
+        defaultLimits[type] && max === defaultLimits[type].max && min === defaultLimits[type].min ? 
+          `within default limits${type === 'string' || type === 'array' ? ' for' : ''}` :
+        min == null || max == null ? `${!max ? 'more' : 'less'} than ${min || max}` :
+        `between ${min} & ${max}`
       }${type === 'string' ? ' characters' : type === 'array' ? ' items' : ''}`,
   },
 }
