@@ -48,21 +48,26 @@ exports.modelDb = (Model, { view = 'dbModel', partialMatch = true, overrideDbPar
       })
     }).catch(next),
 
-    find: (req, res, next) => Model.find(matchedData(req), partialMatch).then((data) => {
-      const canRead  = req.user && hasModelAccess(req.user.models, Model.title, 'read')
-      const canWrite = req.user && hasModelAccess(req.user.models, Model.title, 'write')
+    find: async (req, res, next) => {
+      try {
+        const searchData = matchedData(req)
+        const data = await Model.find(searchData, partialMatch)
 
-      return res.render(view, {
-        ...staticDbParams,
-        data: formatData(data, req.user),
-        searchData: formatData(matchedData(req), req.user, actions.find),
-        buttons: labelsByAccess([canRead ? 'read' : 'X', canWrite ? 'write' : 'X']),
-        user: req.user && req.user.username,
-        isAdmin: req.user && hasAccess(req.user.access, access.admin),
-        csrfToken: req.csrfToken && req.csrfToken(),
-        canRead, canWrite,
-      })
-    }).catch(next),
+        const canRead  = req.user && hasModelAccess(req.user.models, Model.title, 'read')
+        const canWrite = req.user && hasModelAccess(req.user.models, Model.title, 'write')
+
+        return res.render(view, {
+          ...staticDbParams,
+          data: formatData(data, req.user),
+          searchData: formatData(searchData, req.user, actions.find),
+          buttons: labelsByAccess([canRead ? 'read' : 'X', canWrite ? 'write' : 'X']),
+          user: req.user && req.user.username,
+          isAdmin: req.user && hasAccess(req.user.access, access.admin),
+          csrfToken: req.csrfToken && req.csrfToken(),
+          canRead, canWrite,
+        })
+      } catch (err) { next(err) }
+    },
   }
 }
 
