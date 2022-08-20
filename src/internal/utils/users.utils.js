@@ -24,6 +24,7 @@ exports.accessInt = (accessArray) => {
 
 exports.accessArray = (accessInt) => {
   if (!accessInt) return [noAccess]
+  if (Array.isArray(accessInt)) return accessInt
   if (typeof accessInt === 'string' && !isNaN(accessInt)) accessInt = +accessInt
   if (typeof accessInt !== 'number' || accessInt < 0 || accessInt > accessMax)
     throw errors.badAccess(accessInt, 'int')
