@@ -13,6 +13,7 @@ const definitions = {
   data:  { type: 'boolean' },
   test:  { type: 'string'  },
   bit:   { type: 'int', isBitmap: true },
+  obj:   { type: 'object', isArray: true },
 }
 
 describe('Model constructor', () => {
@@ -310,6 +311,24 @@ describe('Model find', () => {
       )
     })
   })
+  it('forces exact match on null', () => {
+    expect.assertions(2)
+    return TestModel.find({ data: null }, true).then(() => {
+      expect(services.all).toBeCalledTimes(1)
+      expect(services.all).toBeCalledWith(
+        expect.anything(), expect.stringContaining('WHERE data = ?'), [null]
+      )
+    })
+  })
+  it('forces exact match to stringified object/array', () => {
+    expect.assertions(2)
+    return TestModel.find({ obj: [{a:1,b:2},{c:3}] }, true).then(() => {
+      expect(services.all).toBeCalledTimes(1)
+      expect(services.all).toBeCalledWith(
+        expect.anything(), expect.stringContaining('WHERE obj = ?'), ['[{"a":1,"b":2},{"c":3}]']
+      )
+    })
+  })
   it('returns result array on success', () => {
     expect.assertions(1)
     return TestModel.find({ data: 1 }).then((ret) => {
@@ -344,12 +363,6 @@ describe('Model find', () => {
     expect.assertions(1)
     return TestModel.find({}).catch((err) => {
       expect(err).toEqual(errors.noData())
-    })
-  })
-  it('rejects on non-string partial match', () => {
-    expect.assertions(1)
-    return TestModel.find({ data: [] }, true).catch((err) => {
-      expect(err).toEqual(errors.badPartial('object (data)'))
     })
   })
 })

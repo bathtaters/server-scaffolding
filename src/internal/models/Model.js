@@ -93,12 +93,11 @@ class Model {
       } if (typeof val === 'string') {
         text.push(`${key} LIKE ?`)
         return params.push(`%${val}%`)
-
-      } if (typeof val === 'number') {
-        text.push(`${key} = ?`)
-        return params.push(val)
-      } // Force exact match for numbers
-      throw errors.badPartial(`${typeof val} (${key})`)
+      }
+      // DEFAULT
+      text.push(`${key} = ?`)
+      if (!val || typeof val === 'number') params.push(val)
+      else params.push(JSON.stringify(val))
     })
     
     const result = await services.all(getDb(), 
