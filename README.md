@@ -11,10 +11,11 @@ Includes ***Passport*** session authentication, ***Morgan*** console/file loggin
  1. Update `package.json` info (ie. `name`, `version`, `author`, `license`, `repository`)
  2. Create `.env` file _(see below guide)_
  3. Run `npm -g i nodemon` _(if you don't have nodemon)_
- 4. Run server `npm run dev` & navigate to `[DOMAIN]/login/` in browser
- 5. Enter credentials to create an initial ***admin*** _(Must be done in `run dev` mode)_
- 6. Navigate to ***Users*** to setup users/permissions
- 7. Replace `public/images/logo.png`, then [regenerate favicons](https://realfavicongenerator.net/) in `public/root`
+ 4. Run `npm run dev-cert` _(or disable secure dev environment in internal/config/server.cfg.isSecure)_
+ 5. Run server `npm run dev` & navigate to `[DOMAIN]/login/` in browser _(if blocked by browser, type `thisisunsafe` anywhere on the page)_
+ 6. Enter credentials to create an initial ***admin*** _(Must be done in `run dev` mode)_
+ 7. Navigate to ***Users*** to setup users/permissions
+ 8. Replace `public/images/logo.png`, then [regenerate favicons](https://realfavicongenerator.net/) in `public/root`
 
 ### Add a DB Model
  1. Copy `models/Base.js` as a starting point.
@@ -121,25 +122,5 @@ LOG_DIR=[<project-dir>/.logs]
  ---
 
  # TO DO:
- - Add Validation testing for endpoint form
-
- - Replace model.types/schema/defaults/limits.bitmapFields w/ 1 object called schema
-    - Schema will have each column as a key
-    - Each entry will have { type, default, limits, isArray, isOptional, hasSpaces, db(old schema value), html(props for input tag) }
-    - Get type/isArray/isOptional/hasSpaces from parsedTypeStr
-  - THEN 
-    - Convert boolFields to = Object.keys(schema).filter((key) => [key].type === 'boolean')
-    - Convert bitmapFields to = schema[key].isBitmap
-    - Add 'required' field to model html input tags
-
-
- - Move dev server to **SSL** (production is http w/ NGINX, testing is http)
-    - add SSL on/off to server.cfg, place result of ^ logic in meta.isSecure (cookies.secure=true if on)
-    - Add pkg script to generate key/cert (npm run cert)
-    - Replace http w/ https in init if meta.isSecure
-    - create error for missing cert (use `npm run cert` to generate dev certificate)
-
- - Add **csurf** middleware to allow easy implementation (API: only send to CORS domains, create sendToken(gets)/checkToken(other) middlewares, GUI: add CSRF token as hidden table value)
-  - add csurf enable to server.cfg
  - Follow up w/ other issues in **Snyk**
  - Deploy & add **deployment** steps to **README** (ie. NGINX, Let's Encrypt, etc)
