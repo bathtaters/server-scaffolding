@@ -13,6 +13,8 @@ module.exports = {
     errorDuringExit: true,
   },
 
+  concurrentDB: true, // enables WAL journal mode for Sessions
+
   rateLimits: {
     api: {
       max: 100,

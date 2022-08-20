@@ -1,13 +1,15 @@
 const session = require('express-session')
 const SQLiteStore = require('connect-sqlite3')(session)
+const { dirname } = require('path')
 const { saveLoginMs } = require('../config/users.cfg')
 const { dbPath, isSecure } = require('../../config/meta')
+const { concurrentDB } = require('../config/server.cfg')
 const errors = require('../config/errors.internal')
 
 exports.sessionOptions = {
   name: 'sessionID',
   store: process.env.NODE_ENV === 'test' ? undefined :
-    new SQLiteStore({ dir: require('path').dirname(dbPath), db: 'sessions.db' }),
+    new SQLiteStore({ dir: dirname(dbPath), db: 'sessions.db', table: 'sessions', concurrentDB }),
   secret: process.env.SESSION_SECRET || require('../config/settings.cfg').defaults.SESSION_SECRET,
   resave: false,
   saveUninitialized: true,
