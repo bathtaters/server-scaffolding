@@ -19,7 +19,7 @@ function openDb() {
         logger.error(err, { label: 'opening DB' })
         return rej(err)
       }
-      logger.verbose('Connected to database')
+      logger.verbose('Connected to main database')
     })
 
     if (sqlSecret) encrypt(db, sqlSecret).then(() => res(db))

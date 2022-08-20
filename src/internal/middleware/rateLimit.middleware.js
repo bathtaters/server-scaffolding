@@ -44,4 +44,4 @@ module.exports = {
   isInitialized: Promise.all(Object.values(stores).map(({ promise }) => promise)),
 }
 
-module.exports.isInitialized.then(() => logger.verbose('RateLimter database connected'))
+module.exports.isInitialized.then(() => logger.verbose('Connected to rate limiter database'))
