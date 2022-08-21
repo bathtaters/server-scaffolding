@@ -7,67 +7,94 @@ const {
 
 describe('formSettingsToValidate', () => {
   it('format for byObject', () => {
-    expect(formSettingsToValidate({ a: { type: 'text', limits: 'limitsA' }, b: { type: 'number', limits: 'limitsB' } }, 'inTest'))
-      .toEqual([
-        { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: expect.anything() },
-        { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: expect.anything() },
-      ])
+    expect(formSettingsToValidate({
+      a: { html: { type: 'text', limits: 'limitsA' } },
+      b: { html: { type: 'number', limits: 'limitsB' } } },
+      'inTest'
+    )).toEqual([
+      { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: expect.anything() },
+      { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: expect.anything() },
+    ])
   })
   it('pass keys', () => {
-    expect(formSettingsToValidate({ a: { type: 'text', limits: 'limitsA' }, b: { type: 'number', limits: 'limitsB' } }, 'inTest'))
-      .toEqual([
-        { key: 'a', isIn: expect.any(String), typeStr: expect.any(String), limits: expect.anything() },
-        { key: 'b', isIn: expect.any(String), typeStr: expect.any(String), limits: expect.anything() },
-      ])
+    expect(formSettingsToValidate({
+      a: { html: { type: 'text', limits: 'limitsA' } },
+      b: { html: { type: 'number', limits: 'limitsB' } } },
+      'inTest'
+    )).toEqual([
+      { key: 'a', isIn: expect.any(String), typeStr: expect.any(String), limits: expect.anything() },
+      { key: 'b', isIn: expect.any(String), typeStr: expect.any(String), limits: expect.anything() },
+    ])
   })
   it('pass isIn', () => {
-    expect(formSettingsToValidate({ a: { type: 'text', limits: 'limitsA' }, b: { type: 'number', limits: 'limitsB' } }, 'inTest'))
-      .toEqual([
-        { key: expect.any(String), isIn: 'inTest', typeStr: expect.any(String), limits: expect.anything() },
-        { key: expect.any(String), isIn: 'inTest', typeStr: expect.any(String), limits: expect.anything() },
-      ])
+    expect(formSettingsToValidate({
+      a: { html: { type: 'text', limits: 'limitsA' } },
+      b: { html: { type: 'number', limits: 'limitsB' } } },
+      'inTest'
+    )).toEqual([
+      { key: expect.any(String), isIn: 'inTest', typeStr: expect.any(String), limits: expect.anything() },
+      { key: expect.any(String), isIn: 'inTest', typeStr: expect.any(String), limits: expect.anything() },
+    ])
   })
   it('pass limits', () => {
-    expect(formSettingsToValidate({ a: { type: 'text', limits: 'limitsA' }, b: { type: 'number', limits: 'limitsB' } }, 'inTest'))
-      .toEqual([
-        { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: 'limitsA' },
-        { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: 'limitsB' },
-      ])
+    expect(formSettingsToValidate({
+      a: { html: { type: 'text', limits: 'limitsA' } },
+      b: { html: { type: 'number', limits: 'limitsB' } } },
+      'inTest'
+    )).toEqual([
+      { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: 'limitsA' },
+      { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: 'limitsB' },
+    ])
   })
   it('number => int', () => {
-    expect(formSettingsToValidate({ a: { type: 'text', limits: 'limitsA' }, b: { type: 'number', limits: 'limitsB' } }, 'inTest'))
-      .toEqual([
-        { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: expect.anything() },
-        { key: expect.any(String), isIn: expect.any(String), typeStr: 'int', limits: expect.anything() },
-      ])
+    expect(formSettingsToValidate({
+      a: { html: { type: 'text', limits: 'limitsA' } },
+      b: { html: { type: 'number', limits: 'limitsB' } } },
+      'inTest'
+    )).toEqual([
+      { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: expect.anything() },
+      { key: expect.any(String), isIn: expect.any(String), typeStr: 'int', limits: expect.anything() },
+    ])
   })
   it('else/array => string', () => {
-    expect(formSettingsToValidate({ a: { type: 'text', limits: 'limitsA' }, b: { type: ['op','option','longOption'], limits: 'limitsB' } }, 'inTest'))
-      .toEqual([
-        { key: expect.any(String), isIn: expect.any(String), typeStr: 'string', limits: expect.anything() },
-        { key: expect.any(String), isIn: expect.any(String), typeStr: 'string', limits: expect.anything() },
-      ])
+    expect(formSettingsToValidate({
+      a: { html: { type: 'text', limits: 'limitsA' } },
+      b: { html: { type: ['op','option','longOption'], limits: 'limitsB' } } },
+      'inTest'
+    )).toEqual([
+      { key: expect.any(String), isIn: expect.any(String), typeStr: 'string', limits: expect.anything() },
+      { key: expect.any(String), isIn: expect.any(String), typeStr: 'string', limits: expect.anything() },
+    ])
   })
   it('calculate array limits', () => {
-    expect(formSettingsToValidate({ a: { type: ['9','four'] }, b: { type: ['null','option','longOption'] } }, 'inTest'))
-      .toEqual([
-        { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: { min: 1, max: 4 } },
-        { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: { min: 4, max: 10 } },
-      ])
+    expect(formSettingsToValidate({
+      a: { html: { type: ['9','four'] } },
+      b: { html: { type: ['null','option','longOption'] } } },
+      'inTest'
+    )).toEqual([
+      { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: { min: 1, max: 4 } },
+      { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: { min: 4, max: 10 } },
+    ])
   })
   it('calculate array limits converts to String', () => {
-    expect(formSettingsToValidate({ a: { type: [9,'four'] }, b: { type: [null,'option','longOption'] } }, 'inTest'))
-      .toEqual([
-        { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: { min: 1, max: 4 } },
-        { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: { min: 4, max: 10 } },
-      ])
+    expect(formSettingsToValidate({
+      a: { html: { type: [9,'four'] } },
+      b: { html: { type: [null,'option','longOption'] } } },
+      'inTest'
+    )).toEqual([
+      { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: { min: 1, max: 4 } },
+      { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: { min: 4, max: 10 } },
+    ])
   })
   it('empty array limits', () => {
-    expect(formSettingsToValidate({ a: { type: 'text' }, b: { type: [] } }, 'inTest'))
-      .toEqual([
-        { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: false },
-        { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: 0 },
-      ])
+    expect(formSettingsToValidate({
+      a: { html: { type: 'text' } },
+      b: { html: { type: [] } } },
+      'inTest'
+    )).toEqual([
+      { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: false },
+      { key: expect.any(String), isIn: expect.any(String), typeStr: expect.any(String), limits: 0 },
+    ])
   })
 })
 

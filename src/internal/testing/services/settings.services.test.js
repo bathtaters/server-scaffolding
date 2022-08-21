@@ -43,10 +43,10 @@ describe('getSettings', () => {
     expect(getSettingsVars).toBeCalledTimes(1)
     expect(getSettingsVars).toBeCalledWith(expect.anything(), '12345')
   })
-  it('sends formSettings key list to getSettingsVars', async () => {
+  it('sends defintions key list to getSettingsVars', async () => {
     await getSettings()
     expect(getSettingsVars).toBeCalledTimes(1)
-    expect(getSettingsVars).toBeCalledWith([ 'test', 'env', 'other' ], expect.anything())
+    expect(getSettingsVars).toBeCalledWith([ 'test', 'env', 'other', 'overwrite' ], expect.anything())
   })
   it('readFile is debounced', async () => {
     expect(process.env.test_debounce).toBe('readFileMock')
@@ -135,7 +135,7 @@ describe('getForm', () => {
     expect(form.map(Object.keys)).toEqual([['test','env'],['other']])
   })
   it('appends currentVal to array', () => {
-    expect(form[0].env.type).toEqual([1,3,'2'])
+    expect(form[0].env.html.type).toEqual([1,3,'2'])
   })
 })
 
@@ -170,16 +170,22 @@ jest.mock('../../utils/settings.utils', () => ({
 
 jest.mock('../../config/settings.cfg', () => ({
   escapeEnvMsg: jest.fn(),
-  defaults: {
-    test: 'default',
-    env: 1,
-    other: false,
-    overwrite: 'no'
+  definitions: {
+    test: { 
+      default: 'default',
+      html: { type: 'number' },
+    },
+    env: { 
+      default: 1,
+      html: { type: [1,3] , readonly: true },
+    },
+    other: { 
+      default: false,
+      html: { type: 'text', readonly: true },
+    },
+    overwrite: { 
+      default: 'no',
+      formDefault: 'yes',
+    },
   },
-  formDefaults: { overwrite: 'yes' },
-  formSettings: {
-    test:  { type: 'number'               },
-    env:   { type: [1,3] , readonly: true },
-    other: { type: 'text', readonly: true },
-  }
 }))

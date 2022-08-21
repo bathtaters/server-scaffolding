@@ -1,9 +1,5 @@
 const { getSettingsVars, stringifyEnv, filterOutProps, escapeSettings, getChanged } = require('../../utils/settings.utils')
 
-jest.mock('../../config/settings.cfg', () => ({
-  defaults: { testA: 'TEST-1', testB: 'TEST-2', testC: 'TEST-3' },
-  escapeChars: [ [/~/g, '!'], [/#/g, '+']  ]
-}))
 
 describe('getSettingsVars', () => {
   it('gets from second arg', () => {
@@ -110,3 +106,14 @@ describe('getChanged', () => {
     expect(result).toEqual({ c: 'test' })
   })
 })
+
+// MOCKS
+
+jest.mock('../../config/settings.cfg', () => ({
+  definitions: {
+    testA: { default: 'TEST-1' },
+    testB: { default: 'TEST-2' },
+    testC: { default: 'TEST-3' },
+  },
+  escapeChars: [ [/~/g, '!'], [/#/g, '+']  ]
+}))

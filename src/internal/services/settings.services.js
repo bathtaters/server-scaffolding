@@ -11,7 +11,7 @@ const [ debouncedRead, forceNextRead ] = debounce(readFile, { interval: fileRead
 exports.settingsDefaults = filterOutProps(
   Object.entries(definitions).reduce((defs, [key,val]) => 'formDefault' in val ? Object.assign(defs, { [key]: val.formDefault }) :
     'default' in val ? Object.assign(defs, { [key]: val.default }) : defs, {}),
-  Object.keys(definitions).filter((key) => definitions[key].html.readonly)
+  Object.keys(definitions).filter((key) => definitions[key].html && definitions[key].html.readonly)
 )
 
 exports.getSettings = async () => {
@@ -41,6 +41,7 @@ exports.getForm = async () => {
     splitForm = Math.ceil(Object.keys(definitions).length / 2)
 
   Object.keys(definitions).forEach((key, idx) => {
+    if (!definitions[key].html) return
     if (Array.isArray(definitions[key].html.type)) {
       const currentVal = typeof currentVals[key] === 'string' ? currentVals[key] : String(currentVals[key])
       if (currentVal && !definitions[key].html.type.includes(currentVal)) 

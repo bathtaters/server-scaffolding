@@ -1,6 +1,6 @@
 const { definitions, escapeChars } = require('../config/settings.cfg')
 
-exports.getSettingsVars = (keys, envObj = process.env) => keys.reduce((obj, key) => Object.assign(obj, { [key]: key in envObj ? envObj[key] : definitions[key].default }), {})
+exports.getSettingsVars = (keys, envObj = process.env) => keys.reduce((obj, key) => Object.assign(obj, { [key]: key in envObj ? envObj[key] : definitions[key] && definitions[key].default }), {})
 
 exports.stringifyEnv = (envObj) => Object.entries(envObj).reduce((text, [key,val]) => `${text}${key}=${val}\n`, '')
 
