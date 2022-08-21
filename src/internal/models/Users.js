@@ -93,7 +93,7 @@ class Users extends Model {
         password, accessInt(accessLevel),
         (pass, user) => this.incFailCount(user, {
           reset: pass,
-          updateCb: (data, { guiCount = 0 }) => ({ ...data, guiCount: guiCount + 1 })
+          updateCb: pass ? (data, { guiCount = 0 }) => ({ ...data, guiCount: guiCount + 1 }) : null
         })
       )
     )
