@@ -114,7 +114,7 @@ exports.throttle = (func, interval, callback = null) => {
 		if (timer) clearTimeout(timer)
 
 		timer = setTimeout(() => {
-			const result = func(calls)
+			const result = calls.length ? func(calls) : func()
 			calls = []
 			callback && callback(result)
 		}, interval)

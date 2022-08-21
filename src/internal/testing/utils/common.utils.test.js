@@ -1,6 +1,6 @@
 const {
   capitalizeHyphenated, filterDupes, hasDupes, filterByField,
-  exceptRoute, deepMap, deepEquals, debounce,
+  exceptRoute, deepMap, deepEquals, debounce, throttle,
   getMatchingKey, caseInsensitiveObject, splitUnenclosed
 } = require('../../utils/common.utils')
 
@@ -449,6 +449,46 @@ describe('debounce', () => {
       funcDb(1,2,3)
       expect(baseFunc).toBeCalledTimes(1)
     })
+  })
+})
+
+describe('throttle', () => {
+  const testFunc = jest.fn(() => 'result')
+  const callback = jest.fn(() => 'result')
+
+  const caller = throttle(testFunc, 100, callback)
+
+  it('groups multiple calls into 1', async () => {
+    caller(); caller(); caller()
+    await new Promise(resolve => setTimeout(resolve, 101))
+    expect(testFunc).toBeCalledTimes(1)
+  })
+  it('waits "interval" before calling', async () => {
+    caller()
+    expect(testFunc).toBeCalledTimes(0)
+    await new Promise(resolve => setTimeout(resolve, 101))
+    expect(testFunc).toBeCalledTimes(1)
+  })
+  it('calls func with array of args', async () => {
+    caller(1,2,3); caller(4,5); caller(6,7,8)
+    await new Promise(resolve => setTimeout(resolve, 101))
+    expect(testFunc).toBeCalledWith([[1,2,3],[4,5],[6,7,8]])
+  })
+  it('calls func with 1D array if single arg', async () => {
+    caller('a'); caller('b'); caller('c')
+    await new Promise(resolve => setTimeout(resolve, 101))
+    expect(testFunc).toBeCalledWith(['a','b','c'])
+  })
+  it('calls func with no args if no args', async () => {
+    caller(); caller(); caller()
+    await new Promise(resolve => setTimeout(resolve, 101))
+    expect(testFunc).toBeCalledWith()
+  })
+  it('calls callback with result', async () => {
+    caller(); caller(); caller()
+    await new Promise(resolve => setTimeout(resolve, 101))
+    expect(callback).toBeCalledWith('result')
+    expect(callback).toBeCalledTimes(1)
   })
 })
 
