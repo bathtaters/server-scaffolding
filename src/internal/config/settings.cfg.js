@@ -39,6 +39,11 @@ module.exports = {
       html: { type: ['none', 'tiny', 'short', 'dev', 'common', 'combined', 'debug'] },
       tooltip: 'Log format for HTTP logging (Uses Morgan)',
     },
+    TRUST_PROXY: {
+      default: 0,
+      html: { type: 'number', limits: { min: 0, max: 2048 } },
+      tooltip: 'Client IP is TRUST_PROXY hops away from this server (Double check User IP)',
+    },
     SESSION_SECRET: {
       default: 'secret',
       html: { type: 'password', limits: { min: 4, max: 2048 } },

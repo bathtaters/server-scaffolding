@@ -1,7 +1,7 @@
 module.exports = {
   isCluster: false, // Cluster mode not working
   processCount: 6,
-  trustProxy: process.env.NODE_ENV === 'production' && ['loopback'], // for using behind NGINX
+  trustProxy: process.env.TRUST_PROXY || require('./settings.cfg').definitions.TRUST_PROXY.default,
   isSecure: process.env.NODE_ENV !== 'test' && (process.env.NODE_ENV === 'production' ? true : true), // enable SSL/TLD
   csrfEnable: process.env.NODE_ENV !== 'test' && true,
   

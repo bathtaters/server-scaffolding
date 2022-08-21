@@ -70,6 +70,8 @@ fieldset > .row { align-items: flex-end; }
 .cors-regex, .cors-array { color: lightskyblue; }
 
 /* Additional generic styling */
+.top-right { position: absolute; top: 0; right: 0; }
+.relative { position: relative; }
 .center { text-align: center; }
 .autoMargin { margin: auto; }
 .align-self-center { align-self: center; }

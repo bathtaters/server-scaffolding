@@ -27,9 +27,10 @@ Includes ***Passport*** session authentication, ***Morgan*** console/file loggin
  1. Recommend using **pm2** to ensure Restart button works
  2. Update `ecosystem.config.js` if needed
  3. Create production `.env` _(see below guide)_
- 4. Run using `npm start`, stop with `npm stop` _(Save w/ pm2 to always run)_
- 5. Setup **NGINX** as reverse proxy/load distro _(Check it passes IPs/uses pm2 forks)_
- 6. Setup **Let's Encrypt** to create SSL certificate for https
+ 4. Run once as `npm run dev` to create initial user
+ 5. Run using `npm start`, stop with `npm stop` _(Save w/ pm2 to always run)_
+ 6. Setup **NGINX** as reverse proxy/load distro _(Set trust proxy setting)_
+ 7. Setup **Let's Encrypt** to create SSL certificate for https
 
 ---
 
@@ -43,6 +44,7 @@ port=[8080]
 LOG_CONSOLE=verbose|http|[info]|warn|error|none
 LOG_FILE=verbose|http|info|[warn]|error|none
 LOG_HTTP=debug|combined|[common]|dev|short|tiny|none
+TRUST_PROXY=[0]+
 SESSION_SECRET=[secret]
 DB_SECRET=[secret]
 DB_DIR=[<project-dir>/.db]
@@ -61,6 +63,7 @@ LOG_DIR=[<project-dir>/.logs]
 |`restart`|Full PM2 restart _(Updates env)_|
 |`run reload`|0-downtime PM2 reload _(Doesn't update env)_|
 |`test`|Run Jest tests|
+|`run dev-cert`|Generate locally-signed HTTPS certificate ***(Dev use ONLY)***|
 |`run unlock-user [name]`|Unlock user _(Users.unlock.js must be enabled first)_|
 
 ---
@@ -118,9 +121,3 @@ LOG_DIR=[<project-dir>/.logs]
  - **Authentication**: [Passport](https://www.passportjs.org/)
  - **HTML Templating**: [Pug](https://pugjs.org/api/getting-started.html)
  - **Logging**: [Winston](https://github.com/winstonjs/winston) & [Morgan](https://github.com/expressjs/morgan)
-
- ---
-
- # TO DO:
- - Add `Current IP` to `admin/settings` to help set **trust proxy** _(add to env settings)_
- - Test deploy & add **deployment** steps to **README** _(ie. `NGINX`, `Let's Encrypt`, etc)_
