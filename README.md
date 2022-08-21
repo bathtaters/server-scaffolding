@@ -30,8 +30,9 @@ Includes ***Passport*** session authentication, ***Morgan*** console/file loggin
  4. Connect **NGINX** to server _(see below guide)_
  5. Create certificate with [**Let's Encrypt**](https://www.nginx.com/blog/using-free-ssltls-certificates-from-lets-encrypt-with-nginx/): `sudo certbot --nginx -d URL.com -d www.URL.com`
  6. Start intially using `npm run dev` to create admin user
- 7. Then run using `npm start`, stop with `npm stop` _(Save w/ pm2 to always run)_
+ 7. Then run using `npm start`, stop with `npm stop` _(`pm2 save` to run on startup)_
  8. Set TRUST_PROXY in `/admin/settings` to lowest number that shows your IP on Restart
+ 9. Update `upstream` section in **NGINX** config file w/ **pm2** servers _(see below)_
  ##### NOTE: If you wish to test w/o HTTPS, you must change **productionIsSecure** in `/internal/config/server.cfg.js` to ***false***
 
 ---
@@ -59,8 +60,15 @@ LOG_DIR=[<project-dir>/.logs]
 ## NGINX config
 
 Create a config file for your reverse proxy: `/etc/nginx/sites-available/URL.com`, or add new `location` section in an existing config. 
-
+###### Replace `URL.com` with your `domain name` & `:8080` with the `port`.
 ```nginx
+limit_req_zone $binary_remote_addr zone=ip:10m rate=5r/s;
+
+upstream myserver {
+    least_conn;
+    server 127.0.0.1:8080;
+}
+
 server {
     listen 80;
     listen [::]:80;
@@ -71,7 +79,10 @@ server {
     gzip_types       text/plain text/css image/*;
 
     location / {
-        proxy_pass          http://127.0.0.1:8080;
+        limit_req zone=ip burst=12 delay=8;
+
+        proxy_pass          http://myserver;
+
         proxy_http_version  1.1;
         proxy_set_header    Upgrade             $http_upgrade;
         proxy_set_header    Connection          'upgrade';
@@ -82,9 +93,22 @@ server {
     }
 }
 ```
-###### Replace `URL.com` with your `domain name` & `:8080` with the `local port`.
 
-Create symlink to config: `ln -s /etc/nginx/sites-available/URL.com /etc/nginx/sites-enabled/`
+Create symlink to config
+```bash
+ln -s /etc/nginx/sites-available/URL.com /etc/nginx/sites-enabled/
+```
+
+Once running pm2, add **server** lines to `upstream` section for each pm2 instance (Incrementing port)
+```nginx
+upstream myserver {
+    least_conn;
+    server 127.0.0.1:8080;
+    server 127.0.0.1:8081;
+    server 127.0.0.1:8082;
+    ...
+}
+```
 
 ---
 
@@ -98,6 +122,7 @@ Create symlink to config: `ln -s /etc/nginx/sites-available/URL.com /etc/nginx/s
 |`restart`|Full PM2 restart _(Updates env)_|
 |`run reload`|0-downtime PM2 reload _(Doesn't update env)_|
 |`test`|Run Jest tests|
+|`run test-api`|Run automated API tests _(Requires cURL)_|
 |`run dev-cert`|Generate locally-signed HTTPS certificate ***(Dev use ONLY)***|
 |`run unlock-user [name]`|Unlock user _(Users.unlock.js must be enabled first)_|
 
