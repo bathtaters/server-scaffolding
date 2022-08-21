@@ -14,7 +14,7 @@ describe('Test ENV Form Post', () => {
     LOG_CONSOLE: "logC",
     LOG_FILE: "logF",
     LOG_HTTP: "logH",
-    TRUST_PROXY: 23,
+    TRUST_PROXY: "trustProxy",
     SESSION_SECRET: "testSession",
     DB_SECRET: "testDB",
     DB_DIR: "",

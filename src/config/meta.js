@@ -1,5 +1,4 @@
 const { join } = require('path')
-const { isCluster, isSecure } = require('../internal/config/server.cfg')
 const settings = require('../internal/config/settings.cfg')
 const pkg = require('../../package.json')
 const pkgCfg = pkg.config || {}
@@ -16,7 +15,7 @@ require('dotenv').config({ path: envPath })
 function getPort() {
   if (process.env.NODE_ENV === 'test') return require('../internal/testing/test.cfg').port
   return (+process.env.port || +pkgCfg.port || 8080) + (
-    isCluster || isNaN(process.env.NODE_APP_INSTANCE) ? 0 : +process.env.NODE_APP_INSTANCE
+    isNaN(process.env.NODE_APP_INSTANCE) || require('../internal/config/server.cfg').isCluster ? 0 : +process.env.NODE_APP_INSTANCE
   )
 }
 
@@ -31,7 +30,7 @@ module.exports = {
 
   port: getPort(),
   isPm2: 'NODE_APP_INSTANCE' in process.env,
-  isSecure, rootPath, envPath,
+  rootPath, envPath,
   dbPath:  join(process.env.DB_DIR  || settings.definitions.DB_DIR.default,  'database.db'),
   logPath: join(process.env.LOG_DIR || settings.definitions.LOG_DIR.default, `${pkg.name || 'server'}_%DATE%.log`),
   credPath: { key: join(rootPath,'.key.pem'), cert: join(rootPath,'.cert.pem') },

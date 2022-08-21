@@ -1,5 +1,5 @@
-const RegEx = require('../internal/libs/regex')
-const { name, version, author, license, releaseYear, repoLink, isSecure } = require('./meta')
+const { name, version, author, license, releaseYear, repoLink } = require('./meta')
+const { isSecure } = require('../internal/config/server.cfg')
 const { capitalizeHyphenated } = require('../internal/utils/common.utils')
 const { jquery, minicss, gui: guiUrl } = require('./urls.cfg')
 

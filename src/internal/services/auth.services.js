@@ -2,8 +2,8 @@ const session = require('express-session')
 const SQLiteStore = require('connect-sqlite3')(session)
 const { dirname } = require('path')
 const { saveLoginMs } = require('../config/users.cfg')
-const { dbPath, isSecure } = require('../../config/meta')
-const { concurrentDB } = require('../config/server.cfg')
+const { dbPath } = require('../../config/meta')
+const { concurrentDB, isSecure } = require('../config/server.cfg')
 const errors = require('../config/errors.internal')
 
 exports.sessionOptions = {

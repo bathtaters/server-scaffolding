@@ -40,7 +40,7 @@ module.exports = {
       tooltip: 'Log format for HTTP logging (Uses Morgan)',
     },
     TRUST_PROXY: {
-      default: process.env.NODE_ENV === 'production' ? 'loopback' : '0',
+      default: process.env.NODE_ENV === 'production' ? 'true' : '0',
       html: { type: 'text', limits: { min: 0, max: 4096 } },
       tooltip: 'Trust-Proxy setting. Can be number of hops, true/false for last/first, "loopback" or specifc domains (comma seperated).',
     },

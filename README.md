@@ -47,7 +47,7 @@ port=[8080]
 LOG_CONSOLE=verbose|http|[info]|warn|error|none
 LOG_FILE=verbose|http|info|[warn]|error|none
 LOG_HTTP=debug|combined|[common]|dev|short|tiny|none
-TRUST_PROXY=[0|loopback]|num|true|false|domain,list,...
+TRUST_PROXY=[0|true]|num|false|domain,list,...
 SESSION_SECRET=[secret]
 DB_SECRET=[secret]
 DB_DIR=[<project-dir>/.db]
@@ -75,8 +75,7 @@ server {
         proxy_http_version  1.1;
         proxy_set_header    Upgrade             $http_upgrade;
         proxy_set_header    Connection          'upgrade';
-        proxy_set_header    Host                $host;
-        proxy_set_header    X-Real-IP           $remote_addr;
+        proxy_set_header    X-Forwarded-Host    $host;
         proxy_set_header    X-Forwarded-Proto   $scheme;
         proxy_set_header    X-Forwarded-For     $proxy_add_x_forwarded_for;
         proxy_cache_bypass  $http_upgrade;
