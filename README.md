@@ -24,18 +24,21 @@ Includes ***Passport*** session authentication, ***Morgan*** console/file loggin
  4. Copy `testing/endpoint/base` to test API endpoints _(Or use `testApi.sh` to debug)_
 
 ### Deploy to Production
- 1. Recommend using **pm2** to ensure Restart button works
- 2. Update `ecosystem.config.js` if needed
+ 1. Clone repo `git clone` & `npm i`
+ 2. Ensure that **pm2** is installed globally
  3. Create production `.env` _(see below guide)_
- 4. Run once as `npm run dev` to create initial user
- 5. Run using `npm start`, stop with `npm stop` _(Save w/ pm2 to always run)_
- 6. Setup **NGINX** as reverse proxy/load distro _(Set trust proxy setting)_
- 7. Setup **Let's Encrypt** to create SSL certificate for https
+ 4. Connect **NGINX** to server _(see below guide)_
+ 5. Create certificate with [**Let's Encrypt**](https://www.nginx.com/blog/using-free-ssltls-certificates-from-lets-encrypt-with-nginx/): `sudo certbot --nginx -d URL.com -d www.URL.com`
+ 6. Start intially using `npm run dev` to create admin user
+ 7. Then run using `npm start`, stop with `npm stop` _(Save w/ pm2 to always run)_
+ 8. Set TRUST_PROXY in `/admin/settings` to lowest number that shows your IP on Restart
+ ##### NOTE: If you wish to test w/o HTTPS, you must change **productionIsSecure** in `/internal/config/server.cfg.js` to ***false***
 
 ---
 
 ## .env Variables
-Rename `.env.demo.dev`/`.prod` to `.env` as a starting point depending on environment.
+Copy `.env.demo.dev`/`.prod` and rename to `.env` as a starting point depending on environment.
+Update DB_SECRET before running (Changing this will make the entire database inaccessible).
 
 ##### _Can also be set via `/admin/settings`. Defaults are in [brackets]._
 ```shell
@@ -50,6 +53,39 @@ DB_SECRET=[secret]
 DB_DIR=[<project-dir>/.db]
 LOG_DIR=[<project-dir>/.logs]
 ```
+
+---
+
+## NGINX config
+
+Create a config file for your reverse proxy: `/etc/nginx/sites-available/URL.com`, or add new `location` section in an existing config. 
+
+```nginx
+server {
+    listen 80;
+    listen [::]:80;
+    server_name  URL.com www.URL.com;
+
+    gzip             on;
+    gzip_comp_level  3;
+    gzip_types       text/plain text/css image/*;
+
+    location / {
+        proxy_pass          http://127.0.0.1:8080;
+        proxy_http_version  1.1;
+        proxy_set_header    Upgrade             $http_upgrade;
+        proxy_set_header    Connection          'upgrade';
+        proxy_set_header    Host                $host;
+        proxy_set_header    X-Real-IP           $remote_addr;
+        proxy_set_header    X-Forwarded-Proto   $scheme;
+        proxy_set_header    X-Forwarded-For     $proxy_add_x_forwarded_for;
+        proxy_cache_bypass  $http_upgrade;
+    }
+}
+```
+###### Replace `URL.com` with your `domain name` & `:8080` with the `local port`.
+
+Create symlink to config: `ln -s /etc/nginx/sites-available/URL.com /etc/nginx/sites-enabled/`
 
 ---
 
