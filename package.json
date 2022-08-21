@@ -12,7 +12,8 @@
     "inspect": "nodemon --inspect ./src/internal/server.js",
     "unlock-user": "node ./src/internal/utils/Users.unlock.js",
     "test": "jest ./src/",
-    "dev-cert": "openssl req -new -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out .cert.pem -keyout .key.pem"
+    "test-api": "./src/testing/testApi.sh",
+    "dev-cert": "openssl req -new -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out .cert.pem -keyout .key.pem",
   },
   "keywords": [],
   "author": "bathtaters",
