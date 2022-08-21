@@ -6,6 +6,7 @@ const { startup, teardown } = require('../../server.init')
 const logger = require('../libs/log')
 const rateMw = require('../middleware/rateLimit.middleware')
 const meta = require('../../config/meta')
+const { useLocalCert } = require('../config/server.cfg')
 const urls = require('../../config/urls.cfg')
 const shutdownError = require('../config/errors.internal').shutdown
 const { varName } = require('../utils/gui.utils')
@@ -61,7 +62,7 @@ async function initializeServer(app) {
 
   // Get secure credentials
   let creds = {}
-  if (meta.isSecure) {
+  if (useLocalCert) {
     logger.verbose('Loading secure server credentials')
     try {
       creds.key  = await fs.readFile(meta.credPath.key, 'utf8')
@@ -69,11 +70,11 @@ async function initializeServer(app) {
     } catch (err) {
       logger.error(err)
     }
-    if (!creds.key || !creds.cert) throw new Error(`Unable to read SSL credentials, ${process.env.NODE_ENV === 'development' ? 'try running "npm run dev-cert"' : 'generate SSL/TLS credentials or disable isSecure'}.`) 
+    if (!creds.key || !creds.cert) throw new Error(`Unable to read SSL credentials, ${process.env.NODE_ENV === 'development' ? 'try running "npm run dev-cert"' : 'point meta.credPath to SSL/TLS credentials or disable useLocalCert'}.`) 
   }
 
   // Open port
-  const server = meta.isSecure ? https.createServer(creds, app) : http.createServer(app)
+  const server = useLocalCert ? https.createServer(creds, app) : http.createServer(app)
   listener = server.listen(meta.port, () => logger.info(`Listening on port ${meta.port}`))
 }
 

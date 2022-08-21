@@ -1,9 +1,14 @@
+// enable/disable SSL/TLD
+const productionIsSecure = true
+const useLocalCert = process.env.NODE_ENV === 'development' && true
+
 module.exports = {
   isCluster: false, // Cluster mode not working
   processCount: 6,
   trustProxy: process.env.NODE_ENV === 'test' || process.env.TRUST_PROXY || require('./settings.cfg').definitions.TRUST_PROXY.default,
-  isSecure: process.env.NODE_ENV !== 'test' && (process.env.NODE_ENV === 'production' ? true : true), // enable SSL/TLD
+  isSecure: process.env.NODE_ENV !== 'test' && (process.env.NODE_ENV === 'production' ? productionIsSecure : useLocalCert),
   csrfEnable: process.env.NODE_ENV !== 'test' && true,
+  useLocalCert,
   
   gracefulExitOptions: {
     suicideTimeout: 4000,
