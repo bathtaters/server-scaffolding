@@ -1,13 +1,14 @@
-// enable/disable SSL/TLD
+// Enable/Disable SSL/TLS
 const productionIsSecure = true
 const useLocalCert = process.env.NODE_ENV === 'development' && true
 
+const isTest = process.env.NODE_ENV === 'test'
 module.exports = {
   isCluster: false, // Cluster mode not working
   processCount: 6,
-  trustProxy: process.env.NODE_ENV === 'test' || process.env.TRUST_PROXY || require('./settings.cfg').definitions.TRUST_PROXY.default,
-  isSecure: process.env.NODE_ENV !== 'test' && (process.env.NODE_ENV === 'production' ? productionIsSecure : useLocalCert),
-  csrfEnable: process.env.NODE_ENV !== 'test' && true,
+  trustProxy: isTest || decodeTrustProxy(process.env.TRUST_PROXY || require('./settings.cfg').definitions.TRUST_PROXY.default),
+  isSecure: !isTest && (process.env.NODE_ENV === 'production' ? productionIsSecure : useLocalCert),
+  csrfEnable: !isTest && true,
   useLocalCert,
   
   gracefulExitOptions: {
@@ -37,4 +38,16 @@ module.exports = {
       windowMs: 60 * 60 * 1000,
     },
   },
+}
+
+//  HELPER
+
+function decodeTrustProxy(val) {
+  if (typeof val !== 'string') return val
+  if (!isNaN(val)) return +val
+  if (val.includes(',')) return val.split(/\s*,\s*/)
+  const lower = val.toLowerCase()
+  if (lower === 'true') return true
+  if (lower === 'false') return false
+  return val
 }
