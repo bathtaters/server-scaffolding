@@ -13,7 +13,11 @@
     "unlock-user": "node ./src/internal/utils/Users.unlock.js",
     "test": "jest ./src/",
     "test-api": "./src/testing/testApi.sh",
+<<<<<<< HEAD
     "dev-cert": "openssl req -new -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out .cert.pem -keyout .key.pem"
+=======
+    "dev-cert": "openssl req -new -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out .cert.pem -keyout .key.pem",
+>>>>>>> bd8f4a99cfbad05fe5fd6b8a5f5455488dca7e11
   },
   "keywords": [],
   "author": "bathtaters",
