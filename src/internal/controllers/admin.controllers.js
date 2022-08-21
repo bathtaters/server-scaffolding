@@ -2,7 +2,6 @@ const { matchedData } = require('express-validator')
 const Users = require('../models/Users')
 const { modelDb } = require('./gui.controllers')
 const { access, tableFields, tooltips, allModelsKey, models } = require('../config/users.cfg')
-const settingsTooltips = require('../config/settings.cfg').tooltips
 const { guiAdapter } = require('../services/users.services')
 const { hasAccess } = require('../utils/users.utils')
 const { getSettings, getForm, canUndo } = require('../services/settings.services')
@@ -32,13 +31,13 @@ exports.settings = async (req, res, next) =>
     title: 'Settings',
     settings: await getSettings(),
     formSettings: await getForm(),
-    tooltips: settingsTooltips,
     canUndo: canUndo(req.session),
     buttons: Object.keys(settingsActions),
     postURL: `${urls.prefix}${urls.home}${urls.form}`,
     user: req.user && req.user.username,
     isAdmin: req.user && hasAccess(req.user.access, access.admin),
     csrfToken: req.csrfToken && req.csrfToken(),
+    userIP: req.ip,
   })
 
 // LOGS

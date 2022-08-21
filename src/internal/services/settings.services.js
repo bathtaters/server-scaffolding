@@ -3,19 +3,20 @@ const { parse } = require('dotenv')
 const logger = require('../libs/log')
 const { getSettingsVars, stringifyEnv, filterOutProps, getChanged, escapeSettings } = require('../utils/settings.utils')
 const { debounce } = require('../utils/common.utils')
-const { defaults, formDefaults, formSettings, fileReadDebounceMs, escapeEnvMsg } = require('../config/settings.cfg')
+const { definitions, fileReadDebounceMs, escapeEnvMsg } = require('../config/settings.cfg')
 const { envPath } = require('../../config/meta')
 
 const [ debouncedRead, forceNextRead ] = debounce(readFile, { interval: fileReadDebounceMs, ignoreArgs: true })
 
 exports.settingsDefaults = filterOutProps(
-  { ...defaults, ...formDefaults },
-  Object.entries(formSettings).filter(([_, { readonly }]) => readonly).map(([key]) => key)
+  Object.entries(definitions).reduce((defs, [key,val]) => 'formDefault' in val ? Object.assign(defs, { [key]: val.formDefault }) :
+    'default' in val ? Object.assign(defs, { [key]: val.default }) : defs, {}),
+  Object.keys(definitions).filter((key) => definitions[key].html.readonly)
 )
 
 exports.getSettings = async () => {
   const envObj = await debouncedRead(envPath).then((text) => parse(text.toString()))
-  return getSettingsVars(Object.keys(formSettings), envObj)
+  return getSettingsVars(Object.keys(definitions), envObj)
 }
   
 const escapeChars = escapeSettings((...args) => { logger.warn(escapeEnvMsg(...args)) })
@@ -37,15 +38,15 @@ exports.canUndo = (session) => session && Array.isArray(session.undoSettings) &&
 exports.getForm = async () => {
   const newForm = [{}, {}],
     currentVals = await exports.getSettings(),
-    splitForm = Math.ceil(Object.keys(formSettings).length / 2)
+    splitForm = Math.ceil(Object.keys(definitions).length / 2)
 
-  Object.keys(formSettings).forEach((key, idx) => {
-    if (Array.isArray(formSettings[key].type)) {
+  Object.keys(definitions).forEach((key, idx) => {
+    if (Array.isArray(definitions[key].html.type)) {
       const currentVal = typeof currentVals[key] === 'string' ? currentVals[key] : String(currentVals[key])
-      if (currentVal && !formSettings[key].type.includes(currentVal)) 
-        formSettings[key].type.push(currentVal)
+      if (currentVal && !definitions[key].html.type.includes(currentVal)) 
+        definitions[key].html.type.push(currentVal)
     }
-    newForm[+(idx >= splitForm)][key] = formSettings[key]
+    newForm[+(idx >= splitForm)][key] = definitions[key]
   })
   return newForm
 }

@@ -3,7 +3,7 @@ const mkDir = require('fs').mkdirSync
 const logger = require('./log')
 const { encrypt } = require('../services/db.services')
 
-const sqlSecret = process.env.DB_SECRET ?? require('../config/settings.cfg').defaults.DB_SECRET
+const sqlSecret = process.env.DB_SECRET ?? require('../config/settings.cfg').definitions.DB_SECRET.default
 const dbSrc = process.env.NODE_ENV === 'test' ? require('../testing/test.cfg').testDb : require('../../config/meta').dbPath
 const dbDir = process.env.NODE_ENV !== 'test' && require('path').dirname(dbSrc)
 

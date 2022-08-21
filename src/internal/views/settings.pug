@@ -16,8 +16,8 @@ block content
       .container: .row
         each formCol in formSettings
           .col-sm
-            each input, key in formCol
-              +formInput(key, input.type, input.limits, settings[key], key, '', tooltips[key], input.readonly)
+            each entry, key in formCol
+              +formInput(key, entry.html.type, entry.html.limits, settings[key], key, '', entry.tooltip, entry.html.readonly)
         if csrfToken
           span: +formInput('_csrf', 'hidden', null, csrfToken)
           

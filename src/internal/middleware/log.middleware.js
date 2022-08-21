@@ -7,7 +7,7 @@ const { httpDebug, silent, httpMessage } = require('../config/log.cfg')
 
 function loadLogMiddleware(httpFormat = null) {
   // No Middleware
-  if (!httpFormat) httpFormat = process.env.LOG_HTTP || require('../config/settings.cfg').defaults.LOG_HTTP
+  if (!httpFormat) httpFormat = process.env.LOG_HTTP || require('../config/settings.cfg').definitions.LOG_HTTP.default
   if (!httpFormat || silent.includes(httpFormat)) return (req,res,next) => next()
 
   // Normal Middleware

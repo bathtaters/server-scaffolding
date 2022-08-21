@@ -10,7 +10,7 @@ exports.sessionOptions = {
   name: 'sessionID',
   store: process.env.NODE_ENV === 'test' ? undefined :
     new SQLiteStore({ dir: dirname(dbPath), db: 'sessions.db', table: 'sessions', concurrentDB }),
-  secret: process.env.SESSION_SECRET || require('../config/settings.cfg').defaults.SESSION_SECRET,
+  secret: process.env.SESSION_SECRET || require('../config/settings.cfg').definitions.SESSION_SECRET.default,
   resave: false,
   saveUninitialized: true,
   cookie: {

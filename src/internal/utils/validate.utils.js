@@ -11,7 +11,7 @@ const html2Valid = ({ type, limits }, key, isIn = 'body') => ({
     max: Math.max(...type.map((str) => String(str).length || 0)),
   })
 })
-exports.formSettingsToValidate = (formSettings, isIn = 'body') => Object.entries(formSettings).map(([key, val]) => html2Valid(val, key, isIn))
+exports.formSettingsToValidate = (settings, isIn = 'body') => Object.entries(settings).map(([key, { html }]) => html2Valid(html, key, isIn))
 
 // Boolean validation
 const allBools    = boolOptions.true.concat(boolOptions.false)

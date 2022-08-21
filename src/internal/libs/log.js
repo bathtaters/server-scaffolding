@@ -2,7 +2,7 @@ const { createLogger, transports } = require('winston')
 const DailyRotateFile = require('winston-daily-rotate-file')
 const { getLogLevel } = require('../services/log.services')
 const config = require('../config/log.cfg')
-const { defaults } = require('../config/settings.cfg')
+const { definitions } = require('../config/settings.cfg')
 const { logPath } = require('../../config/meta')
 
 const logger = createLogger({
@@ -11,14 +11,14 @@ const logger = createLogger({
   transports: [
     // Console logs
     new transports.Console({
-      ...getLogLevel(process.env.LOG_CONSOLE, config, defaults.LOG_CONSOLE, true),
+      ...getLogLevel(process.env.LOG_CONSOLE, config, definitions.LOG_CONSOLE.default, true),
       format: config.logFormat.console,
     })
     
   ].concat(config.testLevel ? [] : 
     // File logs
     new DailyRotateFile({
-      ...getLogLevel(process.env.LOG_FILE, config, defaults.LOG_FILE),
+      ...getLogLevel(process.env.LOG_FILE, config, definitions.LOG_FILE.default),
       filename: logPath,
       datePattern: 'YYYY-MM-DD' + (config.files.splitHourly ? '.HH' : ''),
       zippedArchive: false,

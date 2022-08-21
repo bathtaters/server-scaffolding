@@ -32,7 +32,7 @@ module.exports = {
   port: getPort(),
   isPm2: 'NODE_APP_INSTANCE' in process.env,
   isSecure, rootPath, envPath,
-  dbPath:  join(process.env.DB_DIR  || settings.defaults.DB_DIR,  'database.db'),
-  logPath: join(process.env.LOG_DIR || settings.defaults.LOG_DIR, `${pkg.name || 'server'}_%DATE%.log`),
+  dbPath:  join(process.env.DB_DIR  || settings.definitions.DB_DIR.default,  'database.db'),
+  logPath: join(process.env.LOG_DIR || settings.definitions.LOG_DIR.default, `${pkg.name || 'server'}_%DATE%.log`),
   credPath: { key: join(rootPath,'.key.pem'), cert: join(rootPath,'.cert.pem') },
 }
