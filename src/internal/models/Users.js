@@ -115,11 +115,11 @@ class Users extends Model {
   }
 
   validUsername(username, ignoreId) {
-    if (!username) return 'Must provide a username'
-    if (illegalUsername.test(username)) return 'Cannot contain spaces or symbols (Besides underscore & hyphen)'
+    if (!username) return errors.usernameMessages.missing
+    if (illegalUsername.test(username)) return errors.usernameMessages.illegal
     username = username.toLowerCase()
     return super.get().then((users) => users.every((user) =>
-      user[this.primaryId] === ignoreId || user.username !== username) ? 0 : 'Username already exists'
+      user[this.primaryId] === ignoreId || user.username !== username) ? 0 : errors.usernameMessages.exists
     )
   }
 

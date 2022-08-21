@@ -34,12 +34,13 @@ module.exports = {
   noUser: () => createError(401, "User not found."),
   noToken: () => createError(401, "Missing bearer token or incorrect format."),
   badToken: () => createError(401, "Invalid or outdated bearer token."),
-  noCSRF: () => createError(403, "Missing or invalid CSRF token."),
+  noCSRF: () => createError(403, "Form expired or was tampered with (Missing or invalid CSRF token)."),
   noAccess: () => createError(403, "User does not have access."),
   badAccess: (access, type = 'key') => createError(500, `Invalid access ${type}: ${access}.`),
   noModel: (model, access) => createError(403, `User does not have ${access || ''} access to ${model || 'this model'}.`),
   badModels: (models) => createError(500, `Invalid model list: [${typeof models}] ${JSON.stringify(models)}.`),
   rateLimit: (data) => appendToError(createError(429, `Too many requests. Try again in a bit.`), { stack: JSON.stringify(data) }),
+
   loginMessages: {
     noUser:     { fail: 'Incorrect username or user was deleted' },
     isLocked:   { fail: 'User is locked out due to too many failed attempts' },
@@ -47,11 +48,16 @@ module.exports = {
     noAccess:   { fail: 'Insufficient access level' },
     noMatch:    { fail: 'Incorrect password or misspelled username' },
   },
+  usernameMessages: {
+    missing: 'Must provide a username',
+    illegal: 'Cannot contain spaces or symbols (Besides underscore & hyphen)',
+    exists:  'Username already exists',
+  },
   
   // Form Errors
   noConfirm: () => createError(400, "Must confirm password"),
   badConfirm: () => createError(400, "Passwords don't match"),
-  modifyOther: () => createError(403, "Must have admin privlege to modify other users"),
+  modifyOther: () => createError(403, "Must have admin privileges to modify other users"),
   badAction: (action) => createError(400, `Invalid action: ${action || '[None]'}.`),
 
   // Other Errors
