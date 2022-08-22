@@ -1,4 +1,4 @@
-// Copy this test as a starting point for testing new Model APIs
+// Copy this test as a starting point for testing new Model APIs (Remove .skip from describe block)
 
 const server = require('../../internal/server')
 const request = require('supertest')(server)
@@ -6,7 +6,7 @@ const { getApiHeader } = require('../../internal/testing/endpoint.utils')
 
 const apiPrefix = '/api/base' // change 'base' to Model title
 
-describe('Test Base model API', () => {
+describe.skip('Test Base model API', () => {
   let header, testId
   beforeAll(() => getApiHeader().then((token) => header = token))
 
