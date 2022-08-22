@@ -25,10 +25,8 @@ module.exports = {
 
   // CRUD Errors
   noID: () => createError(400, "No ID provided."),
-  badKey: (key, table = 'table') => createError(500, `Column "${key}" does not exist in ${table}.`),
   noData: (missingField) => createError(400, `No ${missingField || 'data'} provided.`),
   noEntry: (id) => createError(400, `No entry exists at ID ${id || ''}.`),
-  noAdd: () => createError(502, "New entry was not created."),
   noSize: () => createError(400, "Invalid page size for paginated request."),
   
   // Authentication Errors
@@ -61,17 +59,21 @@ module.exports = {
   modifyOther: () => createError(403, "Must have admin privileges to modify other users"),
   badAction: (action) => createError(400, `Invalid action: ${action || '[None]'}.`),
 
-  // Other Errors
+  // DB Errors
+  badKey: (key, table = 'table') => createError(500, `Column "${key}" does not exist in ${table}.`),
+  noAdd: () => createError(502, "New entry was not created."),
   sqlError: (err, sql, params) => appendToError(
     createError(502, err.message || err),
     { name: 'sqlError', stack: `\tCmd: ${sql}\n\t\t[${(Array.isArray(params) ? params : Object.values(params || {})).join(', ')}]` }
   ),
-  badUsername: (username, reason) => createError(409, `Cannot set name ${username || 'for user'}: ${reason}`),
-  deleteAdmin: () => createError(403, "Cannot remove the only admin. Add another admin then retry, or reset User Table to remove all users."),
-  noUndo: () => createError(500, "Undo queue is empty"),
   sqlInjection: (val, isReserved, table) => new Error(`${table ? `Column in ${table}` : 'Table name'} ${
     isReserved ? 'is a reserved keyword:' : typeof val === 'string' ? 
       'contains non-alphanumeric characters:' : `is not a string: <${typeof val}>`
-  } ${val}`
-  ),
+    } ${val}`),
+
+
+  // Other Errors
+  badUsername: (username, reason) => createError(409, `Cannot set name ${username || 'for user'}: ${reason}`),
+  deleteAdmin: () => createError(403, "Cannot remove the only admin. Add another admin then retry, or reset User Table to remove all users."),
+  noUndo: () => createError(500, "Undo queue is empty"),
 }
