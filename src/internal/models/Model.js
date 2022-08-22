@@ -126,21 +126,22 @@ class Model {
   }
 
   
-  async batchAdd(dataArray, ifExists = 'default', getLastId = false) { // skip/overwrite/abort
+  async batchAdd(dataArray, ifExists = 'default', returns = false) { // skip/overwrite/abort
     dataArray = await Promise.all(dataArray.map((data) => runAdapters(adapterKey.set, { ...this.defaults, ...data }, this.schema)))
     dataArray = dataArray.map((data) => sanitizeSchemaData(data, this.schema))
     
     const keys = Object.keys(dataArray[0])
     if (!keys.length) throw errors.noData()
 
-    return services[getLastId ? 'getLastId' : 'run'](getDb(),
+    return services[returns ? 'getLastEntry' : 'run'](getDb(),
       `INSERT${ifExistsBehavior[ifExists] ?? ifExistsBehavior.default} INTO ${this.title}(${
         keys.join(',')
       }) VALUES ${
         dataArray.map(() => `(${keys.map(() => '?').join(',')})`).join(',')
       }`,
-      dataArray.flatMap((data) => keys.map((key) => data[key]))
-    ).then((ret) => ret || { success: true })
+      dataArray.flatMap((data) => keys.map((key) => data[key])),
+      returns && this.title,
+    ).then((ret) => returns ? ret : { success: true })
   }
    
   

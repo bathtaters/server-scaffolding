@@ -16,7 +16,7 @@ describe('Test model API', () => {
   test('POST /', async () => {
     const res = await request.post(prefix.api).set(header).expect(200).expect('Content-Type', /json/)
       .send({ [testKey]: "test" })
-    expect(res.body).toEqual({ [idKey]: expect.anything() })
+    expect(res.body).toMatchObject({ [idKey]: expect.anything() })
     testId = res.body[idKey]
   })
 

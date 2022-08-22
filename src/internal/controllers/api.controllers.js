@@ -5,7 +5,7 @@ const { getMatchingKey } = require('../utils/common.utils')
 exports.create = (Model) => function (req,res,next) {
   const data = matchedData(req)
   if (!data || !Object.keys(data).length) return next(errors.noData())
-  return Model.add(data).then((id) => res.send({ [Model.primaryId]: id })).catch(next)
+  return Model.add(data).then((entry) => res.send(entry)).catch(next)
 }
 
 exports.read = (Model) => function (req,res,next) {

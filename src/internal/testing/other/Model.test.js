@@ -452,7 +452,8 @@ describe('Model batchAdd', () => {
     return TestModel.batchAdd([{ data: 1, test: 2 }]).then(() => {
       expect(services.run).toBeCalledTimes(1)
       expect(services.run).toBeCalledWith(
-        'DB', 'INSERT INTO testModel(data,test) VALUES (?,?)', [1,2]
+        'DB', 'INSERT INTO testModel(data,test) VALUES (?,?)',
+        [1,2], expect.anything()
       )
     })
   })
@@ -461,7 +462,8 @@ describe('Model batchAdd', () => {
     return TestModel.batchAdd([{ data: 1, test: 2 }, { data: 3, test: 4 }]).then(() => {
       expect(services.run).toBeCalledTimes(1)
       expect(services.run).toBeCalledWith(
-        'DB', 'INSERT INTO testModel(data,test) VALUES (?,?),(?,?)', [1,2,3,4]
+        'DB', 'INSERT INTO testModel(data,test) VALUES (?,?),(?,?)',
+        [1,2,3,4], expect.anything()
       )
     })
   })
@@ -471,7 +473,8 @@ describe('Model batchAdd', () => {
       expect(services.run).toBeCalledWith(
         expect.anything(),
         expect.stringContaining('(data)'),
-        ['DEFAULT','DEFAULT']
+        ['DEFAULT','DEFAULT'],
+        expect.anything()
       )
     })
   })
@@ -481,7 +484,18 @@ describe('Model batchAdd', () => {
       expect(services.run).toBeCalledWith(
         expect.anything(),
         expect.stringContaining(' IF EXISTS BEHAVIOR'),
+        expect.anything(),
         expect.anything()
+      )
+    })
+  })
+  it('calls getLastEntry instead if returning = true', () => {
+    expect.assertions(3)
+    return TestModel.batchAdd([{ data: 1 }, { data: 2 }], undefined, true).then(() => {
+      expect(services.run).toBeCalledTimes(0)
+      expect(services.getLastEntry).toBeCalledTimes(1)
+      expect(services.getLastEntry).toBeCalledWith(
+        expect.anything(), expect.anything(), expect.anything(), 'testModel'
       )
     })
   })
@@ -491,10 +505,10 @@ describe('Model batchAdd', () => {
       expect(ret).toEqual({ success: true })
     })
   })
-  it('returns LastId on success', () => {
+  it('returns LastEntry on success', () => {
     expect.assertions(1)
     return TestModel.batchAdd([{ data: 1 }, { data: 2 }], undefined, true).then((ret) => {
-      expect(ret).toBe('LAST_ID')
+      expect(ret).toBe('LAST_ENTRY')
     })
   })
   it('uses setAdapter on input', () => {
@@ -831,11 +845,11 @@ jest.mock('../../libs/db', () => ({
 }))
 
 jest.mock('../../services/db.services', () => ({
-  run:       jest.fn((db) => db ? Promise.resolve() : Promise.reject('No DB')),
-  get:       jest.fn((db) => db ? Promise.resolve({ val: 'GET', c: 15 }) : Promise.reject('No DB')),
-  all:       jest.fn((db) => db ? Promise.resolve(['ALL','RES']) : Promise.reject('No DB')),
-  getLastId: jest.fn((db) => db ? Promise.resolve('LAST_ID') : Promise.reject('No DB')),
-  reset:     jest.fn((db) => db ? Promise.resolve() : Promise.reject('No DB')),
+  run:   jest.fn((db) => db ? Promise.resolve() : Promise.reject('No DB')),
+  get:   jest.fn((db) => db ? Promise.resolve({ val: 'GET', c: 15 }) : Promise.reject('No DB')),
+  all:   jest.fn((db) => db ? Promise.resolve(['ALL','RES']) : Promise.reject('No DB')),
+  reset: jest.fn((db) => db ? Promise.resolve() : Promise.reject('No DB')),
+  getLastEntry: jest.fn((db) => db ? Promise.resolve('LAST_ENTRY') : Promise.reject('No DB')),
 }))
 
 jest.mock('../../services/model.services', () => ({

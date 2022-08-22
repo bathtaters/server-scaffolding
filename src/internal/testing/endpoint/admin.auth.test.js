@@ -109,12 +109,12 @@ describe('Test User Authentication', () => {
       await updateUser(userInfo, { models: { default: write } })
       let res = await request.post(url.api).set(header).expect(200).expect('Content-Type', /json/)
         .send({ [testKey]: "N5" })
-      expect(res.body).toEqual({ [idKey]: expect.anything() })
+      expect(res.body).toMatchObject({ [idKey]: expect.anything() })
   
       await updateUser(userInfo, { models: { default: read | write } })
       res = await request.post(url.api).set(header).expect(200).expect('Content-Type', /json/)
         .send({ [testKey]: "N6" })
-      expect(res.body).toEqual({ [idKey]: expect.anything() })
+      expect(res.body).toMatchObject({ [idKey]: expect.anything() })
     })
     test('User API disallows read', async () => {
       await updateUser(userInfo, { models: { default: 0 } })
@@ -141,7 +141,7 @@ describe('Test User Authentication', () => {
       await request.get(url.api).set(header).expect(403)
       res = await request.post(url.api).set(header).expect(200).expect('Content-Type', /json/)
         .send({ [testKey]: "N6" })
-      expect(res.body).toEqual({ [idKey]: expect.anything() })
+      expect(res.body).toMatchObject({ [idKey]: expect.anything() })
     })
   })
 

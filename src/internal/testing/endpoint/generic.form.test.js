@@ -35,7 +35,7 @@ describe('Test User Profile Form Post', () => {
   })
 
   test('Swap Button', async () => {
-    otherId = await Model.add({ [testKey]: "other" }).then((id) => id ?? 'NULL')
+    otherId = await Model.add({ [testKey]: "other" }).then((data) => (data && data[idKey]) ?? 'NULL')
     expect(otherId).not.toBe('NULL')
 
     const res = await request.post(`${prefix.gui}/swap`).expect(200).expect('Content-Type', /json/)

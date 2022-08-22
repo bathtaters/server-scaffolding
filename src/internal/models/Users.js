@@ -35,7 +35,7 @@ class Users extends Model {
     return user
   }
 
-  async batchAdd(users, ifExists, getLastId) {
+  async batchAdd(users, ifExists, returns) {
     let isInvalid, idx = -1
     while (++idx < users.length) {
       isInvalid = await this.validUsername(users[idx].username)
@@ -54,7 +54,7 @@ class Users extends Model {
       idx = hasDupes(users.map(({ username }) => (username || '').toLowerCase()).filter(Boolean))
       if (idx) throw errors.badUsername((users[idx - 1].username || '').trim(), errors.usernameMessages.duplicate)
     }
-    return super.batchAdd(users, ifExists, getLastId)
+    return super.batchAdd(users, ifExists, returns)
   }
 
   update(id, data, idKey = null) {
@@ -95,7 +95,6 @@ class Users extends Model {
   async checkPassword(username, password, accessLevel) {
     if (!isPm2 && !(await this.count()))
       return this.add({ username, password, access: accessInt(accessLevel) })
-        .then((id) => id && this.get(id))
         .then((data) => {
           logger.info(`Created initial user: ${data.username}`)
           return data

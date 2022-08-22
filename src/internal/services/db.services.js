@@ -31,12 +31,15 @@ function get(db, sql, params = []) {
     db.get(sql, params, (err,row) => err ? rej(sqlError(err,sql,params)) : res(row))
   })
 }
-function getLastId(db, sql, params = []) {
+function getLastEntry(db, sql, params = [], table) {
   return new Promise((res,rej) => {
     if (!db) return rej(noDb())
     db.serialize(() => {
       db.run(sql, params, (err) => err && rej(sqlError(err,sql,params)))
-      db.get('SELECT last_insert_rowid() id', [], (err, row) => err ? rej(sqlError(err,sql,params)) : res(row && row.id))
+      db.get(
+        `SELECT * FROM ${table} WHERE rowid = (SELECT last_insert_rowid())`, [],
+        (err, row) => err ? rej(sqlError(err,sql,params)) : res(row)
+      )
     })
   })
 }
@@ -74,4 +77,4 @@ function encrypt(db, sqlSecret, version = '4') {
   })
 }
 
-module.exports = { exec, all, run, get, getLastId, reset, encrypt }
+module.exports = { exec, all, run, get, getLastEntry, reset, encrypt }

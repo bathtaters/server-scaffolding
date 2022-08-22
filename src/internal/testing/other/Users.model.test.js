@@ -81,8 +81,8 @@ describe('test Users model', () => {
     let userId, userToken
     
     beforeAll(async () => {
-      userId = await Users.add({ username: uname, password: pword, access: ['api'] })
-      userToken = await Users.get(userId).then(({ token }) => token)
+      const { id, token } = await Users.add({ username: uname, password: pword, access: ['api'] })
+      userId = id, userToken = token
     })
     afterAll(() => Users.remove(userId))
 
@@ -110,10 +110,10 @@ describe('test Users model', () => {
 
   describe('isLastAdmin', () => {
     const isLastAdmin = jest.spyOn(Users, 'isLastAdmin')
-    let userId, otherAdmin
+    let userId
     
     beforeAll(async () => {
-      userId = await Users.add({ username: uname, password: pword, access: ['admin'] })
+      userId = await Users.add({ username: uname, password: pword, access: ['admin'] }).then(({id}) => id)
     })
     afterAll(async () => {
       isLastAdmin.mockResolvedValueOnce(false) // force remove
@@ -127,11 +127,11 @@ describe('test Users model', () => {
       expect(await Users.isLastAdmin(uname, 'username')).toBe(true)
     })
     it('user is not only admin', async () => {
-      const otherId = await Users.add({ username: 'other', password: pword, access: ['admin'] })
+      const { id } = await Users.add({ username: 'other', password: pword, access: ['admin'] })
       expect(await Users.isLastAdmin(userId)).toBe(false)
       
       isLastAdmin.mockResolvedValueOnce(false)
-      await Users.remove(otherId)
+      await Users.remove(id)
     })
     it('user is not admin', async () => {
       isLastAdmin.mockResolvedValueOnce(false)
@@ -153,7 +153,7 @@ describe('test Users model', () => {
 
     it('Add & Update username use it', async () => {
       expect(validSpy).toBeCalledTimes(0)
-      userId = await Users.add({ username: 'original', password: 'origpass' })
+      userId = await Users.add({ username: 'original', password: 'origpass' }).then(({id}) => id)
       expect(validSpy).toBeCalledTimes(1)
       await Users.update(userId, { username: uname })
       expect(validSpy).toBeCalledTimes(2)
@@ -176,7 +176,7 @@ describe('test Users model', () => {
 
   describe('regenToken', () => {
     let userId
-    beforeAll(async () => { userId = await Users.add({ username: uname, password: pword }) })
+    beforeAll(async () => { userId = await Users.add({ username: uname, password: pword }).then(({id}) => id) })
     afterAll(() => Users.remove(userId))
 
     it('Regenerates token', async () => {
@@ -193,18 +193,18 @@ describe('test Users model', () => {
     
     beforeEach(async () => {
       if (userId) await Users.remove(userId)
-      userId = await Users.add({ username: uname, password: pword, failCount: 0, locked: false })
-      userData = await Users.get(userId)
+      userData = await Users.add({ username: uname, password: pword, failCount: 0, locked: false })
+      userId = userData.id
     })
     afterAll(() => Users.remove(userId))
 
     it('uses injected userObj if provided', async () => {
       const getSpy = jest.spyOn(Users, 'get')
       const testStart = new Date().getTime()
-      expect(getSpy).toBeCalledTimes(1)
+      expect(getSpy).toBeCalledTimes(0)
 
       expect(await Users.incFailCount(userData)).toEqual({ success: true })
-      expect(getSpy).toBeCalledTimes(1)
+      expect(getSpy).toBeCalledTimes(0)
       userData = await Users.get(userId)
       expect(userData).toHaveProperty('failCount', 1)
       expect(new Date(userData.failTime).getTime()).toBeGreaterThanOrEqual(testStart)
@@ -213,10 +213,10 @@ describe('test Users model', () => {
     it('looks up user if idKey provided', async () => {
       const getSpy = jest.spyOn(Users, 'get')
       const testStart = new Date().getTime()
-      expect(getSpy).toBeCalledTimes(1)
+      expect(getSpy).toBeCalledTimes(0)
 
       expect(await Users.incFailCount({ id: userId }, { idKey: 'id' })).toEqual({ success: true })
-      expect(getSpy).toBeCalledTimes(2)
+      expect(getSpy).toBeCalledTimes(1)
       userData = await Users.get(userId)
       expect(userData).toHaveProperty('failCount', 1)
       expect(new Date(userData.failTime).getTime()).toBeGreaterThanOrEqual(testStart)
@@ -321,7 +321,7 @@ describe('test Users model', () => {
 
   describe('extended CRUD', () => {
     let userId, extraId
-    beforeAll(async () => { userId = await Users.add({ username: uname, access: [] }) })
+    beforeAll(async () => { userId = await Users.add({ username: uname, access: [] }).then(({id}) => id) })
     afterAll(() => Users.create(true))
 
     it('Adds timestamps on get', async () => {
@@ -395,7 +395,7 @@ describe('test Users model', () => {
     })
 
     it('Cannot remove only admin account', async () => {
-      extraId = await Users.add({ username: 'extra', password: '123', access: ['gui'] })
+      extraId = await Users.add({ username: 'extra', password: '123', access: ['gui'] }).then(({id}) => id)
       expect(await Users.update(userId, { access: ['admin'] })).toEqual({ success: true })
 
       await expect(Users.update(userId,  { access: ['gui']   })).rejects.toThrowError()

@@ -15,10 +15,7 @@ exports.updateUser = (userInfo, newInfo) =>
     )
   )
 
-exports.createUser = async (userSettings = {}) => {
-  const id = await Users.add(userSettings)
-  return Users.get(id)
-}
+exports.createUser = (userSettings = {}) => Users.add(userSettings)
 
 exports.getApiHeader = (settings = {}) =>
   exports.createUser({ username: 'test', access: ['api'], ...settings })

@@ -17,8 +17,8 @@ module.exports = (Model) => ({
   [actions.create]: async (formData) => {
     const [_, data] = extractId(formData, Model.primaryId)
     if (!data || !Object.keys(data).length) throw errors.noData()
-    const newId = await Model.add(data)
-    if (!newId) throw errors.noAdd()
+    const result = await Model.add(data)
+    if (!result) throw errors.noAdd()
   },
 
   // UPDATE
