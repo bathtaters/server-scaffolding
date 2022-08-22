@@ -8,6 +8,7 @@ const creds = { username: 'test', password: 'password' }
 jest.mock('../../../models/_all', () => [ require('../Test.model') ])
 jest.mock('../../config/server.cfg', () => ({
   ...jest.requireActual('../../config/server.cfg'),
+  trustProxy: true,
   rateLimits: {
     gui:   { windowMs: 1000, max: 5 },
     api:   { windowMs:  700, max: 3 },
