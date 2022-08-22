@@ -7,8 +7,8 @@ exports.capitalizeHyphenated = (str) => str.replace(hyphenRegex[0], a=>a.toUpper
 // Filter out duplicate values from array
 exports.filterDupes = (arr) => arr.filter((val, idx) => !arr.slice(0,idx).includes(val))
 
-// Check if array has any duplicate values
-exports.hasDupes = (array) => array.some((val, idx) => array.slice(0, idx).includes(val))
+// Check if array has any duplicate values (Returning 1-based index of 1st match)
+exports.hasDupes = (array) => array.findIndex((val, idx) => array.slice(0, idx).includes(val)) + 1
 
 // Assigns inner prop in object of objects to each outer key
 exports.filterByField = (obj, field) => Object.entries(obj).reduce(

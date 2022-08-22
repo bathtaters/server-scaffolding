@@ -27,13 +27,18 @@ describe('filterDupes', () => {
 
 describe('hasDupes', () => {
   it('false', () => {
-    expect(hasDupes([])).toBe(false)
-    expect(hasDupes([1, 2, 3])).toBe(false)
-    expect(hasDupes(['t', 'T', 'test'])).toBe(false)
+    expect(hasDupes([])).toBeFalsy()
+    expect(hasDupes([1, 2, 3])).toBeFalsy()
+    expect(hasDupes(['t', 'T', 'test'])).toBeFalsy()
   })
   it('true', () => {
-    expect(hasDupes([1, 2, 3, 2, 1, 4, 4])).toBe(true)
-    expect(hasDupes(['t', 'T', 't', 'test', 'T'])).toBe(true)
+    expect(hasDupes([1, 2, 3, 2, 1, 4, 4])).toBeTruthy()
+    expect(hasDupes(['t', 'T', 't', 'test', 'T'])).toBeTruthy()
+  })
+  it('returns 1-based index of first duplicate', () => {
+    expect(hasDupes([1, 2, 3])).toBe(0)
+    expect(hasDupes([1, 2, 3, 2, 1, 4, 4])).toBe(4)
+    expect(hasDupes(['t', 'T', 't', 'test', 'T'])).toBe(3)
   })
 })
 
