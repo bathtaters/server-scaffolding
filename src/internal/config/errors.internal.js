@@ -25,6 +25,7 @@ module.exports = {
 
   // CRUD Errors
   noID: () => createError(400, "No ID provided."),
+  badKey: (key, table = 'table') => createError(500, `Column "${key}" does not exist in ${table}.`),
   noData: (missingField) => createError(400, `No ${missingField || 'data'} provided.`),
   noEntry: (id) => createError(400, `No entry exists at ID ${id || ''}.`),
   noAdd: () => createError(502, "New entry was not created."),
