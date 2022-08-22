@@ -26,6 +26,7 @@ exports.getPrimaryIdAndAdaptSchema = function (schema, title = 'model') {
 
   if (!primaryId) {
     schema[defaultPrimary] = { ...defaultPrimaryType, ...(schema[defaultPrimary] || {}), isPrimary: true }
+    delete schema[defaultPrimary].db
     adaptSchemaEntry(schema[defaultPrimary])
     primaryId = defaultPrimary
   }

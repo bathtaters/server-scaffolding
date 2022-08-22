@@ -51,7 +51,7 @@ exports.dbFromType = ({ type, isArray, isOptional, isPrimary }) => {
   }
 
   if (isPrimary) dbType += ' PRIMARY KEY'
-  if (!isOptional) dbType += ' NOT NULL'
+  else if (!isOptional) dbType += ' NOT NULL'
 
   return dbType
 }
