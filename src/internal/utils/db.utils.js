@@ -1,11 +1,12 @@
-const { illegalKeyName } = require('../config/validate.cfg')
+const { illegalKeyName, illegalKeys } = require('../config/validate.cfg')
 const { sqlInjection } = require('../config/errors.internal')
 
 exports.checkInjection = (val, tableName = '') => {
   if (!val) return val
   if (Array.isArray(val)) return val.map((v) => exports.checkInjection(v, tableName))
   if (typeof val === 'object') Object.keys(val).forEach((v) => exports.checkInjection(v, tableName))
-  else if (typeof val !== 'string' || illegalKeyName.test(val)) throw sqlInjection(val, tableName)
+  else if (typeof val !== 'string' || illegalKeyName.test(val)) throw sqlInjection(val, false, tableName)
+  else if (illegalKeys.includes(val.toUpperCase())) throw sqlInjection(val, true, tableName)
   return val
 }
 

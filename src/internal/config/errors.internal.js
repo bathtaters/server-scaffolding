@@ -68,8 +68,9 @@ module.exports = {
   badUsername: (username, reason) => createError(409, `Cannot set name ${username || 'for user'}: ${reason}`),
   deleteAdmin: () => createError(403, "Cannot remove the only admin. Add another admin then retry, or reset User Table to remove all users."),
   noUndo: () => createError(500, "Undo queue is empty"),
-  sqlInjection: (val, table) => new Error(`${table ? `Column in ${table}` : 'Table name'} ${
-    typeof val === 'string' ? 'contains non-alphanumeric characters:' : `is not a string: <${typeof val}>`
+  sqlInjection: (val, isReserved, table) => new Error(`${table ? `Column in ${table}` : 'Table name'} ${
+    isReserved ? 'is a reserved keyword:' : typeof val === 'string' ? 
+      'contains non-alphanumeric characters:' : `is not a string: <${typeof val}>`
   } ${val}`
   ),
 }

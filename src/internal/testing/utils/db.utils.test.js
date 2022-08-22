@@ -2,22 +2,26 @@ const { checkInjection, extractId, appendAndSort } = require('../../utils/db.uti
 const errors = require('../../config/errors.internal')
 
 describe('checkInjection', () => {
-  it('throws error when illegal value', () => {
+  it('throws error when matches illegalKeyName', () => {
     expect(() => checkInjection('Test.ILLEGAL!'))
-      .toThrowError(errors.sqlInjection('Test.ILLEGAL!'))
+      .toThrowError(errors.sqlInjection('Test.ILLEGAL!', false))
+  })
+  it('throws error when is in illegalKeys (case insensitive)', () => {
+    expect(() => checkInjection('bad'))
+      .toThrowError(errors.sqlInjection('bad', true))
   })
   it('throws error when illegal type', () => {
-    expect(() => checkInjection(1234)).toThrowError(errors.sqlInjection(1234))
-    expect(() => checkInjection(() => {})).toThrowError(errors.sqlInjection(() => {}))
+    expect(() => checkInjection(1234)).toThrowError(errors.sqlInjection(1234, false))
+    expect(() => checkInjection(() => {})).toThrowError(errors.sqlInjection(() => {}, false))
   })
   it('deep checks arrays', () => {
     expect(() => checkInjection(['a','b',['c',['Test.ILLEGAL!']]]))
-      .toThrowError(errors.sqlInjection('Test.ILLEGAL!'))
+      .toThrowError(errors.sqlInjection('Test.ILLEGAL!', false))
   })
   it('checks only object keys', () => {
     expect(() => checkInjection({ a: 1, b: 2, c: 3, d: 'Test.ILLEGAL!' })).not.toThrow()
     expect(() => checkInjection({ a: 1, b: 2, c: 3, 'Test.ILLEGAL!': 4 }))
-      .toThrowError(errors.sqlInjection('Test.ILLEGAL!'))
+      .toThrowError(errors.sqlInjection('Test.ILLEGAL!', false))
   })
   it('returns value when not illegal', () => {
     expect(checkInjection('Test')).toBe('Test')
@@ -37,9 +41,9 @@ describe('checkInjection', () => {
   })
   it('passes tableName to error', () => {
     expect(() => checkInjection('Test.ILLEGAL!','tableName'))
-      .toThrowError(errors.sqlInjection('Test.ILLEGAL!','tableName'))
+      .toThrowError(errors.sqlInjection('Test.ILLEGAL!',false,'tableName'))
     expect(() => checkInjection(['a','b',['c',['Test.ILLEGAL!']]],'tableName'))
-      .toThrowError(errors.sqlInjection('Test.ILLEGAL!','tableName'))
+      .toThrowError(errors.sqlInjection('Test.ILLEGAL!',false,'tableName'))
   })
 })
 
@@ -68,7 +72,7 @@ describe('appendAndSort', () => {
 })
 
 
-jest.mock('../../config/validate.cfg', () => ({ illegalKeyName: /ILLEGAL/ }))
+jest.mock('../../config/validate.cfg', () => ({ illegalKeyName: /ILLEGAL/, illegalKeys: ['BAD'] }))
 jest.mock('../../utils/validate.utils', () => ({
   parseTypeStr: jest.fn((type) => ({ type, isOptional: true })),
   parseArray: () => (arr) => arr.split('|'),
