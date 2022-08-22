@@ -104,10 +104,10 @@ describe('Model get', () => {
 
   it('uses expected SQL', () => {
     expect.assertions(2)
-    return TestModel.get('inp','key').then(() => {
+    return TestModel.get('inp','data').then(() => {
       expect(services.get).toBeCalledTimes(1)
       expect(services.get).toBeCalledWith(
-        'DB', 'SELECT * FROM testModel WHERE key = ?', ['inp']
+        'DB', 'SELECT * FROM testModel WHERE data = ?', ['inp']
       )
     })
   })
@@ -126,16 +126,15 @@ describe('Model get', () => {
       )
     })
   })
-  it('test idKey for injection', () => {
-    expect.assertions(2)
-    return TestModel.get('inp','key').then(() => {
-      expect(checkInjection).toBeCalledTimes(1)
-      expect(checkInjection).toBeCalledWith('key',TestModel.title)
+  it('error if idKey not in Schema', async () => {
+    expect.assertions(1)
+    return TestModel.get('inp','badKey').catch((err) => {
+      expect(err).toEqual(errors.badKey('badKey',TestModel.title))
     })
   })
   it('returns result when ID', () => {
     expect.assertions(1)
-    return TestModel.get('inp','key').then((ret) => {
+    return TestModel.get('inp','data').then((ret) => {
       expect(ret).toHaveProperty('val', 'GET')
     })
   })
@@ -147,7 +146,7 @@ describe('Model get', () => {
   })
   it('uses getAdapter', () => {
     expect.assertions(2)
-    return TestModel.get('inp','key').then(() => {
+    return TestModel.get('inp','data').then(() => {
       expect(runAdapters).toBeCalledTimes(1)
       expect(runAdapters).toBeCalledWith(
         'get',
@@ -159,14 +158,14 @@ describe('Model get', () => {
   })
   it('skips getAdapter when raw = true', () => {
     expect.assertions(1)
-    return TestModel.get('inp','key',true).then(() => {
+    return TestModel.get('inp','data',true).then(() => {
       expect(runAdapters).toBeCalledTimes(0)
     })
   })
   it('returns case-insensitive object', () => {
     caseInsensitiveObject.mockReturnValueOnce('CASEI')
     expect.assertions(2)
-    return TestModel.get('inp','key').then((ret) => {
+    return TestModel.get('inp','data').then((ret) => {
       expect(caseInsensitiveObject).toBeCalledTimes(1)
       expect(ret).toBe('CASEI')
     })
@@ -197,10 +196,10 @@ describe('Model getPage', () => {
   })
   it('orders result based on input', () => {
     expect.assertions(1)
-    return TestModel.getPage(6,12,true,'key').then(() => {
+    return TestModel.getPage(6,12,true,'data').then(() => {
       expect(services.all).toBeCalledWith(
         expect.anything(),
-        'SELECT * FROM testModel ORDER BY key DESC LIMIT ? OFFSET ?',
+        'SELECT * FROM testModel ORDER BY data DESC LIMIT ? OFFSET ?',
         [12, 60]
       )
     })
@@ -215,11 +214,10 @@ describe('Model getPage', () => {
       )
     })
   })
-  it('test orderKey for injection', () => {
-    expect.assertions(2)
-    return TestModel.getPage(6,12,false,'key').then(() => {
-      expect(checkInjection).toBeCalledTimes(1)
-      expect(checkInjection).toBeCalledWith('key',TestModel.title)
+  it('error if orderKey not in Schema', async () => {
+    expect.assertions(1)
+    return TestModel.getPage(6,12,false,'badKey').catch((err) => {
+      expect(err).toEqual(errors.badKey('badKey',TestModel.title))
     })
   })
   it('returns result array on success', () => {
@@ -373,11 +371,11 @@ describe('Model count', () => {
 
   it('uses expected SQL', () => {
     expect.assertions(2)
-    return TestModel.count('inp','key').then(() => {
+    return TestModel.count('inp','data').then(() => {
       expect(services.get).toBeCalledTimes(1)
       expect(services.get).toBeCalledWith(
         'DB',
-        expect.stringMatching(/SELECT COUNT\([^)]+\) \w+ FROM testModel WHERE key = \?/),
+        expect.stringMatching(/SELECT COUNT\([^)]+\) \w+ FROM testModel WHERE data = \?/),
         ['inp']
       )
     })
@@ -399,11 +397,10 @@ describe('Model count', () => {
       )
     })
   })
-  it('test idKey for injection', () => {
-    expect.assertions(2)
-    return TestModel.count('inp','key').then(() => {
-      expect(checkInjection).toBeCalledTimes(1)
-      expect(checkInjection).toBeCalledWith('key',TestModel.title)
+  it('error if idKey not in Schema', async () => {
+    expect.assertions(1)
+    return TestModel.count('inp','badKey').catch((err) => {
+      expect(err).toEqual(errors.badKey('badKey',TestModel.title))
     })
   })
   it('returns count on success', () => {
@@ -474,10 +471,10 @@ describe('Model update', () => {
 
   it('uses expected SQL', () => {
     expect.assertions(2)
-    return TestModel.update('inp', { data: 1, test: 2 }, 'key').then(() => {
+    return TestModel.update('inp', { data: 1, test: 2 }, 'data').then(() => {
       expect(services.run).toBeCalledTimes(1)
       expect(services.run).toBeCalledWith(
-        'DB', 'UPDATE testModel SET data = ?, test = ? WHERE key = ?', [1, 2, 'inp']
+        'DB', 'UPDATE testModel SET data = ?, test = ? WHERE data = ?', [1, 2, 'inp']
       )
     })
   })
@@ -489,29 +486,28 @@ describe('Model update', () => {
       )
     })
   })
-  it('test idKey for injection', () => {
-    expect.assertions(2)
-    return TestModel.update('inp', { data: 1 }, 'key').then(() => {
-      expect(checkInjection).toBeCalledTimes(1)
-      expect(checkInjection).toBeCalledWith('key',TestModel.title)
+  it('error if idKey not in Schema', async () => {
+    expect.assertions(1)
+    return TestModel.update('inp', { data: 1 }, 'badKey').catch((err) => {
+      expect(err).toEqual(errors.badKey('badKey',TestModel.title))
     })
   })
   it('expected return on success', () => {
     expect.assertions(1)
-    return TestModel.update('inp', { data: 1 }, 'key').then((ret) => {
+    return TestModel.update('inp', { data: 1 }, 'data').then((ret) => {
       expect(ret).toEqual({ success: true })
     })
   })
   it('uses setAdapter on data', () => {
     expect.assertions(2)
-    return TestModel.update('inp', { data: 1 }, 'key').then(() => {
+    return TestModel.update('inp', { data: 1 }, 'data').then(() => {
       expect(runAdapters).toBeCalledTimes(1)
       expect(runAdapters).toBeCalledWith('set', { data: 1 }, TestModel.schema)
     })
   })
   it('sanitizes input data', () => {
     expect.assertions(2)
-    return TestModel.update('inp', { data: 1 }, 'key').then(() => {
+    return TestModel.update('inp', { data: 1 }, 'data').then(() => {
       expect(sanitizeSchemaData).toBeCalledTimes(1)
       expect(sanitizeSchemaData).toBeCalledWith({ data: 1 }, TestModel.schema)
     })
@@ -520,7 +516,7 @@ describe('Model update', () => {
     expect.assertions(4)
     const callback = jest.fn()
     services.get.mockResolvedValueOnce({ data: 'old' })
-    return TestModel.update('inp', { data: 'new' }, 'key', callback).then(() => {
+    return TestModel.update('inp', { data: 'new' }, 'data', callback).then(() => {
       expect(callback).toBeCalledTimes(1)
       expect(callback).toBeCalledWith({ data: 'new' }, { data: 'old' })
       expect(runAdapters).toBeCalledTimes(1)
@@ -530,7 +526,7 @@ describe('Model update', () => {
   it('passes changeCb result to SQL', () => {
     expect.assertions(2)
     const callback = jest.fn(() => ({ changedKey: 'changedVal' }))
-    return TestModel.update('inp', { data: 1 }, 'key', callback).then(() => {
+    return TestModel.update('inp', { data: 1 }, 'data', callback).then(() => {
       expect(services.run).toBeCalledTimes(1)
       expect(services.run).toBeCalledWith(
         expect.anything(),
@@ -542,7 +538,7 @@ describe('Model update', () => {
   it('uses original data if changeCb returns falsy', () => {
     expect.assertions(2)
     const callback = jest.fn()
-    return TestModel.update('inp', { inputKey: 'inputVal' }, 'key', callback).then(() => {
+    return TestModel.update('inp', { inputKey: 'inputVal' }, 'data', callback).then(() => {
       expect(services.run).toBeCalledTimes(1)
       expect(services.run).toBeCalledWith(
         expect.anything(),
@@ -554,27 +550,27 @@ describe('Model update', () => {
   it('re-sanitizes data after onChangeCb', () => {
     expect.assertions(2)
     const callback = jest.fn(() => ({ newData: 'newVal' }))
-    return TestModel.update('inp', { inputKey: 'inputVal' }, 'key', callback).then(() => {
+    return TestModel.update('inp', { inputKey: 'inputVal' }, 'data', callback).then(() => {
       expect(sanitizeSchemaData).toBeCalledTimes(2)
       expect(sanitizeSchemaData).toBeCalledWith({ newData: 'newVal' }, TestModel.schema)
     })
   })
   it('rejects on missing ID', () => {
     expect.assertions(1)
-    return TestModel.update(null, { data: 1 }, 'key').catch((err) => {
+    return TestModel.update(null, { data: 1 }, 'data').catch((err) => {
       expect(err).toEqual(errors.noID())
     })
   })
   it('rejects on no data', () => {
     expect.assertions(1)
-    return TestModel.update('inp', {}, 'key').catch((err) => {
+    return TestModel.update('inp', {}, 'data').catch((err) => {
       expect(err).toEqual(errors.noData())
     })
   })
   it('rejects on ID not found', () => {
     services.get.mockResolvedValueOnce({})
     expect.assertions(1)
-    return TestModel.update('inp', { data: 1}, 'key').catch((err) => {
+    return TestModel.update('inp', { data: 1}, 'data').catch((err) => {
       expect(err).toEqual(errors.noEntry('inp'))
     })
   })
@@ -587,10 +583,10 @@ describe('Model remove', () => {
 
   it('uses expected SQL', () => {
     expect.assertions(2)
-    return TestModel.remove('inp','key').then(() => {
+    return TestModel.remove('inp','data').then(() => {
       expect(services.run).toBeCalledTimes(1)
       expect(services.run).toBeCalledWith(
-        'DB', 'DELETE FROM testModel WHERE key = ?', ['inp']
+        'DB', 'DELETE FROM testModel WHERE data = ?', ['inp']
       )
     })
   })
@@ -602,29 +598,28 @@ describe('Model remove', () => {
       )
     })
   })
-  it('test idKey for injection', () => {
-    expect.assertions(2)
-    return TestModel.remove('inp', 'key').then(() => {
-      expect(checkInjection).toBeCalledTimes(1)
-      expect(checkInjection).toBeCalledWith('key',TestModel.title)
+  it('error if idKey not in Schema', async () => {
+    expect.assertions(1)
+    return TestModel.remove('inp', 'badKey').catch((err) => {
+      expect(err).toEqual(errors.badKey('badKey',TestModel.title))
     })
   })
   it('expected return on success', () => {
     expect.assertions(1)
-    return TestModel.remove('inp','key').then((ret) => {
+    return TestModel.remove('inp','data').then((ret) => {
       expect(ret).toEqual({ success: true })
     })
   })
   it('rejects on missing ID', () => {
     expect.assertions(1)
-    return TestModel.remove(null, 'key').catch((err) => {
+    return TestModel.remove(null, 'data').catch((err) => {
       expect(err).toEqual(errors.noID())
     })
   })
   it('rejects on ID not found', () => {
     services.get.mockResolvedValueOnce({})
     expect.assertions(1)
-    return TestModel.remove('inp', 'key').catch((err) => {
+    return TestModel.remove('inp', 'data').catch((err) => {
       expect(err).toEqual(errors.noEntry('inp'))
     })
   })

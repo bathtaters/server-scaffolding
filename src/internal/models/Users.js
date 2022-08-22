@@ -1,7 +1,6 @@
 const Model = require('./Model')
 const logger = require('../libs/log')
 const { now } = require('../libs/date')
-const { checkInjection } = require('../utils/db.utils')
 const { passwordAccess, accessInt, hasAccess } = require('../utils/users.utils')
 const { addAdapter, initAdapters } = require('../services/users.services')
 const { generateToken, testPassword, isLocked, isPastWindow } = require('../utils/auth.utils')
@@ -106,8 +105,8 @@ class Users extends Model {
   }
 
   async isLastAdmin(id, idKey = null) {
-    checkInjection(idKey, this.title)
     if (!idKey) idKey = this.primaryId
+    else if (!Object.keys(this.schema).includes(idKey)) throw errors.badKey(idKey, this.title)
 
     const admins = await this.custom(`SELECT ${idKey} FROM ${this.title} WHERE access & ?`, [access.admin])
     if (!admins) throw errors.unknownDb()

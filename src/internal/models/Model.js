@@ -40,10 +40,11 @@ class Model {
     let result
     if (id == null)
       result = await services.all(getDb(), `SELECT * FROM ${this.title}`)
+
+    else if (idKey && !Object.keys(this.schema).includes(idKey)) throw errors.badKey(idKey, this.title)
     else
-      result = await services.get(getDb(),
-        `SELECT * FROM ${this.title} WHERE ${checkInjection(idKey, this.title) || this.primaryId} = ?`,
-      [id])
+      result = await services.get(getDb(), `SELECT * FROM ${this.title} WHERE ${idKey || this.primaryId} = ?`, [id])
+
     result = Array.isArray(result) ? result.map(caseInsensitiveObject) : caseInsensitiveObject(result)
     if (raw) return result
     return Array.isArray(result) ?
@@ -54,9 +55,9 @@ class Model {
 
   async getPage(page, size, reverse = null, orderKey = null) {
     if (!size) return Promise.reject(errors.noSize())
+    if (orderKey && !Object.keys(this.schema).includes(orderKey)) throw errors.badKey(orderKey, this.title)
 
-    const sort = reverse == null && !orderKey ? '' :
-      `ORDER BY ${checkInjection(orderKey, this.title) || this.primaryId} ${reverse ? 'DESC' : 'ASC'} `
+    const sort = reverse == null && !orderKey ? '' : `ORDER BY ${orderKey || this.primaryId} ${reverse ? 'DESC' : 'ASC'} `
 
     const result = await services.all(getDb(), 
       `SELECT * FROM ${this.title} ${sort}LIMIT ? OFFSET ?`,
@@ -109,7 +110,9 @@ class Model {
 
 
   async count(id = null, idKey = null) {
-    const filter = id != null ? ` WHERE ${checkInjection(idKey, this.title) || this.primaryId} = ?` : ''
+    if (idKey && !Object.keys(this.schema).includes(idKey)) throw errors.badKey(idKey, this.title)
+    
+    const filter = id != null ? ` WHERE ${idKey || this.primaryId} = ?` : ''
     const result = await services.get(getDb(),
       `SELECT COUNT(*) c FROM ${this.title}${filter}`,
       id != null ? [id] : []

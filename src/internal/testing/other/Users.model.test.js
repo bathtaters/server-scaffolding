@@ -1,6 +1,5 @@
 const Users = require('../../models/Users')
 const { rateLimiter, definitions } = require('../../config/users.cfg')
-const { checkInjection } = require('../../utils/db.utils')
 const { adapterKey } = require('../../config/models.cfg')
 const errors = require('../../config/errors.internal')
 
@@ -141,10 +140,8 @@ describe('test Users model', () => {
       
       expect(await Users.isLastAdmin(userId)).toBe(false)
     })
-    it('test idKey for injection', async () => {
-      await Users.isLastAdmin(uname, 'username')
-      expect(checkInjection).toBeCalledTimes(1)
-      expect(checkInjection).toBeCalledWith('username',Users.title)
+    it('error if idKey not in Schema', async () => {
+      await expect(Users.isLastAdmin(uname, 'badKey')).rejects.toEqual(errors.badKey('badKey',Users.title))
     })
   })
 
@@ -420,10 +417,6 @@ describe('test Users model', () => {
 
 // MOCKS
 
-jest.mock('../../utils/db.utils', () => ({
-  ...jest.requireActual('../../utils/db.utils'),
-  checkInjection: jest.fn((o) => o)
-}))
 jest.mock('../../config/users.cfg', () => ({
   ...jest.requireActual('../../config/users.cfg'),
   rateLimiter: { autoUnlock: false, maxFails: 10, failWindow: 1000 },
