@@ -7,6 +7,7 @@ const { generateToken, testPassword, isLocked, isPastWindow } = require('../util
 const { access, rateLimiter, timestampKeyRegEx, illegalUsername, definitions } = require('../config/users.cfg')
 const { isPm2 } = require('../../config/meta')
 const errors = require('../config/errors.internal')
+const { hasDupes } = require('../utils/common.utils')
 
 
 class Users extends Model {
@@ -34,14 +35,26 @@ class Users extends Model {
     return user
   }
 
-  async add(data) {
-    const test = await this.validUsername(data.username)
-    if (test) throw errors.badUsername((data.username || '').trim(), test)
+  async batchAdd(users, ifExists, getLastId) {
+    let isInvalid, idx = -1
+    while (++idx < users.length) {
+      isInvalid = await this.validUsername(users[idx].username)
+      if (isInvalid) break
+    }
+    if (isInvalid) throw errors.badUsername((users[idx].username || '').trim(), isInvalid)
 
-    const newData = addAdapter(data, this.primaryId)
-    if ((passwordAccess & accessInt(newData.access)) && !newData.password)
-      throw errors.noData('password for GUI access')
-    return super.add(newData).then(() => newData[this.primaryId])
+    users = users.map((user) => {
+      const newUser = addAdapter(user, this.primaryId)
+      if ((passwordAccess & accessInt(newUser.access)) && !newUser.password)
+        throw errors.noData('password for GUI access')
+      return newUser
+    })
+
+    if (users.length > 1) {
+      idx = hasDupes(users.map(({ username }) => (username || '').toLowerCase()).filter(Boolean))
+      if (idx) throw errors.badUsername((users[idx - 1].username || '').trim(), errors.usernameMessages.duplicate)
+    }
+    return super.batchAdd(users, ifExists, getLastId)
   }
 
   update(id, data, idKey = null) {

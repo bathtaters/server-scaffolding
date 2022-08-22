@@ -5,7 +5,7 @@ const { checkInjection, appendAndSort } = require('../utils/db.utils')
 const { caseInsensitiveObject, filterByField } = require('../utils/common.utils')
 const { isBool, sanitizeSchemaData } = require('../utils/model.utils')
 const { parseBoolean } = require('../utils/validate.utils')
-const { adapterKey } = require('../config/models.cfg')
+const { adapterKey, ifExistsBehavior } = require('../config/models.cfg')
 const parseBool = parseBoolean(true)
 const errors = require('../config/errors.internal')
 
@@ -121,17 +121,26 @@ class Model {
   }
   
   
-  async add(data) {
-    data = await runAdapters(adapterKey.set, { ...this.defaults, ...data }, this.schema)
-    data = sanitizeSchemaData(data, this.schema)
+  add(data, ifExists = 'default') {
+    return this.batchAdd([data], ifExists, true)
+  }
+
+  
+  async batchAdd(dataArray, ifExists = 'default', getLastId = false) { // skip/overwrite/abort
+    dataArray = await Promise.all(dataArray.map((data) => runAdapters(adapterKey.set, { ...this.defaults, ...data }, this.schema)))
+    dataArray = dataArray.map((data) => sanitizeSchemaData(data, this.schema))
     
-    const keys = Object.keys(data)
-    if (!keys.length) return Promise.reject(errors.noData())
-    
-    return services.getLastId(getDb(),
-      `INSERT INTO ${this.title}(${keys.join(',')}) VALUES(${keys.map(() => '?').join(',')})`,
-      Object.values(data)
-    )
+    const keys = Object.keys(dataArray[0])
+    if (!keys.length) throw errors.noData()
+
+    return services[getLastId ? 'getLastId' : 'run'](getDb(),
+      `INSERT${ifExistsBehavior[ifExists] ?? ifExistsBehavior.default} INTO ${this.title}(${
+        keys.join(',')
+      }) VALUES ${
+        dataArray.map(() => `(${keys.map(() => '?').join(',')})`).join(',')
+      }`,
+      dataArray.flatMap((data) => keys.map((key) => data[key]))
+    ).then((ret) => ret || { success: true })
   }
    
   

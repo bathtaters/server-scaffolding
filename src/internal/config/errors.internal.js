@@ -51,6 +51,7 @@ module.exports = {
     missing: 'Must provide a username',
     illegal: 'Cannot contain spaces or symbols (Besides underscore & hyphen)',
     exists:  'Username already exists',
+    duplicate: 'Duplicate username in user batch',
   },
   
   // Form Errors

@@ -414,51 +414,109 @@ describe('Model count', () => {
 
 describe('Model add', () => {
   const TestModel = new Model('testModel', definitions)
+  const batchSpy = jest.spyOn(TestModel, 'batchAdd')
+  beforeEach(() => { batchSpy.mockResolvedValueOnce(true) })
+
+  it('calls batchAdd', () => {
+    expect.assertions(1)
+    return TestModel.add({ data: 1, test: 2 }).then(() => {
+      expect(batchSpy).toBeCalledTimes(1)
+    })
+  })
+  it('passes ifExists to batchAdd', () => {
+    expect.assertions(1)
+    return TestModel.add({ data: 1, test: 2 }, 'ifExists').then(() => {
+      expect(batchSpy).toBeCalledWith(expect.anything(), 'ifExists', expect.anything())
+    })
+  })
+  it('requests lastId from batchAdd', () => {
+    expect.assertions(1)
+    return TestModel.add({ data: 1, test: 2 }, 'ifExists').then(() => {
+      expect(batchSpy).toBeCalledWith(expect.anything(), expect.anything(), true)
+    })
+  })
+  it('send entry as array to batchAdd', () => {
+    expect.assertions(1)
+    return TestModel.add({ data: 1, test: 2 }, 'ifExists').then(() => {
+      expect(batchSpy).toBeCalledWith([{ data: 1, test: 2 }], expect.anything(), expect.anything())
+    })
+  })
+})
+
+describe('Model batchAdd', () => {
+  const TestModel = new Model('testModel', definitions)
   beforeEach(() => { TestModel._defaults = { data: 'DEFAULT' } })
 
-  it('uses expected SQL', () => {
+  it('uses expected SQL for solo entry', () => {
     expect.assertions(2)
-    return TestModel.add({ data: 1, test: 2 }).then(() => {
-      expect(services.getLastId).toBeCalledTimes(1)
-      expect(services.getLastId).toBeCalledWith(
-        'DB', 'INSERT INTO testModel(data,test) VALUES(?,?)', [1,2]
+    return TestModel.batchAdd([{ data: 1, test: 2 }]).then(() => {
+      expect(services.run).toBeCalledTimes(1)
+      expect(services.run).toBeCalledWith(
+        'DB', 'INSERT INTO testModel(data,test) VALUES (?,?)', [1,2]
+      )
+    })
+  })
+  it('uses expected SQL for multi entries', () => {
+    expect.assertions(2)
+    return TestModel.batchAdd([{ data: 1, test: 2 }, { data: 3, test: 4 }]).then(() => {
+      expect(services.run).toBeCalledTimes(1)
+      expect(services.run).toBeCalledWith(
+        'DB', 'INSERT INTO testModel(data,test) VALUES (?,?),(?,?)', [1,2,3,4]
       )
     })
   })
   it('uses defaults on missing input fields', () => {
     expect.assertions(1)
-    return TestModel.add({}).then(() => {
-      expect(services.getLastId).toBeCalledWith(
+    return TestModel.batchAdd([{}, {}]).then(() => {
+      expect(services.run).toBeCalledWith(
         expect.anything(),
         expect.stringContaining('(data)'),
-        ['DEFAULT']
+        ['DEFAULT','DEFAULT']
       )
+    })
+  })
+  it('uses ifExistsBehavior from config', () => {
+    expect.assertions(1)
+    return TestModel.batchAdd([{ data: 1 }, { data: 2 }], 'test').then(() => {
+      expect(services.run).toBeCalledWith(
+        expect.anything(),
+        expect.stringContaining(' IF EXISTS BEHAVIOR'),
+        expect.anything()
+      )
+    })
+  })
+  it('returns on success', () => {
+    expect.assertions(1)
+    return TestModel.batchAdd([{ data: 1 }, { data: 2 }]).then((ret) => {
+      expect(ret).toEqual({ success: true })
     })
   })
   it('returns LastId on success', () => {
     expect.assertions(1)
-    return TestModel.add({ data: 1 }).then((ret) => {
+    return TestModel.batchAdd([{ data: 1 }, { data: 2 }], undefined, true).then((ret) => {
       expect(ret).toBe('LAST_ID')
     })
   })
   it('uses setAdapter on input', () => {
-    expect.assertions(2)
-    return TestModel.add({ data: 1 }).then(() => {
-      expect(runAdapters).toBeCalledTimes(1)
+    expect.assertions(3)
+    return TestModel.batchAdd([{ data: 1 }, { data: 2 }]).then(() => {
       expect(runAdapters).toBeCalledWith('set', { data: 1 }, TestModel.schema)
+      expect(runAdapters).toBeCalledWith('set', { data: 2 }, TestModel.schema)
+      expect(runAdapters).toBeCalledTimes(2)
     })
   })
   it('sanitizes input data', () => {
-    expect.assertions(2)
-    return TestModel.add({ data: 1 }).then(() => {
-      expect(sanitizeSchemaData).toBeCalledTimes(1)
+    expect.assertions(3)
+    return TestModel.batchAdd([{ data: 1 }, { data: 2 }]).then(() => {
       expect(sanitizeSchemaData).toBeCalledWith({ data: 1 }, TestModel.schema)
+      expect(sanitizeSchemaData).toBeCalledWith({ data: 2 }, TestModel.schema)
+      expect(sanitizeSchemaData).toBeCalledTimes(2)
     })
   })
   it('rejects on no data & no defaults', () => {
     expect.assertions(1)
     TestModel._defaults = {}
-    return TestModel.add({}).catch((err) => {
+    return TestModel.batchAdd([{}, {}]).catch((err) => {
       expect(err).toEqual(errors.noData())
     })
   })
@@ -801,4 +859,7 @@ jest.mock('../../utils/model.utils', () => ({
 }))
 
 jest.mock('../../utils/validate.utils', () => ({ parseBoolean: () => (val) => !!val }))
-jest.mock('../../config/models.cfg', () => ({ adapterKey: { get: 'get', set: 'set' } }))
+jest.mock('../../config/models.cfg', () => ({
+  adapterKey: { get: 'get', set: 'set' },
+  ifExistsBehavior: { default: '', test: ' IF EXISTS BEHAVIOR' },
+}))
