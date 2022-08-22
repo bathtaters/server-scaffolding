@@ -12,23 +12,23 @@ exports.isPastWindow = ({ failTime, locked }) => failTime && (rateLimiter.autoUn
   msAgo(failTime) > rateLimiter.failWindow
 
 const encrypt = (password, salt, iterations, keylen, digest) => new Promise((res, rej) => {
-  crypto.pbkdf2(password, salt, iterations, keylen, digest, (err, key) => err ? rej(err) : res(key))
+  crypto.pbkdf2(password, salt, iterations, keylen, digest, (err, pwkey) => err ? rej(err) : res(pwkey))
 })
 
 exports.encodePassword = async (password) => {
   const salt = crypto.randomBytes(32).toString('base64url')
-  const key = await encrypt(password, salt, encode.iters, encode.keylen, encode.digest)
-  return { salt, key: key.toString('base64url') }
+  const pwkey = await encrypt(password, salt, encode.iters, encode.keylen, encode.digest)
+  return { salt, pwkey: pwkey.toString('base64url') }
 }
 
 exports.testPassword = (password, accessInt, callback) => async (userData) => {
   if (!userData || !Object.keys(userData).length) return failureMsg.noUser
   if (userData.locked && !exports.isPastWindow(userData)) return failureMsg.isLocked
   if (accessInt && !(userData.access & accessInt)) return failureMsg.noAccess
-  if (!userData.key) return failureMsg.noPassword
+  if (!userData.pwkey) return failureMsg.noPassword
 
-  const key = await encrypt(password, userData.salt, encode.iters, encode.keylen, encode.digest)
-  const isMatch = crypto.timingSafeEqual(Buffer.from(userData.key, 'base64url'), key)
+  const pwkey = await encrypt(password, userData.salt, encode.iters, encode.keylen, encode.digest)
+  const isMatch = crypto.timingSafeEqual(Buffer.from(userData.pwkey, 'base64url'), pwkey)
 
   if (typeof callback === 'function') await callback(isMatch, userData)
   return isMatch ? userData : failureMsg.noMatch

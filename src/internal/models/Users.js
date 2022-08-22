@@ -48,7 +48,7 @@ class Users extends Model {
   update(id, data, idKey = null) {
     return super.update(id, data, idKey, async (newData, oldData) => {
       if ('access' in newData && newData.access !== oldData.access) {
-        if (!oldData.key && !newData.key && (passwordAccess & accessInt(newData.access)))
+        if (!oldData.pwkey && !newData.pwkey && (passwordAccess & accessInt(newData.access)))
           throw errors.noData('password for GUI access')
 
         if (accessInt(oldData.access) & access.admin && !(accessInt(newData.access) & access.admin)) {

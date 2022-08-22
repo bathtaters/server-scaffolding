@@ -16,13 +16,13 @@ const { adapterKey } = require('../../config/models.cfg')
 let testObj
 
 describe('User initAdapters', () => {
-  let defs = { key: {}, access: {}, cors: {}, username: {}, password: {}, models: {} }
+  let defs = { pwkey: {}, access: {}, cors: {}, username: {}, password: {}, models: {} }
   beforeAll(() => { initAdapters(defs) })
 
   it('adds adapters to each key', () => {
-    expect(defs.key   ).toHaveProperty(adapterKey.get, expect.any(Function))
-    expect(defs.cors  ).toHaveProperty(adapterKey.get, expect.any(Function))
-    expect(defs.models).toHaveProperty(adapterKey.get, expect.any(Function))
+    expect(defs.pwkey   ).toHaveProperty(adapterKey.get, expect.any(Function))
+    expect(defs.cors    ).toHaveProperty(adapterKey.get, expect.any(Function))
+    expect(defs.models  ).toHaveProperty(adapterKey.get, expect.any(Function))
     expect(defs.access  ).toHaveProperty(adapterKey.set, expect.any(Function))
     expect(defs.cors    ).toHaveProperty(adapterKey.set, expect.any(Function))
     expect(defs.username).toHaveProperty(adapterKey.set, expect.any(Function))
@@ -30,11 +30,11 @@ describe('User initAdapters', () => {
     expect(defs.models  ).toHaveProperty(adapterKey.set, expect.any(Function))
   })
 
-  it('key getAdapter adds password prop', () => {
+  it('pwkey getAdapter adds password prop', () => {
     let data
-    defs.key[adapterKey.get]('test', data = {})
+    defs.pwkey[adapterKey.get]('test', data = {})
     expect(data).toHaveProperty('password', true)
-    defs.key[adapterKey.get](  null, data = {})
+    defs.pwkey[adapterKey.get](  null, data = {})
     expect(data).toHaveProperty('password', false)
   })
   it('cors getAdapter uses decodeCors', () => {
@@ -72,10 +72,10 @@ describe('User initAdapters', () => {
   })
   it('password setAdapter uses encodePassword', async () => {
     let data = {}
-    encodePassword.mockResolvedValueOnce({ key: 'pwKey', salt: 'pwSalt' })
+    encodePassword.mockResolvedValueOnce({ pwkey: 'pwKey', salt: 'pwSalt' })
     await defs.password[adapterKey.set]('passwordIn', data)
     expect(encodePassword).toBeCalledWith('passwordIn')
-    expect(data).toEqual({ key: 'pwKey', salt: 'pwSalt' })
+    expect(data).toEqual({ pwkey: 'pwKey', salt: 'pwSalt' })
   })
   describe('models setAdapter', () => {
     it('calls modelAccessToInts', () => {

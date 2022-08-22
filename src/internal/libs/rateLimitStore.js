@@ -19,7 +19,7 @@ class SQLiteStore {
 
     this.db = new sqlite.Database(isFile ? join(dir, db) : db, mode)
 
-		this.promise = services.exec(this.db, `CREATE TABLE IF NOT EXISTS ${this.table} (key PRIMARY KEY, hits, expires)`)
+		this.promise = services.exec(this.db, `CREATE TABLE IF NOT EXISTS ${this.table} (id PRIMARY KEY, hits, expires)`)
 		
     var self = this
 		this.promise.then(function() {
@@ -33,23 +33,23 @@ class SQLiteStore {
 
 	init({ windowMs }) { this.windowMs = windowMs }
 
-	async increment(key) {
+	async increment(id) {
 		await this.promise
 		await services.all(this.db, 'SELECT * FROM '+this.table)
-		if (key == null) throw new Error('No key provided to rateLimiter')
+		if (id == null) throw new Error('No id provided to rateLimiter')
 
 		const now = getNow()
 		const expire = now + this.windowMs
-		const get = (cols) => `SELECT ${cols} FROM ${this.table} WHERE key = $key AND $now <= expires`
+		const get = (cols) => `SELECT ${cols} FROM ${this.table} WHERE id = $id AND $now <= expires`
 
-		await services.run(this.db, `INSERT OR REPLACE INTO ${this.table}(key, hits, expires)
-			VALUES ($key,
+		await services.run(this.db, `INSERT OR REPLACE INTO ${this.table}(id, hits, expires)
+			VALUES ($id,
 				COALESCE((${get('hits')}), 0) + 1,
 				COALESCE((${get('expires')}), $expire)
-			)`, { $key: key, $now: now, $expire: expire }
+			)`, { $id: id, $now: now, $expire: expire }
 		)
 
-		const current = await services.get(this.db, get('hits, expires'), { $key: key, $now: now })
+		const current = await services.get(this.db, get('hits, expires'), { $id: id, $now: now })
 		if (!current) throw new Error('Unable to locate recently created rateLimit')
 
 		return {
@@ -58,24 +58,24 @@ class SQLiteStore {
 		}
 	}
 
-	async decrement(key) {
+	async decrement(id) {
 		await this.promise
 		const now = getNow()
 		const expire = now + this.windowMs
-		const get = (cols) => `SELECT ${cols} FROM ${this.table} WHERE key = $key AND $now <= expires`
+		const get = (cols) => `SELECT ${cols} FROM ${this.table} WHERE id = $id AND $now <= expires`
 
-		await services.run(this.db, `INSERT OR REPLACE INTO ${this.table}(key, hits, expires)
-			VALUES ($key,
+		await services.run(this.db, `INSERT OR REPLACE INTO ${this.table}(id, hits, expires)
+			VALUES ($id,
 				COALESCE((${get('hits')}), 1) - 1,
 				COALESCE((${get('expires')}), $expire)
-			)`, { $key: key, $now: now, $expire: expire }
+			)`, { $id: id, $now: now, $expire: expire }
 		)
 	}
 
-	async resetKey(key) {
+	async resetKey(id) {
 		await this.promise
-		await services.run(this.db, `DELETE FROM ${this.table} WHERE key = ?`, [key])
-		logger.verbose(`Rate limiter reset IP ${key} from ${this.table}`)
+		await services.run(this.db, `DELETE FROM ${this.table} WHERE id = ?`, [id])
+		logger.verbose(`Rate limiter reset IP ${id} from ${this.table}`)
 	}
 
 	async resetAll() {

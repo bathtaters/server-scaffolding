@@ -12,7 +12,7 @@ const errors = require('../config/errors.internal')
 
 exports.initAdapters = (definitions) => {
   // GET ADAPTERS
-  definitions.key[adapterKey.get] = (key,data) => { data.password = Boolean(key) }
+  definitions.pwkey[adapterKey.get] = (pwkey,data) => { data.password = Boolean(pwkey) }
   definitions.cors[adapterKey.get] = (cors) => decodeCors(cors)
   definitions.models[adapterKey.get] = (models) => {
     let updated = '<ERROR>'
@@ -27,8 +27,8 @@ exports.initAdapters = (definitions) => {
   definitions.username[adapterKey.set] = (username) => username.toLowerCase()
   definitions.password[adapterKey.set] = async (password, data) => {
     if (password) {
-      const { key, salt } = await encodePassword(password)
-      data.key = key
+      const { pwkey, salt } = await encodePassword(password)
+      data.pwkey = pwkey
       data.salt = salt
     }
   }

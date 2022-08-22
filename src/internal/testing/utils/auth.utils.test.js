@@ -19,21 +19,21 @@ describe('encodePassword', () => {
   const b64urlChars = /^[0-9A-Za-z_=.-]+$/
   const b64Len = (byteLen) => Math.ceil(byteLen * 4 / 3)
 
-  it('creates salt & key', async () => {
+  it('creates salt & pwkey', async () => {
     expect(await encodePassword('test')).toEqual({
-      key: expect.any(String),
+      pwkey: expect.any(String),
       salt: expect.any(String),
     })
   })
-  it('salt & key are correct lengths', async () => {
-    const { salt, key } = await encodePassword('test')
+  it('salt & pwkey are correct lengths', async () => {
+    const { salt, pwkey } = await encodePassword('test')
     expect(salt).toHaveLength(b64Len(32))
-    expect(key).toHaveLength(b64Len(keyLen))
+    expect(pwkey).toHaveLength(b64Len(keyLen))
   })
-  it('salt & key are in base64url', async () => {
-    const { salt, key } = await encodePassword('test')
+  it('salt & pwkey are in base64url', async () => {
+    const { salt, pwkey } = await encodePassword('test')
     expect(salt).toMatch(b64urlChars)
-    expect(key).toMatch(b64urlChars)
+    expect(pwkey).toMatch(b64urlChars)
   })
 })
 
@@ -42,9 +42,9 @@ describe('testPassword', () => {
   let userData
   // Salt & Key for Password "test"
   const salt = "imjVpGPz3djhiHViFEdLFc5xYaq0QrdBCnTp5kYIc1k",
-    key = "hLLJYoCURZxkW0RBpEQwUKr-noqCNSz7vBBhJaVSzHMDdKXaB5QGpKRgIbaLlT0JlPTxFejCTgCNFHkB8nKjmA"
+    pwkey = "hLLJYoCURZxkW0RBpEQwUKr-noqCNSz7vBBhJaVSzHMDdKXaB5QGpKRgIbaLlT0JlPTxFejCTgCNFHkB8nKjmA"
 
-  beforeEach(() => { userData = { salt, key, access: 1 } })
+  beforeEach(() => { userData = { salt, pwkey, access: 1 } })
 
   it('succeeds on correct password', async () => {
     expect(await testPassword('test',1)(userData)).toBe(userData)
@@ -61,7 +61,7 @@ describe('testPassword', () => {
     expect(await testPassword('Anything',1)()).toBe(failureMsg.noUser)
   })
   it('fails on no password', async () => {
-    userData.key = ''
+    userData.pwkey = ''
     expect(await testPassword('test',1)(userData)).toBe(failureMsg.noPassword)
     expect(await testPassword('Anything',1)(userData)).toBe(failureMsg.noPassword)
   })

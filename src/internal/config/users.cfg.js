@@ -123,8 +123,8 @@ module.exports = {
       typeStr: "boolean",
       default: false,
     },
-    key:  { typeStr: "hex?", html: false, dbOnly: true },
-    salt: { typeStr: "hex?", html: false, dbOnly: true },
+    pwkey: { typeStr: "hex?", html: false, dbOnly: true },
+    salt:  { typeStr: "hex?", html: false, dbOnly: true },
   },
 
   searchableKeys: ['username','token','access','cors','locked'], // 'models'
