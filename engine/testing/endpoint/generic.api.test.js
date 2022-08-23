@@ -1,7 +1,7 @@
 const server = require('../../server')
 const request = require('supertest')(server)
 const { getApiHeader, testModelData } = require('../endpoint.utils')
-jest.mock(require('../../src.path').models, () => [ require('../Test.model') ])
+jest.mock(require('../../src.path').modelsPath, () => [ require('../Test.model') ])
 
 const { Model, testKey, idKey, prefix } = testModelData
 

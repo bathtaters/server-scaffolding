@@ -1,7 +1,7 @@
 const server = require('../../server')
 const request = require('supertest-session')(server)
 const { createUser, testModelData } = require('../endpoint.utils')
-jest.mock(require('../../src.path').models, () => [ require('../Test.model') ])
+jest.mock(require('../../src.path').modelsPath, () => [ require('../Test.model') ])
 
 const { Model, testKey, idKey, prefix } = testModelData
 const creds = { username: 'test', password: 'password' }

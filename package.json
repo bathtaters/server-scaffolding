@@ -11,7 +11,7 @@
     "trace-sync": "node --trace-sync-io ./engine/server.js",
     "inspect": "nodemon --inspect ./engine/server.js",
     "unlock-user": "node ./engine/utils/Users.unlock.js",
-    "test": "jest ./src/",
+    "test": "jest /src/testing/ /engine/testing/",
     "test-api": "./src/testing/testApi.sh",
     "dev-cert": "openssl req -new -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out .cert.pem -keyout .key.pem"
   },

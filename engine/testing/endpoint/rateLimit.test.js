@@ -1,11 +1,12 @@
 const server = require('../../server')
 const request = require('supertest-session')(server)
 
+const { rateLimits } = require('../../config/server.cfg')
 const { createUser, testModelData } = require('../endpoint.utils')
 const url = { success: '/gui/db', ...testModelData.prefix }
 const creds = { username: 'test', password: 'password' }
 
-jest.mock(require('../../src.path').models, () => [ require('../Test.model') ])
+jest.mock(require('../../src.path').modelsPath, () => [ require('../Test.model') ])
 jest.mock('../../config/server.cfg', () => ({
   ...jest.requireActual('../../config/server.cfg'),
   trustProxy: true,

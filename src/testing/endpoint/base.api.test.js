@@ -1,14 +1,14 @@
 // Copy this test as a starting point for testing new Model APIs (Remove .skip from describe block)
 
-const server = require('../../../engine/server')
+const server = require(require('../../engine.path').base+'server')
 const request = require('supertest')(server)
-const { getApiHeader } = require('../../../engine/testing/endpoint.utils')
+const { getApiHeader } = require(require('../../engine.path').testing+'endpoint.utils')
 
 const apiPrefix = '/api/base' // change 'base' to Model title
 
 describe.skip('Test Base model API', () => {
   let header, testId
-  beforeAll(() => getApiHeader().then((token) => header = token))
+  beforeAll(() => getApiHeader().then((token) => { header = token }))
 
   test('Confirm login works', async () => {
     await request.get(apiPrefix).set(header).expect(200).expect('Content-Type', /json/)
@@ -20,7 +20,7 @@ describe.skip('Test Base model API', () => {
         // Set fields of new item
         data: "test"
       })
-    expect(res.body).toEqual({ id: expect.any(Number) })
+    expect(res.body).toMatchObject({ id: expect.any(Number) })
     testId = res.body.id
   })
 
