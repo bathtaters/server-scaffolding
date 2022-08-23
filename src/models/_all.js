@@ -1,4 +1,4 @@
 module.exports = [
   require('./Base'),
-  // require('../internal/testing/Test.model'), // Uncomment to use Test model in App
+  // require('../../engine/testing/Test.model'), // Uncomment to use Test model in App
 ]

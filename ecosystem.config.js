@@ -1,5 +1,5 @@
 const pkg = require('./package.json')
-const serverCfg = require('./src/internal/config/server.cfg')
+const serverCfg = require('./engine/config/server.cfg')
 
 const prodOptions = {
   name             : pkg.name,

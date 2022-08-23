@@ -1,4 +1,4 @@
-const Model = require('../internal/models/Model')
+const Model = require('../../engine/models/Model')
 
 /* --- Simple Model --- */
 module.exports = new Model('base', {

@@ -1,0 +1,21 @@
+extends base
+
+block head
+  link(rel='stylesheet', href='/stylesheets/style.css')
+  block header
+
+block body
+  #siteContainer
+    include ../../../src/views/components/header.pug
+    
+    #pageContainer
+      block content
+    
+    include footer.pug
+    
+    script(
+      src=urls.jquery.src,
+      integrity=urls.jquery.integrity,
+      crossorigin="anonymous"
+    )
+    block scripts

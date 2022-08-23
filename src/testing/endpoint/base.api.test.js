@@ -1,8 +1,8 @@
 // Copy this test as a starting point for testing new Model APIs (Remove .skip from describe block)
 
-const server = require('../../internal/server')
+const server = require('../../../engine/server')
 const request = require('supertest')(server)
-const { getApiHeader } = require('../../internal/testing/endpoint.utils')
+const { getApiHeader } = require('../../../engine/testing/endpoint.utils')
 
 const apiPrefix = '/api/base' // change 'base' to Model title
 

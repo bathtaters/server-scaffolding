@@ -1,5 +1,5 @@
 const createError = require('http-errors')
-const internalErrors = require('../internal/config/errors.internal')
+const internalErrors = require(require('../engine.path').config+'errors.engine')
 
 // Common HTTP codes --
 //    400: no/invalid data from client

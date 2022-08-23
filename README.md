@@ -11,7 +11,7 @@ Includes ***Passport*** session authentication, ***Morgan*** console/file loggin
  1. Update `package.json` info (ie. `name`, `version`, `author`, `license`, `repository`)
  2. Create `.env` file _(see below guide)_
  3. Run `npm -g i nodemon` _(if you don't have nodemon)_
- 4. Run `npm run dev-cert` _(or disable secure dev environment in internal/config/server.cfg.isSecure)_
+ 4. Run `npm run dev-cert` _(or disable secure dev environment in engine/config/server.cfg.isSecure)_
  5. Run server `npm run dev` & navigate to `[DOMAIN]/login/` in browser _(if blocked by browser, type `thisisunsafe` anywhere on the page)_
  6. Enter credentials to create an initial ***admin*** _(Must be done in `run dev` mode)_
  7. Navigate to ***Users*** to setup users/permissions
@@ -33,7 +33,7 @@ Includes ***Passport*** session authentication, ***Morgan*** console/file loggin
  7. Then run using `npm start`, stop with `npm stop` _(`pm2 save` to run on startup)_
  8. Set TRUST_PROXY in `/admin/settings` to lowest number that shows your IP on Restart
  9. Update `upstream` section in **NGINX** config file w/ **pm2** servers _(see below)_
- ##### NOTE: If you wish to test w/o HTTPS, you must change **productionIsSecure** in `/internal/config/server.cfg.js` to ***false***
+ ##### NOTE: If you wish to test w/o HTTPS, you must change **productionIsSecure** in `/engine/config/server.cfg.js` to ***false***
 
 ---
 

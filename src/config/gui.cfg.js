@@ -1,6 +1,7 @@
-const { name, version, author, license, releaseYear, repoLink } = require('./meta')
-const { isSecure } = require('../internal/config/server.cfg')
-const { capitalizeHyphenated } = require('../internal/utils/common.utils')
+const { config, utils } = require('../engine.path')
+const { name, version, author, license, releaseYear, repoLink } = require(config+'meta')
+const { isSecure } = require(config+'server.cfg')
+const { capitalizeHyphenated } = require(utils)
 const { jquery, minicss, gui: guiUrl } = require('./urls.cfg')
 
 const title = capitalizeHyphenated(name)
