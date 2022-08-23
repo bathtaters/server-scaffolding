@@ -1,4 +1,4 @@
-const Model = require('../../engine/models/Model')
+const Model = require(require('../engine.path').modelPath)
 
 /* --- Simple Model --- */
 module.exports = new Model('base', {
