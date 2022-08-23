@@ -38,6 +38,10 @@ module.exports = {
       windowMs: 60 * 60 * 1000,
     },
   },
+
+  // Event Listener's
+  closeEvents: ['SIGINT', 'SIGTERM', 'SIGUSR1', 'SIGUSR2'],
+  errorEvents: ['uncaughtException', 'unhandledRejection'],
 }
 
 //  HELPER

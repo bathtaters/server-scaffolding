@@ -19,7 +19,7 @@ module.exports = {
   unknown: () => createError(500, "Unknown server error.") ,
   unknownDb: () => createError(502, "Unknwon database error."),
   noDb: () => createError(502, "Unable to connect to database."),
-  shutdown: () => createError(503, "Server is currently shutting down.", { headers: { "retry-after": 3 * 60 } }) ,
+  shutdown: () => createError(503, "Server is currently shutting down.", { headers: { "retry-after": 3 * 60 } }),
   missing: () => createError(404, "Resource not found."),
   test: (msg) => createError(418, msg || "API is not a Teapot."),
 
@@ -77,4 +77,7 @@ module.exports = {
   badUsername: (username, reason) => createError(409, `Cannot set name ${username || 'for user'}: ${reason}`),
   deleteAdmin: () => createError(403, "Cannot remove the only admin. Add another admin then retry, or reset User Table to remove all users."),
   noUndo: () => createError(500, "Undo queue is empty"),
+  missingCreds: (dev) => createError(500, `Unable to read SSL credentials, ${
+    dev ? 'try running "npm run dev-cert"' : 'point meta.credPath to SSL/TLS credentials or disable useLocalCert'
+  }.`)
 }
