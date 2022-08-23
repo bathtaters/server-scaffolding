@@ -11,8 +11,8 @@ jest.mock('../../config/server.cfg', () => ({
   ...jest.requireActual('../../config/server.cfg'),
   trustProxy: true,
   rateLimits: {
-    gui:   { windowMs: 1000, max: 5 },
-    api:   { windowMs:  700, max: 3 },
+    gui:   { windowMs: 2000, max: 5 },
+    api:   { windowMs: 1000, max: 3 },
     login: { windowMs:  500, max: 2 },
   }
 }))
@@ -38,7 +38,7 @@ describe('Test rate limiting', () => {
       await request.get(url.gui).set('X-Forwarded-For', 'GUI_IP').expect(429)
 
       // Wait
-      await new Promise(res => setTimeout(res, 1000))
+      await new Promise(res => setTimeout(res, rateLimits.gui.windowMs))
       await request.get(url.gui).set('X-Forwarded-For', 'GUI_IP').expect(200)
     })
   })
@@ -61,7 +61,7 @@ describe('Test rate limiting', () => {
       await request.get(url.api).set(header).expect(429)
 
       // Wait
-      await new Promise(res => setTimeout(res, 700))
+      await new Promise(res => setTimeout(res, rateLimits.api.windowMs))
       await request.get(url.api).set(header).expect(200).expect('Content-Type', /json/)
     })
   })
@@ -79,7 +79,7 @@ describe('Test rate limiting', () => {
       await request.get('/login').set('X-Forwarded-For', 'LOGIN_IP').expect(429)
 
       // Wait
-      await new Promise(res => setTimeout(res, 500))
+      await new Promise(res => setTimeout(res, rateLimits.login.windowMs))
       await request.get('/login').set('X-Forwarded-For', 'LOGIN_IP').expect(302).expect('Location', url.success)
     })
   })
