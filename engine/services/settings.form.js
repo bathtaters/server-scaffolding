@@ -1,9 +1,9 @@
 const { exec } = require('child_process')
 const { settingsDefaults, getSettings, setSettings, canUndo } = require('./settings.services')
-const { restartCluster } = require('./pm2.services')
 const errors = require('../config/errors.engine')
 const { isPm2 } = require('../config/meta')
 
+const { restartCluster } = isPm2 ? require('./pm2.services') : {}
 
 async function getRestartFunc() {
   if (process.env.NODE_ENV === 'test') throw errors.test('Restart triggered in test envrionment')
