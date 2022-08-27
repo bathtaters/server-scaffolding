@@ -1,11 +1,12 @@
 const logger = require('../libs/log')
-const { noDb, sqlError } = require('../config/errors.engine')
+const { noDb, sqlError, sqlNotDB } = require('../config/errors.engine')
 
 function exec(db, sql) {
   return new Promise((res,rej) => {
     if (!db) return rej(noDb())
     db.exec('BEGIN TRANSACTION; '+sql+'; COMMIT;', (err) => {
       if (err) {
+        if (err.code === 'SQLITE_NOTADB') throw sqlNotDB()
         logger.error(err, { label: 'SQL rollback' })
         return db.run('ROLLBACK', rbErr => rej(sqlError(rbErr || err, sql)))
       }

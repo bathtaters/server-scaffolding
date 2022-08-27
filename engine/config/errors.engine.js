@@ -63,6 +63,7 @@ module.exports = {
   // DB Errors
   badKey: (key, table = 'table') => createError(500, `Column "${key}" does not exist in ${table}.`),
   noAdd: () => createError(502, "New entry was not created."),
+  sqlNotDB: () => new Error('Database file not recognized: confirm that DB_SECRET hasn\'t changed and check DB_PATH'),
   sqlError: (err, sql, params) => appendToError(
     createError(502, err.message || err),
     { name: 'sqlError', stack: `\tCmd: ${sql}\n\t\t[${(Array.isArray(params) ? params : Object.values(params || {})).join(', ')}]` }
