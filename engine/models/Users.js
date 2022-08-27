@@ -1,4 +1,4 @@
-const Model = require('./Model')
+const Model = require('./Model.engine')
 const logger = require('../libs/log')
 const { now } = require('../libs/date')
 const { passwordAccess, accessInt, hasAccess } = require('../utils/users.utils')

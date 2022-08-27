@@ -1,4 +1,4 @@
-const Model = require('../models/Model')
+const Model = require('../models/Model.engine')
 
 module.exports = new Model('test', {
   testId: {

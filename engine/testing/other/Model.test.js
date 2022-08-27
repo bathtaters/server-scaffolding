@@ -1,4 +1,4 @@
-const Model = require('../../models/Model')
+const Model = require('../../models/Model.engine')
 const services = require('../../services/db.services')
 const { openDb, getDb } = require('../../libs/db')
 const { getPrimaryIdAndAdaptSchema, runAdapters } = require('../../services/model.services')

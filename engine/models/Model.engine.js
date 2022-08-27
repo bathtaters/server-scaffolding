@@ -249,7 +249,7 @@ module.exports = Model
  * @property {any} [default] - Default value
  *   - Default value to use for that column if nothing provided on creation 
  *   - This value is run through setAdapter each time
- * @property {string} [isPrimary] - if column is SQL primary key
+ * @property {boolean} [isPrimary] - if column is SQL primary key
  *   - When no type/typeStr is provided, it will be set as auto-incrementing Int
  * @property {Adapter} [getAdapter] - Function called whenever this column is retrieved from the database
  *   - INPUT: Column value for row, Entire row as an object
@@ -265,14 +265,14 @@ module.exports = Model
  * @property {string} [db] - Type of schema for this column in database
  *   - falsy value = column is not in database (Only for UI validation)
  *   - default: schema is auto-generated based on type
- * @property {string} [dbOnly] - If column is internal to database only
+ * @property {boolean} [dbOnly] - If column is internal to database only
  *   - Truthy value will obscure column from non-raw get results
  * @property {string} [type] - Column base type (w/o suffixes)
  *   - default: parsed from typeStr
- * @property {string} [isOptional] - If column can be empty
+ * @property {boolean} [isOptional] - If column can be empty
  *   - default: parsed from typeStr
- * @property {string} [isArray] - If column is an array of <type>
+ * @property {boolean} [isArray] - If column is an array of <type>
  *   - default: parsed from typeStr
- * @property {string} [hasSpaces] - If a string column will allow spaces & special characters
+ * @property {boolean} [hasSpaces] - If a string column will allow spaces & special characters
  *   - default: parsed from typeStr
  */

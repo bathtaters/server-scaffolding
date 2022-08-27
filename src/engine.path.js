@@ -6,5 +6,5 @@ module.exports = {
   utils:      join(__dirname, '../engine/utils/common.utils'),
   config:     join(__dirname, '../engine/config/'),
   testing:    join(__dirname, '../engine/testing/'),
-  modelPath:  join(__dirname, '../engine/models/Model'),
+  modelPath:  join(__dirname, '../engine/models/Model.engine'),
 }
