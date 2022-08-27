@@ -8,6 +8,8 @@
     "start": "pm2 start ecosystem.config.js && pm2 logs",
     "stop": "pm2 delete ecosystem.config.js",
     "reload": "pm2 reload ecosystem.config.js && pm2 logs",
+    "build": "tsc --build",
+    "clean": "tsc --build --clean",
     "trace-sync": "node --trace-sync-io ./engine/server.js",
     "inspect": "nodemon --inspect ./engine/server.js",
     "unlock-user": "node ./engine/utils/Users.unlock.js",
