@@ -1,0 +1,8 @@
+extends ../../engine/views/components/container
+
+block content
+  .container: .row: .col-sm
+    h3 Database Tables
+    .row
+      each model in models 
+        a.col-sm.large.button(href=baseURL+model title=varName(model))= varName(model)

@@ -1,0 +1,26 @@
+header
+  span.logo
+    a(href="/" title="Splash Page")
+      img(src="/images/logo.png" alt=appTitle width="32px")
+
+  if !hideNav
+    a.button.null(href=urls.gui.basic.prefix+urls.gui.basic.home title="Database")
+      span.icon-home(alt="Database")
+    if isAdmin
+      a.button.null(href=urls.gui.admin.prefix+urls.gui.admin.user title="User Table")
+        span.icon-user(alt="User Table")
+      a.button.null(href=urls.gui.admin.prefix+urls.gui.admin.logs title="View Logs")
+        span.icon-edit(alt="Logs")
+      a.button.null(href=urls.gui.admin.prefix+urls.gui.admin.home title="Settings")
+        span.icon-settings(alt="Settings")
+
+    else
+      a.button.null(href=urls.gui.basic.prefix+urls.gui.basic.user title="Profile")
+        span.icon-user(alt="Profile")
+
+    span.spacer
+
+    if user
+      span.align-self-center.dim.null(title="Username"): i= user
+      a.button.null(href=urls.gui.root.logout title="Logout")
+        span.icon-link(alt="Logout")
