@@ -4,14 +4,14 @@
   "description": "Backend server with CRUD API, simple web GUI & built-in user management",
   "main": "./engine/server.js",
   "scripts": {
-    "dev": "nodemon ./engine/server.js",
+    "dev": "nodemon -x ts-node ./engine/server.js",
     "start": "pm2 start ecosystem.config.js && pm2 logs",
     "stop": "pm2 delete ecosystem.config.js",
     "reload": "pm2 reload ecosystem.config.js && pm2 logs",
     "trace-sync": "node --trace-sync-io ./engine/server.js",
     "inspect": "nodemon --inspect ./engine/server.js",
     "unlock-user": "node ./engine/utils/Users.unlock.js",
-    "test": "jest /src/testing/ /engine/testing/",
+    "test": "jest /*/testing/",
     "test-api": "./src/testing/testApi.sh",
     "dev-cert": "openssl req -new -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out .cert.pem -keyout .key.pem"
   },
@@ -54,10 +54,16 @@
     "winston-daily-rotate-file": "^4.7.1"
   },
   "devDependencies": {
+    "@types/express": "^4.17.13",
+    "@types/http-errors": "^1.8.2",
     "@types/jest": "^28.1.1",
+    "@types/supertest": "^2.0.12",
     "jest": "^28.1.1",
     "nodemon": "^2.0.18",
     "supertest": "^6.2.4",
-    "supertest-session": "^4.1.0"
+    "supertest-session": "^4.1.0",
+    "ts-jest": "^28.0.8",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.8.2"
   }
 }
