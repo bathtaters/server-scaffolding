@@ -1,0 +1,29 @@
+extends ../../engine/views/components/base
+
+block head
+  link(rel='stylesheet', href='/stylesheets/style.css')
+
+block body
+  #siteContainer
+    header
+      span.logo= appTitle
+      span.spacer
+      span.logo
+        a(href=urls.gui.root.login title="Login")
+          img(src="/images/logo.png" alt=appTitle width="32px")
+    
+    #pageContainer
+      p Hello and welcome to my server, please enjoy this page.
+
+      .center(style="margin-top:5rem;")
+        svg#sf(
+          xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+          width="8rem" height="auto" style="stroke:white;fill:none;stroke-width:1px;" 
+          viewBox="0 0  200 400" preserveAspectRatio="xMinYMin meet"
+        )
+          circle#sf-head(cx="100" cy="51" r="49")
+          line#sf-body(x1="100" y1="100" x2="100" y2="300")
+          line#sf-larm(x1="100" y1="200" x2="25"  y2="125")
+          line#sf-rarm(x1="100" y1="200" x2="200" y2="200")
+          line#sf-lleg(x1="100" y1="300" x2="25"  y2="400")
+          line#sf-rleg(x1="100" y1="300" x2="175" y2="400")
