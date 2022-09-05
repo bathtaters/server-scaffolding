@@ -76,7 +76,7 @@ exports.toValidationSchema = function toValidationSchema(
       ptr.isBase64 = { options: { urlSafe: type === 'b64url' }, errorMessage: errorMsgs.b64() }
     case 'uuid': // pass to string
       if (!ptr.isBase64)
-        ptr.isUUID = { options: 4, errorMessage: errorMsgs.uuid() }
+        ptr.isUUID = { errorMessage: errorMsgs.uuid() }
     case 'hex': // pass to string
       if (!ptr.isBase64 && !ptr.isUUID)
         ptr.isHexadecimal = { errorMessage: errorMsgs.hex() }

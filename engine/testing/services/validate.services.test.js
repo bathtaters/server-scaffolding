@@ -281,7 +281,7 @@ describe('toValidationSchema', () => {
   describe('types', () => {
     it('UUID', () => {
       const result = services.toValidationSchema('test',{type:'uuid'},['isIn'],false,false)
-      expect(result.test).toHaveProperty('isUUID', {options: 4, errorMessage: expect.any(String)})
+      expect(result.test).toHaveProperty('isUUID', {errorMessage: expect.any(String)})
       expect(result.test).toHaveProperty('isString', {errorMessage: expect.any(String)})
       expect(result.test).toHaveProperty('stripLow', true)
       expect(result.test).toHaveProperty('trim', true)
