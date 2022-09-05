@@ -1,6 +1,6 @@
 // Enable/Disable SSL/TLS
 const productionIsSecure = true
-const useLocalCert = process.env.NODE_ENV === 'development' && true
+const useLocalCert = process.env.NODE_ENV === 'development' && true // NOTE: Must clear all https cookies before changing from true > false
 
 const isTest = process.env.NODE_ENV === 'test'
 module.exports = {
