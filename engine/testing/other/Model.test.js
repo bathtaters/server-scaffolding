@@ -16,6 +16,9 @@ const definitions = {
   obj:   { type: 'object', isArray: true },
 }
 
+it.todo('Batch update/add')
+it.todo('Find ordering')
+
 describe('Model constructor', () => {
   let options
   beforeEach(() => { options = deepCopy(definitions) })

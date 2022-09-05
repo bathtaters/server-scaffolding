@@ -73,7 +73,7 @@ export default class Model<Schema extends object> {
   }
 
 
-  async find(matchData: Partial<Schema>, partialMatch?: boolean): Promise<Schema[]> {
+  async find(matchData: Partial<Schema>, partialMatch?: boolean, orderKey?: keyof Schema): Promise<Schema[]> {
     matchData = await runAdapters(adapterKey.set, matchData, this.schema)
     matchData = sanitizeSchemaData(matchData, this.schema)
 
@@ -106,7 +106,9 @@ export default class Model<Schema extends object> {
     })
     
     const result = await services.all(getDb(), 
-      `SELECT * FROM ${this.title} WHERE ${text.join(' AND ')}`,
+      `SELECT * FROM ${this.title} WHERE ${text.join(' AND ')}${
+        !orderKey ? '' : ` ORDER BY ${orderKey || this.primaryId}`
+      }`,
     params).then((res: Schema[]) => res.map(caseInsensitiveObject))
 
     return Promise.all(result.map((data: Schema) => runAdapters(adapterKey.get, data, this.schema, this.hidden)))
@@ -133,6 +135,7 @@ export default class Model<Schema extends object> {
   batchAdd(dataArray: Schema[], ifExists?: IfExistsBehavior): Promise<Feedback>
   batchAdd(dataArray: Schema[], ifExists: IfExistsBehavior, returns: boolean): Promise<Schema|Feedback>
   async batchAdd(dataArray: Schema[], ifExists: IfExistsBehavior = 'default', returns?: boolean): Promise<Schema|Feedback> {
+    if (!dataArray.length) throw errors.noData('batch data')
     dataArray = await Promise.all(dataArray.map((data) => runAdapters(adapterKey.set, { ...this.defaults, ...data }, this.schema)))
     dataArray = dataArray.map((data) => sanitizeSchemaData(data, this.schema))
     
@@ -151,28 +154,36 @@ export default class Model<Schema extends object> {
   }
   
   
-  async update(id: Schema[keyof Schema], data: Partial<Schema>, idKey?: string, onChangeCb?: ChangeCallback<Schema>): Promise<Feedback> {
-    if (id == null) throw errors.noID()
+  async batchUpdate(matching: Partial<Schema>, updates: Partial<Schema>, onChangeCb?: ChangeCallback<Schema>): Promise<Feedback> {
+    matching = await runAdapters(adapterKey.set, matching, this.schema)
+    matching = sanitizeSchemaData(matching, this.schema)
+    if (!Object.keys(matching).length) throw errors.noID()
 
-    data = await runAdapters(adapterKey.set, data, this.schema)
-    data = sanitizeSchemaData(data, this.schema)
-    if (!Object.keys(data).length) throw errors.noData()
+    updates = await runAdapters(adapterKey.set, updates, this.schema)
+    updates = sanitizeSchemaData(updates, this.schema)
+    if (!Object.keys(updates).length) throw errors.noData()
 
-    const current = await this[onChangeCb ? 'get' : 'count'](id, idKey, true)
-    if (!current) throw errors.noEntry(id)
+    const current = await this.find(matching, true)
+    if (!current.length) throw errors.noEntry(JSON.stringify(matching))
 
     if (onChangeCb) {
-      const updated = await onChangeCb(data, current as Awaited<Schema>)
-      if (updated) data = updated
-      data = sanitizeSchemaData(data, this.schema)
-      if (!Object.keys(data).length) throw errors.noData()
+      const updated = await onChangeCb(updates, current[0], current) // TO FIX
+      if (updated) updates = updated
+      updates = sanitizeSchemaData(updates, this.schema)
+      if (!Object.keys(updates).length) throw errors.noData()
     }
     
     await services.run(getDb(),
-      `UPDATE ${this.title} SET ${Object.keys(data).map(k => `${k} = ?`).join(', ')} WHERE ${idKey || this.primaryId} = ?`,
-      [...Object.values(data), id]
+      `UPDATE ${this.title} SET ${Object.keys(updates).map(k => `${k} = ?`).join(', ')}
+      WHERE ${Object.keys(matching).map((k) => `${k} = ?`).join(' AND ')}`,
+      [...Object.values(updates), ...Object.values(matching)]
     )
     return { success: true }
+  }
+
+  async update(id: Schema[keyof Schema], data: Partial<Schema>, idKey?: string, onChangeCb?: ChangeCallback<Schema>): Promise<Feedback> {
+    if (id == null) throw errors.noID()
+    return this.batchUpdate({ [idKey || this.primaryId]: id }, data, onChangeCb)
   }
   
   
@@ -189,12 +200,12 @@ export default class Model<Schema extends object> {
   }
 
 
-  async custom(sql: string, params?: any[], raw?: boolean): Promise<Partial<Schema>[]> {
+  async custom<ReturnT = any>(sql: string, params?: { [key: string|number]: any }, raw?: boolean): Promise<ReturnT[]> {
     /* WARNING!! SQL CANNOT BE CHECKED FOR INJECTION */
     const result = await services.all(getDb(), sql, params)
-      .then((res: Schema[]) => res.map(caseInsensitiveObject))
+      .then((res) => res.map(caseInsensitiveObject))
     if (raw) return result
-    return Promise.all(result.map((data: Schema) => runAdapters(adapterKey.get, data, this.schema, this.hidden)))
+    return Promise.all(result.map((data) => runAdapters(adapterKey.get, data, this.schema, this.hidden)))
   }
   
   
