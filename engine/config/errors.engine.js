@@ -34,6 +34,7 @@ module.exports = {
   noToken: () => createError(401, "Missing bearer token or incorrect format."),
   badToken: () => createError(401, "Invalid or outdated bearer token."),
   noCSRF: () => createError(403, "Form expired or was tampered with (Missing or invalid CSRF token)."),
+  noSession: () => createError(403, "Error retrieving session (Check if cookies are being blocked)"),
   noAccess: () => createError(403, "User does not have access."),
   badAccess: (access, type = 'key') => createError(500, `Invalid access ${type}: ${access}.`),
   noModel: (model, access) => createError(403, `User does not have ${access || ''} access to ${model || 'this model'}.`),
