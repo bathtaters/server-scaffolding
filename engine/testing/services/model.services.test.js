@@ -46,6 +46,13 @@ describe('getPrimaryIdAndAdaptSchema', () => {
     expect(schema.a).toHaveProperty(adapterKey.set,'setAdapterFromType')
     expect(schema.b).toHaveProperty(adapterKey.set,'setAdapterFromType')
   })
+  it('passes isHTML if string*', () => {
+    schema.a.isHTML = true
+    schema.a.type = 'string'
+    schema.a.hasSpaces = true
+    getPrimaryIdAndAdaptSchema(schema, 'test')
+    expect(schema.a.isHTML).toBe(true)
+  })
 
   describe('primary key', () => {
     it('returns primary key', () => {
@@ -89,6 +96,16 @@ describe('getPrimaryIdAndAdaptSchema', () => {
       hasDupes.mockReturnValueOnce(true)
       expect(() => getPrimaryIdAndAdaptSchema(schema, 'test'))
         .toThrowError('Definitions for test contain duplicate key names: a, b, A')
+    })
+
+    it('isHTML + non-string* types', () => {
+      schema.a.isHTML = true
+      expect(() => getPrimaryIdAndAdaptSchema(schema, 'test'))
+        .toThrowError('Schema cannot have non-string* HTML. Type: typeA')
+      schema.a.isHTML = true
+      schema.a.type = 'string'
+      expect(() => getPrimaryIdAndAdaptSchema(schema, 'test'))
+        .toThrowError('Schema cannot have non-string* HTML. Type: string')
     })
   })
 })

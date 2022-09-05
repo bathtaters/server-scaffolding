@@ -21,4 +21,7 @@ block table
   each entry in data
     tr.tableRow
       each val, key in tableFields
-        td(data-label=val data-key=key)= entry[key] && entry[key].toLocaleString()
+        if schema[key].isHTML
+          td(data-label=val data-key=key)!= entry[key] && entry[key].toLocaleString()
+        else
+          td(data-label=val data-key=key)= entry[key] && entry[key].toLocaleString()

@@ -17,6 +17,7 @@ module.exports = new Model('test', {
   comment: {
     typeStr: "string*?",
     limits: { min: 0, max: 1000 },
+    isHTML: true,
   },
   isOn: {
     typeStr: "boolean",

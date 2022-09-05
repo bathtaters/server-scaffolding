@@ -31,7 +31,8 @@ export interface Definition {
   isOptional?:  boolean,
   isArray?:     boolean,
   hasSpaces?:   boolean,
-  isBitmap?:    boolean
+  isBitmap?:    boolean,
+  isHTML?:      boolean,
 }
 
 export interface Feedback { success: boolean }

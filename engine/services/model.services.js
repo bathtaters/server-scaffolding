@@ -11,6 +11,9 @@ function adaptSchemaEntry(settings) {
   if (!(adapterKey.get in settings)) settings[adapterKey.get] = getAdapterFromType(settings)
   if (!(adapterKey.set in settings)) settings[adapterKey.set] = setAdapterFromType(settings)
   delete settings.isPrimary
+
+  if (settings.isHTML && (settings.type !== 'string' || !settings.hasSpaces))
+    throw new Error(`Schema cannot have non-string* HTML. Type: ${settings.typeStr || settings.type}`)
 }
 
 exports.getPrimaryIdAndAdaptSchema = function (schema, title = 'model') {
