@@ -41,14 +41,14 @@ mixin checkboxes(key, rows, label, columns, defaults)
       each row in rows
         .input-group
           input(type='checkbox' class=key+'Checks' name=key id=row value=row checked=(defaults && defaults.includes(row)))
-          label(for=row)= row
+          label(for=row)= varName(row)
     else
       .grid(style=(columns && `grid-template-columns: repeat(${columns.length + 1}, min-content)`))
         .grid-hdr
         each col in columns
-          label.grid-hdr(for=col)= col
+          label.grid-hdr(for=col)= varName(col)
         each row in rows
-          label.grid-hdr.grid-right(for=row)= row
+          label.grid-hdr.grid-right(for=row)= varName(row)
           each col in columns
             input(
               type='checkbox' name=key title=`${row} ${col}`
@@ -57,12 +57,13 @@ mixin checkboxes(key, rows, label, columns, defaults)
               checked=(defaults && defaults[row] && defaults[row].includes(col))
             )
 
-mixin buttonInput(key, inpType, button, limits, defaultValue, url, label, tooltip, buttonKey = '_action')
+mixin buttonInput(key, inpType, button, limits, defaultValue, url, label, tooltip, buttonKey = '_action', buttonType = 'button')
   .input-group.vertical.button-input
     label(for=key aria-label=tooltip class=(tooltip ? 'tooltip' : ''))= label || varName(key)
     .button-group
-      +typedInp(key, inpType, limits, defaultValue)
-      input.button(type='button' name=buttonKey id=buttonKey+button value=button formaction=url)
+      if (inpType)
+        +typedInp(key, inpType, limits, defaultValue)
+      input.button(type=buttonType name=buttonKey id=buttonKey+button value=button formaction=url)
 
 mixin buttonRow(buttons, classes = {}, urls = {}, key = '_action', buttonType = 'submit')
   .button-group
