@@ -42,6 +42,10 @@ $( 'tr.tableRow' ).on('click', function() {
 
 /* Enable/Disable search restrictions */
 $(function() {
+  $( 'input[readonly] ').each(function() {
+    $(this).attr('data-locked', true);
+  });
+
   $( 'input[min]' ).each(function() {
     var min = $(this).attr('min');
     if (+min > 0) { $(this).attr('data-min', min); }
@@ -51,12 +55,12 @@ $(function() {
     if (+min > 0) { $(this).attr('data-minLength', min); }
   });
 
-  if ($( 'input#_searchMode' ).prop('checked')) { $.setSearch(true); }
+  if($( 'input#_searchMode' ).prop('checked')) { $.setSearch(true); }
   if($( 'input#forceSearch' ).val()) { $.setSearch(true); }
 });
 
 $.setSearch = function(enable) {
-  $( '#primary-key input' ).attr('readonly', !enable);
+  $( '[data-locked]' ).attr('readonly', !enable);
   $( 'input#swapId' ).attr('disabled', enable);
   $( 'input#_actionSwap' ).attr('disabled', enable);
   $( 'input[type="submit"]:not(#_actionSearch)' ).attr('disabled', enable);

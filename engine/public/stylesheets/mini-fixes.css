@@ -118,20 +118,22 @@ textarea:invalid, textarea:invalid:focus, textarea:invalid:focus-visible, select
 /* Fix 'buttonInput' mixin */
 .button-group > .input-group { display: flex; }
 .button-input > .button-group > input:not([type="button"]):not([type="submit"]):not([type="reset"]),
-.button-input > .button-group > textarea, .button-input > .button-group > select {
+.button-input > .button-group > textarea, .button-input > .button-group > select,
+.button-input > .button-group > :only-child {
   flex-grow: 1;
   margin: 0;
 }
-.button-input > .button-group > input[type="button"],
-.button-input > .button-group > input[type="submit"],
-.button-input > .button-group > input[type="reset"],
-.button-input > .button-group > button {
+
+.button-input > .button-group > input[type="button"]:not(:only-child),
+.button-input > .button-group > input[type="submit"]:not(:only-child),
+.button-input > .button-group > input[type="reset"]:not(:only-child),
+.button-input > .button-group > button:not(:only-child) {
   max-width: max-content;
 }
 @media screen and (max-width: 767px) {
-  .button-input > .button-group > input[type="button"],
-  .button-input > .button-group > input[type="submit"],
-  .button-input > .button-group > input[type="reset"],
+  .button-input > .button-group > input[type="button"]:not(:only-child),
+  .button-input > .button-group > input[type="submit"]:not(:only-child),
+  .button-input > .button-group > input[type="reset"]:not(:only-child),
   .button-input > .button-group > button {
     max-width: initial;
   }
