@@ -38,7 +38,7 @@ exports.form = function getFormController(Model, { redirectURL = '', formatData 
     catch (err) { return next(err) }
 
     return formActions[action](formData).then((url) => res.redirect(
-        (redirectURL || `${urls.basic.prefix}${urls.basic.home}/${Model.title}`) +
+        (redirectURL || `${urls.basic.prefix}${urls.basic.home}/${Model.url}`) +
         (url || _pageData || '')
     )).catch(next)
   }

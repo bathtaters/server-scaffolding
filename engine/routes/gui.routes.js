@@ -26,11 +26,11 @@ models.forEach((Model) => {
   const controller = controllers.modelDb(Model)
   const formHandler = actions.form(Model)
 
-  router.get( `${basic.home}/${Model.title}`,                           checkModel(redir, Model.title),          validate.page,             controller.model)
-  router.get( `${basic.home}/${Model.title}${basic.find}`,              checkModel(redir, Model.title, 'read'),  validate.find(Model),      controller.find)
-  router.post(`${basic.home}/${Model.title}${basic.swap}`,              checkModel(null,  Model.title, 'write'), validate.swap(Model),      actions.swap(Model))
+  router.get( `${basic.home}/${Model.url}`,                           checkModel(redir, Model.title),          validate.page,             controller.model)
+  router.get( `${basic.home}/${Model.url}${basic.find}`,              checkModel(redir, Model.title, 'read'),  validate.find(Model),      controller.find)
+  router.post(`${basic.home}/${Model.url}${basic.swap}`,              checkModel(null,  Model.title, 'write'), validate.swap(Model),      actions.swap(Model))
   Object.values(actionURL).forEach((action) => {
-    router.post(`${basic.home}/${Model.title}${basic.form}/${action}`, checkModel(null,  Model.title, actionAccess(action)), validate.form(Model, action), formHandler(action))
+    router.post(`${basic.home}/${Model.url}${basic.form}/${action}`, checkModel(null,  Model.title, actionAccess(action)), validate.form(Model, action), formHandler(action))
   })
 })
 

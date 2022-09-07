@@ -10,23 +10,23 @@ const errors = require('../config/errors.engine')
 const { modelsPath, config } = require('../src.path')
 const { pageOptions, actions } = require(config+'gui.cfg')
 const urls = require(config+'urls.cfg').gui.basic
-const models = require(modelsPath).map(({title}) => title)
+const models = require(modelsPath).map(({title, url}) => ({title, url}))
 
 exports.dbHome = (req, res) => res.render('dbHome', {
   title: 'Home',
   user: req.user.username,
   isAdmin: hasAccess(req.user.access, access.admin),
   baseURL: urls.prefix + urls.home + '/',
-  models: models.filter((modelName) => req.user && hasModelAccess(req.user.models, modelName)),
+  models: models.filter(({ title }) => req.user && hasModelAccess(req.user.models, title)).map(({ url }) => url),
 })
 
 exports.modelDb = (Model, { view = 'dbModel', partialMatch = true, overrideDbParams = {}, formatData = formatGuiData } = {}) => {
   const staticDbParams = {
     title: varName(Model.title),
     idKey: Model.primaryId,
-    baseURL: `${urls.prefix}${urls.home}/${Model.title}`,
-    swapURL: `${urls.prefix}${urls.home}/${Model.title}${urls.swap}`,
-    submitURLs: actionURLs(`${urls.prefix}${urls.home}/${Model.title}${urls.form}/`),
+    baseURL: `${urls.prefix}${urls.home}/${Model.url}`,
+    swapURL: `${urls.prefix}${urls.home}/${Model.url}${urls.swap}`,
+    submitURLs: actionURLs(`${urls.prefix}${urls.home}/${Model.url}${urls.form}/`),
     schema: Model.schema,
     tableFields: getTableFields(Model.schema, Model.primaryId),
     ...overrideDbParams,
