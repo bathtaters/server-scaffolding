@@ -62,9 +62,9 @@ const getIndexDef = ({ limits }) => adaptSchemaEntry({
   limits: limits.elem || limits.array ? limits.array : limits,
 })
 
-const stripArrayDef = ({ typeStr, limits, type, hasSpaces, isHTML }) => adaptSchemaEntry({
-  type, hasSpaces, isHTML,
-  typeStr: (typeStr || definition.type).replace('[]','').replace('?',''),
+const stripArrayDef = ({ typeStr, limits, isHTML }) => adaptSchemaEntry({
+  isHTML,
+  typeStr: (typeStr || definition.type).replace('[]',''),
   limits: limits.elem || limits.array ? limits.elem : limits
 })
 
