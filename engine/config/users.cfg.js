@@ -88,6 +88,7 @@ module.exports = {
       typeStr: "string[]",
       default: { [allModelsKey]: ['read','write'] },
       limits: { elem: { max: 64 }, array: { max: 100 * Object.keys(models).length } },
+      db: 'TEXT',
     },
     failCount: {
       typeStr: "int?",

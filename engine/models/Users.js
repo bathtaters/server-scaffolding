@@ -16,7 +16,7 @@ class Users extends Model {
     
     this.validTimestamps = Object.keys(this.schema).filter((k) => timestampKeyRegEx.test(k)).map((k) => k.match(timestampKeyRegEx)[1])
 
-    initAdapters(definitions)
+    initAdapters(this.schema)
   }
 
   async get(id, idKey = null, raw = false, updateTimestamp = null, skipCounter = false) {
@@ -59,6 +59,7 @@ class Users extends Model {
 
   update(id, data, idKey = null) {
     return super.update(id, data, idKey, async (newData, oldData) => {
+      oldData = oldData[0]
       if ('access' in newData && newData.access !== oldData.access) {
         if (!oldData.pwkey && !newData.pwkey && (passwordAccess & accessInt(newData.access)))
           throw errors.noData('password for GUI access')

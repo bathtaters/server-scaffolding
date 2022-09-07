@@ -1,7 +1,7 @@
 const sqlite = require('@journeyapps/sqlcipher').verbose()
 const mkDir = require('fs').mkdirSync
 const logger = require('./log')
-const { encrypt } = require('../services/db.services')
+const { encrypt, foreignKeys } = require('../services/db.services')
 
 const sqlSecret = process.env.DB_SECRET ?? require('../config/settings.cfg').definitions.DB_SECRET.default
 const dbSrc = process.env.NODE_ENV === 'test' ? require('../testing/test.cfg').testDb : require('../config/meta').dbPath
@@ -22,8 +22,8 @@ function openDb() {
       logger.verbose('Connected to main database')
     })
 
-    if (sqlSecret) encrypt(db, sqlSecret).then(() => res(db))
-    else res(db)
+    if (sqlSecret) encrypt(db, sqlSecret).then(() => foreignKeys(db, false)).then(() => res(db))
+    else foreignKeys(db, false).then(() => res(db))
   })
 }
 

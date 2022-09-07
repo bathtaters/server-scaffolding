@@ -28,6 +28,7 @@ module.exports = {
   noData: (missingField) => createError(400, `No ${missingField || 'data'} provided.`),
   noEntry: (id) => createError(400, `No entry exists at ID ${id || ''}.`),
   noSize: () => createError(400, "Invalid page size for paginated request."),
+  badData: (key, value, expected) => createError(400, `${key || 'data'} contains invalid value: ${value}${expected ? ` (should be ${expected})` : ''}.`),
   
   // Authentication Errors
   noUser: () => createError(401, "User not found."),
@@ -64,6 +65,7 @@ module.exports = {
   // DB Errors
   badKey: (key, table = 'table') => createError(500, `Column "${key}" does not exist in ${table}.`),
   noAdd: () => createError(502, "New entry was not created."),
+  noPrimary: (table,method) => createError(400, `PrimaryId for ${table}.${method} cannot be automatically determined. Must include in ${method} data.`),
   sqlNotDB: () => new Error('Database file not recognized: confirm that DB_SECRET hasn\'t changed and check DB_PATH'),
   sqlError: (err, sql, params) => appendToError(
     createError(502, err.message || err),

@@ -6,10 +6,17 @@ module.exports = {
   adapterKey: { get: 'getAdapter', set: 'setAdapter' },
 
   ifExistsBehavior: {
-    // Goes between "INSERT" & " INTO"
+    // INSERT ... INTO
     default: '',
     abort: '',
     skip: ' OR IGNORE',
     overwrite: ' OR REPLACE',
   },
+
+  arrayLabel: { foreignId: 'fid', index: 'idx', entry: 'val' }, // Note: also update in Models.d.ts
+  getArrayName: (mainTable, arrayKey) => `[${mainTable}:${arrayKey}]`,
+  getArrayPath: (arrayName) => arrayName.replace(/^\[|\]$/g,'').replace(':','/'),
+  CONCAT_DELIM: '~|~',
+
+  debugSQL: false,
 }

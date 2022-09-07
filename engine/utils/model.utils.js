@@ -1,7 +1,13 @@
 const RegEx = require('../libs/regex')
 const { isDate } = require('../libs/date')
 const { parseBoolean, parseArray } = require('./validate.utils')
+const { arrayLabel, CONCAT_DELIM } = require('../config/models.cfg')
 
+exports.arrayTableRefs = ({ title, primaryId }) => ({
+  // Default entry for db.services.reset.refs
+  key: arrayLabel.foreignId, table: title, refKey: primaryId,
+  onDelete: 'CASCADE', onUpdate: 'CASCADE'
+})
 
 // Decode validation types to [type, hasSpaces (*), isArray ([]), isOptional (?)]
 const typeStrRegex = RegEx(/^([^[?*]+)(\?|\*|\[\])?(\?|\*|\[\])?(\?|\*|\[\])?$/)
@@ -16,7 +22,6 @@ exports.parseTypeStr = (settings, overwrite = false) => {
   if (overwrite || !settings.isOptional) settings.isOptional = opts.includes('?')
   if (overwrite || !settings.isArray)    settings.isArray    = opts.includes('[]')
   if (overwrite || !settings.hasSpaces)  settings.hasSpaces  = opts.includes('*')
-
   return settings
 }
 
@@ -24,8 +29,8 @@ exports.parseTypeStr = (settings, overwrite = false) => {
 exports.isBool = ({ type, isArray }) => type === 'boolean' && !isArray
 
 
-exports.sanitizeSchemaData = (data, schema=null) => {
-  const validKeys = schema && Object.keys(schema).filter((key) => schema[key].db)
+exports.sanitizeSchemaData = (data, { schema={}, arrays={} } = {}) => {
+  const validKeys = Object.keys(schema).filter((key) => schema[key].db).concat(Object.keys(arrays))
   return Object.keys(data).reduce((obj,key) =>
     !validKeys || validKeys.includes(key) ? Object.assign(obj, { [key]: data[key] }) : obj
   , {})
@@ -33,10 +38,10 @@ exports.sanitizeSchemaData = (data, schema=null) => {
 
 
 // Convert model type to SQL type
-exports.dbFromType = ({ type, isArray, isOptional, isPrimary }) => {
+exports.dbFromType = ({ type, isOptional, isPrimary }) => {
   let dbType
   
-  switch (isArray ? 'array' : type) {
+  switch (type) {
     case 'float':
       dbType = 'REAL'
       break
@@ -71,8 +76,10 @@ exports.htmlFromType = ({ type, isArray }) => {
 
 
 // Convert data from storage type to expected type
-exports.getAdapterFromType = ({ type, isArray }) => {
+exports.getAdapterFromType = ({ type, isArray, isBitmap }) => {
   let adapter
+  if (isBitmap) return adapter
+
   switch (type) {
     case 'object':
       adapter = (text) => typeof text === 'string' ? JSON.parse(text)    : text
@@ -87,10 +94,11 @@ exports.getAdapterFromType = ({ type, isArray }) => {
   }
 
   if (isArray) {
-    const entryAdapter = type !== 'object' && adapter
-    adapter = entryAdapter ? 
-      (text) => !text ? null : JSON.parse(text).map(entryAdapter) : 
-      (text) => !text ? null : JSON.parse(text)
+    const entryGet = adapter
+    adapter = entryGet ? 
+      (text) => typeof text === 'string' ? text.split(CONCAT_DELIM).map(entryGet) : Array.isArray(text) ? text : null
+      : 
+      (text) => typeof text === 'string' ? text.split(CONCAT_DELIM) : Array.isArray(text) ? text : null
   }
 
   return adapter
@@ -100,8 +108,10 @@ exports.getAdapterFromType = ({ type, isArray }) => {
 // Convert data from user input to storage type
 const toBool = parseBoolean(true)
 const toArray = parseArray(true)
-exports.setAdapterFromType = ({ type, isArray }) => {
+exports.setAdapterFromType = ({ type, isArray, isBitmap }) => {
   let adapter
+  if (isBitmap) return adapter
+
   switch (type) {
     case 'int':
       adapter = (text) => typeof text === 'string' ? parseInt(text)   : text
@@ -124,16 +134,15 @@ exports.setAdapterFromType = ({ type, isArray }) => {
   }
 
   if (isArray) {
-    const entrySet = type !== 'object' ? adapter : (text) => typeof text === 'string' ? JSON.parse(text) : text
-    if (entrySet) {
-      adapter = (arr) =>
-        typeof arr === 'string' ? JSON.stringify(toArray(arr).map(entrySet)) :
-        Array.isArray(arr) ? JSON.stringify(arr.map(entrySet)) : null
-    } else {
-      adapter = (arr) =>
-        typeof arr === 'string' ? JSON.stringify(toArray(arr)) :
-        Array.isArray(arr) ? JSON.stringify(arr) : null
-    }
+    const entrySet = adapter
+    adapter = entrySet ?
+      (arr) => 
+        typeof arr === 'string' ? toArray(arr).map(entrySet) :
+        Array.isArray(arr) ? arr.map(entrySet) : null
+      :
+      (arr) =>
+        typeof arr === 'string' ? toArray(arr) :
+        Array.isArray(arr) ? arr : null
   }
 
   return adapter
