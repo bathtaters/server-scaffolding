@@ -1,4 +1,5 @@
 const errors = require('../config/errors.engine')
+const { isDate } = require('../libs/date')
 const { extractId } = require('../utils/db.utils')
 
 const { config } = require('../src.path')
@@ -12,6 +13,7 @@ module.exports = (Model) => ({
   [actions.find]: async (formData) => {
     if (!formData || !Object.keys(formData).length) return ''
     if (!Object.keys(formData).length) return ''
+    Object.keys(formData).forEach((k) => { if (isDate(formData[k])) formData[k] = formData[k].toJSON() })
     return `${searchURL}?${new URLSearchParams(formData).toString()}`
   },
 
