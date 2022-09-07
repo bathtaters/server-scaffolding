@@ -11,10 +11,10 @@ block form
       +pageData(page, size)
 
   .row
-    each val, key in schema
-      if val.html
+    each val, key in tableFields
+      if schema[key].html
         .col-sm
-          +formInput(key, val.html, val.limits, searchData ? searchData[key] : val.default, tableFields[key])
+          +formInput(key, schema[key].html, schema[key].limits, searchData ? searchData[key] : schema[key].default, val)
 
 
 block table
