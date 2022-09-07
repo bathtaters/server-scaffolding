@@ -45,7 +45,7 @@ module.exports = {
     type:      (type)      => `does not exist as ${type}`,
     missing:   (key, type) => `${key} has ${type ? 'invalid' : 'missing'} type definition: ${type || ''}`,
     missingIn: (key)       => `${key} missing 'in' array for validation`,
-    limit:     ({ min, max }, type) => 
+    limit:     ({ min, max } = {}, type) => 
       `must be ${type ? type+' ' : ''}${
         defaultLimits[type] && max === defaultLimits[type].max && min === defaultLimits[type].min ? 
           `within default limits${type === 'string' || type === 'array' ? ' for' : ''}` :
