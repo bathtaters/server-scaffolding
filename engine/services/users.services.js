@@ -26,11 +26,10 @@ exports.initAdapters = (definitions) => {
   definitions.cors[adapterKey.set] = (cors) => encodeCors(cors)
   definitions.username[adapterKey.set] = (username) => username.toLowerCase()
   definitions.password[adapterKey.set] = async (password, data) => {
-    if (password) {
-      const { pwkey, salt } = await encodePassword(password)
-      data.pwkey = pwkey
-      data.salt = salt
-    }
+    if (!password) return
+    const { pwkey, salt } = await encodePassword(password)
+    data.pwkey = pwkey
+    data.salt = salt
   }
 }
 
