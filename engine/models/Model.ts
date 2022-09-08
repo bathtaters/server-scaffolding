@@ -1,5 +1,5 @@
 // @ts-nocheck // Until entire engine is converted to TypeScript
-import { Definition, Feedback, ChangeCallback, IfExistsBehavior, ForeignKeyRef } from './Model.d'
+import { Definition, Feedback, ChangeCallback, IfExistsBehavior, ForeignKeyRef, ArrayDefinition } from './Model.d'
 import { openDb, getDb } from '../libs/db'
 import services from '../services/db.services'
 import { getPrimaryIdAndAdaptSchema, runAdapters, extractArrays } from '../services/model.services'
@@ -28,7 +28,7 @@ export default class Model<Schema extends object> {
     if (this.isArrayTable) this._title = title
     else this.title = title
 
-    this.primaryId = getPrimaryIdAndAdaptSchema(definitions, this.title)
+    this.primaryId = getPrimaryIdAndAdaptSchema(definitions, this.title, this.isArrayTable)
     this.schema = definitions
 
     this.isInitialized = (async () => {
@@ -55,13 +55,13 @@ export default class Model<Schema extends object> {
   }
 
   getArrayTable(arrayKey: keyof Schema) {
-    return new Model(getArrayName(this.title, arrayKey), this.arrays[arrayKey], true)
+    return new Model<ArrayDefinition>(getArrayName(this.title, arrayKey), this.arrays[arrayKey], true)
   }
 
   get(): Promise<Schema[]>
-  get(id: Schema[keyof Schema], idKey?: string, raw?: boolean): Promise<Schema>
-  get(id: Schema[keyof Schema], idKey?: string, raw?: boolean, skipArrays?: boolean): Promise<Partial<Schema>>
-  async get(id?: Schema[keyof Schema], idKey?: string, raw?: boolean, skipArrays?: boolean): Promise<Schema|Schema[]|Partial<Schema>> {
+  get(id: Schema[keyof Schema], idKey?: keyof Schema, raw?: boolean): Promise<Schema>
+  get(id: Schema[keyof Schema], idKey?: keyof Schema, raw?: boolean, skipArrays?: boolean): Promise<Partial<Schema>>
+  async get(id?: Schema[keyof Schema], idKey?: keyof Schema, raw?: boolean, skipArrays?: boolean): Promise<Schema|Schema[]|Partial<Schema>> {
     const arrays = skipArrays ? [] : Object.keys(this.arrays)
 
     const idIsArray = idKey && arrays.includes(idKey)
@@ -79,7 +79,7 @@ export default class Model<Schema extends object> {
   }
 
 
-  async getPage(page: number, size: number, reverse?: boolean, orderKey?: string): Promise<Schema[]> {
+  async getPage(page: number, size: number, reverse?: boolean, orderKey?: keyof Schema): Promise<Schema[]> {
     if (!size) return Promise.reject(errors.noSize())
     if (orderKey && !Object.keys(this.schema).includes(orderKey)) throw errors.badKey(orderKey, this.title)
 
@@ -139,7 +139,7 @@ export default class Model<Schema extends object> {
   }
 
 
-  async count(id?: Schema[keyof Schema], idKey?: string): Promise<number> {
+  async count(id?: Schema[keyof Schema], idKey?: keyof Schema): Promise<number> {
     if (idKey && !Object.keys(this.schema).includes(idKey)) throw errors.badKey(idKey, this.title)
     
     const filter = id != null ? ` WHERE ${idKey || this.primaryId} = ?` : ''
@@ -202,7 +202,7 @@ export default class Model<Schema extends object> {
   }
 
 
-  async update(id: Schema[keyof Schema], data: Partial<Schema>, idKey?: string, onChangeCb?: ChangeCallback<Schema>): Promise<Feedback> {
+  async update(id: Schema[keyof Schema], data: Partial<Schema>, idKey?: keyof Schema, onChangeCb?: ChangeCallback<Schema>): Promise<Feedback> {
     if (id == null) throw errors.noID()
     return this.batchUpdate({ [idKey || this.primaryId]: id }, data, false, onChangeCb)
   }
@@ -232,7 +232,7 @@ export default class Model<Schema extends object> {
 
     // DB Updates
     
-    await services.run(getDb(),
+    if (tableKeys.length) await services.run(getDb(),
       `UPDATE ${this.title} SET ${tableKeys.map(k => `${k} = ?`).join(', ')}
       WHERE ${Object.keys(matching).map((k) => `${k} = ?`).join(' AND ')}`,
       [...tableKeys.map((k) => updates[k]), ...Object.values(matching)]
@@ -264,7 +264,7 @@ export default class Model<Schema extends object> {
   }
   
   
-  async remove(id: Schema[keyof Schema], idKey?: string): Promise<Feedback> {
+  async remove(id: Schema[keyof Schema], idKey?: keyof Schema): Promise<Feedback> {
     if (id == null) return Promise.reject(errors.noID())
 
     const count = await this.count(id, idKey)

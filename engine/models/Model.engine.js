@@ -26,7 +26,7 @@ class Model {
     if (this.isArrayTable) this._title = title
     else this.title = title
 
-    this.primaryId = getPrimaryIdAndAdaptSchema(definitions, this.title)
+    this.primaryId = getPrimaryIdAndAdaptSchema(definitions, this.title, this.isArrayTable)
     this.schema = definitions
 
     this.isInitialized = (async () => {
@@ -224,7 +224,7 @@ class Model {
 
     // DB Updates
     
-    await services.run(getDb(),
+    if (tableKeys.length) await services.run(getDb(),
       `UPDATE ${this.title} SET ${tableKeys.map(k => `${k} = ?`).join(', ')}
       WHERE ${Object.keys(matching).map((k) => `${k} = ?`).join(' AND ')}`,
       [...tableKeys.map((k) => updates[k]), ...Object.values(matching)]

@@ -54,8 +54,20 @@ describe('Model constructor', () => {
     getPrimaryIdAndAdaptSchema.mockReturnValueOnce('altID')
     const model = new Model('testModel', { ...options })
     expect(getPrimaryIdAndAdaptSchema).toBeCalledTimes(1)
-    expect(getPrimaryIdAndAdaptSchema).toBeCalledWith(options, 'testModel')
+    expect(getPrimaryIdAndAdaptSchema).toBeCalledWith(options, 'testModel', expect.anything())
     expect(model.primaryId).toBe('altID')
+  })
+  it('passes isArray Table to getPrimaryId & this.isArrayTable', () => {
+    const model1 = new Model('testModel', { ...options }, false)
+    expect(getPrimaryIdAndAdaptSchema).toBeCalledTimes(1)
+    expect(getPrimaryIdAndAdaptSchema).toBeCalledWith(expect.anything(), expect.anything(), false)
+    expect(model1.isArrayTable).toBe(false)
+
+    getPrimaryIdAndAdaptSchema.mockClear()
+    const model2 = new Model('testModel', { ...options }, true)
+    expect(getPrimaryIdAndAdaptSchema).toBeCalledTimes(1)
+    expect(getPrimaryIdAndAdaptSchema).toBeCalledWith(expect.anything(), expect.anything(), true)
+    expect(model2.isArrayTable).toBe(true)
   })
   it('isInit resolves to true on success', () => {
     expect.assertions(1)
