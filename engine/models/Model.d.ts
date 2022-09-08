@@ -7,7 +7,7 @@ interface Limits {
   array?: { min?: number, max?: number }
 }
 
-export interface ArrayDefinition<Value = any, Key = number> {
+export interface ArrayDefinition<Value = any, Key = any> {
   fid: Key,
   idx: number,
   val: Value
@@ -29,7 +29,7 @@ interface ForeignKeyRef {
 export interface CreateTableRefs { [table: string]: ForeignKeyRef }
 
 export type Adapter = (value: any, data: object) => Promise<any> | any
-export type ChangeCallback<Schema extends object> = (update: Partial<Schema>, current: Schema) => Promise<Schema | void> | Schema | void
+export type ChangeCallback<Schema extends object> = (update: Partial<Schema>, matching: Schema[]) => Promise<Schema | void> | Schema | void
 
 export interface Definition {
   typeStr:      
