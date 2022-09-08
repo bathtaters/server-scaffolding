@@ -1,6 +1,6 @@
 const { parseTypeStr, dbFromType, htmlFromType, getAdapterFromType, setAdapterFromType } = require('../utils/model.utils')
 const { hasDupes } = require('../utils/common.utils')
-const { defaultPrimary, defaultPrimaryType, adapterKey, arrayLabel } = require('../config/models.cfg')
+const { defaultPrimary, defaultPrimaryType, adapterKey, arrayLabel, SQL_ID } = require('../config/models.cfg')
 
 function adaptSchemaEntry(settings) {
   if (!settings.type && settings.typeStr) parseTypeStr(settings)
@@ -17,7 +17,7 @@ function adaptSchemaEntry(settings) {
   return settings
 }
 
-exports.getPrimaryIdAndAdaptSchema = function (schema, title = 'model') {
+exports.getPrimaryIdAndAdaptSchema = function (schema, title = 'model', isArray = false) {
   let primaryId
 
   Object.entries(schema).forEach(([key, settings]) => {
@@ -30,10 +30,10 @@ exports.getPrimaryIdAndAdaptSchema = function (schema, title = 'model') {
   })
 
   if (!primaryId) {
-    schema[defaultPrimary] = { ...defaultPrimaryType, ...(schema[defaultPrimary] || {}), isPrimary: true }
-    delete schema[defaultPrimary].db
-    adaptSchemaEntry(schema[defaultPrimary])
-    primaryId = defaultPrimary
+    primaryId = isArray ? SQL_ID : defaultPrimary
+    schema[primaryId] = { ...defaultPrimaryType, ...(schema[primaryId] || {}), isPrimary: true }
+    delete schema[primaryId].db
+    adaptSchemaEntry(schema[primaryId])
   }
 
   if (!Object.values(schema).filter(({ db }) => db).length)

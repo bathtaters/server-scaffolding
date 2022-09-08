@@ -1,4 +1,4 @@
-const { arrayLabel, getArrayName, CONCAT_DELIM } = require('../config/models.cfg')
+const { arrayLabel, getArrayName, CONCAT_DELIM, SQL_ID } = require('../config/models.cfg')
 const { illegalKeyName, illegalKeys } = require('../config/validate.cfg')
 const { sqlInjection } = require('../config/errors.engine')
 
@@ -25,9 +25,9 @@ if (/['\s]/.test(CONCAT_DELIM)) throw sqlInjection(CONCAT_DELIM, false, 'models.
 exports.checkInjection(Object.values(arrayLabel), 'models.cfg (arrayLabel)')
 
 exports.getArrayJoin = ({ title, primaryId }, arrays=[], { id, idKey, idIsArray }={}) => !arrays.length ?
-  `SELECT * FROM ${title}${id == null ? '' : ` WHERE ${idKey || primaryId} = ?`}`
+  `SELECT ${primaryId === SQL_ID ? 'rowid, ' : ''}* FROM ${title}${id == null ? '' : ` WHERE ${idKey || primaryId} = ?`}`
   :
-  `SELECT ${[`${title}.*`].concat(arrays.map((key) => `_arrays.${key}`)).join(', ')}
+  `SELECT ${primaryId === SQL_ID ? `${title}.rowid, ` : ''}${[`${title}.*`].concat(arrays.map((key) => `_arrays.${key}`)).join(', ')}
     FROM ${title} LEFT JOIN (
       SELECT ${[arrayLabel.foreignId].concat(arrays.map((key) => `GROUP_CONCAT(${title}_${key}, '${CONCAT_DELIM}') ${key}`)).join(', ')} FROM (${
         arrays.map((key) => `SELECT ${[arrayLabel.foreignId, arrayLabel.index].concat(arrays.map((subKey) =>
