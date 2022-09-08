@@ -1,4 +1,4 @@
-const { getPrimaryIdAndAdaptSchema, runAdapters } = require('../../services/model.services')
+const { getPrimaryIdAndAdaptSchema, runAdapters, extractArrays } = require('../../services/model.services')
 const { defaultPrimary, defaultPrimaryType, adapterKey } = require('../../config/models.cfg')
 const { parseTypeStr, dbFromType, htmlFromType, getAdapterFromType, setAdapterFromType } = require('../../utils/model.utils')
 const { hasDupes } = require('../../utils/common.utils')
@@ -17,12 +17,15 @@ describe('getPrimaryIdAndAdaptSchema', () => {
     expect(parseTypeStr).toBeCalledWith(schema.a)
     expect(parseTypeStr).toBeCalledWith(schema.b)
   })
-  it('runs dbFromType if !db', () => {
+  it('runs dbFromType if !db & !array', () => {
+    schema.c = { type: 'typeC', isArray: true }
     getPrimaryIdAndAdaptSchema(schema)
     expect(dbFromType).toBeCalledWith(schema.a)
     expect(dbFromType).toBeCalledWith(schema.b)
+    expect(dbFromType).not.toBeCalledWith(schema.c)
     expect(schema.a).toHaveProperty('db','dbFromType')
     expect(schema.b).toHaveProperty('db','dbFromType')
+    expect(schema.c).not.toHaveProperty('db')
   })
   it('runs htmlFromType if !html', () => {
     schema.a.isPrimary = false // skips for primary key
@@ -85,6 +88,12 @@ describe('getPrimaryIdAndAdaptSchema', () => {
         .toThrowError('test has more than one primary ID: a, b')
     })
 
+    it('primary key is array', () => {
+      schema.a.isArray = true
+      expect(() => getPrimaryIdAndAdaptSchema(schema, 'test'))
+        .toThrowError('Array cannot be primary ID: test.a')
+    })
+
     it('no DB entries', () => {
       schema.a.db = null; schema.b.db = null
       expect(() => getPrimaryIdAndAdaptSchema(schema, 'test'))
@@ -114,13 +123,13 @@ describe('getPrimaryIdAndAdaptSchema', () => {
 describe('runAdapters', () => {
   const schema = { a: {}, b: {testAdapter: jest.fn()}, c: {testAdapter: jest.fn()}, d: {testAdapter: jest.fn()}}
   it('passes non-objects', async () => {
-    expect(await runAdapters('testAdapter', 'ab', schema)).toBe('ab')
-    expect(await runAdapters('testAdapter', 1234, schema)).toBe(1234)
-    expect(await runAdapters('testAdapter', true, schema)).toBe(true)
+    expect(await runAdapters('testAdapter', 'ab', {schema})).toBe('ab')
+    expect(await runAdapters('testAdapter', 1234, {schema})).toBe(1234)
+    expect(await runAdapters('testAdapter', true, {schema})).toBe(true)
   })
   it('runs adapters for each key', async () => {
     let data = { a: 1, b: 2, c: 3 }
-    await runAdapters('testAdapter', data, schema)
+    await runAdapters('testAdapter', data, {schema})
     expect(schema.b.testAdapter).toBeCalledWith(2, data)
     expect(schema.c.testAdapter).toBeCalledWith(3, data)
     expect(schema.d.testAdapter).not.toBeCalled()
@@ -129,7 +138,7 @@ describe('runAdapters', () => {
     let data = { a: 1, b: 2, c: 3 }
     schema.b.testAdapter.mockResolvedValueOnce('adaptB')
     schema.c.testAdapter.mockReturnValueOnce('adaptC')
-    expect(await runAdapters('testAdapter', data, schema)).toEqual({
+    expect(await runAdapters('testAdapter', data, {schema})).toEqual({
       a: 1, b: 'adaptB', c: 'adaptC'
     })
   })
@@ -137,14 +146,74 @@ describe('runAdapters', () => {
     let data = { a: 1, b: 2, c: 3 }
     schema.b.testAdapter.mockResolvedValueOnce('adaptB')
     schema.c.testAdapter.mockReturnValueOnce('adaptC')
-    expect(await runAdapters('testAdapter', data, schema)).toBe(data)
+    expect(await runAdapters('testAdapter', data, {schema})).toBe(data)
     expect(data).toEqual({ a: 1, b: 'adaptB', c: 'adaptC' })
   })
-  it('deletes each key in hideFields', async () => {
+  it('deletes each key in hideFields (get)', async () => {
     let data = { a: 1, b: 2, c: 3, d: 4 }
-    await runAdapters('testAdapter', data, schema, ['b','d'])
+    await runAdapters('get', data, { schema, hidden: ['b','d'] })
     expect(data).not.toHaveProperty('b')
-    expect(data).not.toHaveProperty('e')
+    expect(data).not.toHaveProperty('d')
+  })
+  it('skips hideFields if not get', async () => {
+    let data = { a: 1, b: 2, c: 3, d: 4 }
+    await runAdapters('set', data, { schema, hidden: ['b','d'] })
+    expect(data).toHaveProperty('b', 2)
+    expect(data).toHaveProperty('d', 4)
+  })
+})
+
+
+describe('extractArrays', () => {
+  let schema, idDef
+  beforeEach(() => {
+    idDef = { typeStr: 'primaryId', isPrimary: true, db: 'TEXT PRIMARY KEY' }
+    schema = {
+      a: { isArray: false }, b: { isArray: true, db: 'test' },
+      c: { typeStr: 'typeC[]', isArray: true },
+      d: { typeStr: 'typeD',   isArray: true, limits: { array: 'arrLim', elem: 'elemLim' } },
+      e: { typeStr: 'typeE',   isArray: true, limits: 'baseLim' },
+    }
+  })
+
+  it('removes non-arrays', () => {
+    expect(extractArrays(schema, idDef)).not.toHaveProperty('a')
+  })
+  it('removes arrays w/ db set', () => {
+    expect(extractArrays(schema, idDef)).not.toHaveProperty('b')
+  })
+  it('copies array keys', () => {
+    const arrays = extractArrays(schema, idDef)
+    expect(arrays).toHaveProperty('c')
+    expect(arrays).toHaveProperty('d')
+    expect(arrays).toHaveProperty('e')
+  })
+  it('sets foreign as idDef w/o primary', () => {
+    const arrays = extractArrays(schema, idDef)
+    expect(arrays.c.foreign).toHaveProperty('typeStr', 'primaryId')
+    expect(arrays.c.foreign).not.toHaveProperty('isPrimary')
+    expect(arrays.c.foreign).toHaveProperty('db', 'TEXT NOT NULL')
+  })
+  it('sets index as int', () => {
+    const arrays = extractArrays(schema, idDef)
+    expect(arrays.c.index).toHaveProperty('typeStr', 'int')
+  })
+  it('sets entry as array type (minus [])', () => {
+    const arrays = extractArrays(schema, idDef)
+    expect(arrays.c.entry).toHaveProperty('typeStr', 'typeC')
+    expect(arrays.c.entry).not.toHaveProperty('isArray')
+  })
+  it('passes elem limits to entry (or no limits)', () => {
+    const arrays = extractArrays(schema, idDef)
+    expect(arrays.c.entry.limits).toBeUndefined()
+    expect(arrays.d.entry.limits).toBe('elemLim')
+    expect(arrays.e.entry.limits).toBeUndefined()
+  })
+  it('passes array limits (or main limits) to index', () => {
+    const arrays = extractArrays(schema, idDef)
+    expect(arrays.c.index.limits).toBeUndefined()
+    expect(arrays.d.index.limits).toBe('arrLim')
+    expect(arrays.e.index.limits).toBe('baseLim')
   })
 })
 
@@ -155,6 +224,7 @@ jest.mock('../../config/models.cfg', () => ({
   defaultPrimary: 'PRIMARY',
   defaultPrimaryType: { type: 'defaultPrimary' },
   adapterKey: { get: 'get', set: 'set' },
+  arrayLabel: { foreignId: 'foreign', index: 'index', entry: 'entry' },
 }))
 jest.mock('../../utils/model.utils', () => ({
   parseTypeStr: jest.fn((s) => { s.type = 'parseTypeStr' }),

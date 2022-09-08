@@ -70,12 +70,17 @@ describe('sanitizeSchemaData', () => {
       .toEqual({ a: 1, b: 2 })
   })
   it('filters props not in schema', () => {
-    expect(sanitizeSchemaData({ a: 1, b: 2, d: 4 }, schema))
+    expect(sanitizeSchemaData({ a: 1, b: 2, d: 4 }, { schema }))
       .toEqual({ a: 1, b: 2 })
+  })
+  it('filters props not in schema or arrays', () => {
+    const arrays = { c: null, d: 'test' }
+    expect(sanitizeSchemaData({ a: 1, d: 4, e: 5 }, { schema, arrays }))
+      .toEqual({ a: 1, d: 4 })
   })
   it('skips schema props w/o db value', () => {
     const schemaCopy = { ...schema, b: { db: null } }
-    expect(sanitizeSchemaData({ a: 1, b: 2 }, schemaCopy))
+    expect(sanitizeSchemaData({ a: 1, b: 2 }, { schema: schemaCopy }))
       .toEqual({ a: 1 })
   })
 })
@@ -91,6 +96,7 @@ const testTypes = {
   pri: { type: 'int',      isArray: false, isOptional: true,  isPrimary: true  },
   req: { type: 'int',      isArray: false, isOptional: false, isPrimary: false },
   arr: { type: 'int',      isArray: true,  isOptional: true,  isPrimary: false },
+  bits:{ type: 'int',      isArray: false, isOptional: false, isBitmap:  true  },
 }
 
 
@@ -110,9 +116,6 @@ describe('dbFromType', () => {
   it('flags required (non-optional)', () => {
     expect(dbFromType(testTypes.req)).toContain('NOT NULL')
     expect(dbFromType(testTypes.int)).not.toContain('NOT NULL')
-  })
-  it('all arrays are TEXT', () => {
-    expect(dbFromType(testTypes.arr)).toBe('TEXT')
   })
 })
 
@@ -166,33 +169,45 @@ describe('getAdapterFromType', () => {
     const adapter = getAdapterFromType(testTypes.bool)
     expect(typeof adapter(1)).toBe('boolean')
     expect(adapter(1)).toBe(true)
-    expect(adapter(0)).toBe(false)
+    expect(adapter('0')).toBe(false)
     expect(adapter(null)).toBeNull()
   })
 
+  it('bitmaps (no implementation)', () => {
+    expect(getAdapterFromType(testTypes.bits)).toBeUndefined()
+  })
+
   describe('array types', () => {
+    // NOTE: mock dbArray uses '!' as delimiter (CONCAT_DELIM)
     it('simple arrays', () => {
       const adapter = getAdapterFromType({ ...testTypes.arr, type: 'string' })
-      expect(Array.isArray(adapter('["1","2","3"]'))).toBe(true)
-      expect(adapter('["1","2","3"]')).toEqual(["1","2","3"])
-      expect(adapter('[]')).toEqual([])
+      expect(Array.isArray(adapter('1!2!3'))).toBe(true)
+      expect(adapter('1!2!3')).toEqual(["1","2","3"])
+      expect(adapter(["1","2","3"])).toEqual(["1","2","3"])
       expect(adapter('')).toBeNull()
     })
     it('boolean arrays', () => {
       const adapter = getAdapterFromType({ ...testTypes.arr, type: 'boolean' })
-      expect(adapter('[1,0,0]')).toEqual([true,false,false])
-      expect(adapter('[1,0,0]')).toEqual([true,false,false])
+      expect(adapter('1!0!0')).toEqual([true,false,false])
+      expect(adapter([1,0,'0'])).toEqual([true,false,false])
     })
     it('datetime arrays', () => {
       const adapter = getAdapterFromType({ ...testTypes.arr, type: 'datetime' })
-      expect(adapter('[1636243200000,1594684800000]')).toEqual([
+      expect(adapter('1636243200000!1594684800000')).toEqual([
         new Date(Date.UTC(2021, 10, 7)),
         new Date(Date.UTC(2020, 6, 14)),
+      ])
+      expect(adapter(['1636243200000',1594684800000,new Date(Date.UTC(2017, 2, 12))])).toEqual([
+        new Date(Date.UTC(2021, 10, 7)),
+        new Date(Date.UTC(2020, 6, 14)),
+        new Date(Date.UTC(2017, 2, 12)),
       ])
     })
     it('object arrays', () => {
       const adapter = getAdapterFromType({ ...testTypes.arr, type: 'object' })
-      expect(adapter('[{"a":1,"b":2},{"c":3}]'))
+      expect(adapter('{"a":1,"b":2}!{"c":3}'))
+        .toEqual([{ a: 1, b: 2 },{ c: 3 }])
+      expect(adapter(['{"a":1,"b":2}',{c:3}]))
         .toEqual([{ a: 1, b: 2 },{ c: 3 }])
     })
   })
@@ -262,45 +277,49 @@ describe('setAdapterFromType', () => {
     expect(adapter(null)).toBeNull()
   })
 
+  it('bitmaps (no implementation)', () => {
+    expect(setAdapterFromType(testTypes.bits)).toBeUndefined()
+  })
+
   describe('array types', () => {
     // NOTE: mock parseArray uses '|' as delimiter (Instead of ,)
     it('simple arrays', () => {
       const adapter = setAdapterFromType({ ...testTypes.arr, type: 'string' })
-      expect(typeof adapter(["1","2","3"])).toBe('string')
-      expect(adapter(["1","2","3"])).toBe('["1","2","3"]')
-      expect(adapter('1|2|3')).toBe('["1","2","3"]')
+      expect(Array.isArray(adapter(["1","2","3"]))).toBe(true)
+      expect(adapter(["1","2","3"])).toEqual(["1","2","3"])
+      expect(adapter('1|2|3')).toEqual(["1","2","3"])
       expect(adapter(null)).toBeNull()
     })
     it('integer arrays', () => {
       const adapter = setAdapterFromType({ ...testTypes.arr, type: 'int' })
-      expect(adapter(["1","2","3"])).toBe('[1,2,3]')
-      expect(adapter('1|2|3')).toBe('[1,2,3]')
+      expect(adapter(["1","2","3"])).toEqual([1,2,3])
+      expect(adapter('1|2|3')).toEqual([1,2,3])
     })
     it('float arrays', () => {
       const adapter = setAdapterFromType({ ...testTypes.arr, type: 'float' })
-      expect(adapter(["1.10","2.0","3.5"])).toBe('[1.1,2,3.5]')
-      expect(adapter('1.10|2.0|3.5')).toBe('[1.1,2,3.5]')
+      expect(adapter(["1.10","2.0","3.5"])).toEqual([1.1,2,3.5])
+      expect(adapter('1.10|2.0|3.5')).toEqual([1.1,2,3.5])
     })
     it('boolean arrays', () => {
       const adapter = setAdapterFromType({ ...testTypes.arr, type: 'boolean' })
-      expect(adapter(["TEST","none",""])).toBe('[1,0,0]')
-      expect(adapter('TEST|none|')).toBe('[1,0,0]')
+      expect(adapter(["TEST","none",""])).toEqual([1,0,0])
+      expect(adapter('TEST|none|')).toEqual([1,0,0])
     })
     it('datetime arrays', () => {
       const adapter = setAdapterFromType({ ...testTypes.arr, type: 'datetime' })
       expect(adapter([new Date(Date.UTC(2021, 10, 7)),"2006-01-02T00:00:00",123]))
-        .toBe('[1636243200000,1136178000000,123]')
+        .toEqual([1636243200000,1136178000000,123])
       expect(adapter('2021-10-07T00:00:00|2006-01-02T00:00:00|1236286200000'))
-        .toBe('[1633579200000,1136178000000,1236286200000]')
+        .toEqual([1633579200000,1136178000000,1236286200000])
     })
     it('object arrays', () => {
       const adapter = setAdapterFromType({ ...testTypes.arr, type: 'object' })
       expect(adapter([{ a: 1, b: 2 },{ c: 3 }]))
-        .toBe('[{"a":1,"b":2},{"c":3}]')
+        .toEqual(['{"a":1,"b":2}','{"c":3}'])
       expect(adapter(['{"a":1}','{"b":2,"c":3}']))
-        .toBe('[{"a":1},{"b":2,"c":3}]')
+        .toEqual(['{"a":1}','{"b":2,"c":3}'])
       expect(adapter('{"a":1}|{"b":2,"c":3}|{"d":"4"}'))
-        .toBe('[{"a":1},{"b":2,"c":3},{"d":"4"}]')
+        .toEqual(['{"a":1}','{"b":2,"c":3}','{"d":"4"}'])
     })
   })
 })
@@ -310,6 +329,7 @@ describe('setAdapterFromType', () => {
 
 jest.mock('../../libs/regex', () => (re) => re)
 jest.mock('../../libs/date', () => ({ isDate: (dt) => typeof dt.getMonth === 'function' }))
+jest.mock('../../config/models.cfg', () => ({ arrayLabel: {}, CONCAT_DELIM: '!' }))
 jest.mock('../../utils/validate.utils', () => ({
   parseBoolean: () => (val) => val === 'TEST',
   parseArray: () => (val) => val.split('|'),

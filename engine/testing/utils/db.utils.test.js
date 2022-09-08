@@ -1,4 +1,4 @@
-const { checkInjection, extractId, appendAndSort } = require('../../utils/db.utils')
+const { checkInjection, extractId, appendAndSort, getArrayJoin } = require('../../utils/db.utils')
 const errors = require('../../config/errors.engine')
 
 describe('checkInjection', () => {
@@ -71,7 +71,97 @@ describe('appendAndSort', () => {
   })
 })
 
+describe('getArrayJoin', () => {
+  const model = { title: 'table', primaryId: 'pid' }
+  const opts = { id: 0, idKey: 'data' }
+  it('gets simple SQL (no ID)', () => {
+    expect(getArrayJoin(model)).toBe('SELECT * FROM table')
+  })
+  it('gets simple SQL (w/ ID)', () => {
+    expect(getArrayJoin(model, [], opts))
+      .toBe('SELECT * FROM table WHERE data = ?')
+  })
+  it('gets simple SQL (w/ defaultID)', () => {
+    expect(getArrayJoin(model, [], { id: 0 }))
+      .toBe('SELECT * FROM table WHERE pid = ?')
+  })
+  it('gets single join (no ID)', () => {
+    expect(getArrayJoin(model, ['a1']))
+      .toMatch(new RegExp([
+        /^\s*SELECT table\.\*, _arrays\.a1\s+FROM table LEFT JOIN \(\s+/,
+        /SELECT foreign, GROUP_CONCAT\(table_a1, '!'\) a1 FROM \(/,
+        /SELECT foreign, index, entry AS table_a1 FROM table:a1\s+/,
+        /ORDER BY foreign, index\)\s+/,
+        /GROUP BY foreign\) _arrays ON _arrays\.foreign = table\.pid\s*$/,
+      ].map((r) => r.source).join('')))
+  })
+  it('gets single join (w/ ID)', () => {
+    expect(getArrayJoin(model, ['a1'], opts))
+      .toMatch(new RegExp([
+        /^\s*SELECT table\.\*, _arrays\.a1\s+FROM table LEFT JOIN \(\s+/,
+        /SELECT foreign, GROUP_CONCAT\(table_a1, '!'\) a1 FROM \(/,
+        /SELECT foreign, index, entry AS table_a1 FROM table:a1\s+/,
+        /ORDER BY foreign, index\)\s+/,
+        /GROUP BY foreign\) _arrays ON _arrays\.foreign = table\.pid\s+/,
+        /WHERE data = \?\s*$/,
+      ].map((r) => r.source).join('')))
+  })
+  it('gets single join (w/ defaultID)', () => {
+    expect(getArrayJoin(model, ['a1'], { id: 0 }))
+      .toMatch(new RegExp([
+        /^\s*SELECT table\.\*, _arrays\.a1\s+FROM table LEFT JOIN \(\s+/,
+        /SELECT foreign, GROUP_CONCAT\(table_a1, '!'\) a1 FROM \(/,
+        /SELECT foreign, index, entry AS table_a1 FROM table:a1\s+/,
+        /ORDER BY foreign, index\)\s+/,
+        /GROUP BY foreign\) _arrays ON _arrays\.foreign = table\.pid\s+/,
+        /WHERE pid = \?\s*$/,
+      ].map((r) => r.source).join('')))
+  })
+  it('gets join w/ ID as array', () => {
+    expect(getArrayJoin(model, ['a1'], { id: [1,2], idKey: 'data', idIsArray: true }))
+      .toMatch(new RegExp([
+        /^\s*SELECT table\.\*, _arrays\.a1\s+FROM table LEFT JOIN \(\s+/,
+        /SELECT foreign, GROUP_CONCAT\(table_a1, '!'\) a1 FROM \(/,
+        /SELECT foreign, index, entry AS table_a1 FROM table:a1\s+/,
+        /ORDER BY foreign, index\)\s+/,
+        /GROUP BY foreign\) _arrays ON _arrays\.foreign = table\.pid\s+/,
+        /WHERE data = \?\s*$/,
+      ].map((r) => r.source).join('')))
+  })
+  it('gets join w/ ID in array', () => {
+    expect(getArrayJoin(model, ['a1'], { ...opts, idIsArray: true }))
+      .toMatch(new RegExp([
+        /^\s*SELECT table\.\*, _arrays\.a1\s+FROM table LEFT JOIN \(\s+/,
+        /SELECT foreign, GROUP_CONCAT\(table_a1, '!'\) a1 FROM \(/,
+        /SELECT foreign, index, entry AS table_a1 FROM table:a1\s+/,
+        /ORDER BY foreign, index\)\s+/,
+        /GROUP BY foreign\) _arrays ON _arrays\.foreign = table\.pid\s+/,
+        /WHERE pid = \(SELECT foreign FROM table:data WHERE entry = \?\)\s*$/,
+      ].map((r) => r.source).join('')))
+  })
+  it('gets multi join', () => {
+    expect(getArrayJoin(model, ['a1','b2','c3']))
+      .toMatch(new RegExp([
+        /^\s*SELECT table\.\*, _arrays\.a1, _arrays\.b2, _arrays\.c3\s+/,
+        /FROM table LEFT JOIN \(\s+SELECT foreign, GROUP_CONCAT\(table_a1, '!'\) a1,/,
+        / GROUP_CONCAT\(table_b2, '!'\) b2, GROUP_CONCAT\(table_c3, '!'\) c3 FROM \(/,
+        /SELECT foreign, index, entry AS table_a1, NULL AS table_b2, NULL AS table_c3 FROM table:a1\s+/,
+        /UNION ALL\s+/,
+        /SELECT foreign, index, NULL AS table_a1, entry AS table_b2, NULL AS table_c3 FROM table:b2\s+/,
+        /UNION ALL\s+/,
+        /SELECT foreign, index, NULL AS table_a1, NULL AS table_b2, entry AS table_c3 FROM table:c3\s+/,
+        /ORDER BY foreign, index\)\s+/,
+        /GROUP BY foreign\) _arrays ON _arrays\.foreign = table\.pid\s*$/,
+      ].map((r) => r.source).join('')))
+  })
+})
 
+
+jest.mock('../../config/models.cfg', () => ({ 
+  arrayLabel: { foreignId: 'foreign', index: 'index', entry: 'entry' },
+  getArrayName: (...args) => args.join(':'),
+  CONCAT_DELIM: '!'
+ }))
 jest.mock('../../config/validate.cfg', () => ({ illegalKeyName: /ILLEGAL/, illegalKeys: ['BAD'] }))
 jest.mock('../../utils/validate.utils', () => ({
   parseTypeStr: jest.fn((type) => ({ type, isOptional: true })),

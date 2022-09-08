@@ -2,7 +2,7 @@ const Model = require('../../models/Model.engine')
 const services = require('../../services/db.services')
 const { openDb, getDb } = require('../../libs/db')
 const { getPrimaryIdAndAdaptSchema, runAdapters } = require('../../services/model.services')
-const { checkInjection, appendAndSort } = require('../../utils/db.utils')
+const { checkInjection, appendAndSort, getArrayJoin } = require('../../utils/db.utils')
 const { caseInsensitiveObject, filterByField } = require('../../utils/common.utils')
 const { sanitizeSchemaData, isBool } = require('../../utils/model.utils')
 const errors = require('../../config/errors.engine')
@@ -16,8 +16,11 @@ const definitions = {
   obj:   { type: 'object', isArray: true },
 }
 
-it.todo('Batch update/add')
-it.todo('Find ordering')
+it.todo('batchUpdate/batchAdd')
+it.todo('getArrayTable (+Model.url)')
+it.todo('Generate Model.arrays (See Model.create)')
+it.todo('Model.find: ordering & raw')
+it.todo('Model.get with ID from array')
 
 describe('Model constructor', () => {
   let options
@@ -26,6 +29,7 @@ describe('Model constructor', () => {
   it('sets object props to options', () => {
     const model = new Model('testModel', { ...options })
     expect(model.title).toBe('testModel')
+    expect(model.url).toBe('testModel')
     expect(model.schema).toEqual(options)
     expect(model.primaryId).toBe('defId')
   })
@@ -89,7 +93,7 @@ describe('Model create', () => {
     return TestModel.create('force').then(() => {
       expect(services.reset).toBeCalledTimes(1)
       expect(services.reset).toBeCalledWith(
-        'DB', { testModel: 'SCHEMA' }, 'force'
+        'DB', { testModel: 'SCHEMA' }, 'force', {}, {}
       )
     })
   })
@@ -105,27 +109,28 @@ describe('Model create', () => {
 describe('Model get', () => {
   const TestModel = new Model('testModel', definitions)
 
-  it('uses expected SQL', () => {
+  it('calls get w/ ArrayJoin when ID', () => {
     expect.assertions(2)
     return TestModel.get('inp','data').then(() => {
       expect(services.get).toBeCalledTimes(1)
       expect(services.get).toBeCalledWith(
-        'DB', 'SELECT * FROM testModel WHERE data = ?', ['inp']
+        'DB', 'ArrayJoin', ['inp']
       )
     })
   })
-  it('gets all when no ID', () => {
+  it('calls all w/ ArrayJoin when no ID', () => {
     expect.assertions(2)
     return TestModel.get().then(() => {
       expect(services.all).toBeCalledTimes(1)
-      expect(services.all).toBeCalledWith('DB', 'SELECT * FROM testModel')
+      expect(services.all).toBeCalledWith('DB', 'ArrayJoin')
     })
   })
-  it('uses defaults on missing idKey', () => {
-    expect.assertions(1)
-    return TestModel.get('inp').then(() => {
-      expect(services.get).toBeCalledWith(
-        expect.anything(), expect.stringContaining('WHERE defId = ?'), expect.anything()
+  it('sends input to ArrayJoin', () => {
+    expect.assertions(2)
+    return TestModel.get('inp','data').then(() => {
+      expect(getArrayJoin).toBeCalledTimes(1)
+      expect(getArrayJoin).toBeCalledWith(
+        TestModel, [], { id: 'inp', idKey: 'data', idIsArray: false }
       )
     })
   })
@@ -154,8 +159,7 @@ describe('Model get', () => {
       expect(runAdapters).toBeCalledWith(
         'get',
         expect.objectContaining({ val: 'GET' }),
-        TestModel.schema,
-        TestModel.hidden
+        TestModel,
       )
     })
   })
@@ -187,12 +191,12 @@ describe('Model get', () => {
 describe('Model getPage', () => {
   const TestModel = new Model('testModel', definitions)
 
-  it('uses expected SQL', () => {
+  it('uses arrayJoin SQL + Limit/Offset', () => {
     expect.assertions(2)
     return TestModel.getPage(6,12).then(() => {
       expect(services.all).toBeCalledTimes(1)
       expect(services.all).toBeCalledWith(
-        'DB', 'SELECT * FROM testModel LIMIT ? OFFSET ?',
+        'DB', 'ArrayJoin LIMIT ? OFFSET ?',
         [12, 60]
       )
     })
@@ -202,7 +206,7 @@ describe('Model getPage', () => {
     return TestModel.getPage(6,12,true,'data').then(() => {
       expect(services.all).toBeCalledWith(
         expect.anything(),
-        'SELECT * FROM testModel ORDER BY data DESC LIMIT ? OFFSET ?',
+        'ArrayJoin ORDER BY testModel.data DESC LIMIT ? OFFSET ?',
         [12, 60]
       )
     })
@@ -212,7 +216,7 @@ describe('Model getPage', () => {
     return TestModel.getPage(6,12,false).then(() => {
       expect(services.all).toBeCalledWith(
         expect.anything(),
-        expect.stringContaining('ORDER BY defId ASC'),
+        expect.stringContaining('ORDER BY testModel.defId ASC'),
         expect.any(Array)
       )
     })
@@ -233,8 +237,8 @@ describe('Model getPage', () => {
     expect.assertions(3)
     return TestModel.getPage(6,12).then(() => {
       expect(runAdapters).toBeCalledTimes(2)
-      expect(runAdapters).toBeCalledWith('get', 'ALL', TestModel.schema, TestModel.hidden)
-      expect(runAdapters).toBeCalledWith('get', 'RES', TestModel.schema, TestModel.hidden)
+      expect(runAdapters).toBeCalledWith('get', 'ALL', TestModel)
+      expect(runAdapters).toBeCalledWith('get', 'RES', TestModel)
     })
   })
   it('returns case-insensitive objects', () => {
@@ -262,7 +266,7 @@ describe('Model find', () => {
     return TestModel.find({ data: 1, test: 2 }).then(() => {
       expect(services.all).toBeCalledTimes(1)
       expect(services.all).toBeCalledWith(
-        'DB', 'SELECT * FROM testModel WHERE data = ? AND test = ?', [1, 2]
+        'DB', 'ArrayJoin WHERE testModel.data = ? AND testModel.test = ?', [1, 2]
       )
     })
   })
@@ -271,7 +275,7 @@ describe('Model find', () => {
     return TestModel.find({ data: '1' }, true).then(() => {
       expect(services.all).toBeCalledTimes(1)
       expect(services.all).toBeCalledWith(
-        expect.anything(), expect.stringContaining('WHERE data LIKE ?'), ['%1%']
+        expect.anything(), expect.stringContaining('WHERE testModel.data LIKE ?'), ['%1%']
       )
     })
   })
@@ -280,7 +284,7 @@ describe('Model find', () => {
     return TestModel.find({ bit: 3 }, true).then(() => {
       expect(services.all).toBeCalledTimes(1)
       expect(services.all).toBeCalledWith(
-        expect.anything(), expect.stringContaining('WHERE bit & ?'), [3]
+        expect.anything(), expect.stringContaining('WHERE testModel.bit & ?'), [3]
       )
     })
   })
@@ -289,7 +293,7 @@ describe('Model find', () => {
     return TestModel.find({ bit: 0 }, true).then(() => {
       expect(services.all).toBeCalledTimes(1)
       expect(services.all).toBeCalledWith(
-        expect.anything(), expect.stringContaining('WHERE bit = ?'), [0]
+        expect.anything(), expect.stringContaining('WHERE testModel.bit = ?'), [0]
       )
     })
   })
@@ -299,7 +303,7 @@ describe('Model find', () => {
     return TestModel.find({ data: true }, true).then(() => {
       expect(services.all).toBeCalledTimes(1)
       expect(services.all).toBeCalledWith(
-        expect.anything(), expect.stringContaining('WHERE data = ?'), [1]
+        expect.anything(), expect.stringContaining('WHERE testModel.data = ?'), [1]
       )
     })
   })
@@ -308,7 +312,7 @@ describe('Model find', () => {
     return TestModel.find({ test: 7 }, true).then(() => {
       expect(services.all).toBeCalledTimes(1)
       expect(services.all).toBeCalledWith(
-        expect.anything(), expect.stringContaining('WHERE test = ?'), [7]
+        expect.anything(), expect.stringContaining('WHERE testModel.test = ?'), [7]
       )
     })
   })
@@ -317,7 +321,7 @@ describe('Model find', () => {
     return TestModel.find({ data: null }, true).then(() => {
       expect(services.all).toBeCalledTimes(1)
       expect(services.all).toBeCalledWith(
-        expect.anything(), expect.stringContaining('WHERE data = ?'), [null]
+        expect.anything(), expect.stringContaining('WHERE testModel.data = ?'), [null]
       )
     })
   })
@@ -326,7 +330,7 @@ describe('Model find', () => {
     return TestModel.find({ obj: [{a:1,b:2},{c:3}] }, true).then(() => {
       expect(services.all).toBeCalledTimes(1)
       expect(services.all).toBeCalledWith(
-        expect.anything(), expect.stringContaining('WHERE obj = ?'), ['[{"a":1,"b":2},{"c":3}]']
+        expect.anything(), expect.stringContaining('WHERE testModel.obj = ?'), ['[{"a":1,"b":2},{"c":3}]']
       )
     })
   })
@@ -340,16 +344,16 @@ describe('Model find', () => {
     expect.assertions(4)
     return TestModel.find({ data: 1 }).then(() => {
       expect(runAdapters).toBeCalledTimes(3)
-      expect(runAdapters).toBeCalledWith('get', 'ALL', TestModel.schema, TestModel.hidden)
-      expect(runAdapters).toBeCalledWith('get', 'RES', TestModel.schema, TestModel.hidden)
-      expect(runAdapters).toBeCalledWith('set', {data: 1}, TestModel.schema)
+      expect(runAdapters).toBeCalledWith('get', 'ALL', TestModel)
+      expect(runAdapters).toBeCalledWith('get', 'RES', TestModel)
+      expect(runAdapters).toBeCalledWith('set', {data: 1}, TestModel)
     })
   })
   it('sanitizes input data', () => {
     expect.assertions(2)
     return TestModel.find({ data: 1 }).then(() => {
       expect(sanitizeSchemaData).toBeCalledTimes(1)
-      expect(sanitizeSchemaData).toBeCalledWith({ data: 1 }, TestModel.schema)
+      expect(sanitizeSchemaData).toBeCalledWith({ data: 1 }, TestModel)
     })
   })
   it('returns case-insensitive objects', () => {
@@ -453,8 +457,8 @@ describe('Model batchAdd', () => {
   it('uses expected SQL for solo entry', () => {
     expect.assertions(2)
     return TestModel.batchAdd([{ data: 1, test: 2 }]).then(() => {
-      expect(services.run).toBeCalledTimes(1)
-      expect(services.run).toBeCalledWith(
+      expect(services.getLastEntry).toBeCalledTimes(1)
+      expect(services.getLastEntry).toBeCalledWith(
         'DB', 'INSERT INTO testModel(data,test) VALUES (?,?)',
         [1,2], expect.anything()
       )
@@ -463,8 +467,8 @@ describe('Model batchAdd', () => {
   it('uses expected SQL for multi entries', () => {
     expect.assertions(2)
     return TestModel.batchAdd([{ data: 1, test: 2 }, { data: 3, test: 4 }]).then(() => {
-      expect(services.run).toBeCalledTimes(1)
-      expect(services.run).toBeCalledWith(
+      expect(services.getLastEntry).toBeCalledTimes(1)
+      expect(services.getLastEntry).toBeCalledWith(
         'DB', 'INSERT INTO testModel(data,test) VALUES (?,?),(?,?)',
         [1,2,3,4], expect.anything()
       )
@@ -473,7 +477,7 @@ describe('Model batchAdd', () => {
   it('uses defaults on missing input fields', () => {
     expect.assertions(1)
     return TestModel.batchAdd([{}, {}]).then(() => {
-      expect(services.run).toBeCalledWith(
+      expect(services.getLastEntry).toBeCalledWith(
         expect.anything(),
         expect.stringContaining('(data)'),
         ['DEFAULT','DEFAULT'],
@@ -484,7 +488,7 @@ describe('Model batchAdd', () => {
   it('uses ifExistsBehavior from config', () => {
     expect.assertions(1)
     return TestModel.batchAdd([{ data: 1 }, { data: 2 }], 'test').then(() => {
-      expect(services.run).toBeCalledWith(
+      expect(services.getLastEntry).toBeCalledWith(
         expect.anything(),
         expect.stringContaining(' IF EXISTS BEHAVIOR'),
         expect.anything(),
@@ -517,16 +521,16 @@ describe('Model batchAdd', () => {
   it('uses setAdapter on input', () => {
     expect.assertions(3)
     return TestModel.batchAdd([{ data: 1 }, { data: 2 }]).then(() => {
-      expect(runAdapters).toBeCalledWith('set', { data: 1 }, TestModel.schema)
-      expect(runAdapters).toBeCalledWith('set', { data: 2 }, TestModel.schema)
+      expect(runAdapters).toBeCalledWith('set', { data: 1 }, TestModel)
+      expect(runAdapters).toBeCalledWith('set', { data: 2 }, TestModel)
       expect(runAdapters).toBeCalledTimes(2)
     })
   })
   it('sanitizes input data', () => {
     expect.assertions(3)
     return TestModel.batchAdd([{ data: 1 }, { data: 2 }]).then(() => {
-      expect(sanitizeSchemaData).toBeCalledWith({ data: 1 }, TestModel.schema)
-      expect(sanitizeSchemaData).toBeCalledWith({ data: 2 }, TestModel.schema)
+      expect(sanitizeSchemaData).toBeCalledWith({ data: 1 }, TestModel)
+      expect(sanitizeSchemaData).toBeCalledWith({ data: 2 }, TestModel)
       expect(sanitizeSchemaData).toBeCalledTimes(2)
     })
   })
@@ -541,15 +545,20 @@ describe('Model batchAdd', () => {
 
 
 describe('Model update', () => {
-  // NOTE: Requires service.get() in Model.count() to return truthy (See mock below)
   const TestModel = new Model('testModel', definitions)
+  
+  // NOTE: Requires Model.find() to return list of primaryIds
+  const findSpy = jest.spyOn(TestModel, 'find')
+  beforeEach(() => { findSpy.mockResolvedValueOnce([{ defId: 'id' }]) })
+  afterAll(() => { findSpy.mockRestore() })
 
   it('uses expected SQL', () => {
     expect.assertions(2)
     return TestModel.update('inp', { data: 1, test: 2 }, 'data').then(() => {
       expect(services.run).toBeCalledTimes(1)
-      expect(services.run).toBeCalledWith(
-        'DB', 'UPDATE testModel SET data = ?, test = ? WHERE data = ?', [1, 2, 'inp']
+      expect(services.run).toBeCalledWith('DB',
+        expect.stringMatching(/^UPDATE testModel SET data = \?, test = \?\s+WHERE data = \?$/),
+        [1, 2, 'inp']
       )
     })
   })
@@ -561,40 +570,34 @@ describe('Model update', () => {
       )
     })
   })
-  it('error if idKey not in Schema', async () => {
-    expect.assertions(1)
-    return TestModel.update('inp', { data: 1 }, 'badKey').catch((err) => {
-      expect(err).toEqual(errors.badKey('badKey',TestModel.title))
-    })
-  })
   it('expected return on success', () => {
     expect.assertions(1)
     return TestModel.update('inp', { data: 1 }, 'data').then((ret) => {
       expect(ret).toEqual({ success: true })
     })
   })
-  it('uses setAdapter on data', () => {
-    expect.assertions(2)
+  it('uses setAdapter on data & ID', () => {
+    expect.assertions(3)
     return TestModel.update('inp', { data: 1 }, 'data').then(() => {
-      expect(runAdapters).toBeCalledTimes(1)
-      expect(runAdapters).toBeCalledWith('set', { data: 1 }, TestModel.schema)
+      expect(runAdapters).toBeCalledTimes(2)
+      expect(runAdapters).toBeCalledWith('set', { data: 'inp' }, TestModel)
+      expect(runAdapters).toBeCalledWith('set', { data: 1 }, TestModel)
     })
   })
   it('sanitizes input data', () => {
-    expect.assertions(2)
+    expect.assertions(3)
     return TestModel.update('inp', { data: 1 }, 'data').then(() => {
-      expect(sanitizeSchemaData).toBeCalledTimes(1)
-      expect(sanitizeSchemaData).toBeCalledWith({ data: 1 }, TestModel.schema)
+      expect(sanitizeSchemaData).toBeCalledTimes(2)
+      expect(sanitizeSchemaData).toBeCalledWith({ data: 'inp' }, TestModel)
+      expect(sanitizeSchemaData).toBeCalledWith({ data: 1 }, TestModel)
     })
   })
   it('calls changeCb with before/after data', () => {
-    expect.assertions(4)
+    expect.assertions(3)
     const callback = jest.fn()
-    services.get.mockResolvedValueOnce({ data: 'old' })
     return TestModel.update('inp', { data: 'new' }, 'data', callback).then(() => {
       expect(callback).toBeCalledTimes(1)
-      expect(callback).toBeCalledWith({ data: 'new' }, { data: 'old' })
-      expect(runAdapters).toBeCalledTimes(1)
+      expect(callback).toBeCalledWith({ data: 'new' }, [{ defId: 'id' }]) // return from find
       expect(runAdapters).not.toBeCalledWith('get',expect.anything(),expect.anything())
     })
   })
@@ -626,27 +629,30 @@ describe('Model update', () => {
     expect.assertions(2)
     const callback = jest.fn(() => ({ newData: 'newVal' }))
     return TestModel.update('inp', { inputKey: 'inputVal' }, 'data', callback).then(() => {
-      expect(sanitizeSchemaData).toBeCalledTimes(2)
-      expect(sanitizeSchemaData).toBeCalledWith({ newData: 'newVal' }, TestModel.schema)
+      expect(sanitizeSchemaData).toBeCalledTimes(3)
+      expect(sanitizeSchemaData).toBeCalledWith({ newData: 'newVal' }, TestModel)
     })
   })
-  it('rejects on missing ID', () => {
+  it('rejects on missing ID', async () => {
+    await TestModel.find({})
     expect.assertions(1)
     return TestModel.update(null, { data: 1 }, 'data').catch((err) => {
       expect(err).toEqual(errors.noID())
     })
   })
-  it('rejects on no data', () => {
+  it('rejects on no data', async () => {
+    await TestModel.find({})
     expect.assertions(1)
     return TestModel.update('inp', {}, 'data').catch((err) => {
       expect(err).toEqual(errors.noData())
     })
   })
-  it('rejects on ID not found', () => {
-    services.get.mockResolvedValueOnce({})
+  it('rejects on ID not found', async () => {
+    await TestModel.find({})
+    findSpy.mockResolvedValueOnce([])
     expect.assertions(1)
-    return TestModel.update('inp', { data: 1}, 'data').catch((err) => {
-      expect(err).toEqual(errors.noEntry('inp'))
+    await TestModel.update('inp', { data: 1}, 'data').catch((err) => {
+      expect(err).toEqual(errors.noEntry(JSON.stringify({data:'inp'})))
     })
   })
 })
@@ -655,6 +661,9 @@ describe('Model update', () => {
 describe('Model remove', () => {
   // NOTE: Requires service.get() in Model.count() to return truthy (See mock below)
   const TestModel = new Model('testModel', definitions)
+
+  const countSpy = jest.spyOn(TestModel, 'count')
+  afterAll(() => { countSpy.mockRestore() })
 
   it('uses expected SQL', () => {
     expect.assertions(2)
@@ -692,7 +701,7 @@ describe('Model remove', () => {
     })
   })
   it('rejects on ID not found', () => {
-    services.get.mockResolvedValueOnce({})
+    countSpy.mockResolvedValueOnce(0)
     expect.assertions(1)
     return TestModel.remove('inp', 'data').catch((err) => {
       expect(err).toEqual(errors.noEntry('inp'))
@@ -728,8 +737,8 @@ describe('Model custom', () => {
     expect.assertions(3)
     return TestModel.custom('SQL','PARAMS',false).then(() => {
       expect(runAdapters).toBeCalledTimes(2)
-      expect(runAdapters).toBeCalledWith('get', 'ALL', TestModel.schema, TestModel.hidden)
-      expect(runAdapters).toBeCalledWith('get', 'RES', TestModel.schema, TestModel.hidden)
+      expect(runAdapters).toBeCalledWith('get', 'ALL', TestModel)
+      expect(runAdapters).toBeCalledWith('get', 'RES', TestModel)
     })
   })
   it('skips getAdapter when raw = true', () => {
@@ -858,11 +867,13 @@ jest.mock('../../services/db.services', () => ({
 jest.mock('../../services/model.services', () => ({
   getPrimaryIdAndAdaptSchema: jest.fn(() => 'defId'),
   runAdapters: jest.fn((_,data) => data),
+  extractArrays: jest.fn(() => ({})),
 }))
 
 jest.mock('../../utils/db.utils', () => ({
   checkInjection: jest.fn((o) => o),
   appendAndSort: jest.fn((list) => list),
+  getArrayJoin: jest.fn(() => 'ArrayJoin'),
 }))
 
 jest.mock('../../utils/common.utils', () => ({
@@ -873,10 +884,15 @@ jest.mock('../../utils/common.utils', () => ({
 jest.mock('../../utils/model.utils', () => ({
   isBool: jest.fn(() => false),
   sanitizeSchemaData: jest.fn((o) => o),
+  arrayTableRefs: jest.fn(() => 'arrayTableRefs'),
 }))
 
 jest.mock('../../utils/validate.utils', () => ({ parseBoolean: () => (val) => !!val }))
 jest.mock('../../config/models.cfg', () => ({
   adapterKey: { get: 'get', set: 'set' },
   ifExistsBehavior: { default: '', test: ' IF EXISTS BEHAVIOR' },
+  arrayLabel: { foreignId: 'foreign', index: 'index', entry: 'entry' },
+  getArrayName: (...args) => args.join(':'),
+  getArrayPath: () => 'ArrayPath',
+  CONCAT_DELIM: '!'
 }))
