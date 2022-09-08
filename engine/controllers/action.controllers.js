@@ -13,10 +13,10 @@ const errors = require('../config/errors.engine')
 
 const { config } = require('../src.path')
 const { actions } = require(config+'gui.cfg')
-const urls = require(config+'urls.cfg').gui
+const urls = require(config+'urls.cfg')
 
-exports.login  = login(urls.basic.prefix + urls.basic.home, urls.root.login)
-exports.logout = logout(urls.root.login)
+exports.login  = login(urls.landingPage.login, urls.landingPage.logout)
+exports.logout = logout(urls.landingPage.logout)
 
 exports.swap = require('./api.controllers').swap
 
@@ -38,7 +38,7 @@ exports.form = function getFormController(Model, { redirectURL = '', formatData 
     catch (err) { return next(err) }
 
     return formActions[action](formData).then((url) => res.redirect(
-        (redirectURL || `${urls.basic.prefix}${urls.basic.home}/${Model.url}`) +
+        (redirectURL || `${urls.gui.basic.prefix}${urls.gui.basic.home}/${Model.url}`) +
         (url || _pageData || '')
     )).catch(next)
   }
@@ -46,19 +46,19 @@ exports.form = function getFormController(Model, { redirectURL = '', formatData 
 
 exports.adminForm = exports.form(Users, {
   formatData: adminFormAdapter,
-  redirectURL: urls.admin.prefix+urls.admin.user,
+  redirectURL: urls.gui.admin.prefix+urls.gui.admin.user,
 })
 
 exports.userForm = exports.form(Users, {
   formatData: userFormAdapter,
-  redirectURL: urls.basic.prefix+urls.basic.user,
+  redirectURL: urls.gui.basic.prefix+urls.gui.basic.user,
 })
 
 
 const restartParams = (req) => ({
   title: 'Restarting server...',
   seconds: restartTimeout,
-  url: `${urls.admin.prefix}${urls.admin.home}`,
+  url: urls.landingPage.admin,
   user: req.user && req.user.username,
   isAdmin: req.user && hasAccess(req.user.access, access.admin),
 })
@@ -75,7 +75,7 @@ exports.settingsForm = (req,res,next) => {
   return settingsActions[_action](settings, req.session)
     .then((restart) => {
       if (typeof restart !== 'function')
-        return res.redirect(`${urls.admin.prefix}${urls.admin.home}${_pageData || ''}`)
+        return res.redirect(`${urls.landingPage.admin}${_pageData || ''}`)
       res.render('delay', restartParams(req))
       restart()
     }).catch(next)

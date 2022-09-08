@@ -29,9 +29,16 @@ gui = Object.freeze({
     find: '/results',
     token: '/regenToken',
   }),
-}),
+})
 
-jquery = Object.freeze({
+export const landingPage = Object.freeze({
+  gui:   gui.basic.prefix + gui.basic.home,
+  admin: gui.admin.prefix + gui.admin.home,
+  login: gui.basic.prefix + gui.basic.home,
+  logout: gui.root.login,
+})
+
+export const jquery = Object.freeze({
   // src: "/javascripts/jquery-3.6.0.min.js", // Local copy
   src: "https://code.jquery.com/jquery-3.6.0.min.js",
   integrity: "sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=",

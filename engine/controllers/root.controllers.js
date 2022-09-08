@@ -2,11 +2,11 @@ const Users = require('../models/Users')
 const { forwardOnAuth } = require('../middleware/auth.middleware')
 const { access } = require('../config/users.cfg')
 const { isPm2 } = require('../config/meta')
-const urls = require(require('../src.path').config+'urls.cfg').gui
+const urls = require(require('../src.path').config+'urls.cfg').landingPage
 
 exports.loginPage = [
-  forwardOnAuth(urls.basic.prefix + urls.basic.home, access.gui),
-  forwardOnAuth(urls.admin.prefix + urls.admin.home, access.admin),
+  forwardOnAuth(urls.gui,   access.gui),
+  forwardOnAuth(urls.admin, access.admin),
 
   (req, res) => Users.count().then((isUser) => 
     res.render('login', {
@@ -15,7 +15,7 @@ exports.loginPage = [
       isUser: isPm2 || isUser,
       schema: Users.schema,
       failureMessage: req.flash('error'),
-      postURL: urls.root.login,
+      postURL: urls.logout,
       csrfToken: req.csrfToken && req.csrfToken(),
     })
   ),

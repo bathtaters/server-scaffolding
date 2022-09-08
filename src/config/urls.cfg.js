@@ -30,6 +30,13 @@ module.exports = {
     },
   },
 
+  landingPage: {
+    gui:   '/gui/db',
+    admin: '/admin/settings',
+    login: '/gui/db',
+    logout: '/login',
+  },
+
   jquery: {
     // src: "/javascripts/jquery-3.6.0.min.js", // Local copy
     src: "https://code.jquery.com/jquery-3.6.0.min.js",
