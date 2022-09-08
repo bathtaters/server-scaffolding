@@ -29,8 +29,8 @@ exports.parseTypeStr = (settings, overwrite = false) => {
 exports.isBool = ({ type, isArray }) => type === 'boolean' && !isArray
 
 
-exports.sanitizeSchemaData = (data, { schema={}, arrays={} } = {}) => {
-  const validKeys = Object.keys(schema).filter((key) => schema[key].db).concat(Object.keys(arrays))
+exports.sanitizeSchemaData = (data, { schema, arrays={} } = {}) => {
+  const validKeys = schema && Object.keys(schema).filter((key) => schema[key].db).concat(Object.keys(arrays))
   return Object.keys(data).reduce((obj,key) =>
     !validKeys || validKeys.includes(key) ? Object.assign(obj, { [key]: data[key] }) : obj
   , {})
@@ -86,19 +86,21 @@ exports.getAdapterFromType = ({ type, isArray, isBitmap }) => {
       break
     case 'date':
     case 'datetime':
-      adapter = (num) => num && new Date(num)
+      adapter = (num) => num && new Date(+num)
       break
     case 'boolean':
-      adapter = (int) => int == null ? null : int !== 0
+      adapter = (int) => int == null ? null : +int !== 0
       break
   }
 
   if (isArray) {
     const entryGet = adapter
     adapter = entryGet ? 
-      (text) => typeof text === 'string' ? text.split(CONCAT_DELIM).map(entryGet) : Array.isArray(text) ? text : null
+      (text) => typeof text === 'string' && text ? text.split(CONCAT_DELIM).map(entryGet) :
+        Array.isArray(text) ? text.map(entryGet) : null
       : 
-      (text) => typeof text === 'string' ? text.split(CONCAT_DELIM) : Array.isArray(text) ? text : null
+      (text) => typeof text === 'string' && text ? text.split(CONCAT_DELIM) :
+        Array.isArray(text) ? text : null
   }
 
   return adapter
