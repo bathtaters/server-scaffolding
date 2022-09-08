@@ -42,7 +42,7 @@ export default class Model<Schema extends object> {
     let dbSchema = { [this.title]: filterByField(this.schema, 'db') },
     indexes: { [key: string]: string[] } = {},
     refs: ForeignKeyRef = {}
-
+    
     if (!this.isArrayTable) Object.keys(this.arrays).forEach((key) => {
       const table = getArrayName(this.title, key)
       dbSchema[table] = filterByField(this.arrays[key], 'db')
@@ -94,7 +94,7 @@ export default class Model<Schema extends object> {
   }
 
 
-  async find(matchData: Partial<Schema>, partialMatch?: boolean, orderKey?: keyof Schema): Promise<Schema[]> {
+  async find(matchData: Partial<Schema>, partialMatch?: boolean, orderKey?: keyof Schema, raw: boolean = false): Promise<Schema[]> {
     matchData = await runAdapters(adapterKey.set, matchData, this)
     matchData = sanitizeSchemaData(matchData, this)
 
@@ -107,35 +107,35 @@ export default class Model<Schema extends object> {
     let text: string[] = [], params: any[] = []
     searchData.forEach(([key,val]) => {
       if (!partialMatch) {
-        text.push(`${key} = ?`)
+        text.push(`${this.title}.${key} = ?`)
         return params.push(val)
         
       } if (this.schema[key].isBitmap) {
         const num = +val
-        text.push(`${key} ${num ? '&' : '='} ?`)
+        text.push(`${this.title}.${key} ${num ? '&' : '='} ?`)
         return params.push(num)
 
       } if (isBool(this.schema[key])) {
-        text.push(`${key} = ?`)
+        text.push(`${this.title}.${key} = ?`)
         return params.push(+parseBool(val))
 
       } if (typeof val === 'string') {
-        text.push(`${key} LIKE ?`)
+        text.push(`${this.title}.${key} LIKE ?`)
         return params.push(`%${val}%`)
       }
       // DEFAULT
-      text.push(`${key} = ?`)
+      text.push(`${this.title}.${key} = ?`)
       if (!val || typeof val === 'number') params.push(val)
       else params.push(JSON.stringify(val))
     })
     
     const result = await services.all(getDb(), 
       `${getArrayJoin(this, Object.keys(this.arrays))} WHERE ${text.join(' AND ')}${
-        !orderKey ? '' : ` ORDER BY ${orderKey || this.primaryId}`
+        !orderKey ? '' : ` ORDER BY ${this.title}.${orderKey || this.primaryId}`
       }`,
     params).then((res: Schema[]) => res.map(caseInsensitiveObject))
 
-    return Promise.all(result.map((data: Schema) => runAdapters(adapterKey.get, data, this)))
+    return raw ? result : Promise.all(result.map((data: Schema) => runAdapters(adapterKey.get, data, this)))
   }
 
 
@@ -184,6 +184,7 @@ export default class Model<Schema extends object> {
 
     for (const key of arrayKeys) {
       const entries = dataArray.filter((data) => data[key] && data[key].length)
+      if (!entries.length) continue
 
       await services.run(getDb(),
         `INSERT${ifExists ? ifExistsBehavior[ifExists] : ifExistsBehavior.default} INTO ${getArrayName(this.title, key)}(${
@@ -203,22 +204,19 @@ export default class Model<Schema extends object> {
 
   async update(id: Schema[keyof Schema], data: Partial<Schema>, idKey?: string, onChangeCb?: ChangeCallback<Schema>): Promise<Feedback> {
     if (id == null) throw errors.noID()
-    return this.batchUpdate({ [idKey || this.primaryId]: id }, data, onChangeCb)
+    return this.batchUpdate({ [idKey || this.primaryId]: id }, data, false, onChangeCb)
   }
 
-  async batchUpdate(matching: Partial<Schema>, updates: Partial<Schema>, onChangeCb?: ChangeCallback<Schema>): Promise<Feedback> {
+  async batchUpdate(matching: Partial<Schema>, updates: Partial<Schema>, partialMatch: boolean = false, onChangeCb?: ChangeCallback<Schema>): Promise<Feedback> {
     matching = await runAdapters(adapterKey.set, matching, this)
     matching = sanitizeSchemaData(matching, this)
     if (!Object.keys(matching).length) throw errors.noID()
 
     updates = await runAdapters(adapterKey.set, updates, this)
     updates = sanitizeSchemaData(updates, this)
+    if (!Object.keys(updates).length) throw errors.noData()
 
-    const arrayKeys = Object.keys(this.arrays).filter((key) => key in updates)
-    const tableKeys = Object.keys(updates).filter((key) => !arrayKeys.includes(key))
-    if (!tableKeys.length && !arrayKeys.length) throw errors.noData()
-
-    const current = await this.find(matching, true)
+    const current = await this.find(matching, partialMatch, null, true)
     const ids = current.map((entry) => entry[this.primaryId]).filter((id) => id != null)
     if (!ids.length) throw errors.noEntry(JSON.stringify(matching))
 
@@ -226,8 +224,11 @@ export default class Model<Schema extends object> {
       const updated = await onChangeCb(updates, current)
       if (updated) updates = updated
       updates = sanitizeSchemaData(updates, this)
-      if (!Object.keys(updates).length) throw errors.noData()
     }
+
+    const arrayKeys = Object.keys(this.arrays).filter((key) => key in updates)
+    const tableKeys = Object.keys(updates).filter((key) => !arrayKeys.includes(key))
+    if (!tableKeys.length && !arrayKeys.length) throw errors.noData('update data after onChangeCallback')
 
     // DB Updates
     
