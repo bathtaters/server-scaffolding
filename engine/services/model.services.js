@@ -59,13 +59,13 @@ exports.runAdapters = async (adapterType, data, { schema, hidden }) => {
 
 const getIndexDef = ({ limits }) => adaptSchemaEntry({
   typeStr: 'int',
-  limits: limits.elem || limits.array ? limits.array : limits,
+  limits: limits && (limits.elem || limits.array) ? limits.array : limits,
 })
 
 const stripArrayDef = ({ typeStr, limits, isHTML }) => adaptSchemaEntry({
   isHTML,
   typeStr: (typeStr || definition.type).replace('[]',''),
-  limits: limits.elem || limits.array ? limits.elem : limits
+  limits: limits && (limits.elem || limits.array) ? limits.elem : undefined
 })
 
 const stripPrimaryDef = ({ db, isPrimary, isOptional, ...definition }) => ({
