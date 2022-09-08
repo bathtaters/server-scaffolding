@@ -5,7 +5,9 @@ const buildArgs = require('./httpArgs.mock')
 const errors = require('../../config/errors.engine')
 
 const [ catchMissing, normalizeError, sendAsJSON ] = json, sendAsHTML = html[2]
-const defaultError = errors.unknown(), error404 = errors.missing()
+const defaultError = errors.unknown(), error404 = errors.missing(),
+  csrfError = errors.noCSRF(), sessionError = errors.noSession()
+const noCSRF = { code: 'EBADCSRFTOKEN' }
 
 describe('catchMissing', () => {
  const args = buildArgs()
@@ -84,6 +86,15 @@ describe('normalizeError', () => {
     normalizeError(null, ...args)
     expect(args[1].status).toBeCalledTimes(1)
     expect(args[1].status).toBeCalledWith('STATUS')
+  })
+  it('missing session error', () => {
+    normalizeError(noCSRF, ...args)
+    expect(args[0].error).toEqual(sessionError)
+  })
+  it('missing CSRF error', () => {
+    const sessionArgs = buildArgs({ session: true })
+    normalizeError(noCSRF, ...sessionArgs)
+    expect(sessionArgs[0].error).toEqual(csrfError)
   })
 })
 
