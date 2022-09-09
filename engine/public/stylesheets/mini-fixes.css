@@ -128,14 +128,14 @@ textarea:invalid, textarea:invalid:focus, textarea:invalid:focus-visible, select
 .button-input > .button-group > input[type="submit"]:not(:only-child),
 .button-input > .button-group > input[type="reset"]:not(:only-child),
 .button-input > .button-group > button:not(:only-child) {
-  max-width: max-content;
+  flex-grow: 0;
 }
 @media screen and (max-width: 767px) {
   .button-input > .button-group > input[type="button"]:not(:only-child),
   .button-input > .button-group > input[type="submit"]:not(:only-child),
   .button-input > .button-group > input[type="reset"]:not(:only-child),
   .button-input > .button-group > button {
-    max-width: initial;
+    flex-grow: 1;
   }
 }
 
