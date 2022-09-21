@@ -3,6 +3,7 @@ const { checkSchema } = require('express-validator')
 const { filterDupes } = require('../../utils/common.utils')
 const { generateSchema, appendToSchema } = require('../../services/validate.services')
 const { deepCopy } = require('../test.utils')
+const { adaptSchemaEntry } = require('../../services/model.services')
 
 const inputValues = [
   {
@@ -29,21 +30,51 @@ const inputValues = [
 // -- BY OBJECT tests -- //
 
 describe('byObject', () => {
-  it('uses appendToSchema', () => {
-    shared.byObject('TEST')
-    expect(appendToSchema).toBeCalledTimes(1)
-    expect(appendToSchema).toBeCalledWith(expect.anything(), 'TEST')
+  it('uses adaptSchemaEntry', () => {
+    shared.byObject({ a: { val: 1 }, b: { val: '2' }})
+    expect(adaptSchemaEntry).toBeCalledTimes(2)
+    expect(adaptSchemaEntry).toBeCalledWith({ val: 1 })
+    expect(adaptSchemaEntry).toBeCalledWith({ val: '2' })
   })
-  it('passes result to checkSchema', () => {
+  it('uses appendToSchema', () => {
+    shared.byObject({ a: { val: 1 }, b: { val: '2' }})
+    expect(appendToSchema).toBeCalledTimes(1)
+    expect(appendToSchema).toBeCalledWith(expect.anything(), [
+      expect.objectContaining({ key: 'a' }),
+      expect.objectContaining({ key: 'b' }),
+    ])
+  })
+  it('uses isIn for each entry', () => {
+    shared.byObject({ a: { val: 1 }, b: { val: '2' }}, ['IN'])
+    expect(appendToSchema).toBeCalledWith(expect.anything(), [
+      expect.objectContaining({ isIn: ['IN'] }),
+      expect.objectContaining({ isIn: ['IN'] }),
+    ])
+  })
+  it('forces optional', () => {
+    shared.byObject({ a: { val: 1 }, b: { val: '2' }}, ['IN'], { forceOptional: true })
+    expect(appendToSchema).toBeCalledWith(expect.anything(), [
+      expect.objectContaining({ isOptional: true }),
+      expect.objectContaining({ isOptional: true }),
+    ])
+  })
+  it('concats additional', () => {
+    shared.byObject({ a: { val: 1 }, b: { val: '2' }}, ['IN'], { additional: ['addit','ional'] })
+    expect(appendToSchema).toBeCalledWith(expect.anything(), [
+      expect.any(Object),
+      expect.any(Object),
+      'addit', 'ional'
+    ])
+  })
+  it('passes appendToSchema result to checkSchema', () => {
     appendToSchema.mockReturnValueOnce('RESULT')
-    shared.byObject('TEST')
+    shared.byObject({ a: { val: 1 }, b: { val: '2' }})
     expect(checkSchema).toBeCalledWith('RESULT')
   })
   it('includes checkValidation & arraySchema', () => {
-    expect(shared.byObject('TEST'))
-      .toEqual(expect.arrayContaining(['checkValidation']))
-    expect(shared.byObject('TEST'))
-      .toEqual(expect.arrayContaining(['arraySchema']))
+    const ret = shared.byObject({ a: { val: 1 }, b: { val: '2' }})
+    expect(ret).toEqual(expect.arrayContaining(['checkValidation']))
+    expect(ret).toEqual(expect.arrayContaining(['arraySchema']))
   })
 })
 
@@ -330,6 +361,9 @@ jest.mock('express-validator', () => ({ checkSchema: jest.fn((r)=>[r]) }))
 jest.mock('../../middleware/validate.middleware', () => 'checkValidation')
 jest.mock('../../utils/common.utils', () => ({ filterDupes: jest.fn((o)=>o) }))
 jest.mock('../../utils/validate.utils', () => ({ toArraySchema: () => 'arraySchema' }))
+jest.mock('../../services/model.services', () => ({
+  adaptSchemaEntry: jest.fn((obj) => obj),
+}))
 jest.mock('../../services/validate.services', () => ({
   generateSchema: jest.fn((key)=>({ [key]: true })),
   appendToSchema: jest.fn((obj) => obj),

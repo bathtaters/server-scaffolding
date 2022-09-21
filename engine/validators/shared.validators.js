@@ -3,18 +3,26 @@
 const { checkSchema } = require('express-validator')
 const checkValidation = require('../middleware/validate.middleware')
 const { generateSchema, appendToSchema } = require('../services/validate.services')
+const { adaptSchemaEntry } = require('../services/model.services')
 const { toArraySchema } = require('../utils/validate.utils')
 const { filterDupes } = require('../utils/common.utils')
 
 const toMiddleware = (validationSchema) => checkSchema(toArraySchema(validationSchema)).concat(checkSchema(validationSchema)).concat(checkValidation)
 
 /**
- * Get validation middleware using custom options
- * @param {CustomValidation[]} objectArray - array of objects containing custom validation options
+ * Get validation middleware using custom schema
+ * @param {Object.<string, import('../models/Model.engine').ModelDefinition>} schema - Model-type schema
+ * @param {string[]} [isIn] - data type in request object (body|params|query)
+ * @param {object} [options] - Additional options
+ * @param {boolean} [options.forceOptional=false] - force all data to be optional
+ * @param {CustomValidation[]} [options.additional=[]] - Additional validation to append to model validation
  * @returns {function[]} Validation Middleware
  */
-exports.byObject = (objectArray) => toMiddleware(appendToSchema({}, objectArray))
-
+exports.byObject = (schema, isIn = ['body'], { forceOptional = false, additional = [] } = {}) => toMiddleware(
+  appendToSchema({}, Object.entries(schema).map(([key, val]) => ({
+    key, isIn, ...adaptSchemaEntry(forceOptional ? { ...val, isOptional: true } : val)
+  })).concat(additional))
+)
 
 /**
  * Fetch validation middleware using associated Model types & limits (also removes any keys in params from body)

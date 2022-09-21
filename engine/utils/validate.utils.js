@@ -3,15 +3,15 @@ const { boolOptions } = require('../config/validate.cfg')
 const { splitUnenclosed } = require('../utils/common.utils')
 
 // Get validation & limits from html object { key, type, limits }
-const html2Valid = ({ type, limits }, key, isIn = 'body') => ({
-  key, isIn,
+const html2Valid = ({ type, limits }) => ({
   typeStr: type === 'number' ? 'int' : 'string',
   limits: limits || (Array.isArray(type) && type.length && {
     min: Math.min(...type.map((str) => String(str).length || 0)),
     max: Math.max(...type.map((str) => String(str).length || 0)),
   })
 })
-exports.formSettingsToValidate = (settings, isIn = 'body') => Object.entries(settings).map(([key, { html }]) => html2Valid(html, key, isIn))
+exports.formSettingsToValidate = (settings) => Object.entries(settings)
+  .reduce((valid, [key, { html }]) => Object.assign(valid, { [key]: html2Valid(html) }), {})
 
 // Boolean validation
 const allBools    = boolOptions.true.concat(boolOptions.false)

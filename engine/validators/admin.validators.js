@@ -10,8 +10,8 @@ Object.keys(definitions).forEach((field) => { if (definitions[field].html !== fa
 
 module.exports = {
   page, token,
-  logs: byObject([{ key: 'filename', typeStr: 'string*', isIn: ['params'] }]),
-  settings: byObject(formAdditional.concat(formSettingsToValidate(settings, 'body'))),
+  logs: byObject({ filename: { typeStr: 'string*' } }, ['params']),
+  settings: byObject(formSettingsToValidate(settings), ['body'], { additional: formAdditional }),
   find: find(Users, searchableKeys),
   user: (action) => form(Users, action, formFields, searchableKeys),
 }

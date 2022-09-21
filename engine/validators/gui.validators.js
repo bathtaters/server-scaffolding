@@ -9,10 +9,10 @@ const formAdditional = [
   { key: '_searchMode', typeStr: 'boolean?', isIn: 'body' },
 ]
 
-const pageAdditional = [
-  { key: 'page', typeStr: 'int?', isIn: 'query', limits: { min: 1 } },
-  { key: 'size', typeStr: 'int?', isIn: 'query', limits: { min: 1 } },
-]
+const pageAdditional = {
+  page: { typeStr: 'int?', limits: { min: 1 } },
+  size: { typeStr: 'int?', limits: { min: 1 } },
+}
 
 const profileFields = { [Users.primaryId]: Users.primaryId, username: 'username', password: 'password', confirm: 'password' }
 
@@ -32,7 +32,7 @@ module.exports = {
   form:    (Model, action, formFields = 'all', findFields = null) => byModel(Model, ...actionOptions(Model, action, formFields, findFields)),
   profile: (action) => byModel(Users, ...actionOptions(Users, action, profileFields)),
   find:    (Model, formFields = 'all') => byModel(Model, formFields, { allowPartials: true, asQueryStr: true }),
-  page:    byObject(pageAdditional),
+  page:    byObject(pageAdditional, ['query']),
   token:   byModel(Users, [Users.primaryId], { optionalBody: false }),
   formAdditional, pageAdditional,
 }
