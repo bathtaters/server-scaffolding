@@ -32,6 +32,9 @@ $( 'tr.tableRow' ).on('click', function() {
         case 'datetime-local':
           elem.val(val && new Date(val + ' Z').toJSON().substring(0,16));
           break;
+        case 'number':
+          elem.val(val.replace(/[^\d\.]/g,''));
+          break;
         default:
           elem.val(val);
       }
