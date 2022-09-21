@@ -2,7 +2,7 @@ const { parseTypeStr, dbFromType, htmlFromType, getAdapterFromType, setAdapterFr
 const { hasDupes } = require('../utils/common.utils')
 const { defaultPrimary, defaultPrimaryType, adapterKey, arrayLabel, SQL_ID } = require('../config/models.cfg')
 
-function adaptSchemaEntry(settings) {
+exports.adaptSchemaEntry = function (settings) {
   if (!settings.type && settings.typeStr) parseTypeStr(settings)
   if (!settings.type && settings.isPrimary)
     Object.entries(defaultPrimaryType).forEach(([key,val]) => { settings[key] = val })
@@ -26,14 +26,14 @@ exports.getPrimaryIdAndAdaptSchema = function (schema, title = 'model', isArray 
       if (settings.isArray) throw new Error(`Array cannot be primary ID: ${title}.${key}`)
       primaryId = key
     }
-    adaptSchemaEntry(settings)
+    exports.adaptSchemaEntry(settings)
   })
 
   if (!primaryId) {
     primaryId = isArray ? SQL_ID : defaultPrimary
     schema[primaryId] = { ...defaultPrimaryType, ...(schema[primaryId] || {}), isPrimary: true }
     delete schema[primaryId].db
-    adaptSchemaEntry(schema[primaryId])
+    exports.adaptSchemaEntry(schema[primaryId])
   }
 
   if (!Object.values(schema).filter(({ db }) => db).length)
@@ -57,12 +57,12 @@ exports.runAdapters = async (adapterType, data, { schema, hidden }) => {
 }
 
 
-const getIndexDef = ({ limits }) => adaptSchemaEntry({
+const getIndexDef = ({ limits }) => exports.adaptSchemaEntry({
   typeStr: 'int',
   limits: limits && (limits.elem || limits.array) ? limits.array : limits,
 })
 
-const stripArrayDef = ({ typeStr, limits, isHTML }) => adaptSchemaEntry({
+const stripArrayDef = ({ typeStr, limits, isHTML }) => exports.adaptSchemaEntry({
   isHTML,
   typeStr: (typeStr || definition.type).replace('[]',''),
   limits: limits && (limits.elem || limits.array) ? limits.elem : undefined
