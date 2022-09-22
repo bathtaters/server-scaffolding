@@ -9,6 +9,7 @@ module.exports = {
   trustProxy: isTest || decodeTrustProxy(process.env.TRUST_PROXY || require('./settings.cfg').definitions.TRUST_PROXY.default),
   isSecure: !isTest && (process.env.NODE_ENV === 'production' ? productionIsSecure : useLocalCert),
   csrfEnable: !isTest && true,
+  preflightCors: { origin: '*' }, 
   useLocalCert,
   
   gracefulExitOptions: {
