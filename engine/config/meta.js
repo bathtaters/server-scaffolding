@@ -5,10 +5,11 @@ const pkgCfg = pkg.config || {}
 
 // Set Project Path (NOTE: Update if this file moves!)
 const rootPath = join(__dirname,'..','..')
-settings.updateRootPath(rootPath)
+const staticRootPath = rootPath.replace(/\/built$/,'')
+settings.updateRootPath(staticRootPath)
 
 // Load .ENV file
-const envPath = join(rootPath, '.env')
+const envPath = join(staticRootPath, '.env')
 require('dotenv').config({ path: envPath })
 
 // Determine port
@@ -30,8 +31,8 @@ module.exports = {
 
   port: getPort(),
   isPm2: 'NODE_APP_INSTANCE' in process.env,
-  rootPath, envPath,
+  rootPath, staticRootPath, envPath,
   dbPath:  join(process.env.DB_DIR  || settings.definitions.DB_DIR.default,  'database.db'),
   logPath: join(process.env.LOG_DIR || settings.definitions.LOG_DIR.default, `${pkg.name || 'server'}_%DATE%.log`),
-  credPath: { key: join(rootPath,'.key.pem'), cert: join(rootPath,'.cert.pem') },
+  credPath: { key: join(staticRootPath,'.key.pem'), cert: join(staticRootPath,'.cert.pem') },
 }

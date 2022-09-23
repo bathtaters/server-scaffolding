@@ -1,11 +1,11 @@
 const RegEx = require('../libs/regex')
 
-const updateRootPath = (rootPath) => {
+const updateRootPath = (staticRootPath) => {
   const regex = { path: RegEx(/%PATH%/g), root: RegEx(/^\.\//) }
   module.exports.definitions.DB_DIR.tooltip  = module.exports.definitions.DB_DIR.tooltip.replace( regex.path, module.exports.definitions.DB_DIR.default)
   module.exports.definitions.LOG_DIR.tooltip = module.exports.definitions.LOG_DIR.tooltip.replace(regex.path, module.exports.definitions.LOG_DIR.default)
-  module.exports.definitions.DB_DIR.default  = module.exports.definitions.DB_DIR.default.replace( regex.root, rootPath + '/')
-  module.exports.definitions.LOG_DIR.default = module.exports.definitions.LOG_DIR.default.replace(regex.root, rootPath + '/')
+  module.exports.definitions.DB_DIR.default  = module.exports.definitions.DB_DIR.default.replace( regex.root, staticRootPath + '/')
+  module.exports.definitions.LOG_DIR.default = module.exports.definitions.LOG_DIR.default.replace(regex.root, staticRootPath + '/')
 }
 
 module.exports = {
