@@ -10,7 +10,7 @@ const updateRootPath = (staticRootPath) => {
 
 module.exports = {
   updateRootPath,
-  restartTimeout: 5,
+  restartTimeout: 12,
   fileReadDebounceMs: 3000, // 0 = no debouncing, -1 = only read file after update
 
   definitions: {
