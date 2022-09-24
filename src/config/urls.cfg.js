@@ -37,6 +37,9 @@ module.exports = {
     logout: '/login',
   },
 
+  // Add URL to force 301 redirect instead of using index.pug splash page
+  overrideSplash: null,
+
   jquery: {
     // src: "/javascripts/jquery-3.6.0.min.js", // Local copy
     src: "https://code.jquery.com/jquery-3.6.0.min.js",
