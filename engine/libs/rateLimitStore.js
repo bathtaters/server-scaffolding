@@ -5,6 +5,7 @@ const logger = require('./log')
 const services = require('../services/db.services')
 const { throttle } = require('../utils/common.utils')
 const { cleanupRateLimiter } = require('../config/server.cfg')
+const { isRootInstance } = require('../config/meta')
 
 class SQLiteStore {
 
@@ -23,6 +24,7 @@ class SQLiteStore {
 		
     var self = this
 		this.promise.then(function() {
+			if (!isRootInstance) return
 			dbCleanup(self, true)
 			setInterval(dbCleanup, cleanupRateLimiter, self).unref()
 		})

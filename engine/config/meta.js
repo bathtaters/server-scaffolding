@@ -31,6 +31,7 @@ module.exports = {
 
   port: getPort(),
   isPm2: 'NODE_APP_INSTANCE' in process.env,
+  isRootInstance: isNaN(process.env.NODE_APP_INSTANCE) || !(+process.env.NODE_APP_INSTANCE),
   rootPath, staticRootPath, envPath,
   dbPath:  join(process.env.DB_DIR  || settings.definitions.DB_DIR.default,  'database.db'),
   logPath: join(process.env.LOG_DIR || settings.definitions.LOG_DIR.default, `${pkg.name || 'server'}_%DATE%.log`),
