@@ -20,7 +20,7 @@ module.exports = {
     module.exports.app = app
 
     addListeners(closeEvents, closeHandler(module.exports))
-    process.env.NODE_ENV === 'development' && addListeners(errorEvents, errorHandler(module.exports))
+    process.env.NODE_ENV !== 'production' && addListeners(errorEvents, errorHandler(module.exports))
     
     // Globals
     app.locals.appTitle = title
