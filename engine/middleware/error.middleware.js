@@ -39,7 +39,7 @@ const sendAsHTML = (req, res) => res.render('error', {
   title: 'Error',
   user: req.user && req.user.username,
   isAdmin: req.user && hasAccess(req.user.access, access.admin),
-  showStack: process.env.NODE_ENV === 'development',
+  showStack: process.env.NODE_ENV !== 'production',
   header: varName(req.error.name).trim(),
   error: req.error,
 })

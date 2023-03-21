@@ -29,7 +29,7 @@ exports.getCreds = async ({ key, cert }) => {
     if (cert) creds.cert = await fs.readFile(cert, 'utf8')
   } catch (err) { logger.error(err) }
 
-  if (!creds.key || !creds.cert) throw missingCreds(process.env.NODE_ENV === 'development')
+  if (!creds.key || !creds.cert) throw missingCreds(process.env.NODE_ENV !== 'production')
   return creds
 }
 

@@ -11,7 +11,7 @@ Includes ***Passport*** session authentication, ***Morgan*** console/file loggin
  1. Update `package.json` info (ie. `name`, `version`, `author`, `license`, `repository`)
  2. Create `.env` file _(see below guide)_
  3. Run `npm -g i nodemon` _(if you don't have nodemon)_
- 4. Run `npm run dev-cert` _(or disable secure dev environment in engine/config/server.cfg.isSecure)_
+ 4. Run `npm run dev-cert` _(only needed if using `.env:NODE_ENV=secure-dev`)_
  5. Run server `npm run dev` & navigate to `[DOMAIN]/login/` in browser _(if blocked by browser, type `thisisunsafe` anywhere on the page)_
  6. Enter credentials to create an initial ***admin*** _(Must be done in `run dev` mode)_
  7. Navigate to ***Users*** to setup users/permissions
@@ -43,8 +43,8 @@ Copy `.env.demo.dev`/`.prod` and rename to `.env` as a starting point depending 
 Update DB_SECRET before running (Changing this will make the entire database inaccessible).
 
 ##### _Can also be set via `/admin/settings`. Defaults are in [brackets]._
-```shell
-NODE_ENV=[development]|production|test
+```ini
+NODE_ENV=[development]|secure-dev|production|test
 port=[8080]
 LOG_CONSOLE=verbose|http|[info]|warn|error|none
 LOG_FILE=verbose|http|info|[warn]|error|none
@@ -55,6 +55,7 @@ DB_SECRET=[secret]
 DB_DIR=[<project-dir>/.db]
 LOG_DIR=[<project-dir>/.logs]
 ```
+##### Using `NODE_ENV=secure-dev` will enable https using local certificate _(generate w/ `npm run dev-cert`)_
 
 ---
 

@@ -16,7 +16,7 @@ module.exports = {
   definitions: {
     NODE_ENV: {
       default: 'development',
-      html: { type: ['development','production'], limits: { min: 'test'.length, max: 'development'.length } },
+      html: { type: ['development','production','secure-dev'], limits: { min: 'test'.length, max: 'development'.length } },
       tooltip: 'Server environment',
     },
     port: {
