@@ -30,7 +30,7 @@ Includes ***Passport*** session authentication, ***Morgan*** console/file loggin
  4. Connect **NGINX** to server _(see below guide)_
  5. Create certificate with [**Let's Encrypt**](https://www.nginx.com/blog/using-free-ssltls-certificates-from-lets-encrypt-with-nginx/): `sudo certbot --nginx -d URL.com -d www.URL.com`
  6. Start intially using `npm run dev` to create admin user
- 7. Build using `npm run build` _(If not using typescript, instead remove `/built` from **`package.json:main`**)_
+ 7. Build using `npm run build`
  7. Then run using `npm start`, stop with `npm stop` _(`pm2 save` to run on startup)_
  8. Set TRUST_PROXY in `/admin/settings` to lowest number that shows your IP on Restart
  9. Update `upstream` section in **NGINX** config file w/ **pm2** servers _(see below)_
