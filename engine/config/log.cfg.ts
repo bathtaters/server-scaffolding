@@ -1,8 +1,9 @@
-import type { LogType, HttpLog } from '../types/process.d'
 import { format } from 'winston'
-import RegEx from '../libs/regex'
+import RegEx, { escapeRegexPattern } from '../libs/regex'
+import { noLog, LogType, HttpLog, NoLog } from '../types/process.d'
 import { varName } from '../utils/gui.utils'
 import { getMaxEntry } from '../utils/log.utils'
+import { testLog } from '../testing/test.cfg'
 
 export const levels: { [level in LogType]: number } = {
   error: 0, warn: 1, info: 2, http: 3, verbose: 4
@@ -22,15 +23,15 @@ export const files = {
 
 httpDebug: HttpLog[] = ['debug'], // Enable max verbosity for requests/responses
 
-initMessage = (name: string, level?: LogType) => 
+initMessage = (name: string, level?: LogType | NoLog) => 
   `${varName(name)} log mode: ${level || 'unknown'}${
-    level ? ` (${levels[level] + 1} of ${(getMaxEntry(levels)[1] || -1) + 1})` : ''
+    level && level in levels ? ` (${levels[level as keyof typeof levels] + 1} of ${(getMaxEntry(levels)[1] || -1) + 1})` : ''
   }`,
 
 httpMessage = (mode?: HttpLog) => `HTTP request logging enabled (${mode || 'DEBUG MODE'})`,
 
 // Filter for logView
-logViewFileFilter = (filename: string) => RegEx(`^${RegEx.escapeRegexPattern(filename).replace(varRegex,'.+')}$`),
+logViewFileFilter = (filename: string) => RegEx(`^${escapeRegexPattern(filename).replace(varRegex,'.+')}$`),
 
 logFormat = {
   common: format.combine(
@@ -58,5 +59,8 @@ trimLogMessage = ({ label = '', message = '' }) => label ? '' :
     `${(message.trim()).slice(0,48).replace(additLines,'')}...` :
     'View Details',
 
+// Ignore logging on these options
+silent = noLog,
+
 // Get test log level from test.cfg
-testLevel = process.env.NODE_ENV === 'test' && require('../testing/test.cfg').testLog
+testLevel = process.env.NODE_ENV === 'test' && testLog

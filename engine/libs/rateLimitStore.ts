@@ -1,57 +1,65 @@
-const sqlite = require('sqlite3')
-const { join } = require('path')
-const mkDir = require('fs').mkdirSync
-const logger = require('./log')
-const services = require('../services/db.services')
-const { throttle } = require('../utils/common.utils')
-const { cleanupRateLimiter } = require('../config/server.cfg')
-const { isRootInstance } = require('../config/meta')
+import sqlite from 'sqlite3'
+import { join } from 'path'
+import { mkdirSync } from 'fs'
+import logger from './log'
+import services from '../services/db.services'
+import { throttle } from '../utils/common.utils'
+import { cleanupRateLimiter } from '../config/server.cfg'
+import { isRootInstance } from '../config/meta'
 
-class SQLiteStore {
+
+export default class SQLiteStore {
+	db: sqlite.Database
+	table: string
+	promise: Promise<any>
+	windowMs = 0
 
 	// Connect to DB
+	constructor(
+		{ db, dir = '.', table = 'rate', mode }:
+		{ db?: string, dir?: string, table?: string, mode?: number } = {}
+	) {
 
-  constructor({ db, dir = '.', table = 'rate', mode } = {}) {
-    this.table = table
-    if (!db) db = this.table
+		this.table = table
+		if (!db) db = this.table
 
 		const isFile = !db.includes(':memory:') && !db.includes('?mode=memory')
-		if (isFile && mkDir(dir, { recursive: true })) logger.info(`Created database folder: ${dir}`)
+		if (isFile && mkdirSync(dir, { recursive: true })) logger.info(`Created database folder: ${dir}`)
 
-    this.db = new sqlite.Database(isFile ? join(dir, db) : db, mode)
+		this.db = new sqlite.Database(isFile ? join(dir, db) : db, mode)
 
 		this.promise = services.exec(this.db, `CREATE TABLE IF NOT EXISTS ${this.table} (id PRIMARY KEY, hits, expires)`)
-		
-    var self = this
+			
+		var self = this
 		this.promise.then(function() {
 			if (!isRootInstance) return
 			dbCleanup(self, true)
 			setInterval(dbCleanup, cleanupRateLimiter, self).unref()
 		})
-  }
+	}
 
 
 	// Connect to express-rate-limit
 
-	init({ windowMs }) { this.windowMs = windowMs }
+	init({ windowMs = 0 }) { this.windowMs = windowMs }
 
-	async increment(id) {
+	async increment(id: string | number) {
 		await this.promise
 		await services.all(this.db, 'SELECT * FROM '+this.table)
 		if (id == null) throw new Error('No id provided to rateLimiter')
 
-		const now = getNow()
+		const now = Date.now()
 		const expire = now + this.windowMs
-		const get = (cols) => `SELECT ${cols} FROM ${this.table} WHERE id = $id AND $now <= expires`
+		const get = (cols: string) => `SELECT ${cols} FROM ${this.table} WHERE id = $id AND $now <= expires`
 
 		await services.run(this.db, `INSERT OR REPLACE INTO ${this.table}(id, hits, expires)
 			VALUES ($id,
 				COALESCE((${get('hits')}), 0) + 1,
 				COALESCE((${get('expires')}), $expire)
-			)`, { $id: id, $now: now, $expire: expire }
+			)`, { $id: id, $now: now, $expire: expire } as any
 		)
 
-		const current = await services.get(this.db, get('hits, expires'), { $id: id, $now: now })
+		const current = await services.get(this.db, get('hits, expires'), { $id: id, $now: now } as any)
 		if (!current) throw new Error('Unable to locate recently created rateLimit')
 
 		return {
@@ -60,21 +68,21 @@ class SQLiteStore {
 		}
 	}
 
-	async decrement(id) {
+	async decrement(id: string | number) {
 		await this.promise
-		const now = getNow()
+		const now = Date.now()
 		const expire = now + this.windowMs
-		const get = (cols) => `SELECT ${cols} FROM ${this.table} WHERE id = $id AND $now <= expires`
+		const get = (cols: string) => `SELECT ${cols} FROM ${this.table} WHERE id = $id AND $now <= expires`
 
 		await services.run(this.db, `INSERT OR REPLACE INTO ${this.table}(id, hits, expires)
 			VALUES ($id,
 				COALESCE((${get('hits')}), 1) - 1,
 				COALESCE((${get('expires')}), $expire)
-			)`, { $id: id, $now: now, $expire: expire }
+			)`, { $id: id, $now: now, $expire: expire } as any
 		)
 	}
 
-	async resetKey(id) {
+	async resetKey(id: string | number) {
 		await this.promise
 		await services.run(this.db, `DELETE FROM ${this.table} WHERE id = ?`, [id])
 		logger.verbose(`Rate limiter reset IP ${id} from ${this.table}`)
@@ -87,17 +95,14 @@ class SQLiteStore {
 	}
 }
 
-module.exports = SQLiteStore
 
 
 // HELPERS
 
-const getNow = () => new Date().getTime()
+const writeLogCombo = throttle((tables: string[]) => logger.verbose(`Rate limiter database trimmed: ${tables.join(', ')}`), 1500)
 
-const writeLogCombo = throttle((tables) => logger.verbose(`Rate limiter database trimmed: ${tables.join(', ')}`), 1500)
-
-function dbCleanup(store, skipLog = false) {
-	const now = getNow()
+function dbCleanup(store: SQLiteStore, skipLog = false) {
+	const now = Date.now()
 	services.run(store.db,`DELETE FROM ${store.table} WHERE ? > expires`, [now])
 		.then(() => !skipLog && writeLogCombo(store.table))
 }
