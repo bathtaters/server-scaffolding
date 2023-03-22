@@ -55,7 +55,7 @@ DB_SECRET=[secret]
 DB_DIR=[<project-dir>/.db]
 LOG_DIR=[<project-dir>/.logs]
 ```
-##### Using `NODE_ENV=secure-dev` will enable https using local certificate _(generate w/ `npm run dev-cert`)_
+##### Using `NODE_ENV=secure-dev` enables SSL/TLS using local certs _(from `npm run dev-cert`)_. **Clear all https cookies from localhost before changing this!**
 
 ---
 
