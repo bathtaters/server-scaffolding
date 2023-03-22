@@ -1,5 +1,5 @@
+import type { Base } from './Base.d'
 import Model from '../../engine/models/Model'
-import { Base } from './_types'
 
 /* --- Simple Model --- */
 export default new Model<Base>('base', {
