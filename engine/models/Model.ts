@@ -1,5 +1,5 @@
 // @ts-nocheck // Until entire engine is converted to TypeScript
-import { Definition, Feedback, ChangeCallback, IfExistsBehavior, ForeignKeyRef, ArrayDefinition } from './Model.d'
+import { Definition, Feedback, ChangeCallback, IfExistsBehavior, ForeignKeyRef, ArrayDefinition } from '../types/Model.d'
 import { openDb, getDb } from '../libs/db'
 import services from '../services/db.services'
 import { getPrimaryIdAndAdaptSchema, runAdapters, extractArrays } from '../services/model.services'

@@ -352,10 +352,10 @@ module.exports = Model
  *   - INPUT: Column value for row, Entire row as an object
  *   - RETURN: Updated column value for database
  *   - default: Converts data based on type
-* @property {string|number|string[]} [html] - Type property for HTML <input> tag in user form
+* @property {false|string|number|string[]} [html] - Type property for HTML <input> tag in user form
  *   - falsy value = column is only in database (Not accessible via UI)
  *   - default: property is auto-generated based on type
- * @property {string} [db] - Type of schema for this column in database
+ * @property {false|string} [db] - Type of schema for this column in database
  *   - falsy value = column is not in database (Only for UI validation)
  *   - default: schema is auto-generated based on type
  * @property {boolean} [dbOnly] - If column is internal to database only

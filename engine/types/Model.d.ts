@@ -43,10 +43,10 @@ export interface Definition {
   isPrimary?:   boolean,
   getAdapter?:  Adapter,
   setAdapter?:  Adapter,
-  html?:        string[]|number|"id"|"readonly"|
+  html?:        false|string[]|number|"id"|"readonly"|
     "button"|"checkbox"|"color"|"date"|"datetime-local"|"email"|"file"|"hidden"|"image"|"month"|"number"|
     "password"|"radio"|"range"|"reset"|"search"|"submit"|"tel"|"text"|"time"|"url"|"week",
-  db?:          "TEXT"|"INTEGER"|"REAL"|"BLOB",
+  db?:          false|"TEXT"|"INTEGER"|"REAL"|"BLOB",
   dbOnly?:      boolean,
   type?:        "string"|"uuid"|"b64"|"b64url"|"hex"|"date"|"datetime"|"boolean"|"int"|"float"|"object"|"any",
   isOptional?:  boolean,
