@@ -1,0 +1,1 @@
+export * as urlCfg from '../src/config/urls.cfg';
