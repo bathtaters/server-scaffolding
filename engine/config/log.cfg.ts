@@ -1,6 +1,6 @@
 import { format } from 'winston'
 import RegEx, { escapeRegexPattern } from '../libs/regex'
-import { noLog, LogType, HttpLog, NoLog } from '../types/process.d'
+import { noLog, LogType, HttpLog, NoLog } from '../types/log.d'
 import { varName } from '../utils/gui.utils'
 import { getMaxEntry } from '../utils/log.utils'
 import { testLog } from '../testing/test.cfg'
@@ -60,7 +60,7 @@ trimLogMessage = ({ label = '', message = '' }) => label ? '' :
     'View Details',
 
 // Ignore logging on these options
-silent = noLog,
+silent = Object.values(noLog),
 
 // Get test log level from test.cfg
 testLevel = process.env.NODE_ENV === 'test' && testLog

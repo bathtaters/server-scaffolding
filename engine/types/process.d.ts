@@ -1,13 +1,7 @@
-// Process.Env Types
-export const nodeEnv = ['development','secure-dev','production','test'] as const
-export const logType = ['error','warn','info','http','verbose'] as const
-export const httpLog = ['tiny','short','dev','common','combined','debug'] as const
-export const noLog = ['none','silent'] as const // Disable log
+import { LogType, HttpLog } from "./log.d"
 
+export const nodeEnv = ['development','secure-dev','production','test'] as const
 export type NodeEnv = typeof nodeEnv[number]
-export type LogType = typeof logType[number]
-export type HttpLog = typeof httpLog[number]
-export type NoLog = typeof noLog[number]
 
 // Declare process.env type
 type ProcessEnvValue = string | number | boolean | undefined

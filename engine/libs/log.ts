@@ -1,10 +1,10 @@
+import type { LogType } from '../types/log.d'
 import { Logger, transports } from 'winston'
 import DailyRotateFile from 'winston-daily-rotate-file'
 import { getLogLevel } from '../services/log.services'
 import * as config from '../config/log.cfg'
 import { definitions } from '../config/settings.cfg'
 import { logPath } from '../config/meta'
-import { LogType } from '../types/process'
 
 const consoleLogs = new transports.Console({
   ...getLogLevel(process.env.LOG_CONSOLE, config, definitions.LOG_CONSOLE.default, true),
