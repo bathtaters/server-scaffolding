@@ -2,7 +2,7 @@ const httpErrs = require('http-errors')
 const logger = require('../libs/log')
 const errors = require('../config/errors.engine')
 const { access } = require('../config/users.cfg')
-const { hasAccess } = require('../utils/users.utils')
+const { hasAccess } = require('../utils/users.access')
 const { varName } = require('../utils/gui.utils')
 const defaultError = errors.unknown()
 

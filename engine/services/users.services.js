@@ -1,10 +1,8 @@
 const logger = require('../libs/log')
 const { formatLong } = require('../libs/date')
-const {
-  accessArray, accessInt, hasAccess,
-  decodeCors, encodeCors, displayCors, isRegEx,
-  getModelsString, modelsArrayToObj, modelAccessToInts
-} = require('../utils/users.utils')
+const { accessArray, accessInt, hasAccess } = require('../utils/users.access')
+const { decodeCors, encodeCors, displayCors, isRegEx } = require('../utils/users.cors')
+const { getModelsString, modelsArrayToObj, modelAccessToInts } = require('../utils/users.model')
 const { generateToken, encodePassword } = require('../utils/auth.utils')
 const { access } = require('../config/users.cfg')
 const { adapterKey } = require('../config/models.cfg')

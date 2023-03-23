@@ -1,7 +1,7 @@
 const Model = require('./Model.engine')
 const logger = require('../libs/log')
 const { now } = require('../libs/date')
-const { passwordAccess, accessInt, hasAccess } = require('../utils/users.utils')
+const { passwordAccess, accessInt, hasAccess } = require('../utils/users.access')
 const { addAdapter, initAdapters } = require('../services/users.services')
 const { generateToken, testPassword, isLocked, isPastWindow } = require('../utils/auth.utils')
 const { access, rateLimiter, timestampKeyRegEx, illegalUsername, definitions } = require('../config/users.cfg')

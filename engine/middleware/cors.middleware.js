@@ -3,7 +3,7 @@ const passport = require('passport')
 const BearerStrategy = require('passport-http-bearer').Strategy
 const Users = require('../models/Users')
 const { authorizeBearer } = require('../services/auth.services')
-const { hasModelAccess } = require('../utils/users.utils')
+const { hasModelAccess } = require('../utils/users.model')
 const { access } = require('../config/users.cfg')
 const errors = require('../config/errors.engine')
 
