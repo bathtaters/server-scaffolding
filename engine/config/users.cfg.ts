@@ -1,13 +1,9 @@
 import type { Definition } from '../types/Model.d'
-import { access, models, UsersUI, AccessTypes, UsersDB } from '../types/Users.d'
+import { access, models, allModelsKey, UsersUI, AccessTypes, UsersDB } from '../types/Users.d'
 import RegEx from '../libs/regex'
 import { urlCfg } from '../src.import'
+
 const urls = urlCfg.gui.admin
-
-export const accessMax = Object.values(access).reduce<number>((sum,n) => sum | n, 0)
-export const modelsMax = Object.values(models).reduce<number>((sum,n) => sum | n, 0)
-
-export const allModelsKey = 'default' as const
 
 const passwordLimits = { min: 8, max: 128 }
 

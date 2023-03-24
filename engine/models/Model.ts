@@ -1,5 +1,6 @@
 // @ts-nocheck // Until entire engine is converted to TypeScript
-import { Definition, Feedback, ChangeCallback, IfExistsBehavior, ForeignKeyRef, ArrayDefinition } from '../types/Model.d'
+import type { Definition, Feedback, ChangeCallback, ForeignKeyRef, ArrayDefinition, SchemaBase } from '../types/Model.d'
+import type { IfExistsBehavior } from '../types/db.d'
 import { openDb, getDb } from '../libs/db'
 import services from '../services/db.services'
 import { getPrimaryIdAndAdaptSchema, runAdapters, extractArrays } from '../services/model.services'
@@ -13,9 +14,9 @@ import errors from '../config/errors.engine'
 const parseBool = parseBoolean(true)
 const entryKeys = [arrayLabel.foreignId, arrayLabel.index, arrayLabel.entry]
 
-export default class Model<Schema extends object> {
+export default class Model<Schema extends SchemaBase> {
   private _title: string = 'model'
-  private _primaryId: keyof Schema = 'id'
+  private _primaryId: keyof Schema & string = 'id'
   private _schema: { [key: string]: Definition } = {}
   private _defaults: Partial<Schema> = {}
   private _hidden: Array<keyof Schema> = []
@@ -323,3 +324,5 @@ export default class Model<Schema extends object> {
     this._hidden = Object.keys(newSchema).filter((key) => newSchema[key].dbOnly)
   }
 }
+
+export type ModelBase<Schema extends SchemaBase = SchemaBase> = InstanceType<typeof Model<Schema>>

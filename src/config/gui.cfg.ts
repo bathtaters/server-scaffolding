@@ -21,7 +21,7 @@ actions = Object.freeze({
   clear: 'Reset'
 }),
 // Buttons available in gui User profile editor
-profileActions = [ 'update', 'delete' ],
+profileActions = [ 'update', 'delete' ] as const,
 
 // GUI Footer text
 footer = {
@@ -36,7 +36,7 @@ footer = {
 },
 
 // Convert field names to form labels { key: 'Label Text' }
-varNameDict = { id: 'ID', swapId: 'Swap ID' },
+varNameDict: Record<string,string> = { id: 'ID', swapId: 'Swap ID' },
 
 // Mask values when reporting errors for these values
 mask = [ 'password', 'confirm' ],

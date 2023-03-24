@@ -1,6 +1,6 @@
 import type { EnvSettings } from '../types/process.d'
 import type { FormDefinition } from '../types/gui.d'
-import RegEx from '../libs/regex'
+import RegEx, { RegExp } from '../libs/regex'
 
 export let definitions: Record<keyof EnvSettings, FormDefinition> = {
   NODE_ENV: {
@@ -69,5 +69,9 @@ export const
 restartTimeout = 12,
 fileReadDebounceMs = 3000, // 0 = no debouncing, -1 = only read file after update
 
-escapeChars = [ [RegEx(/\n/g), ' '], [RegEx(/=/g), '%3D']  ],
+escapeChars: { find: RegExp, repl: string }[] = [
+  { find: RegEx(/\n/g), repl: ' '   },
+  { find: RegEx(/=/g),  repl: '%3D' },
+],
+
 escapeEnvMsg = (char: string, idx: number, val: string) => `Stripping illegal character '${char}' from "${val}" [${idx}]`

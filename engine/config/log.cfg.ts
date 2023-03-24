@@ -1,14 +1,14 @@
 import { format } from 'winston'
 import RegEx, { escapeRegexPattern } from '../libs/regex'
-import { noLog, LogType, HttpLog, NoLog } from '../types/log.d'
+import { noLog, LogLevels, HttpLog, NoLog } from '../types/log.d'
 import { varName } from '../utils/gui.utils'
 import { getMaxEntry } from '../utils/log.utils'
 import { testLog } from '../testing/test.cfg'
 
-export const levels: { [level in LogType]: number } = {
+export const levels: { [level in LogLevels]: number } = {
   error: 0, warn: 1, info: 2, http: 3, verbose: 4
 }
-export const colors: { [level in LogType]: string } = {
+export const colors: { [level in LogLevels]: string } = {
   error: 'red', warn: 'yellow', info: 'green', http: 'cyan', verbose: 'gray'
 }
 
@@ -23,9 +23,9 @@ export const files = {
 
 httpDebug: HttpLog[] = ['debug'], // Enable max verbosity for requests/responses
 
-initMessage = (name: string, level?: LogType | NoLog) => 
+initMessage = (name: string, level?: LogLevels | NoLog) => 
   `${varName(name)} log mode: ${level || 'unknown'}${
-    level && level in levels ? ` (${levels[level as keyof typeof levels] + 1} of ${(getMaxEntry(levels)[1] || -1) + 1})` : ''
+    level && level in levels ? ` (${levels[level as keyof typeof levels] + 1} of ${(getMaxEntry(levels).val || -1) + 1})` : ''
   }`,
 
 httpMessage = (mode?: HttpLog) => `HTTP request logging enabled (${mode || 'DEBUG MODE'})`,

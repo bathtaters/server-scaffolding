@@ -1,4 +1,4 @@
-import type { LogType } from '../types/log.d'
+import type { LogLevels } from '../types/log.d'
 import { Logger, transports } from 'winston'
 import DailyRotateFile from 'winston-daily-rotate-file'
 import { getLogLevel } from '../services/log.services'
@@ -33,7 +33,7 @@ logger.debug = () => logger.warn('Calling uninitialized logger.debug')
 logger.stream = { write: (msg) => logger.http(msg.trim()) } // Adapter for Morgan.stream
 
 logger.verbose(logger.transports.map(
-  ({ level, silent }, idx) => config.initMessage(['console','file'][idx], silent ? config.silent[0] : (level || logger.level) as LogType)).join(', ')
+  ({ level, silent }, idx) => config.initMessage(['console','file'][idx], silent ? config.silent[0] : (level || logger.level) as LogLevels)).join(', ')
 )
 
 export default logger

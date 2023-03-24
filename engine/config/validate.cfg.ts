@@ -1,4 +1,4 @@
-import type { TypeOf, TypeDef, Limits } from '../types/validate'
+import type { TypeOf, TypeDef, Limits } from '../types/validate.d'
 import RegEx from '../libs/regex'
 
 const strictDatetime = true // Use strict date/time parsing
@@ -18,7 +18,7 @@ export const
     false: [false, 0, '0', 'false', 'no', 'off', ''],
     types: ['string', 'number', 'boolean'] as TypeOf[],
     loose: true, // case-insensitive & convert using Boolean() [false: anything not in 'false' => true]
-  },
+  } as const,
 
   dateOptions = {
     date: { format: 'YYYY-MM-DD', strict: strictDatetime, delimiters: ['-'] },

@@ -33,7 +33,7 @@ exports.getLogLevel = (logLevel, { levels, testLevel, silent, httpDebug }, defau
 
   if (logLevel in levels) return { level: logLevel }
   if (silent.includes(logLevel)) return { silent: true }
-  if (httpDebug.includes(logLevel)) return { level: getMaxEntry(levels)[0] || 'verbose' }
+  if (httpDebug.includes(logLevel)) return { level: getMaxEntry(levels).key || 'verbose' }
 
   if (!defaultLevel) throw new Error(`Invalid default log level: ${logLevel}`)
   return exports.getLogLevel(defaultLevel, { levels, silent, httpDebug })

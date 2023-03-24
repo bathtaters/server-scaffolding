@@ -1,5 +1,5 @@
 const logger = require('../libs/log')
-const { openServer, getCreds, addListeners, closeHandler, errorHandler } = require('../utils/init.utils')
+const { openServer, readCerts, addListeners, buildCloseHandler, buildErrorHandler } = require('../utils/init.utils')
 const { getDb, openDb, closeDb } = require('../libs/db')
 const { varName } = require('../utils/gui.utils')
 const rateMw = require('../middleware/rateLimit.middleware')
@@ -19,8 +19,8 @@ module.exports = {
   initializeServer: async function initializeServer(app) {
     module.exports.app = app
 
-    addListeners(closeEvents, closeHandler(module.exports))
-    process.env.NODE_ENV !== 'production' && addListeners(errorEvents, errorHandler(module.exports))
+    addListeners(closeEvents, buildCloseHandler(app, listener, module.exports))
+    process.env.NODE_ENV !== 'production' && addListeners(errorEvents, buildErrorHandler(module.exports))
     
     // Globals
     app.locals.appTitle = title
@@ -36,7 +36,7 @@ module.exports = {
     logger.info(`${meta.name} services started`)
 
     // Get secure credentials
-    const creds = useLocalCert && await getCreds(meta.credPath).finally(() =>
+    const creds = useLocalCert && await readCerts(meta.credPath).finally(() =>
       logger.verbose('Loaded secure server credentials')
     )
 

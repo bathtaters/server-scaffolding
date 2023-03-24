@@ -1,5 +1,7 @@
 import type { ProcessEnvValue } from "../types/process.d"
+import type { GracefulExitConfig } from "../types/server"
 import { definitions } from './settings.cfg'
+import { logLevels } from "../types/log"
 
 const isTest = process.env.NODE_ENV === 'test'
 
@@ -16,10 +18,10 @@ isSecure = !isTest && (process.env.NODE_ENV === 'production' ? productionIsSecur
 csrfEnable = !isTest && true,
 preflightCors = { origin: '*' }, 
 
-gracefulExitOptions = {
+gracefulExitOptions: GracefulExitConfig = {
   suicideTimeout: 4000,
   log: true,
-  logger: 'verbose',
+  logger: logLevels.verbose,
   performLastRequest: true,
   errorDuringExit: true,
 },

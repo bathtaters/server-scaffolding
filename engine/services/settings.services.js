@@ -1,7 +1,7 @@
 const { writeFile, readFile } = require('fs/promises')
 const { parse } = require('dotenv')
 const logger = require('../libs/log')
-const { getSettingsVars, stringifyEnv, filterOutProps, getChanged, escapeSettings } = require('../utils/settings.utils')
+const { getSettingsVars, stringifyEnv, filterOutProps, getChanged, createEscapeObject } = require('../utils/settings.utils')
 const { debounce } = require('../utils/common.utils')
 const { definitions, fileReadDebounceMs, escapeEnvMsg } = require('../config/settings.cfg')
 const { envPath } = require('../config/meta')
@@ -19,7 +19,7 @@ exports.getSettings = async () => {
   return getSettingsVars(Object.keys(definitions), envObj)
 }
   
-const escapeChars = escapeSettings((...args) => { logger.warn(escapeEnvMsg(...args)) })
+const escapeChars = createEscapeObject((...args) => { logger.warn(escapeEnvMsg(...args)) })
 exports.setSettings = async (settings, session) => {
   const oldSettings = await exports.getSettings()
 
