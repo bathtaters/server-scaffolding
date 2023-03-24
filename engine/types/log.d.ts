@@ -1,4 +1,10 @@
-export const logType = {
+export type LogLevels = typeof logLevels[keyof typeof logLevels]
+export type HttpLog   = typeof   httpLog[keyof typeof httpLog]
+export type NoLog     = typeof     noLog[keyof typeof noLog]
+
+export type LogObject = any
+
+export const logLevels = {
     error:   'error',
     warn:    'warn',
     info:    'info',
@@ -16,10 +22,7 @@ export const httpLog = {
 } as const
 
 export const noLog = {
+    // Disable log
     none:   'none',
     silent: 'silent',
-} as const // Disable log
-
-export type LogType = typeof logType[keyof typeof logType]
-export type HttpLog = typeof httpLog[keyof typeof httpLog]
-export type NoLog   = typeof   noLog[keyof typeof noLog]
+} as const
