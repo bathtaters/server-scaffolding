@@ -24,7 +24,7 @@ noID = () => createError(400, "No ID provided."),
 noData = (missingField = 'data') => createError(400, `No ${missingField} provided.`),
 noEntry = (id: string|number = '') => createError(400, `No entry exists at ID ${id}.`),
 noSize = () => createError(400, "Invalid page size for paginated request."),
-badData = (key = 'data', value: any, expected: any) => createError(400, `${key} contains invalid value: ${value}${expected ? ` (should be ${expected})` : ''}.`),
+badData = (key = 'data', value: any, expected?: any) => createError(400, `${key} contains invalid value: ${value}${expected ? ` (should be ${expected})` : ''}.`),
 
 // Authentication Errors
 noUser = () => createError(401, "User not found."),
@@ -79,7 +79,11 @@ deleteAdmin = () => createError(403, "Cannot remove the only admin. Add another 
 noUndo = () => createError(500, "Undo queue is empty"),
 missingCreds = (dev = false) => createError(500, `Unable to read SSL credentials, ${
   dev ? 'try running "npm run dev-cert"' : 'point meta.credPath to SSL/TLS credentials or disable useLocalCert'
-}.`)
+}.`),
+invalidPort = (address: any, port: number) => new Error(
+  `Invalid port on listener: ${JSON.stringify(address)} (Requested port: ${port})`
+)
+
 
 
 
