@@ -1,4 +1,4 @@
-import type {} from '../types/settings.d'
+import type { EnvObject } from '../types/settings.d'
 import { config as envConfig } from 'dotenv'
 import { join } from 'path'
 import { definitions, updateRootPath } from './settings.cfg'
@@ -29,6 +29,10 @@ function getPort() {
   return basePort + (isNaN(portExt) ? 0 : portExt)
 }
 
+// TODO -- Move these helpers to meta.utils
+const getEnv = (key: keyof EnvObject, defaultValue: string) =>
+  typeof process.env[key] === 'string' && process.env[key] ?
+    process.env[key] as string : definitions[key].default || defaultValue
 
 // App Metadata
 export const
@@ -43,6 +47,6 @@ export const
   port = getPort(),
   isPm2 = process.env.NODE_APP_INSTANCE != null,
   isRootInstance = !!process.env.NODE_APP_INSTANCE && (isNaN(+process.env.NODE_APP_INSTANCE) || !(+process.env.NODE_APP_INSTANCE)),
-  dbPath =  join(process.env.DB_DIR  || definitions.DB_DIR.default  || '.',  'database.db'),
-  logPath = join(process.env.LOG_DIR || definitions.LOG_DIR.default || '.', `${pkg.name || 'server'}_%DATE%.log`),
+  dbPath =  join(getEnv('DB_DIR',  '.'), 'database.db'),
+  logPath = join(getEnv('LOG_DIR', '.'), `${pkg.name || 'server'}_%DATE%.log`),
   credPath = { key: join(staticRootPath,'.key.pem'), cert: join(staticRootPath,'.cert.pem') }
