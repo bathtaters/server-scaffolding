@@ -60,6 +60,13 @@ export function sanitizeSchemaData<Schema extends SchemaBase, T extends SchemaBa
 }
 
 
+/** Convert primary key definition to regular definition */
+export const stripPrimaryDef = ({ db, isPrimary, isOptional, ...definition }: Definition): Definition => ({
+  ...definition,
+  db: db ? db.replace(' PRIMARY KEY', ' NOT NULL') as SQLTypeFull : false,
+})
+
+
 /** Convert model type to SQL type */
 export function dbFromType({ type, isOptional, isPrimary }: Pick<Definition,'type'|'isOptional'|'isPrimary'>): SQLTypeFull {
   let dbType: SQLType, dbSuffix: SQLSuffix | '' = ''
