@@ -63,9 +63,9 @@ badKey = (key?: string, table = 'table') => createError(500, `Column "${key}" do
 noAdd = () => createError(502, "New entry was not created."),
 noPrimary = (table?: string, method?: string) => createError(400, `PrimaryId for ${table}.${method} cannot be automatically determined. Must include in ${method} data.`),
 sqlNotDB = () => new Error('Database file not recognized: confirm that DB_SECRET hasn\'t changed and check DB_PATH'),
-sqlError = (err: any, sql: string, params: Record<string|number, any>) => appendToError(
+sqlError = (err: any, sql: string, params: Record<string|number, any> = {}) => appendToError(
   createError(502, err.message || err),
-  { name: 'sqlError', stack: `\tCmd: ${sql}\n\t\t[${(Array.isArray(params) ? params : Object.values(params || {})).join(', ')}]` }
+  { name: 'sqlError', stack: `\tCmd: ${sql}\n\t\t[${(Array.isArray(params) ? params : Object.values(params)).join(', ')}]` }
 ),
 sqlInjection = (val: any, isReserved = false, table = '') => new Error(`${table ? `Column in ${table}` : 'Table name'} ${
   isReserved ? 'is a reserved keyword:' : typeof val === 'string' ? 
