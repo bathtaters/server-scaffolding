@@ -15,11 +15,12 @@ export const checkInjection = <T = any>(val: T, tableName = ''): T => {
 }
 
 
-export const extractId = <O extends Record<string|number,any>>(data: O, idKey: keyof O) => {
-  const id = data[idKey]
-  delete data[idKey]
-  return [id, data]
-}
+export const extractId = <O extends Record<string|number,any>, ID extends keyof O>
+  (data: O, idKey: ID): [O[ID], Partial<O>] => {
+    const id = data[idKey]
+    delete data[idKey]
+    return [id, data]
+  }
 
 
 const sortAlgo = (a: number, b: number) => a - b
