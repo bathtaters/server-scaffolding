@@ -8,6 +8,8 @@ export type NestedObject<
     IK extends string | number | symbol = string | number | symbol
 > = ObjectOf<T, OK>
 
+export type NestedObjectValue<O extends object, K extends keyof O[keyof O]> = Record<keyof O, O[keyof O][K]>
+
 export type Recur<T, End = any> =
   T extends any[] ? Recur<T[number], End>[] :
   T extends object ? { [P in keyof T]: Recur<T[P], End> } :
