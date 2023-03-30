@@ -1,20 +1,20 @@
-function startup(server: Express.Application) {
+async function startup(server: Express.Application) {
   // Add code to execute just before server starts
 }
 
-function teardown() {
+async function teardown() {
   // Add code to execute when server begins to shutdown
 }
 
-function setup(server: Express.Application) {
+async function setup(server: Express.Application) {
   // Add custom server settings/run-first middleware: server.set(setting, value)
 }
 
-function middleware(server: Express.Application) {
+async function middleware(server: Express.Application) {
   // Add custom middleware: server.use(middleware)
 }
 
-function routes(server: Express.Application) {
+async function routes(server: Express.Application) {
   // Add custom route handlers: server.use(route, routeHandler)
 }
 
