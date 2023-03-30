@@ -1,12 +1,15 @@
-import type { Adapter, Definition, ForeignKeyRef, SchemaBase } from '../types/Model.d'
 import type { ModelBase } from '../models/Model'
-import { ModelType, modelTypes } from '../types/validate'
+import type { Adapter, Definition, ForeignKeyRef, SchemaBase } from '../types/Model.d'
+import type { SQLSuffix, SQLType, SQLTypeFull } from '../types/db.d'
+import { ModelType, modelTypes } from '../types/validate.d'
+import { HTMLType, htmlTypes } from '../types/gui.d'
+
 import RegEx from '../libs/regex'
 import { isDate } from '../libs/date'
 import { parseBoolean, parseArray } from './validate.utils'
-import { arrayLabel, CONCAT_DELIM } from '../config/models.cfg'
-import { foreignKeyActions, sqlTypes } from '../types/db.d'
-import { HTMLType, htmlTypes } from '../types/gui'
+import { CONCAT_DELIM } from '../config/models.cfg'
+import { arrayLabel } from '../types/Model.d'
+import { foreignKeyActions, sqlSuffixes, sqlTypes } from '../types/db.d'
 
 // Initialize Parsers
 const typeStrRegex = RegEx(/^([^[?*]+)(\?|\*|\[\])?(\?|\*|\[\])?(\?|\*|\[\])?$/)
@@ -44,8 +47,10 @@ export function parseTypeStr(def: Definition, overwrite = false) {
 export const isBool = ({ type, isArray }: Pick<Definition,'type'|'isArray'>) => type === 'boolean' && !isArray
 
 
-export function sanitizeSchemaData<Schema extends SchemaBase, T extends SchemaBase>(data: T, { schema, arrays={} }: SanitModel<Schema> = {}) {
-  const validKeys = schema && Object.keys(schema).filter((key) => schema[key].db).concat(Object.keys(arrays))
+export function sanitizeSchemaData<Schema extends SchemaBase, T extends SchemaBase>(data: T, { schema, arrays }: SanitModel<Schema> = {}) {
+  const validKeys = schema && Object.keys(schema as Schema)
+    .filter((key) => schema[key].db)
+    .concat(Object.keys(arrays || {}))
 
   return Object.keys(data).reduce(
     (obj, key) =>
@@ -56,8 +61,8 @@ export function sanitizeSchemaData<Schema extends SchemaBase, T extends SchemaBa
 
 
 /** Convert model type to SQL type */
-export function dbFromType({ type, isOptional, isPrimary }: Pick<Definition,'type'|'isOptional'|'isPrimary'>) {
-  let dbType = ''
+export function dbFromType({ type, isOptional, isPrimary }: Pick<Definition,'type'|'isOptional'|'isPrimary'>): SQLTypeFull {
+  let dbType: SQLType, dbSuffix: SQLSuffix | '' = ''
   
   switch (type) {
     case 'float':
@@ -73,10 +78,10 @@ export function dbFromType({ type, isOptional, isPrimary }: Pick<Definition,'typ
       dbType = sqlTypes.Text
   }
 
-  if (isPrimary) dbType += ' PRIMARY KEY'
-  else if (!isOptional) dbType += ' NOT NULL'
+  if (isPrimary) dbSuffix = sqlSuffixes.primary
+  else if (!isOptional) dbSuffix = sqlSuffixes.required
 
-  return dbType
+  return `${dbType}${dbSuffix}`
 }
 
 

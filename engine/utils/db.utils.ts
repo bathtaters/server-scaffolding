@@ -1,4 +1,5 @@
-import { arrayLabel, getArrayName, CONCAT_DELIM, SQL_ID } from '../config/models.cfg'
+import { arrayLabel } from '../types/Model.d'
+import { getArrayName, CONCAT_DELIM, SQL_ID } from '../config/models.cfg'
 import { illegalKeyName, illegalKeys } from '../config/validate.cfg'
 import { sqlInjection } from '../config/errors.engine'
 
@@ -42,9 +43,9 @@ export const getArrayJoin = (
 
   `SELECT ${primaryId === SQL_ID ? `${title}.rowid, ` : ''}${[`${title}.*`].concat(arrays.map((key) => `_arrays.${key}`)).join(', ')}
     FROM ${title} LEFT JOIN (
-      SELECT ${[arrayLabel.foreignId].concat(arrays.map((key) => `GROUP_CONCAT(${title}_${key}, '${CONCAT_DELIM}') ${key}`)).join(', ')} FROM (${
-        arrays.map((key) => `SELECT ${[arrayLabel.foreignId, arrayLabel.index].concat(arrays.map((subKey) =>
-          `${key === subKey ? arrayLabel.entry : 'NULL'} AS ${title}_${subKey}`
+      SELECT ${[arrayLabel.foreignId as string].concat(arrays.map((key) => `GROUP_CONCAT(${title}_${key}, '${CONCAT_DELIM}') ${key}`)).join(', ')} FROM (${
+        arrays.map((key) => `SELECT ${[arrayLabel.foreignId, arrayLabel.index as string].concat(arrays.map((subKey) =>
+          `${key === subKey ? arrayLabel.value : 'NULL'} AS ${title}_${subKey}`
         )).join(', ')} FROM ${getArrayName(title, key)}`).join(`
         UNION ALL
         `)
@@ -53,7 +54,7 @@ export const getArrayJoin = (
     GROUP BY ${arrayLabel.foreignId}) _arrays ON _arrays.${arrayLabel.foreignId} = ${title}.${primaryId}
     ${id == null ? '' :
     `WHERE ${!idIsArray || Array.isArray(id) ? idKey || primaryId : primaryId} = ${!idIsArray || Array.isArray(id) ? '?' : 
-    `(SELECT ${arrayLabel.foreignId} FROM ${getArrayName(title, idKey || primaryId)} WHERE ${arrayLabel.entry} = ?)`}`
+    `(SELECT ${arrayLabel.foreignId} FROM ${getArrayName(title, idKey || primaryId)} WHERE ${arrayLabel.value} = ?)`}`
   }`
 
 

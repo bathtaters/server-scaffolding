@@ -4,6 +4,10 @@ export const sqlTypes = {
     Float:  "REAL",
     Blob:   "BLOB",
 } as const
+export const sqlSuffixes = {
+    primary:  " PRIMARY KEY",
+    required: " NOT NULL",
+} as const
 
 export const ifExistsBehaviors = {
     default:   "default",
@@ -21,6 +25,8 @@ export const foreignKeyActions = {
 } as const
 
   
-export type SQLType = typeof sqlTypes[keyof typeof sqlTypes]
+export type SQLType   = typeof sqlTypes   [keyof typeof sqlTypes   ]
+export type SQLSuffix = typeof sqlSuffixes[keyof typeof sqlSuffixes]
+export type SQLTypeFull = `${SQLType}${SQLSuffix | ""}`
 export type IfExistsBehavior = typeof ifExistsBehaviors[keyof typeof ifExistsBehaviors]
 export type ForeignKeyAction = typeof foreignKeyActions[keyof typeof foreignKeyActions]

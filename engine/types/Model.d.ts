@@ -1,6 +1,6 @@
 import type { HTMLType } from './gui.d'
 import type { ModelType, Limits} from './validate.d'
-import type { SQLType, ForeignKeyAction } from './db.d'
+import type { SQLTypeFull, ForeignKeyAction } from './db.d'
 
 /** Definitions for a column of the Model */
 export interface Definition {
@@ -28,16 +28,18 @@ export interface Definition {
   isPrimary?:   boolean,
   
   /** Function called whenever this column is retrieved from the database
+   *   - false = skip automatic conversions
    *   - PARAMS: (Column value from database, Entire row as an object)
    *   - RETURN: Updated column value for user
    *   - default: Converts data based on type */
-  getAdapter?:  Adapter,
+  [adapterTypes.get]?:  Adapter | false,
 
   /** Function called whenever this column is stored in the database (ie. add/update)
+   *   - false = skip automatic conversions
    *   - PARAMS: (Column value from user, Entire row as an object)
    *   - RETURN: Updated column value for database
    *   - default: Converts data based on type */
-  setAdapter?:  Adapter,
+  [adapterTypes.set]?:  Adapter | false,
 
   /** Determines HTML generated for this column in GUI form
    *   - string = <input> w/ this as 'type' attribute
@@ -50,7 +52,7 @@ export interface Definition {
   /** Type of schema for this column in database
    *   - false = column is not in database (Only for UI validation)
    *   - default: schema is auto-generated based on type */
-  db?:          false | SQLType,
+  db?:          false | SQLTypeFull,
   
   /** If column is internal to database only
    *   - true = obscure column from non-raw get results 
@@ -85,8 +87,18 @@ export interface Definition {
   isHTML?:      boolean,
 }
 
+export type SchemaBase = Record<string, any>
+export type DefinitionSchema<Schema extends SchemaBase> = Record<keyof Schema, Definition>
+
+export type Feedback = { success: boolean }
+
+export type ChangeCallback<Schema extends SchemaBase> =
+  (update: Partial<Schema>, matching: Schema[]) => Promise<Schema | void> | Schema | void
+
+
+
 /** Object to generate Foreign Key Reference SQL */
-interface ForeignKeyRef {
+export interface ForeignKeyRef {
   /** Name of column in current table */
   key:    string,
   /** Name of foreign table being referenced */
@@ -99,16 +111,16 @@ interface ForeignKeyRef {
   onUpdate?: ForeignKeyAction
 }
 
+export const arrayLabel = { foreignId: 'fid', index: 'idx', value: 'val' } as const
 export type ArrayDefinition<Value = any, Key = any> = {
-  fid: Key,
-  idx: number,
-  val: Value
+  [arrayLabel.foreignId]: Key,
+  [arrayLabel.index]:     number,
+  [arrayLabel.value]:     Value
 }
 
-export type SchemaBase = Record<string, any>
+export type ArrayDefinitions<Schema extends SchemaBase> = Partial<{ [arrayName in keyof Schema]: DefinitionSchema<ArrayDefinition> }>
+export type CreateTableRefs = { [arrayName: string]: ForeignKeyRef }
 
-export type Feedback = { success: boolean }
-export type CreateTableRefs = { [table: string]: ForeignKeyRef }
 
 /**
  * Callback that takes in a single piece of data and returns a modified version of that data
@@ -118,5 +130,5 @@ export type CreateTableRefs = { [table: string]: ForeignKeyRef }
  */
 export type Adapter = <In = Any, Out = any, D = Record<string, any>>(value: In, data: D) => Promise<Out> | Out
 
-export type ChangeCallback<Schema extends SchemaBase> =
-  (update: Partial<Schema>, matching: Schema[]) => Promise<Schema | void> | Schema | void
+export const adapterTypes = { get: 'getAdapter', set: 'setAdapter' } as const
+export type AdapterType = typeof adapterTypes[keyof typeof adapterTypes]

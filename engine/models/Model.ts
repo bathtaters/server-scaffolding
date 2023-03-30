@@ -1,5 +1,4 @@
 // @ts-nocheck // Until entire engine is converted to TypeScript
-import type { Definition, Feedback, ChangeCallback, ForeignKeyRef, ArrayDefinition, SchemaBase } from '../types/Model.d'
 import type { IfExistsBehavior } from '../types/db.d'
 import { openDb, getDb } from '../libs/db'
 import services from '../services/db.services'
@@ -8,23 +7,24 @@ import { checkInjection, appendAndSort, getArrayJoin } from '../utils/db.utils'
 import { caseInsensitiveObject, filterByField } from '../utils/common.utils'
 import { isBool, sanitizeSchemaData, arrayTableRefs } from '../utils/model.utils'
 import { parseBoolean } from '../utils/validate.utils'
-import { adapterKey, ifExistsBehavior, CONCAT_DELIM, arrayLabel, getArrayName, getArrayPath } from '../config/models.cfg'
+import { arrayLabel, Feedback, ChangeCallback, ForeignKeyRef, ArrayDefinition, SchemaBase, DefinitionSchema } from '../types/Model.d'
+import { adapterKey, ifExistsBehavior, CONCAT_DELIM, getArrayName, getArrayPath } from '../config/models.cfg'
 import errors from '../config/errors.engine'
 
 const parseBool = parseBoolean(true)
-const entryKeys = [arrayLabel.foreignId, arrayLabel.index, arrayLabel.entry]
+const entryKeys = [arrayLabel.foreignId, arrayLabel.index, arrayLabel.value]
 
 export default class Model<Schema extends SchemaBase> {
   private _title: string = 'model'
   private _primaryId: keyof Schema & string = 'id'
-  private _schema: { [key: string]: Definition } = {}
+  private _schema: DefinitionSchema<Schema> = {}
   private _defaults: Partial<Schema> = {}
   private _hidden: Array<keyof Schema> = []
-  protected _arrays: { [key: string]: Definition } = {}
+  protected _arrays: DefinitionSchema<Schema> = {}
   private _isArrayTable: boolean = false
   readonly isInitialized: Promise<boolean>
 
-  constructor(title: string, definitions: { [key: string]: Definition }, isArrayTable: boolean = false) {
+  constructor(title: string, definitions: DefinitionSchema<Schema>, isArrayTable: boolean = false) {
     this._isArrayTable = isArrayTable
     if (this.isArrayTable) this._title = title
     else this.title = title
