@@ -27,8 +27,8 @@ export const isLogLevel = (logLevel: string, levelType = ''): logLevel is LogLev
 
 
 /** Format log file time */
-const formatFileTime = (timestamp: string) => {
-  if (!timestamp) return { full: '-', short: '-' }
+const formatFileTime = (timestamp?: LogObject['timestamp']) => {
+  if (typeof timestamp !== 'string' || !timestamp) return { full: '-', short: '-' }
 
   const parsed = parseISO(timestamp)
 
