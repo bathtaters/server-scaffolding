@@ -1,8 +1,14 @@
 import type { EnvSettings } from './process.d'
-import type { Definition } from './Model'
-import { guiCfg } from '../src.import'
+import type { Definition } from './Model.d'
 
-export const profileLabels = guiCfg.profileActions.map((action) => guiCfg.actions[action])
+export const actions = {
+    // GUI Action: GUI Button Label
+    find: 'Search',
+    create: 'Add',
+    update: 'Update',
+    delete: 'Remove',
+    clear: 'Reset',
+} as const
 
 export const htmlTypes = {
     id: "id",
@@ -33,9 +39,8 @@ export const htmlTypes = {
 
 export type HTMLType = typeof htmlTypes[keyof typeof htmlTypes]
 
-export type ProfileActionKeys = keyof typeof guiCfg.actions
-export type ProfileActions = typeof guiCfg.actions[keyof typeof guiCfg.actions]
-export type UserProfileActions = typeof profileLabels[number]
+export type ProfileActionKeys = keyof typeof actions
+export type ProfileActions = typeof actions[keyof typeof actions]
 
 export type FormDefinition = {
     default?: string,

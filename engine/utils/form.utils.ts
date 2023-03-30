@@ -1,10 +1,8 @@
-import type { ProfileActions } from '../types/gui'
-import type { ModelsTypes } from '../types/Users'
+import type { ModelsTypes } from '../types/Users.d'
 import { parseBoolean } from '../utils/validate.utils'
-import { guiCfg } from '../src.import'
+import { ProfileActions, actions } from '../types/gui.d'
 import { badData } from '../config/errors.engine'
 const parseBool = parseBoolean(true)
-const { actions } = guiCfg
 
 
 // Get list of button labels based on access

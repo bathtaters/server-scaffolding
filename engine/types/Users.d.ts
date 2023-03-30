@@ -1,3 +1,6 @@
+import { actions } from "./gui.d"
+import { profileActions } from "../config/users.cfg"
+
 export const noAccess = 'none' as const
 export const noModelAccessChar = '-' as const
 export const allModelsKey = 'default' as const
@@ -55,3 +58,6 @@ export type AccessTypes  = keyof typeof access
 export type ModelsTypes  = keyof typeof models
 export type ModelsString = typeof modelsStrings[keyof typeof modelsStrings] | `${typeof modelsStrings['read']}${typeof modelsStrings['write']}`
 export type ModelObject<Models extends string> = { [M in Models]: BitMapValue<ModelsTypes> } & { [allModelsKey]: BitMapValue<ModelsTypes> }
+
+export const profileLabels = profileActions.map((action) => actions[action])
+export type ProfileActions = typeof profileLabels[number]

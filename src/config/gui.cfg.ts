@@ -11,18 +11,6 @@ export const pageOptions = {
   sizeList: [5, 10, 25, 50, 100],
 },
 
-// GUI Buttons
-actions = Object.freeze({
-  // Labels
-  find: 'Search',
-  create: 'Add',
-  update: 'Update',
-  delete: 'Remove',
-  clear: 'Reset'
-}),
-// Buttons available in gui User profile editor
-profileActions = [ 'update', 'delete' ] as const,
-
 // GUI Footer text
 footer = {
   full: [

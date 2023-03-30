@@ -122,4 +122,7 @@ searchableKeys: Array<keyof UsersUI> = ['username','token','access','cors','lock
 illegalUsername = RegEx(/[^a-zA-Z0-9_-]/),
 
 // Paths that expect JSON responses (not HTML)
-jsonPaths = [ urls.prefix + urls.user + urls.token ]
+jsonPaths = [ urls.prefix + urls.user + urls.token ],
+
+// Buttons available in gui User profile editor
+profileActions = [ 'update', 'delete' ] as const
