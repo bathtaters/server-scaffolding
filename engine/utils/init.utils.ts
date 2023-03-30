@@ -1,6 +1,6 @@
-import type { ProcessInfo } from '../types/server.d'
+import type { ServerInfo } from '../types/server.d'
 import type { ProcessEvents } from '../types/process.d'
-import express from 'express'
+import type { Express } from 'express'
 import http from 'http'
 import https from 'https'
 import fs from 'fs/promises'
@@ -10,8 +10,8 @@ import { invalidPort, shutdown, missingCreds } from '../config/errors.engine'
 import { gracefulExitOptions } from '../config/server.cfg'
 
 
-export function openServer(app: http.RequestListener, config: { port: number }, httpsCreds?: https.ServerOptions) {
-  return new Promise((res) => {
+export function openServer(app: http.RequestListener, config: { port: number }, httpsCreds?: false | https.ServerOptions) {
+  return new Promise<http.Server | https.Server>((res) => {
     const server = httpsCreds ? https.createServer(httpsCreds, app) : http.createServer(app)
     if (process.env.NODE_ENV === 'test') return res(server)
 
@@ -27,31 +27,32 @@ export function openServer(app: http.RequestListener, config: { port: number }, 
 }
 
 
-export const buildCloseHandler = (app: express.Express, listener: http.Server, { isClosing, terminateServer }: ProcessInfo) => () => {
-  if (isClosing) return
-  isClosing = true
-  logger.info(`Shutting down server`)
+export const buildCloseHandler = (app: Express, { isClosing, listener, terminateServer }: ServerInfo) =>
+  function closeHandler() {
+    if (isClosing) return
+    isClosing = true
+    logger.info(`Shutting down server`)
 
-  if (!listener || !app) return terminateServer().then(() => process.exit(0))
+    if (!listener || !app) return terminateServer().then(() => process.exit(0))
 
-  return gracefulExitHandler(app, listener, {
-    ...gracefulExitOptions,
-    callback: terminateServer,
-    getRejectionError: shutdown,
-    logger: logger[gracefulExitOptions.logger || 'verbose'].bind(logger),
-  })
-}
+    return gracefulExitHandler(app, listener, {
+      ...gracefulExitOptions,
+      callback: terminateServer,
+      getRejectionError: shutdown,
+      logger: logger[gracefulExitOptions.logger || 'verbose'].bind(logger),
+    })
+  }
 
 
-export const addListeners = (events: ProcessEvents[], handler: (...args: any[]) => void) =>
+export const addListeners = (events: readonly ProcessEvents[], handler: (...args: any[]) => void) =>
   events.forEach((event) => process.on(event, handler))
 
 
-export function buildErrorHandler(app: express.Express, listener: http.Server, procInfo: ProcessInfo) {
+export function buildErrorHandler(app: Express, procInfo: ServerInfo) {
   return (err: any) => {
     logger.error(err || 'Unknown', { label: 'unhandled' })
     if (procInfo.isClosing) return process.exit(-1)
-    return buildCloseHandler(app, listener, procInfo)()
+    return buildCloseHandler(app, procInfo)()
   }
 }
 

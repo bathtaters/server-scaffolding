@@ -1,10 +1,12 @@
-import GracefulExit from "express-graceful-exit";
-import { LogLevels } from "./log";
+import http from 'http'
+import GracefulExit from "express-graceful-exit"
+import { LogLevels } from "./log"
 
 export type GracefulExitConfig = Omit<GracefulExit.Configuration, 'logger'> & { logger: LogLevels }
 
-export type ProcessInfo = {
+export type ServerInfo = {
     isClosing?: boolean,
     isTerminating?: boolean,
-    terminateServer: () => Promise<any>
+    listener: null | http.Server,
+    terminateServer: () => Promise<any>,
 }
