@@ -1,4 +1,4 @@
-import type { EnvSettings } from './process.d'
+import type { EnvParsed } from './settings.d'
 import type { Definition } from './Model.d'
 
 export const actions = {

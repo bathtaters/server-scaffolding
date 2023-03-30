@@ -1,4 +1,4 @@
-import type {} from '../types/process.d'
+import type {} from '../types/settings.d'
 import { config as envConfig } from 'dotenv'
 import { join } from 'path'
 import { definitions, updateRootPath } from './settings.cfg'

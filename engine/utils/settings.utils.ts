@@ -1,8 +1,9 @@
-import type { EnvSettings, EnvObject } from '../types/process.d'
+import type { DotenvParseOutput } from 'dotenv'
+import type { EnvParsed, EnvObject } from '../types/settings.d'
 import { definitions, escapeChars } from '../config/settings.cfg'
 
 /** Get keys from process.env */
-export const getSettingsVars = (keys: Array<keyof EnvSettings>, envObj: EnvObject = process.env) =>
+export const getSettingsVars = (keys: Array<keyof EnvParsed>, envObj: DotenvParseOutput) =>
   keys.reduce(
     (obj, key) => ({
       ...obj,
@@ -12,13 +13,13 @@ export const getSettingsVars = (keys: Array<keyof EnvSettings>, envObj: EnvObjec
   )
 
 /** Convert Env object into text for .env file */
-export const stringifyEnv = (envObj: EnvSettings | EnvObject) =>
+export const stringifyEnv = (envObj: EnvParsed | EnvObject) =>
   Object.entries(envObj).reduce((text, [key,val]) => `${text}${key}=${val}\n`, '')
 
 
-export function filterOutProps<O extends object, P extends keyof O>(obj: O, hideProps: P[]) {
+export function filterOutProps<O extends object>(obj: O, hideProps: (keyof O)[]) {
   hideProps.forEach((prop) => { delete obj[prop] })
-  return obj as Omit<O, P>
+  return obj as Partial<O>
 }
 
 export function getChanged<T extends Record<string,any>>(base: T, update: T): Partial<T> {

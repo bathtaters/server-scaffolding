@@ -1,20 +1,24 @@
-import { LogLevels, HttpLog } from "./log.d"
+import type { LogLevels, HttpLog } from "./log.d"
+import type { FormDefinition } from "./gui.d"
 
 export const nodeEnv = ['development','secure-dev','production','test'] as const
 export type NodeEnv = typeof nodeEnv[number]
 
-const processEvents = [
-    'beforeExit', 'disconnect', 'exit', 'message',
-    'multipleResolves', 'rejectionHandled', 'uncaughtException',
-    'uncaughtExceptionMonitor', 'unhandledRejection', 'warning', 'worker',
-] as const
-export type ProcessEvents = typeof processEvents[number] | NodeJS.Signals
+
+const settingsActions = {
+    update:   'Update',
+    default:  'Default',
+    undo:     'Undo',
+    restart:  'Restart',
+} as const
+
+export type SettingsActionKeys = keyof typeof settingsActions
+export type SettingsActions = typeof settingsActions[keyof typeof settingsActions]
 
 
-// Declare process.env type
 type ProcessEnvValue = string | number | boolean | undefined
 
-export interface EnvSettings {
+export interface EnvParsed {
     NODE_ENV: NodeEnv;
     port: number;
     LOG_CONSOLE: LogLevels | NoLog;
@@ -27,8 +31,12 @@ export interface EnvSettings {
     LOG_DIR?: string;
 }
 
-export type EnvObject = Record<keyof EnvSettings, ProcessEnvValue>
+export type EnvObject = Record<keyof EnvParsed, ProcessEnvValue>
+export type SettingsDefinitions = Record<keyof EnvParsed, FormDefinition>
 
+
+
+// Override process.env type
 declare global {
     namespace NodeJS {
         interface ProcessEnv extends EnvObject {

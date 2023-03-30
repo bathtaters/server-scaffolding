@@ -1,8 +1,7 @@
-import type { EnvSettings } from '../types/process.d'
-import type { FormDefinition } from '../types/gui.d'
+import type { SettingsDefinitions } from '../types/settings.d'
 import RegEx, { RegExp } from '../libs/regex'
 
-export let definitions: Record<keyof EnvSettings, FormDefinition> = {
+export let definitions: SettingsDefinitions = {
   NODE_ENV: {
     default: 'development',
     html: { type: ['development','production','secure-dev'], limits: { min: 'test'.length, max: 'development'.length } },

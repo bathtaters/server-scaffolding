@@ -1,5 +1,4 @@
-import type { ServerInfo } from '../types/server.d'
-import type { ProcessEvents } from '../types/process.d'
+import type { ServerInfo, ProcessEvents } from '../types/server.d'
 import type { Express } from 'express'
 import http from 'http'
 import https from 'https'
