@@ -1,8 +1,36 @@
-import type { Schema, Limits } from '../types/validate.d'
+import type { Schema } from 'express-validator'
+import type { Limits, BaseType, ValidationType, ValidationTypeFull } from '../types/validate.d'
 import type { FormDefinition } from '../types/gui.d'
 import RegEx from '../libs/regex'
+import { baseTypes } from '../types/validate.d'
 import { boolOptions } from '../config/validate.cfg'
 import { splitUnenclosed } from './common.utils'
+
+// *** TypeString Parse *** \\
+
+// Initialize Parsers
+const typeStrRegex = RegEx(/^([^[?*]+)(\?|\*|\[\])?(\?|\*|\[\])?(\?|\*|\[\])?$/)
+const isBaseType = (str?: string): str is BaseType => !!str && Object.values<string>(baseTypes).includes(str)
+
+/** Decode validation types to { type, hasSpaces (*), isArray ([]), isOptional (?) }. 
+ * overwrite = true will overwrite exisiting type options */
+export function parseTypeStr<O extends ValidationTypeFull>(options: O, overwrite = false) {
+  if (!options.typeStr) return options
+  
+  const match = options.typeStr.toLowerCase().match(typeStrRegex)
+  if (!match) throw new Error(`Unable to parse typeString: ${options.typeStr}`)
+
+  const opts = match.slice(2,5)
+  if ((overwrite || !options.type) && isBaseType(match[1])) options.type = match[1]
+  if (overwrite || !options.isOptional) options.isOptional = opts.includes('?')
+  if (overwrite || !options.isArray)    options.isArray    = opts.includes('[]')
+  if (overwrite || !options.hasSpaces)  options.hasSpaces  = opts.includes('*')
+  return options
+}
+
+/** Convert ValidationType back to typeStr */
+export const toTypeString = ({ type, isOptional, isArray, hasSpaces }: ValidationType) =>
+  `${type}${hasSpaces ? '*' : ''}${isArray ? '[]' : ''}${isOptional ? '?' : ''}`
 
 
 // *** HTML Form validation *** \\
@@ -88,7 +116,7 @@ export function toArraySchema(schema: Schema) {
     (arrSchema, key) => {
       if (!('toArray' in schema[key])) return arrSchema
 
-      const toArray = schema[key].toArray
+      const toArray = Boolean(schema[key].toArray)
       delete schema[key].toArray
 
       return {
@@ -108,3 +136,8 @@ export function toArraySchema(schema: Schema) {
     {} as Schema
   )
 }
+
+
+// *** Simple Helpers *** \\
+
+export const hidingMin = <T extends { min?: any }>({ min, ...other }: T) => other

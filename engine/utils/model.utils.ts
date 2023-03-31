@@ -1,10 +1,8 @@
 import type { ModelBase } from '../models/Model'
 import type { Definition, ForeignKeyRef, SchemaBase } from '../types/Model.d'
 import type { SQLSuffix, SQLType, SQLTypeFull } from '../types/db.d'
-import { ModelType, modelTypes } from '../types/validate.d'
 import { HTMLType, htmlTypes } from '../types/gui.d'
 
-import RegEx from '../libs/regex'
 import { isDate } from '../libs/date'
 import { parseBoolean, parseArray } from './validate.utils'
 import { CONCAT_DELIM } from '../config/models.cfg'
@@ -12,8 +10,6 @@ import { arrayLabel } from '../types/Model.d'
 import { foreignKeyActions, sqlSuffixes, sqlTypes } from '../types/db.d'
 
 // Initialize Parsers
-const typeStrRegex = RegEx(/^([^[?*]+)(\?|\*|\[\])?(\?|\*|\[\])?(\?|\*|\[\])?$/)
-const isModelType = (str?: string): str is ModelType => !!str && Object.values<string>(modelTypes).includes(str)
 const toBool = parseBoolean(true)
 const toArray = parseArray(true)
 
@@ -26,22 +22,6 @@ export const arrayTableRefs = ({ title, primaryId }: Pick<ModelBase,'title'|'pri
   onDelete: foreignKeyActions.Cascade,
   onUpdate: foreignKeyActions.Cascade,
 })
-
-
-/** Decode validation types to { type, hasSpaces (*), isArray ([]), isOptional (?) } */
-export function parseTypeStr<D extends Definition>(def: D, overwrite = false) {
-  if (!def.typeStr) return def
-  
-  const match = def.typeStr.toLowerCase().match(typeStrRegex)
-  if (!match) throw new Error(`Unable to parse typeString: ${def.typeStr}`)
-
-  const opts = match.slice(2,5)
-  if ((overwrite || !def.type) && isModelType(match[1])) def.type = match[1]
-  if (overwrite || !def.isOptional) def.isOptional = opts.includes('?')
-  if (overwrite || !def.isArray)    def.isArray    = opts.includes('[]')
-  if (overwrite || !def.hasSpaces)  def.hasSpaces  = opts.includes('*')
-  return def
-}
 
 
 export const isBool = ({ type, isArray }: Pick<Definition,'type'|'isArray'>) => type === 'boolean' && !isArray
