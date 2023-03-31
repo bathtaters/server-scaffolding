@@ -3,15 +3,21 @@ import logger from '../libs/log'
 import { isIn } from './common.utils'
 import { badAccess } from '../config/errors.engine'
 import { models, modelsStrings, allModelsKey, ModelsTypes, ModelObject } from '../types/Users.d'
+import { allModels } from '../src.import'
 
 const modelsBitMap = new BitMap(models, modelsStrings)
 export default modelsBitMap
 
-// TODO: Auto-populate modelNames w/ models/_all
+const defaultModelList = allModels.map(({ title }) => title)
+
+// TODO: Make a multi-key BitMap class for this
+// TODO: Add toJSON & fromJSON methods to both classes (Or however you automate JSON.stringify/parse)
 
 
 /** Convert any modelAccess value to a BitMap or object of BitMaps */
-export function modelAccessToInts(modelAccess: any): number | Record<string,number> {
+export function modelAccessToInts(modelAccess: any): number | ModelObject<string> | undefined {
+  if (modelAccess == null) return modelAccess
+
   switch(typeof modelAccess) {
     case 'number':
       return modelsBitMap.create(modelAccess).int
@@ -32,14 +38,14 @@ export function modelAccessToInts(modelAccess: any): number | Record<string,numb
     case 'object':
       // Object
       if (!Array.isArray(modelAccess))
-        return Object.entries(modelAccess).reduce<Partial<ModelObject<string>>>(
+        return Object.entries(modelAccess).reduce<ModelObject<string>>(
           (obj, [key,val]) => {
             const newVal = modelAccessToInts(val)
             return typeof newVal === 'number' ?
               { ...obj, [key]: newVal } :
               { ...obj, ...newVal }
           },
-          {}
+          { [allModelsKey]: 0 }
         )
       
       // Array
@@ -59,14 +65,19 @@ export function modelAccessToInts(modelAccess: any): number | Record<string,numb
 
 
 /** Convert models of form '["model-read","name-none","model-write"]' to Models Object */
-export function modelsArrayToObj<Models extends string>(modelArray: string[], modelNames: readonly Models[]) {
-  let modelObj = newModelObject(modelNames)
+export function modelsArrayToObj<Models extends string = string>
+  (modelArray: string | string[], modelNames?: readonly Models[])
+{
+  if (typeof modelArray === 'string') modelArray = modelArray.charAt(0) === '[' ? JSON.parse(modelArray) : [modelArray]
+
+  let modelObj = newModelObject<Models>(modelNames || defaultModelList as Models[])
 
   for (const entry of modelArray) {
     const [model, access] = entry.split('-')
     if (!isIn(model, modelObj) || !isIn(access, models)) logger.warn(`Invalid model access entry: ${entry}`)
     else
-      modelObj[model].add(access)
+      // @ts-expect-error -- TODO: Replace with BitMap
+      modelObj[model] |= models[access]
   }
   return modelObj
 }
@@ -74,7 +85,9 @@ export function modelsArrayToObj<Models extends string>(modelArray: string[], mo
 
 /** Determine if modelName has access to all accessTypes provided */
 export function hasModelAccess<Models extends string>(
-  modelObj?: ModelObject<Models>, modelName?: Models, accessType: BitMapInput<ModelsTypes> = modelsBitMap.max
+  modelObj?: ModelObject<Models>,
+  modelName?: Models,
+  accessType: BitMapInput<ModelsTypes> = modelsBitMap.max
 ) {
   return !modelObj || !modelName ? false : modelsBitMap.create(accessType).isSubset(
     modelsBitMap.create(modelObj[modelName] ?? modelObj[allModelsKey])
@@ -94,5 +107,6 @@ export const getModelsString = <Models extends string>(modelObj: ModelObject<Mod
 
 const wrapAccess = (access: string) => `[${access}]`
 
-const newModelObject = <Models extends string>(modelList: readonly Models[]) => [...modelList, allModelsKey]
-  .reduce((o,m) => ({ ...o, [m]: modelsBitMap.create() }), {} as ModelObject<Models>)
+const newModelObject = <Models extends string>(modelList: readonly Models[]) =>
+  [...modelList, allModelsKey]
+    .reduce((o,m) => ({ ...o, [m]: 0 }), {} as ModelObject<Models>)
