@@ -2,7 +2,7 @@ import sqlite from 'sqlite3'
 import { join } from 'path'
 import { mkdirSync } from 'fs'
 import logger from './log'
-import services from '../services/db.services'
+import { exec, all, run, get } from '../services/db.services'
 import { throttle } from '../utils/common.utils'
 import { cleanupRateLimiter } from '../config/server.cfg'
 import { isRootInstance } from '../config/meta'
@@ -28,7 +28,7 @@ export default class SQLiteStore {
 
 		this.db = new sqlite.Database(isFile ? join(dir, db) : db, mode)
 
-		this.promise = services.exec(this.db, `CREATE TABLE IF NOT EXISTS ${this.table} (id PRIMARY KEY, hits, expires)`)
+		this.promise = exec(this.db, `CREATE TABLE IF NOT EXISTS ${this.table} (id PRIMARY KEY, hits, expires)`)
 			
 		var self = this
 		this.promise.then(function() {
@@ -45,21 +45,21 @@ export default class SQLiteStore {
 
 	async increment(id: string | number) {
 		await this.promise
-		await services.all(this.db, 'SELECT * FROM '+this.table)
+		await all(this.db, 'SELECT * FROM '+this.table)
 		if (id == null) throw new Error('No id provided to rateLimiter')
 
 		const now = Date.now()
 		const expire = now + this.windowMs
-		const get = (cols: string) => `SELECT ${cols} FROM ${this.table} WHERE id = $id AND $now <= expires`
+		const getCols = (cols: string) => `SELECT ${cols} FROM ${this.table} WHERE id = $id AND $now <= expires`
 
-		await services.run(this.db, `INSERT OR REPLACE INTO ${this.table}(id, hits, expires)
+		await run(this.db, `INSERT OR REPLACE INTO ${this.table}(id, hits, expires)
 			VALUES ($id,
-				COALESCE((${get('hits')}), 0) + 1,
-				COALESCE((${get('expires')}), $expire)
+				COALESCE((${getCols('hits')}), 0) + 1,
+				COALESCE((${getCols('expires')}), $expire)
 			)`, { $id: id, $now: now, $expire: expire } as any
 		)
 
-		const current = await services.get(this.db, get('hits, expires'), { $id: id, $now: now } as any)
+		const current = await get(this.db, getCols('hits, expires'), { $id: id, $now: now } as any)
 		if (!current) throw new Error('Unable to locate recently created rateLimit')
 
 		return {
@@ -74,7 +74,7 @@ export default class SQLiteStore {
 		const expire = now + this.windowMs
 		const get = (cols: string) => `SELECT ${cols} FROM ${this.table} WHERE id = $id AND $now <= expires`
 
-		await services.run(this.db, `INSERT OR REPLACE INTO ${this.table}(id, hits, expires)
+		await run(this.db, `INSERT OR REPLACE INTO ${this.table}(id, hits, expires)
 			VALUES ($id,
 				COALESCE((${get('hits')}), 1) - 1,
 				COALESCE((${get('expires')}), $expire)
@@ -84,13 +84,13 @@ export default class SQLiteStore {
 
 	async resetKey(id: string | number) {
 		await this.promise
-		await services.run(this.db, `DELETE FROM ${this.table} WHERE id = ?`, [id])
+		await run(this.db, `DELETE FROM ${this.table} WHERE id = ?`, [id])
 		logger.verbose(`Rate limiter reset IP ${id} from ${this.table}`)
 	}
 
 	async resetAll() {
 		await this.promise
-		await services.run(this.db, `DELETE FROM ${this.table}`)
+		await run(this.db, `DELETE FROM ${this.table}`)
 		logger.verbose(`Rate limiter reset database ${this.table}`)
 	}
 }
@@ -103,6 +103,6 @@ const writeLogCombo = throttle((tables: string[]) => logger.verbose(`Rate limite
 
 function dbCleanup(store: SQLiteStore, skipLog = false) {
 	const now = Date.now()
-	services.run(store.db,`DELETE FROM ${store.table} WHERE ? > expires`, [now])
+	run(store.db,`DELETE FROM ${store.table} WHERE ? > expires`, [now])
 		.then(() => !skipLog && writeLogCombo(store.table))
 }

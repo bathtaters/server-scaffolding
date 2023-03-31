@@ -1,4 +1,4 @@
-const modelActions = require('../../services/form.services')
+const modelActions = require('../../services/form.services').default
 const errors = require('../../config/errors.engine')
 const { config } = require('../../src.path')
 const label = require(config+'gui.cfg').actions

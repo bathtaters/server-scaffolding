@@ -1,7 +1,7 @@
 const { matchedData } = require('express-validator')
 const Users = require('../models/Users')
 const { adminFormAdapter, userFormAdapter } = require('../services/users.services')
-const modelActions = require('../services/form.services')
+const modelActions = require('../services/form.services').default
 const settingsActions = require('../services/settings.form')
 const { login, logout } = require('../middleware/auth.middleware')
 const { filterFormData, toQueryString } = require('../utils/form.utils')

@@ -32,8 +32,10 @@ export function openDb() {
       logger.verbose('Connected to main database')
     })
 
-    if (sqlSecret) encrypt(db, sqlSecret).then(() => foreignKeys(db, false)).then(() => res(db as DB))
-    else foreignKeys(db, false).then(() => res(db as DB))
+    const end = () => db ? res(db) : rej('Database not loaded')
+
+    if (typeof sqlSecret !== 'string' || !sqlSecret) foreignKeys(db, false).then(end)
+    else encrypt(db, sqlSecret).then(() => foreignKeys(db, false)).then(end)
   })
 }
 

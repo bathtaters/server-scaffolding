@@ -55,8 +55,10 @@
     "winston-daily-rotate-file": "^4.7.1"
   },
   "devDependencies": {
+    "@types/connect-sqlite3": "^0.9.2",
     "@types/cors": "^2.8.12",
     "@types/express": "^4.17.13",
+    "@types/express-session": "^1.17.7",
     "@types/hat": "^0.0.1",
     "@types/http-errors": "^1.8.2",
     "@types/jest": "^28.1.1",

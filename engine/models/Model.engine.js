@@ -1,5 +1,5 @@
 const { openDb, getDb } = require('../libs/db')
-const services = require('../services/db.services')
+const services = require('../services/db.services').default
 const { getPrimaryIdAndAdaptSchema, runAdapters, extractArrays } = require('../services/model.services')
 const { checkInjection, appendAndSort, getArrayJoin } = require('../utils/db.utils')
 const { caseInsensitiveObject, filterByField } = require('../utils/common.utils')
@@ -9,7 +9,7 @@ const { adapterKey, ifExistsBehavior, arrayLabel, getArrayName, getArrayPath, CO
 const errors = require('../config/errors.engine')
 
 const parseBool = parseBoolean(true)
-const entryKeys = [arrayLabel.foreignId, arrayLabel.index, arrayLabel.entry]
+const entryKeys = [arrayLabel.foreignId, arrayLabel.index, arrayLabel.value]
 
 /** Base class for creating Database Models */
 class Model {

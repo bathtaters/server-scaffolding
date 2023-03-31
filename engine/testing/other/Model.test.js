@@ -1,5 +1,5 @@
 const Model = require('../../models/Model.engine')
-const services = require('../../services/db.services')
+const services = require('../../services/db.services').default
 const { openDb, getDb } = require('../../libs/db')
 const { getPrimaryIdAndAdaptSchema, runAdapters } = require('../../services/model.services')
 const { checkInjection, appendAndSort, getArrayJoin } = require('../../utils/db.utils')
