@@ -1,21 +1,13 @@
 import type { HTMLType } from './gui.d'
-import type { ModelType, Limits} from './validate.d'
+import type { BaseType, Limits, ValidationTypeFull } from './validate.d'
 import type { SQLTypeFull, ForeignKeyAction } from './db.d'
 
 /** Definitions for a column of the Model */
-export type Definition<K extends keyof Schema = keyof Schema, Schema extends SchemaBase = SchemaBase, DBSchema extends SchemaBase = Schema> = {
-
-  /** Column type of form: type*[]? (Everything except 'type' is optional)
-  *   - type = string, uuid, b64[url], hex, date, datetime, boolean, int, float, object, any
-  *   - [] = array of type
-  *   - ? = column is optional
-  *   - \* = (Only allowed w/ type = string) allows symbols/spaces in string */
-  typeStr:     `${ModelType | "string*"}${"" | "?" | "[]" | "[]?"}`,
-
-  /** Object of column limits
-   *   - { min?, max? } | { array: { min?, max? }, elem: { min?, max? } }
-   *   - Sets limits on numbers, string length or array size */
-  limits?:      Limits,
+export type Definition<
+  K extends keyof Schema = keyof Schema,
+  Schema extends SchemaBase = SchemaBase,
+  DBSchema extends SchemaBase = Schema
+> = ValidationTypeFull & {
 
   /** Default value
    *   - Default value to use for that column if nothing provided on creation 
@@ -58,25 +50,6 @@ export type Definition<K extends keyof Schema = keyof Schema, Schema extends Sch
    *   - true = obscure column from non-raw get results 
    *   - default: false */
   dbOnly?:      boolean,
-  
-
-  /** Column base type (w/o *[]? suffixes)
-   *   - default: parsed from typeStr */
-  type?:        ModelType,
-
-  /** If column can be empty ('?' suffix)
-   *   - default: parsed from typeStr */
-  isOptional?:  boolean,
-
-  /** If column is an array of <type> ('[]' suffix)
-   *   - This will auto-create and link a related table for this column
-   *      unless "db" property is present
-   *   - default: parsed from typeStr */
-  isArray?:     boolean,
-
-  /** If a string column will allow spaces & special characters ('*' suffix)
-   *   - default: parsed from typeStr */
-  hasSpaces?:   boolean,
 
   /** If this column is a BitMap (Binary data stored as an integer)
    *   - default: false */
