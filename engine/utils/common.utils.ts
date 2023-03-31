@@ -14,8 +14,15 @@ export const isIn = <T extends object>(key: any, object: T): key is keyof T => k
 
 /** Filter out duplicate values from array */
 export const filterDupes = <T = any>(arr: T[]) => 
-  arr.filter((val, idx) => !arr.slice(0,idx).includes(val))
+arr.filter((val, idx) => !arr.slice(0,idx).includes(val))
 
+/** Concatenate value(s) to array as long as they don't already exist.
+ * This will not check the input values for uniqueness w/in themselves. */
+export const concatUnique = <T = any, S = T>(arr1: T[], arr2?: S | S[]) => {
+  if (arr2 == null) return [ ...arr1 ]
+  if (!Array.isArray(arr2)) arr2 = [arr2]
+  return [ ...arr1, ...arr2.filter((item) => !arr1.includes(item as any)) ]
+}
 
 /** Check if array has any duplicate values (Returning 1-based index of 1st match) */
 export const hasDupes = <T = any>(array: T[]) =>
