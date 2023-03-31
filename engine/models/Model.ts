@@ -14,17 +14,17 @@ import errors from '../config/errors.engine'
 const parseBool = parseBoolean(true)
 const entryKeys = [arrayLabel.foreignId, arrayLabel.index, arrayLabel.value]
 
-export default class Model<Schema extends SchemaBase> {
+export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBase = Schema> {
   private _title: string = 'model'
-  private _primaryId: keyof Schema & string = 'id'
-  private _schema: DefinitionSchema<Schema> = {}
+  private _primaryId: keyof DBSchema & string = 'id'
+  private _schema: DefinitionSchema<Schema, DBSchema> = {}
   private _defaults: Partial<Schema> = {}
-  private _hidden: Array<keyof Schema> = []
-  protected _arrays: DefinitionSchema<Schema> = {}
+  private _hidden: Array<keyof DBSchema> = []
+  protected _arrays: DefinitionSchema<Schema, DBSchema> = {}
   private _isArrayTable: boolean = false
   readonly isInitialized: Promise<boolean>
 
-  constructor(title: string, definitions: DefinitionSchema<Schema>, isArrayTable: boolean = false) {
+  constructor(title: string, definitions: DefinitionSchema<Schema, DBSchema>, isArrayTable: boolean = false) {
     this._isArrayTable = isArrayTable
     if (this.isArrayTable) this._title = title
     else this.title = title
@@ -60,9 +60,12 @@ export default class Model<Schema extends SchemaBase> {
   }
 
   get(): Promise<Schema[]>
-  get(id: Schema[keyof Schema], idKey?: keyof Schema, raw?: boolean): Promise<Schema>
-  get(id: Schema[keyof Schema], idKey?: keyof Schema, raw?: boolean, skipArrays?: boolean): Promise<Partial<Schema>>
-  async get(id?: Schema[keyof Schema], idKey?: keyof Schema, raw?: boolean, skipArrays?: boolean): Promise<Schema|Schema[]|Partial<Schema>> {
+  get(id: DBSchema[keyof DBSchema], idKey?: keyof DBSchema): Promise<Schema>
+  get(id: DBSchema[keyof DBSchema], idKey?: keyof DBSchema, raw: false): Promise<Schema>
+  get(id: DBSchema[keyof DBSchema], idKey?: keyof DBSchema, raw: true): Promise<DBSchema>
+  get(id: DBSchema[keyof DBSchema], idKey?: keyof DBSchema, raw?: boolean): Promise<Schema|DBSchema>
+  get(id: DBSchema[keyof DBSchema], idKey?: keyof DBSchema, raw?: boolean, skipArrays?: boolean): Promise<Partial<Schema|DBSchema>>
+  async get(id?: DBSchema[keyof DBSchema], idKey?: keyof DBSchema, raw?: boolean, skipArrays?: boolean): Promise<Schema[]|Schema|DBSchema|Partial<Schema|DBSchema>> {
     const arrays = skipArrays ? [] : Object.keys(this.arrays)
 
     const idIsArray = idKey && arrays.includes(idKey)
@@ -80,7 +83,7 @@ export default class Model<Schema extends SchemaBase> {
   }
 
 
-  async getPage(page: number, size: number, reverse?: boolean, orderKey?: keyof Schema): Promise<Schema[]> {
+  async getPage(page: number, size: number, reverse?: boolean, orderKey?: keyof DBSchema): Promise<Schema[]> {
     if (!size) return Promise.reject(errors.noSize())
     if (orderKey && !Object.keys(this.schema).includes(orderKey)) throw errors.badKey(orderKey, this.title)
 
@@ -91,11 +94,15 @@ export default class Model<Schema extends SchemaBase> {
     const result = await services.all(getDb(), sql, [size, (page - 1) * size])
       .then((res) => res.map(caseInsensitiveObject))
 
-    return Promise.all(result.map((data: Schema) => runAdapters(adapterKey.get, data, this)))
+    return Promise.all(result.map((data: DBSchema) => runAdapters<Schema>(adapterKey.get, data, this)))
   }
 
 
-  async find(matchData: Partial<Schema>, partialMatch?: boolean, orderKey?: keyof Schema, raw: boolean = false): Promise<Schema[]> {
+  async find(matchData: Partial<Schema>, partialMatch?: boolean, orderKey?: keyof DBSchema): Promise<Schema[]>;
+  async find(matchData: Partial<Schema>, partialMatch?: boolean, orderKey?: keyof DBSchema, raw: false): Promise<Schema[]>;
+  async find(matchData: Partial<Schema>, partialMatch?: boolean, orderKey?: keyof DBSchema, raw: true): Promise<DBSchema[]>;
+  async find(matchData: Partial<Schema>, partialMatch?: boolean, orderKey?: keyof DBSchema, raw: boolean): Promise<(Schema|DBSchema)[]>;
+  async find(matchData: Partial<Schema>, partialMatch?: boolean, orderKey?: keyof DBSchema, raw = false): Promise<(Schema|DBSchema)[]> {
     matchData = await runAdapters(adapterKey.set, matchData, this)
     matchData = sanitizeSchemaData(matchData, this)
 
@@ -134,13 +141,13 @@ export default class Model<Schema extends SchemaBase> {
       `${getArrayJoin(this, Object.keys(this.arrays))} WHERE ${text.join(' AND ')}${
         !orderKey ? '' : ` ORDER BY ${this.title}.${orderKey || this.primaryId}`
       }`,
-    params).then((res: Schema[]) => res.map(caseInsensitiveObject))
+    params).then((res: DBSchema[]) => res.map(caseInsensitiveObject))
 
-    return raw ? result : Promise.all(result.map((data: Schema) => runAdapters(adapterKey.get, data, this)))
+    return raw ? result : Promise.all(result.map((data: DBSchema) => runAdapters<Schema>(adapterKey.get, data, this)))
   }
 
 
-  async count(id?: Schema[keyof Schema], idKey?: keyof Schema): Promise<number> {
+  async count(id?: DBSchema[keyof DBSchema], idKey?: keyof DBSchema): Promise<number> {
     if (idKey && !Object.keys(this.schema).includes(idKey)) throw errors.badKey(idKey, this.title)
     
     const filter = id != null ? ` WHERE ${idKey || this.primaryId} = ?` : ''
@@ -152,10 +159,12 @@ export default class Model<Schema extends SchemaBase> {
   }
   
   
-  add(data: Schema, ifExists: IfExistsBehavior = 'default'): Promise<Schema> { return this.batchAdd([data], ifExists, true) }
+  add(data: Schema, ifExists: IfExistsBehavior = 'default'): Promise<DBSchema> { return this.batchAdd([data], ifExists, true) }
   batchAdd(dataArray: Schema[], ifExists?: IfExistsBehavior): Promise<Feedback>
-  batchAdd(dataArray: Schema[], ifExists: IfExistsBehavior, returns: boolean): Promise<Schema|Feedback>
-  async batchAdd(dataArray: Schema[], ifExists: IfExistsBehavior = 'default', returns?: boolean): Promise<Schema|Feedback> {
+  batchAdd(dataArray: Schema[], ifExists: IfExistsBehavior, returns: false): Promise<Feedback>
+  batchAdd(dataArray: Schema[], ifExists: IfExistsBehavior, returns: true): Promise<DBSchema>
+  batchAdd(dataArray: Schema[], ifExists: IfExistsBehavior, returns: boolean): Promise<DBSchema|Feedback>
+  async batchAdd(dataArray: Schema[], ifExists: IfExistsBehavior = 'default', returns = false): Promise<DBSchema|Feedback> {
     if (!dataArray.length) throw errors.noData('batch data')
     dataArray = await Promise.all(dataArray.map((data) => runAdapters(adapterKey.set, { ...this.defaults, ...data }, this)))
     dataArray = dataArray.map((data) => sanitizeSchemaData(data, this))
@@ -177,7 +186,7 @@ export default class Model<Schema extends SchemaBase> {
     )
     if (!arrayKeys.length) return returns ? result : { success: true }
     
-    let nextId: number | undefined
+    let nextId: number | undefined;
     if (missingPrimary && typeof result[this.primaryId] === 'number')
       nextId = result[this.primaryId] - dataArray.length
 
@@ -203,12 +212,12 @@ export default class Model<Schema extends SchemaBase> {
   }
 
 
-  async update(id: Schema[keyof Schema], data: Partial<Schema>, idKey?: keyof Schema, onChangeCb?: ChangeCallback<Schema>): Promise<Feedback> {
+  async update(id: Schema[keyof Schema], data: Partial<Schema>, idKey?: keyof Schema, onChangeCb?: ChangeCallback<DBSchema>): Promise<Feedback> {
     if (id == null) throw errors.noID()
     return this.batchUpdate({ [idKey || this.primaryId]: id }, data, false, onChangeCb)
   }
 
-  async batchUpdate(matching: Partial<Schema>, updates: Partial<Schema>, partialMatch: boolean = false, onChangeCb?: ChangeCallback<Schema>): Promise<Feedback> {
+  async batchUpdate(matching: Partial<Schema>, updates: Partial<Schema>, partialMatch: boolean = false, onChangeCb?: ChangeCallback<DBSchema>): Promise<Feedback> {
     matching = await runAdapters(adapterKey.set, matching, this)
     matching = sanitizeSchemaData(matching, this)
     if (!Object.keys(matching).length) throw errors.noID()
@@ -217,7 +226,7 @@ export default class Model<Schema extends SchemaBase> {
     updates = sanitizeSchemaData(updates, this)
     if (!Object.keys(updates).length) throw errors.noData()
 
-    const current = await this.find(matching, partialMatch, null, true)
+    const current: DBSchema[] = await this.find(matching, partialMatch, null, true)
     const ids = current.map((entry) => entry[this.primaryId]).filter((id) => id != null)
     if (!ids.length) throw errors.noEntry(JSON.stringify(matching))
 
@@ -265,7 +274,7 @@ export default class Model<Schema extends SchemaBase> {
   }
   
   
-  async remove(id: Schema[keyof Schema], idKey?: keyof Schema): Promise<Feedback> {
+  async remove(id: DBSchema[keyof DBSchema], idKey?: keyof DBSchema): Promise<Feedback> {
     if (id == null) return Promise.reject(errors.noID())
 
     const count = await this.count(id, idKey)
@@ -325,4 +334,4 @@ export default class Model<Schema extends SchemaBase> {
   }
 }
 
-export type ModelBase<Schema extends SchemaBase = SchemaBase> = InstanceType<typeof Model<Schema>>
+export type ModelBase<Schema extends SchemaBase = SchemaBase, DBSchema extends SchemaBase = Schema> = InstanceType<typeof Model<Schema, DBSchema>>

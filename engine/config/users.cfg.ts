@@ -1,5 +1,4 @@
-import type { Definition } from '../types/Model.d'
-import { access, models, allModelsKey, UsersUI, AccessTypes, UsersDB } from '../types/Users.d'
+import { access, models, allModelsKey, UsersUI, AccessTypes, UserDefinition } from '../types/Users.d'
 import RegEx from '../libs/regex'
 import { urlCfg } from '../src.import'
 
@@ -36,7 +35,7 @@ tooltips: Partial<Record<keyof UsersUI, string>> = {
   locked: 'Lock/Unlock entire user account'
 },
 
-definition: Record<keyof UsersDB, Definition> = Object.freeze({
+definition: UserDefinition = Object.freeze({
   id: {
     typeStr: "hex",
     limits: { min: 32, max: 32 },

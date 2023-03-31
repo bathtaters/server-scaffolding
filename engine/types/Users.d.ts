@@ -1,3 +1,4 @@
+import type { Definition, DefinitionSchema } from "./Model.d"
 import { actions } from "./gui.d"
 import { profileActions } from "../config/users.cfg"
 
@@ -26,10 +27,9 @@ export const modelsStrings = Object.freeze({
     [noAccess]: noModelAccessChar,
 })
 
-interface UsersBase {
+type UsersBase = {
     id: string, // hex
     username: string,
-    confirm?: string,
     token: string, // hex
     cors?: Cors,
     failCount?: int,
@@ -41,23 +41,47 @@ interface UsersBase {
     locked: boolean,
 }
 
-export interface UsersDB extends UsersBase {
+export type UsersDB = UsersBase & {
     access: number, // bitmap
-    models: number, // bitmap
+    models: string, // JSON
     pwkey?: string, // hex
     salt?:  string, // hex
 }
 
-export interface UsersUI extends UsersBase {
-    access?: Access[],
-    models: ModelsShort,
-    password?: boolean,
+export type UsersUI = UsersBase & {
+    access?: number, // not Access[], doesn't run through Setter
+    models: ModelObject<string>,
+    password?: boolean | string,
+    confirm?: string,
 }
+
+export type UsersHTML = {
+    id: string, // hex
+    token: string, // hex
+    username: string,
+    cors?: string,
+    regExCors?: boolean,
+    arrayCors?: boolean,
+    failTime?: string,
+    guiTime?: string,
+    apiTime?: string,
+    locked: boolean,
+    access?: string,
+    models: string | string[],
+    password?: boolean | string,
+    confirm?: string,
+    hadError?: boolean,
+}
+
+// TODO -- Define session data object
+export type SessionData = { undoSettings?: any }
 
 export type AccessTypes  = keyof typeof access
 export type ModelsTypes  = keyof typeof models
 export type ModelsString = typeof modelsStrings[keyof typeof modelsStrings] | `${typeof modelsStrings['read']}${typeof modelsStrings['write']}`
-export type ModelObject<Models extends string> = { [M in Models]: BitMapValue<ModelsTypes> } & { [allModelsKey]: BitMapValue<ModelsTypes> }
+export type ModelObject<Models extends string> = { [M in Models]: number } & { [allModelsKey]: number }
+
+export type UserDefinition = DefinitionSchema<UsersUI, UsersDB>
 
 export const profileLabels = profileActions.map((action) => actions[action])
 export type ProfileActions = typeof profileLabels[number]

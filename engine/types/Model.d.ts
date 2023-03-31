@@ -3,7 +3,7 @@ import type { ModelType, Limits} from './validate.d'
 import type { SQLTypeFull, ForeignKeyAction } from './db.d'
 
 /** Definitions for a column of the Model */
-export interface Definition {
+export type Definition<K extends keyof Schema = keyof Schema, Schema extends SchemaBase = SchemaBase, DBSchema extends SchemaBase = Schema> = {
 
   /** Column type of form: type*[]? (Everything except 'type' is optional)
   *   - type = string, uuid, b64[url], hex, date, datetime, boolean, int, float, object, any
@@ -20,7 +20,7 @@ export interface Definition {
   /** Default value
    *   - Default value to use for that column if nothing provided on creation 
    *   - This value is run through setAdapter each time */
-  default?:     any,
+  default?:     Schema[K] | UI[K],
 
   /** if column is SQL primary key
    *   - When no type/typeStr is provided,
@@ -32,14 +32,14 @@ export interface Definition {
    *   - PARAMS: (Column value from database, Entire row as an object)
    *   - RETURN: Updated column value for user
    *   - default: Converts data based on type */
-  [adapterTypes.get]?:  Adapter | false,
+  [adapterTypes.get]?: K extends keyof DBSchema ? Adapter<K, DBSchema, Schema> | false : false,
 
-  /** Function called whenever this column is stored in the database (ie. add/update)
+  /** Function called whenever this column is stored in the database (ie. add/update : false)
    *   - false = skip automatic conversions
    *   - PARAMS: (Column value from user, Entire row as an object)
    *   - RETURN: Updated column value for database
    *   - default: Converts data based on type */
-  [adapterTypes.set]?:  Adapter | false,
+  [adapterTypes.set]?: K extends keyof Schema  ? Adapter<K, Schema, DBSchema> | false : false,
 
   /** Determines HTML generated for this column in GUI form
    *   - string = <input> w/ this as 'type' attribute
@@ -88,12 +88,13 @@ export interface Definition {
 }
 
 export type SchemaBase = Record<string, any>
-export type DefinitionSchema<Schema extends SchemaBase> = Record<keyof Schema, Definition>
+export type DefinitionSchema<Schema extends SchemaBase = SchemaBase, DBSchema extends SchemaBase = Schema> =
+  { [K in keyof Schema | keyof DBSchema]-?: Definition<K, Schema, DBSchema> }
 
 export type Feedback = { success: boolean }
 
-export type ChangeCallback<Schema extends SchemaBase> =
-  (update: Partial<Schema>, matching: Schema[]) => Promise<Schema | void> | Schema | void
+export type ChangeCallback<DBSchema extends SchemaBase> =
+  (update: Partial<DBSchema>, matching: DBSchema[]) => Promise<DBSchema | void> | DBSchema | void
 
 
 
@@ -128,7 +129,8 @@ export type CreateTableRefs = { [arrayName: string]: ForeignKeyRef }
  * @param data - full object that value comes from
  * @returns adapted value
  */
-export type Adapter = <In = Any, Out = any, D = Record<string, any>>(value: In, data: D) => Promise<Out> | Out
+export type Adapter<Key extends keyof SchemaIn, SchemaIn extends SchemaBase, SchemaOut extends SchemaBase = SchemaIn> =
+  (value: SchemaIn[Key], data: SchemaIn & Partial<Omit<SchemaOut, keyof SchemaIn>>) => Promise<SchemaOut[Key] | void> | SchemaOut[Key] | void
 
 export const adapterTypes = { get: 'getAdapter', set: 'setAdapter' } as const
 export type AdapterType = typeof adapterTypes[keyof typeof adapterTypes]

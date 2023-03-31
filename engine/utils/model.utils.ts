@@ -1,5 +1,5 @@
 import type { ModelBase } from '../models/Model'
-import type { Adapter, Definition, ForeignKeyRef, SchemaBase } from '../types/Model.d'
+import type { Definition, ForeignKeyRef, SchemaBase } from '../types/Model.d'
 import type { SQLSuffix, SQLType, SQLTypeFull } from '../types/db.d'
 import { ModelType, modelTypes } from '../types/validate.d'
 import { HTMLType, htmlTypes } from '../types/gui.d'
@@ -29,7 +29,7 @@ export const arrayTableRefs = ({ title, primaryId }: Pick<ModelBase,'title'|'pri
 
 
 /** Decode validation types to { type, hasSpaces (*), isArray ([]), isOptional (?) } */
-export function parseTypeStr(def: Definition, overwrite = false) {
+export function parseTypeStr<D extends Definition>(def: D, overwrite = false) {
   if (!def.typeStr) return def
   
   const match = def.typeStr.toLowerCase().match(typeStrRegex)
@@ -47,28 +47,35 @@ export function parseTypeStr(def: Definition, overwrite = false) {
 export const isBool = ({ type, isArray }: Pick<Definition,'type'|'isArray'>) => type === 'boolean' && !isArray
 
 
-export function sanitizeSchemaData<Schema extends SchemaBase, T extends SchemaBase>(data: T, { schema, arrays }: SanitModel<Schema> = {}) {
-  const validKeys = schema && Object.keys(schema as Schema)
+export function sanitizeSchemaData
+  <Schema extends SchemaBase, DBSchema extends SchemaBase, T extends SchemaBase>
+  (data: T, { schema, arrays }: SanitModel<Schema, DBSchema> = {})
+{
+  const validKeys = schema && Object.keys(schema)
+    // @ts-ignore -- TODO: Fix/Remove TS from global.d
     .filter((key) => schema[key].db)
     .concat(Object.keys(arrays || {}))
 
   return Object.keys(data).reduce(
     (obj, key) =>
       !validKeys || validKeys.includes(key) ? { ...obj, [key]: data[key] } : obj,
-    {} as Sanitized<T, Schema>
+    {} as Sanitized<T, Schema, DBSchema>
   )
 }
 
 
 /** Convert primary key definition to regular definition */
-export const stripPrimaryDef = ({ db, isPrimary, isOptional, ...definition }: Definition): Definition => ({
-  ...definition,
-  db: db ? db.replace(' PRIMARY KEY', ' NOT NULL') as SQLTypeFull : false,
-})
+export const stripPrimaryDef = <D extends Definition>
+  ({ db, isPrimary, isOptional, ...definition }: D) => ({
+    ...definition,
+    db: db ? db.replace(' PRIMARY KEY', ' NOT NULL') as SQLTypeFull : false as false,
+  })
 
 
 /** Convert model type to SQL type */
-export function dbFromType({ type, isOptional, isPrimary }: Pick<Definition,'type'|'isOptional'|'isPrimary'>): SQLTypeFull {
+export function dbFromType<D extends Definition>
+  ({ type, isOptional, isPrimary }: Pick<D,'type'|'isOptional'|'isPrimary'>): SQLTypeFull
+{
   let dbType: SQLType, dbSuffix: SQLSuffix | '' = ''
   
   switch (type) {
@@ -93,7 +100,9 @@ export function dbFromType({ type, isOptional, isPrimary }: Pick<Definition,'typ
 
 
 /** Convert Model type to HTML input type */
-export function htmlFromType({ type, isArray }: Pick<Definition,'type'|'isArray'>): HTMLType {
+export function htmlFromType<D extends Definition>
+  ({ type, isArray }: Pick<D,'type'|'isArray'>): HTMLType
+{
   switch (isArray ? 'array' : type) {
     case 'boolean':   return htmlTypes.checkbox
     case 'date':      return htmlTypes.date
@@ -106,7 +115,9 @@ export function htmlFromType({ type, isArray }: Pick<Definition,'type'|'isArray'
 
 
 /** Convert data from storage type to expected type */
-export function getAdapterFromType({ type, isArray, isBitmap }: Pick<Definition,'type'|'isArray'|'isBitmap'>): Adapter | undefined {
+export function getAdapterFromType<D extends Definition>
+  ({ type, isArray, isBitmap }: Pick<D, 'type'|'isArray'|'isBitmap'>): D['getAdapter']
+{
   let adapter: ((v: any) => any) | undefined;
   if (isBitmap) return adapter
 
@@ -138,7 +149,9 @@ export function getAdapterFromType({ type, isArray, isBitmap }: Pick<Definition,
 
 
 /** Convert data from user input to storage type */
-export function setAdapterFromType({ type, isArray, isBitmap }: Pick<Definition,'type'|'isArray'|'isBitmap'>): Adapter | undefined {
+export function setAdapterFromType<D extends Definition>
+  ({ type, isArray, isBitmap }: Pick<D, 'type'|'isArray'|'isBitmap'>): D['setAdapter']
+{
   let adapter: ((v: any) => any) | undefined;
   if (isBitmap) return adapter
 
@@ -181,5 +194,5 @@ export function setAdapterFromType({ type, isArray, isBitmap }: Pick<Definition,
 
 // TYPE HELPERS
 
-type Sanitized<T extends SchemaBase, Schema extends SchemaBase> = Pick<T, (keyof Schema | keyof SanitModel<Schema>['arrays']) & keyof T>
-type SanitModel<Schema extends SchemaBase> = Partial<Pick<ModelBase<Schema>,'schema'|'arrays'>>
+type Sanitized<T extends SchemaBase, Schema extends SchemaBase, DBSchema extends SchemaBase> = Pick<T, (keyof Schema | keyof SanitModel<Schema, DBSchema>['arrays']) & keyof T>
+type SanitModel<Schema extends SchemaBase, DBSchema extends SchemaBase> = Partial<Pick<ModelBase<Schema, DBSchema>,'schema'|'arrays'>>
