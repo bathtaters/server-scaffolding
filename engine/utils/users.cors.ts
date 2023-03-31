@@ -22,7 +22,7 @@ const regEx = {
   canParse:  (str: any): str is string => typeof str === 'string' && regExRegex.test(str),
 }
 
-export function decodeCors(cors: Cors): Cors | undefined {
+export function decodeCors(cors?: Cors): Cors | undefined {
   if (cors == null) return undefined
   if (cors === "true" || cors === "false") return cors === "true"
   if (cors === "0" || cors === "1" || cors === 0 || cors === 1) return Boolean(+cors)
@@ -31,7 +31,7 @@ export function decodeCors(cors: Cors): Cors | undefined {
   return typeof cors === 'string' && jsonRegex.test(cors) ? JSON.parse(cors) : cors
 }
 
-export function encodeCors(cors: Cors) {
+export function encodeCors(cors?: Cors) {
   if (cors == null) return undefined
   if (Array.isArray(cors)) return JSON.stringify(cors)
   if (regEx.canString(cors)) return regEx.stringify(cors)
@@ -41,11 +41,11 @@ export function encodeCors(cors: Cors) {
   return cors
 }
 
-export function displayCors(cors: Cors) {
-  if (!cors) return cors
+export function displayCors(cors?: Cors) {
+  if (cors == null) return undefined
   if (Array.isArray(cors)) return cors.join(', ')
   if (regEx.canString(cors)) return regEx.stringify(cors)
-  return cors
+  return String(cors)
 }
 
-export function isRegEx(re: RegExp) { return re && regEx.canString(re)}
+export function isRegEx(re: any) { return re && regEx.canString(re)}
