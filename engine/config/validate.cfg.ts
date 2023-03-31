@@ -1,9 +1,10 @@
-import type { TypeOf, TypeDef, Limits } from '../types/validate.d'
+import type { TypeOf, TypeDef, Limit } from '../types/validate.d'
 import RegEx from '../libs/regex'
+import { isIn } from '../utils/common.utils'
 
 const strictDatetime = true // Use strict date/time parsing
 
-export const defaultLimits: Partial<Record<TypeDef, Limits>> = {
+export const defaultLimits: Partial<Record<TypeDef, Limit>> = {
   int:  { min: Number.MIN_SAFE_INTEGER, max: Number.MAX_SAFE_INTEGER },
   string: { min: 0, max: 2**30-2 },
   array: { min: 0, max: 2**32-2 },
@@ -30,23 +31,26 @@ export const
   errorMsgs = {
     // Static
     exists:   () => 'must be included',
-    b64:      () => 'not a valid base64 string',
-    uuid:     () => 'not a valid UUID',
-    hex:      () => 'not a valid hexadecimal',
-    string:   () => 'not a valid string',
-    float:    () => 'not a valid decimal',
-    int:      () => 'not a valid number',
-    boolean:  () => 'not a valid boolean',
-    interval: () => 'not a valid interval',
-    datetime: () => 'not a valid timestamp',
-    date:     () => 'not a valid date',
-    object:   () => 'not a valid object',
-    array:    () => 'not a valid array',
+    invalid: (type?: TypeDef) => {
+      if (!type || type === 'any') return 'not valid'
+
+      const typeDict = {
+        b64:      'base64 string',
+        b64url:   'url-safe base64 string',
+        uuid:     'UUID',
+        hex:      'hexadecimal',
+        float:    'decimal number',
+        int:      'integer',
+        datetime: 'timestamp',
+      }
+      return `not a valid ${isIn(type, typeDict) ? typeDict[type] : type}`
+    },
+
     // Variable
-    type:      (type: TypeDef)               => `does not exist as ${type}`,
-    missing:   (key: string, type?: TypeDef) => `${key} has ${type ? 'invalid' : 'missing'} type definition: ${type || ''}`,
+    type:      (type: string)               => `does not exist as ${type}`,
+    missing:   (key: string, type?: string) => `${key} has ${type ? 'invalid' : 'missing'} type definition: ${type || ''}`,
     missingIn: (key: string)                 => `${key} missing 'in' array for validation`,
-    limit:     ({ min, max }: Limits = {}, type?: TypeDef) => {
+    limit:     ({ min, max }: Limit = {}, type?: TypeDef) => {
       const typeSuffix: Partial<Record<TypeDef,string>> = { string: ' characters', array: ' items' }
       const suffix = typeSuffix[type ?? 'any'] ?? ''
       
