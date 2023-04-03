@@ -1,8 +1,8 @@
-import type { Definition } from "../types/Model.d"
+import type { ValidationTypeFull } from "../types/validate"
 
 export const
   defaultPrimary = 'id',
-  defaultPrimaryType: Definition = { typeStr: 'int', type: 'int', isOptional: false, isArray: false },
+  defaultPrimaryType: ValidationTypeFull = { typeStr: 'int', type: 'int', isOptional: false, isArray: false } as const,
   SQL_ID = 'rowid',
 
   ifExistsBehavior = {
@@ -13,7 +13,7 @@ export const
     overwrite: ' OR REPLACE',
   },
   
-  getArrayName = (mainTable: string, arrayKey: string | number) => `[${mainTable}:${arrayKey}]`,
+  getArrayName = (mainTable: string, arrayKey: string | number | symbol) => `[${mainTable}:${String(arrayKey)}]`,
   getArrayPath = (arrayName: string) => arrayName.replace(/^\[|\]$/g,'').replace(':','/'),
   CONCAT_DELIM = '~|~',
 

@@ -59,7 +59,7 @@ modifyOther = () => createError(403, "Must have admin privileges to modify other
 badAction = (action = '[None]') => createError(400, `Invalid action: ${action}.`),
 
 // DB Errors
-badKey = (key?: string, table = 'table') => createError(500, `Column "${key}" does not exist in ${table}.`),
+badKey = (key?: any, table = 'table') => createError(500, `Column "${String(key)}" does not exist in ${table}.`),
 noAdd = () => createError(502, "New entry was not created."),
 noPrimary = (table?: string, method?: string) => createError(400, `PrimaryId for ${table}.${method} cannot be automatically determined. Must include in ${method} data.`),
 sqlNotDB = () => new Error('Database file not recognized: confirm that DB_SECRET hasn\'t changed and check DB_PATH'),

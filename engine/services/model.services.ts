@@ -1,14 +1,16 @@
 import type Model from '../models/Model'
-import type { AdapterType, Definition, DefinitionSchema, SchemaBase, ArrayDefinitions } from '../types/Model.d'
+import type { AdapterType, Definition, DefinitionSchema, SchemaBase, ArrayDefinitions, CommonDefinition } from '../types/Model.d'
 import { hasDupes, isIn } from '../utils/common.utils'
 import { arrayLabel, adapterTypes } from '../types/Model.d'
 import { defaultPrimary, defaultPrimaryType, SQL_ID } from '../config/models.cfg'
-import { dbFromType, htmlFromType, getAdapterFromType, setAdapterFromType, stripPrimaryDef } from '../utils/model.utils'
+import { dbFromType, htmlFromType, getAdapterFromType, setAdapterFromType, stripPrimaryDef, sanitizeSchemaData } from '../utils/model.utils'
 import { parseTypeStr } from '../utils/validate.utils'
-import { ModelBase } from '../models/Model'
 
 
-export function adaptSchemaEntry<D extends Definition>(settings: D) {
+export function adaptSchemaEntry
+  <Schema extends SchemaBase, DBSchema extends SchemaBase, K extends keyof (Schema & DBSchema) & string>
+  (settings: Definition<Schema, DBSchema, K>)
+{
   if (!settings.type && settings.typeStr) parseTypeStr(settings)
 
   if (!settings.type && settings.isPrimary) settings = { ...settings, ...defaultPrimaryType }
@@ -26,17 +28,21 @@ export function adaptSchemaEntry<D extends Definition>(settings: D) {
 }
 
 
-export function getPrimaryIdAndAdaptSchema<D extends DefinitionSchema>(schema: D, title = 'model', isArray = false) {
-  let primaryId: keyof D | undefined
-
-  for (const key in schema) {
+export function getPrimaryIdAndAdaptSchema
+  <Schema extends SchemaBase, DBSchema extends SchemaBase = Schema>
+  (schema: DefinitionSchema<Schema,DBSchema>, title = 'model', isArray = false)
+{
+  let primaryId: (keyof (Schema & DBSchema) & string) | undefined
+  
+  let key = primaryId
+  for (key in schema) {
     if (schema[key].isPrimary) {
       if (primaryId) throw new Error(`${title} has more than one primary ID: ${String(primaryId)}, ${key}`)
       if (schema[key].isArray) throw new Error(`Primary ID cannot be array type: ${title}.${key}`)
       primaryId = key
     }
 
-    schema[key] = adaptSchemaEntry(schema[key])
+    schema[key] = adaptSchemaEntry<Schema, DBSchema, typeof key>(schema[key])
   }
 
   if (!primaryId) {
@@ -44,7 +50,7 @@ export function getPrimaryIdAndAdaptSchema<D extends DefinitionSchema>(schema: D
     schema[primaryId] = { ...defaultPrimaryType, ...(schema[primaryId] || {}), isPrimary: true }
     delete schema[primaryId].db
 
-    schema[primaryId] = adaptSchemaEntry(schema[primaryId])
+    schema[primaryId] = adaptSchemaEntry<Schema, DBSchema, typeof primaryId>(schema[primaryId])
   }
 
   if (!Object.values(schema).filter(({ db }) => db).length)
@@ -57,28 +63,37 @@ export function getPrimaryIdAndAdaptSchema<D extends DefinitionSchema>(schema: D
 }
 
 
-export async function runAdapters<Model extends ModelBase>(
-  adapterType: AdapterType,
-  data: Partial<Record<keyof Model['schema'], any>>,
-  { schema, hidden }: Model
-) {
+type RAModel<S extends SchemaBase, D extends SchemaBase> = Pick<Model<S,D>, 'schema'|'hidden'|'arrays'>
+
+export async function runAdapters<S extends SchemaBase, D extends SchemaBase>(adapterType: typeof adapterTypes.set, data: S, model: RAModel<S,D>):
+  Promise<D>;
+export async function runAdapters<S extends SchemaBase, D extends SchemaBase>(adapterType: typeof adapterTypes.get, data: D, model: RAModel<S,D>):
+  Promise<S>;
+export async function runAdapters<S extends SchemaBase, D extends SchemaBase>(adapterType: typeof adapterTypes.set, data: Partial<S>, model: RAModel<S,D>):
+  Promise<Partial<D>>;
+export async function runAdapters<S extends SchemaBase, D extends SchemaBase>(adapterType: typeof adapterTypes.get, data: Partial<D>, model: RAModel<S,D>):
+  Promise<Partial<S>>;
+export async function runAdapters<S extends SchemaBase, D extends SchemaBase = S>(adapterType: AdapterType, data:  Partial<S & D>, model: RAModel<S,D>) {
   let result: any = {}
 
-  await Promise.all(Object.keys(schema).map(async (key) => {
-    if (!isIn(key, data) || adapterType !== adapterTypes.get || hidden.includes(key)) return
+  await Promise.all(Object.keys(model.schema).map(async (key) => {
+
+    if (!isIn(key, data) || (adapterType === adapterTypes.get && model.hidden.includes(key))) return;
     
-    const adapter = schema[key][adapterType]
-    if (typeof adapter !== 'function') result[key] = data[key]
-    else result[key] = (await adapter(data[key], data)) ?? data[key]
+    const adapter = model.schema[key][adapterType]
+    if (typeof adapter !== 'function') return result[key] = data[key]
+    
+    const adapterResult = await adapter(data[key], data)
+    result[key] = adapterResult ?? data[key]
   }))
 
-  return result
+  return adapterType === adapterTypes.set ? sanitizeSchemaData(result, model) : result
 }
 
 
 
-export function extractArrays<S extends SchemaBase>(schema: DefinitionSchema<S>, idDefinition: Definition) {
-  return Object.entries(schema).reduce<ArrayDefinitions<S>>(
+export function extractArrays<S extends SchemaBase, D extends SchemaBase>(schema: DefinitionSchema<S,D>, idDefinition: CommonDefinition<S,D>) {
+  return Object.entries(schema).reduce<ArrayDefinitions<S & D>>(
     (arrayTables, [arrayName, def]) => {
       if (!def.isArray || def.db) return arrayTables
 

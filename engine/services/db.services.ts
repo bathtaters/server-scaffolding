@@ -6,6 +6,8 @@ import { debugSQL } from '../config/models.cfg'
 
 // TO DO -- add to ./libs/db, make into class called SQLite extends DB
 
+type Params = { [key: string]: any } | any[]
+
 
 export function exec(db: Database | null, sql: string) {
   debugSQL && logger.verbose(`<SQL> ${sql}`)
@@ -25,7 +27,7 @@ export function exec(db: Database | null, sql: string) {
 }
 
 
-export function all<T = any>(db: Database | null, sql: string, params: any[] = []) {
+export function all<T = any>(db: Database | null, sql: string, params: Params = []) {
   debugSQL && logger.verbose(`<SQL> ${sql} ${JSON.stringify(params)}`)
 
   return new Promise<T[]>((res,rej) => {
@@ -36,7 +38,7 @@ export function all<T = any>(db: Database | null, sql: string, params: any[] = [
 }
 
 
-export function run(db: Database | null, sql: string, params: any[] = []) {
+export function run(db: Database | null, sql: string, params: Params = []) {
   debugSQL && logger.verbose(`<SQL> ${sql} ${JSON.stringify(params)}`)
 
   return new Promise<void>((res,rej) => {
@@ -47,7 +49,7 @@ export function run(db: Database | null, sql: string, params: any[] = []) {
 }
 
 
-export function get<T = any>(db: Database | null, sql: string, params: any[] = []) {
+export function get<T = any>(db: Database | null, sql: string, params: Params = []) {
   debugSQL && logger.verbose(`<SQL> ${sql} ${JSON.stringify(params)}`)
 
   return new Promise<T>((res,rej) => {
@@ -58,7 +60,7 @@ export function get<T = any>(db: Database | null, sql: string, params: any[] = [
 }
 
 
-export function getLastEntry<T = any>(db: Database | null, sql: string, params: any[], table: string) {
+export function getLastEntry<T = any>(db: Database | null, sql: string, params: Params, table: string) {
   debugSQL && logger.verbose(`<SQL> ${sql} ${JSON.stringify(params)}`)
 
   return new Promise<T>((res,rej) => {
@@ -75,7 +77,7 @@ export function getLastEntry<T = any>(db: Database | null, sql: string, params: 
 }
 
 
-export function reset<Tables extends string, Schema extends Record<string, string | false>>(
+export function reset<Tables extends string, Schema extends Record<string, string | false | undefined>>(
   db: Database | null,
   tableSchema: { [table in Tables]: Schema },
   force = false,

@@ -18,21 +18,21 @@ export type SettingsActions = typeof settingsActions[keyof typeof settingsAction
 
 type ProcessEnvValue = string | number | boolean | undefined
 
-export interface EnvParsed {
-    NODE_ENV: NodeEnv;
-    port: number;
-    LOG_CONSOLE: LogLevels | NoLog;
-    LOG_FILE: LogLevels | NoLog;
-    LOG_HTTP: HttpLog | NoLog;
-    TRUST_PROXY: number | boolean | string;
-    SESSION_SECRET: string;
-    DB_SECRET: string;
-    DB_DIR?: string;
-    LOG_DIR?: string;
+export type EnvParsed = {
+    NODE_ENV: NodeEnv,
+    port: number,
+    LOG_CONSOLE: LogLevels | NoLog,
+    LOG_FILE: LogLevels | NoLog,
+    LOG_HTTP: HttpLog | NoLog,
+    TRUST_PROXY: number | boolean | string,
+    SESSION_SECRET: string,
+    DB_SECRET: string,
+    DB_DIR?: string,
+    LOG_DIR?: string,
 }
 
-export type EnvObject = Record<keyof EnvParsed, ProcessEnvValue>
-export type SettingsDefinitions = Record<keyof EnvParsed, FormDefinition>
+export type EnvObject = Record<keyof EnvParsed & string, ProcessEnvValue>
+export type SettingsDefinitions = Record<keyof EnvParsed & string, FormDefinition>
 
 
 

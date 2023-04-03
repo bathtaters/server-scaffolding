@@ -1,5 +1,5 @@
 import type { ModelBase } from '../models/Model'
-import { actions, ProfileActions } from '../types/gui.d'
+import { type ProfileActions, actions } from '../types/gui.d'
 import { noData, noAdd, noID } from '../config/errors.engine'
 import { isDate } from '../libs/date'
 import { extractId } from '../utils/db.utils'
@@ -24,7 +24,7 @@ export default function formObject<Model extends ModelBase>(Model: Model): { [ac
     [actions.create]: async (formData = {}) => {
       const [_, data] = extractId(formData, Model.primaryId)
       if (!data || !Object.keys(data).length) throw noData()
-      const result = await Model.add(data)
+      const result = await Model.addAndReturn([data])
       if (!result) throw noAdd()
     },
 

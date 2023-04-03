@@ -1,6 +1,6 @@
 import type { ModelsTypes } from '../types/Users.d'
 import { parseBoolean } from '../utils/validate.utils'
-import { ProfileActions, actions } from '../types/gui.d'
+import { type ProfileActions, actions } from '../types/gui.d'
 import { badData } from '../config/errors.engine'
 const parseBool = parseBoolean(true)
 
@@ -41,7 +41,7 @@ const hasStrValues = (obj: any): obj is Record<string, string> => {
   return vals.length ? vals.every((v) => typeof v === 'string') : false
 }
 
-export const toQueryString = <T extends object>(obj: string | T, filter = defaultFilter<T>) => {
+export const toQueryString = <T extends Record<string,any>>(obj: string | T, filter = defaultFilter<T>) => {
   if (!obj) return ''
   
   if (typeof obj === 'string') {
@@ -50,9 +50,9 @@ export const toQueryString = <T extends object>(obj: string | T, filter = defaul
   }
   if (typeof obj !== 'object' || !obj) throw badData('Query string', obj)
   
-  Object.keys(obj).forEach((key) => {
-    if (!filter(obj[key] as T[keyof T], key)) delete obj[key]
-  })
+  for (const key in obj) {
+    if (!filter(obj[key], key)) delete obj[key]
+  }
 
   return hasStrValues(obj) ? `?${new URLSearchParams(obj).toString()}` : ''
 }

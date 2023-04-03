@@ -1,5 +1,6 @@
 import type { NestedObjectValue } from '../types/global.d'
 import type { EnvObject, SettingsDefinitions } from '../types/settings.d'
+import type { SessionData } from '../types/Users.d'
 import { writeFile, readFile } from 'fs/promises'
 import { parse } from 'dotenv'
 import logger from '../libs/log'
@@ -7,8 +8,8 @@ import { getSettingsVars, stringifyEnv, filterOutProps, getChanged, createEscape
 import { debounce } from '../utils/common.utils'
 import { definitions, fileReadDebounceMs, escapeEnvMsg } from '../config/settings.cfg'
 import { envPath } from '../config/meta'
-import { SessionData } from '../types/Users'
 
+const settingsKeys = Object.keys(definitions) as (keyof typeof definitions)[]
 
 const escapeChars = createEscapeObject(
   (char: string, idx: number, val: string) => { logger.warn(escapeEnvMsg(char,idx,val)) }
@@ -25,7 +26,7 @@ export const settingsDefaults = filterOutProps(
         defs,
       {} as NestedObjectValue<typeof definitions, 'formDefault'|'default'>
   ),
-  Object.keys(definitions).filter((key) => definitions[key].html && definitions[key].html.readonly)
+  settingsKeys.filter((key) => definitions[key].html && definitions[key].html.readonly)
 )
 
 
@@ -36,7 +37,7 @@ export const canUndo = (session?: SessionData) => Boolean(
 
 export async function getSettings() {
   const envObj = await debouncedRead(envPath).then((text) => parse(text.toString()))
-  return getSettingsVars(Object.keys(definitions), envObj)
+  return getSettingsVars(settingsKeys, envObj)
 }
 
 
@@ -57,9 +58,9 @@ export async function setSettings(settings: Partial<EnvObject>, session?: Sessio
 export async function getForm() {
   const newForm: Partial<SettingsDefinitions>[] = [{}, {}],
     currentVals = await getSettings(),
-    splitForm = Math.ceil(Object.keys(definitions).length / 2)
+    splitForm = Math.ceil(settingsKeys.length / 2)
 
-  Object.keys(definitions).forEach((key, idx) => {
+  settingsKeys.forEach((key, idx) => {
     if (!definitions[key].html) return
 
     if (Array.isArray(definitions[key].html.type)) {

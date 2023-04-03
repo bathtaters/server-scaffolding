@@ -1,5 +1,5 @@
 import type { Middleware } from '../types/express.d'
-import type { ObjectOf, NestedObject } from '../types/global.d'
+import type { ObjectOf, NestedObject, NestedObjectValue } from '../types/global.d'
 import RegEx, { RegExp, escapeRegexPattern } from '../libs/regex'
 
 /** Remove hyphens & Capitalize all words (For App Title) */
@@ -30,10 +30,15 @@ export const hasDupes = <T = any>(array: T[]) =>
 
 
 /** Assigns inner prop in object of objects to each outer key */
-export const filterByField = <O extends NestedObject, F extends keyof O[keyof O]>(obj: O, field: F) =>
-  Object.entries(obj).reduce((res, [key, val]) =>
-    val[field] == null ? res : Object.assign(res, { [key]: val[field] })
-  , {} as { [Key in keyof O]: O[Key][F] })
+export const filterByField = <
+  O extends NestedObject<Record<string,any>,any> = NestedObject<Record<string,any>,any>,
+  F extends keyof O[keyof O] & string = keyof O[keyof O] & string
+>
+  (obj: O, field: F) => Object.entries(obj).reduce<Partial<{ [P in keyof O & string]: O[P][F] }>>(
+    (res, [key, val]) =>
+      val[field] == null || typeof key !== 'string' ? res : { ...res, [key]: val[field] },
+    {}
+  )
 
 
 /** Flips keys and values of object */
@@ -56,11 +61,11 @@ export function exceptRoute(skipPath: string, middleware: Middleware | Middlewar
 /** Run callback on each item & replace with result */
 export function deepMap<T = any, Ret = any>(input: T, callback: (value: T) => Ret): Ret;
 export function deepMap<T = any, Ret = any>(input: T[], callback: (value: T) => Ret): Ret[];
-export function deepMap<T = any, Ret = any>(input: ObjectOf<T>, callback: (value: T) => Ret): Record<keyof T, Ret>;
+export function deepMap<T = any, Ret = any, K extends keyof T = keyof T>(input: ObjectOf<T>, callback: (value: T) => Ret): ObjectOf<Ret, K>;
 export function deepMap<T = any, Ret = any, K extends keyof T = keyof T>(
   input: ObjectOf<T,K> | T[] | T,
   callback: (value: T) => Ret
-): Ret | Ret[] | Record<keyof T, Ret> {
+): Ret | Ret[] | ObjectOf<Ret, K> {
 
   if (Array.isArray(input))
     return input.map((val) => deepMap(val, callback)) 
@@ -83,7 +88,8 @@ export const deepEquals = <T>(a: T, b: T, compareFunc = (a: T, b: T) => a === b)
   if (!a || !b) return false
   if (Array.isArray(a) !== Array.isArray(b)) return false
 
-  const keys = Object.keys(a), bKeys = Object.keys(b)
+  const keys = Object.keys(a) as (keyof T)[],
+    bKeys = Object.keys(b) as (keyof T)[]
   if (keys.length !== bKeys.length || !bKeys.every((key) => keys.includes(key))) return false
   return keys.every((key) => deepEquals(a[key], b[key]))
 }
@@ -193,29 +199,31 @@ export const getMatchingKey = <O extends Record<string,any>>(object: O, propAnyC
 
 
 /** Create object w/ case insensitive keys */
-export const caseInsensitiveObject = <O extends Record<string,any>>(object?: O) => object && new Proxy(object, {
-  has(object: O, prop: string) {
-    return Boolean(getMatchingKey(object, prop))
-  },
-  
-  get(object: O, prop: string) {
-    const key = getMatchingKey(object, prop)
-    return key ? object[key] : undefined
-  },
+export function caseInsensitiveObject<O extends Record<string,any>>(object?: O) {
+  return object && new Proxy(object, {
+    has(object: O, prop: string) {
+      return Boolean(getMatchingKey(object, prop))
+    },
+    
+    get(object: O, prop: string) {
+      const key = getMatchingKey(object, prop)
+      return key ? object[key] : undefined
+    },
 
-  set(object: O, prop: string, val: O[keyof O]) {
-    const key = getMatchingKey(object, prop)
-    if (!key) return false
+    set(object: O, prop: string, val: O[keyof O]) {
+      const key = getMatchingKey(object, prop)
+      if (!key) return false
+      
+      object[key] = val
+      return true
+    },
     
-    object[key] = val
-    return true
-  },
-  
-  deleteProperty(object: O, prop: string) {
-    const key = getMatchingKey(object, prop)
-    if (!key) return false
-    
-    delete object[key]
-    return true
-  },
-})
+    deleteProperty(object: O, prop: string) {
+      const key = getMatchingKey(object, prop)
+      if (!key) return false
+      
+      delete object[key]
+      return true
+    },
+  })
+}

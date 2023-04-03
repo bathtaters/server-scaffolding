@@ -1,3 +1,5 @@
+import type { ProfileActions } from '../types/gui'
+import type { ModelObject, UserDefinition, UsersHTML, UsersUI } from '../types/Users.d'
 import logger from '../libs/log'
 import { formatLong } from '../libs/date'
 import { accessArray, accessInt, hasAccess } from '../utils/users.access'
@@ -5,9 +7,8 @@ import { decodeCors, encodeCors, displayCors, isRegEx } from '../utils/users.cor
 import { getModelsString, modelsArrayToObj, modelAccessToInts } from '../utils/users.model'
 import { generateToken, encodePassword } from '../utils/auth.utils'
 import { modifyOther, noConfirm, badConfirm } from '../config/errors.engine'
-import { ModelObject, UserDefinition, UsersHTML, UsersUI, access, allModelsKey } from '../types/Users.d'
+import { access, allModelsKey } from '../types/Users.d'
 import { adapterTypes } from '../types/Model.d'
-import { ProfileActions } from '../types/gui'
 
 // TODO: Add default BitMap getters/setters
 // TODO: Update getters/setters to use BitMaps/etc
@@ -19,6 +20,8 @@ export function initAdapters(definitions: UserDefinition) {
   definitions.pwkey[adapterTypes.get] = (pwkey,data) => { data.password = Boolean(pwkey) }
 
   definitions.models[adapterTypes.get] = (models) => {
+    if (typeof models !== 'string') return;
+
     let updated: ModelObject<string> = { [allModelsKey]: 0 }
     try { updated = typeof models === 'string' && models ? JSON.parse(models) : models || updated }
     catch (err: any) { err.name = 'User.get'; logger.error(err) }
@@ -30,9 +33,9 @@ export function initAdapters(definitions: UserDefinition) {
 
   definitions.access[adapterTypes.set] = accessInt
 
-  definitions.username[adapterTypes.set] = (username) => username.toLowerCase()
+  definitions.username[adapterTypes.set] = (username) => username?.toLowerCase()
 
-  definitions.models[adapterTypes.set] = (models) => JSON.stringify(modelAccessToInts(models) || {})
+  definitions.models[adapterTypes.set] = (models) => models == null ? undefined : JSON.stringify(modelAccessToInts(models) || {})
 
   definitions.password[adapterTypes.set] = async (password, data) => {
     if (typeof password !== 'string' || !password) return

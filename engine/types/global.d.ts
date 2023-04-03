@@ -5,11 +5,7 @@ export type ObjectOf<T, K extends string | number | symbol = string | number | s
 
 
 /** Object of nested objects <T>, OK = outermost key type, IK = inner object <T> key type */
-export type NestedObject<
-    T extends ObjectOf<any, IK> = ObjectOf<any, IK>,
-    OK extends string | number | symbol = string | number | symbol,
-    IK extends string | number | symbol = string | number | symbol
-> = ObjectOf<T, OK>
+export type NestedObject<InnerObject extends Record<keyof any, any>, OuterKey extends keyof any> = Record<OuterKey, InnerObject>
 
 
 /** An object derived from a nested object using the outer objects' keys and selected props from the inner objects
@@ -27,23 +23,14 @@ export type Recur<T, End = any> =
 
 /** An object that requires AT LEAST ONE of the Keys */
 export type RequireOne<T, Keys extends keyof T = keyof T> =
-    Pick<T, Exclude<keyof T, Keys>> & {
-        [K in Keys]-?: Required<Pick<T, K>> & Partial<Pick<T, Exclude<Keys, K>>>
-    }[Keys]
+  Pick<T, Exclude<keyof T, Keys>> & {
+      [K in Keys]-?: Required<Pick<T, K>> & Partial<Pick<T, Exclude<Keys, K>>>
+  }[Keys]
 
+/** Add properties from type S to T, make any properties only on type S optional. */
+export type AddAsPartial<T, S> = T & Partial<Omit<S, keyof T>>
 
     
 // -- TYPESCRIPT FIXES -- \\
 
-export declare global {
-    // TODO -- REMOVE THIS AND SEE WHAT IT FIXES && ADD TS-RESET NPM PKG
-    interface ObjectConstructor {
-      keys<T>(o: T): T extends object ? (keyof T)[] :
-        T extends number ? [] :
-        T extends any[] ? number[] :
-        T extends string ? string[] :
-        never,
-  
-      fromEntries<K extends string|number|symbol, V>(entries: Array<[K, V]>): Record<K,V>,
-    }
-}
+// TODO -- add ts-reset
