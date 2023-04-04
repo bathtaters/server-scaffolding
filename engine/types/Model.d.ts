@@ -1,12 +1,15 @@
+import type { AddAsPartial } from './global.d'
 import type { HTMLType } from './gui.d'
 import type { BaseType, Limits, ValidationTypeFull } from './validate.d'
 import type { SQLTypeFull, ForeignKeyAction } from './db.d'
 
+// TODO -- Organize into namespaces
+
 /** Definitions for a column of the Model */
 export type Definition<
-  K extends keyof Schema = keyof Schema,
   Schema extends SchemaBase = SchemaBase,
-  DBSchema extends SchemaBase = Schema
+  DBSchema extends SchemaBase = Schema,
+  K extends keyof Schema | keyof DBSchema = keyof Schema & keyof DBSchema,
 > = ValidationTypeFull & {
 
   /** Default value
@@ -60,16 +63,44 @@ export type Definition<
   isHTML?:      boolean,
 }
 
+// TODO: Generate TS Types from Definition ie. Def['type'] extends 'string' ? string : ... : never
+// TODO: Auto-extract Array Keys from DefinitionSchema (Def['isArray'] extends true && Def['db'] extends false | undefined])
+
 export type SchemaBase = Record<string, any>
-export type DefinitionSchema<Schema extends SchemaBase = SchemaBase, DBSchema extends SchemaBase = Schema> =
-  { [K in keyof Schema | keyof DBSchema]-?: Definition<K, Schema, DBSchema> }
+export type DefinitionSchema<Schema extends SchemaBase, DBSchema extends SchemaBase = Schema> =
+  { [K in keyof (Schema & DBSchema) & string]-?: Definition<Schema, DBSchema, K> }
+  
+export type CommonDefinition<Schema extends SchemaBase, DBSchema extends SchemaBase = Schema> =
+  DefinitionSchema<Schema, DBSchema>[keyof Schema & keyof DBSchema & string]
+
+export type SQLSchema = Record<string, Record<string, SQLTypeFull|false|undefined>>
+
+export type Defaults<Schema extends SchemaBase, DBSchema extends SchemaBase> = Partial<{
+  [K in keyof (Schema & DBSchema) & string]:
+    K extends keyof Schema ? Schema[K] :
+    K extends keyof DBSchema ? DBSchema[K] : never
+}>
 
 export type Feedback = { success: boolean }
 
 export type ChangeCallback<DBSchema extends SchemaBase> =
   (update: Partial<DBSchema>, matching: DBSchema[]) => Promise<DBSchema | void> | DBSchema | void
 
+/** { partialMatch?: boolean, orderKey?: keyof Schema & string, onChange?: ChangeCallback<Schema> } */
+export type SQLOptions<Schema extends SchemaBase> = {
+  /** True = Fuzzy match input data */
+  partialMatch?: boolean,
+  /** (getter only) Order results by this key */
+  orderKey?: keyof Schema & string,
+  /** (update only) Called with newData & oldData before updating DB */
+  onChange?: ChangeCallback<Schema>
+}
 
+export namespace Page {
+  type Location = { page?: number, size?: number }
+  type Options = { defaultSize?: number, startPage?: number, sizeList?: number[] }
+  type Data<Schema> = { data: Schema[], page: number, pageCount: number, size: number, sizes?: number[] }
+}
 
 /** Object to generate Foreign Key Reference SQL */
 export interface ForeignKeyRef {
@@ -103,7 +134,7 @@ export type CreateTableRefs = { [arrayName: string]: ForeignKeyRef }
  * @returns adapted value
  */
 export type Adapter<Key extends keyof SchemaIn, SchemaIn extends SchemaBase, SchemaOut extends SchemaBase = SchemaIn> =
-  (value: SchemaIn[Key], data: SchemaIn & Partial<Omit<SchemaOut, keyof SchemaIn>>) => Promise<SchemaOut[Key] | void> | SchemaOut[Key] | void
+  (value: SchemaIn[Key] | undefined, data: Partial<SchemaIn & SchemaOut>) => Promise<SchemaOut[Key] | undefined> | SchemaOut[Key] | undefined
 
 export const adapterTypes = { get: 'getAdapter', set: 'setAdapter' } as const
 export type AdapterType = typeof adapterTypes[keyof typeof adapterTypes]

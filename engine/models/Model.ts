@@ -1,26 +1,25 @@
-// @ts-nocheck // Until entire engine is converted to TypeScript
-import type { IfExistsBehavior } from '../types/db.d'
+import type { Feedback, ForeignKeyRef, ArrayDefinition, SchemaBase, DefinitionSchema, ArrayDefinitions, Defaults, SQLOptions, Page, SQLSchema } from '../types/Model.d'
+import { ifExistsBehaviors, type IfExistsBehavior } from '../types/db.d'
 import { openDb, getDb } from '../libs/db'
-import services from '../services/db.services'
+import { all, get, run, reset, getLastEntry } from '../services/db.services'
 import { getPrimaryIdAndAdaptSchema, runAdapters, extractArrays } from '../services/model.services'
-import { checkInjection, appendAndSort, getArrayJoin } from '../utils/db.utils'
-import { caseInsensitiveObject, filterByField } from '../utils/common.utils'
-import { isBool, sanitizeSchemaData, arrayTableRefs } from '../utils/model.utils'
-import { parseBoolean } from '../utils/validate.utils'
-import { arrayLabel, Feedback, ChangeCallback, ForeignKeyRef, ArrayDefinition, SchemaBase, DefinitionSchema } from '../types/Model.d'
-import { adapterKey, ifExistsBehavior, CONCAT_DELIM, getArrayName, getArrayPath } from '../config/models.cfg'
-import errors from '../config/errors.engine'
+import { checkInjection, appendAndSort, insertSQL, selectSQL, countSQL, updateSQL, deleteSQL } from '../utils/db.utils'
+import { caseInsensitiveObject, filterByField, isIn } from '../utils/common.utils'
+import { sanitizeSchemaData, arrayTableRefs, isDbKey, getSqlParams, arraySQL, splitKeys } from '../utils/model.utils'
+import { arrayLabel, adapterTypes } from '../types/Model.d'
+import { getArrayName, getArrayPath } from '../config/models.cfg'
+import { noID, noData, noEntry, noPrimary, noSize, badKey } from '../config/errors.engine'
 
-const parseBool = parseBoolean(true)
-const entryKeys = [arrayLabel.foreignId, arrayLabel.index, arrayLabel.value]
+// TODO -- Get Rid of caseInsensitiveObject and use "" with all SQL column names
+// TODO -- Add documentation via JSDOC
 
 export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBase = Schema> {
   private _title: string = 'model'
-  private _primaryId: keyof DBSchema & string = 'id'
-  private _schema: DefinitionSchema<Schema, DBSchema> = {}
-  private _defaults: Partial<Schema> = {}
+  private _primaryId: keyof (DBSchema & Schema) & string = 'id'
+  private _schema!: DefinitionSchema<Schema, DBSchema>
+  private _defaults: Defaults<Schema, DBSchema> = {}
   private _hidden: Array<keyof DBSchema> = []
-  protected _arrays: DefinitionSchema<Schema, DBSchema> = {}
+  protected _arrays: ArrayDefinitions<Schema & DBSchema> = {}
   private _isArrayTable: boolean = false
   readonly isInitialized: Promise<boolean>
 
@@ -38,294 +37,282 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
     })()
   }
   
-
-  async create(overwrite?: boolean): Promise<Feedback> {
-    let dbSchema = { [this.title]: filterByField(this.schema, 'db') },
-    indexes: { [key: string]: string[] } = {},
-    refs: ForeignKeyRef = {}
-    
-    if (!this.isArrayTable) Object.keys(this.arrays).forEach((key) => {
-      const table = getArrayName(this.title, key)
-      dbSchema[table] = filterByField(this.arrays[key], 'db')
-      indexes[table]  = [arrayLabel.foreignId, arrayLabel.index]
-      refs[table] = arrayTableRefs(this)
-    })
-    
-    await services.reset(getDb(), dbSchema, overwrite, indexes, refs)
-    return { success: true }
-  }
-
-  getArrayTable(arrayKey: keyof Schema) {
-    return new Model<ArrayDefinition>(getArrayName(this.title, arrayKey), this.arrays[arrayKey], true)
-  }
-
-  get(): Promise<Schema[]>
-  get(id: DBSchema[keyof DBSchema], idKey?: keyof DBSchema): Promise<Schema>
-  get(id: DBSchema[keyof DBSchema], idKey?: keyof DBSchema, raw: false): Promise<Schema>
-  get(id: DBSchema[keyof DBSchema], idKey?: keyof DBSchema, raw: true): Promise<DBSchema>
-  get(id: DBSchema[keyof DBSchema], idKey?: keyof DBSchema, raw?: boolean): Promise<Schema|DBSchema>
-  get(id: DBSchema[keyof DBSchema], idKey?: keyof DBSchema, raw?: boolean, skipArrays?: boolean): Promise<Partial<Schema|DBSchema>>
-  async get(id?: DBSchema[keyof DBSchema], idKey?: keyof DBSchema, raw?: boolean, skipArrays?: boolean): Promise<Schema[]|Schema|DBSchema|Partial<Schema|DBSchema>> {
-    const arrays = skipArrays ? [] : Object.keys(this.arrays)
-
-    const idIsArray = idKey && arrays.includes(idKey)
-    if (idKey && !idIsArray && !Object.keys(this.schema).includes(idKey)) throw errors.badKey(idKey, this.title)
-
-    const sql = getArrayJoin(this, arrays, { id, idKey, idIsArray })
-    const result = await (id == null ?
-      services.all(getDb(), sql).then((res) => res.map(caseInsensitiveObject)) :
-      services.get(getDb(), sql, [Array.isArray(id) ? id.join(CONCAT_DELIM) : id]).then((res) => caseInsensitiveObject(res))
-    )
-
-    return raw ? result : Array.isArray(result) ?
-      Promise.all(result.map((data) => runAdapters(adapterKey.get, data, this))) :
-      result && runAdapters(adapterKey.get, result, this)
+  /** Create and return a Model instance for an underlying/related Array table */
+  getArrayTable(arrayKey: keyof Schema | keyof DBSchema) {
+    const schema = this.arrays[arrayKey]
+    if (!schema) return undefined
+    return new Model<ArrayDefinition>(getArrayName(this.title, arrayKey), schema, true)
   }
 
 
-  async getPage(page: number, size: number, reverse?: boolean, orderKey?: keyof DBSchema): Promise<Schema[]> {
-    if (!size) return Promise.reject(errors.noSize())
-    if (orderKey && !Object.keys(this.schema).includes(orderKey)) throw errors.badKey(orderKey, this.title)
-
-    const sql = `${getArrayJoin(this, Object.keys(this.arrays))} ${
-      reverse == null && !orderKey ? '' : `ORDER BY ${this.title}.${orderKey || this.primaryId} ${reverse ? 'DESC' : 'ASC'} `
-    }LIMIT ? OFFSET ?`
+  async getPage(page: number, size: number, reverseSort?: boolean, orderKey?: keyof DBSchema): Promise<Schema[]> {
+    if (size < 1 || page < 1) return Promise.reject(noSize())
+    if (typeof orderKey !== 'string' || (orderKey && !isIn(orderKey, this.schema))) throw badKey(orderKey, this.title)
     
-    const result = await services.all(getDb(), sql, [size, (page - 1) * size])
-      .then((res) => res.map(caseInsensitiveObject))
+    const result = await all(getDb(), ...selectSQL(
+      this.title,
+      this.primaryId,
+      [],
+      Object.keys(this.arrays),
+      orderKey,
+      reverseSort,
+      size,
+      page - 1
+    )).then((res) => res.map(caseInsensitiveObject) as DBSchema[])
 
-    return Promise.all(result.map((data: DBSchema) => runAdapters<Schema>(adapterKey.get, data, this)))
-  }
-
-
-  async find(matchData: Partial<Schema>, partialMatch?: boolean, orderKey?: keyof DBSchema): Promise<Schema[]>;
-  async find(matchData: Partial<Schema>, partialMatch?: boolean, orderKey?: keyof DBSchema, raw: false): Promise<Schema[]>;
-  async find(matchData: Partial<Schema>, partialMatch?: boolean, orderKey?: keyof DBSchema, raw: true): Promise<DBSchema[]>;
-  async find(matchData: Partial<Schema>, partialMatch?: boolean, orderKey?: keyof DBSchema, raw: boolean): Promise<(Schema|DBSchema)[]>;
-  async find(matchData: Partial<Schema>, partialMatch?: boolean, orderKey?: keyof DBSchema, raw = false): Promise<(Schema|DBSchema)[]> {
-    matchData = await runAdapters(adapterKey.set, matchData, this)
-    matchData = sanitizeSchemaData(matchData, this)
-
-    const searchData: [string, Schema[keyof Schema]][] = Object.entries(matchData)
-    searchData.forEach(([key]) => {
-      if (key in this.arrays) throw new Error(`Array search not implemented: ${key} in query.`)
-    })
-    if (!searchData.length) throw errors.noData()
-
-    let text: string[] = [], params: any[] = []
-    searchData.forEach(([key,val]) => {
-      if (!partialMatch) {
-        text.push(`${this.title}.${key} = ?`)
-        return params.push(val)
-        
-      } if (this.schema[key].isBitmap) {
-        const num = +val
-        text.push(`${this.title}.${key} ${num ? '&' : '='} ?`)
-        return params.push(num)
-
-      } if (isBool(this.schema[key])) {
-        text.push(`${this.title}.${key} = ?`)
-        return params.push(+parseBool(val))
-
-      } if (typeof val === 'string') {
-        text.push(`${this.title}.${key} LIKE ?`)
-        return params.push(`%${val}%`)
-      }
-      // DEFAULT
-      text.push(`${this.title}.${key} = ?`)
-      if (!val || typeof val === 'number') params.push(val)
-      else params.push(JSON.stringify(val))
-    })
-    
-    const result = await services.all(getDb(), 
-      `${getArrayJoin(this, Object.keys(this.arrays))} WHERE ${text.join(' AND ')}${
-        !orderKey ? '' : ` ORDER BY ${this.title}.${orderKey || this.primaryId}`
-      }`,
-    params).then((res: DBSchema[]) => res.map(caseInsensitiveObject))
-
-    return raw ? result : Promise.all(result.map((data: DBSchema) => runAdapters<Schema>(adapterKey.get, data, this)))
-  }
-
-
-  async count(id?: DBSchema[keyof DBSchema], idKey?: keyof DBSchema): Promise<number> {
-    if (idKey && !Object.keys(this.schema).includes(idKey)) throw errors.badKey(idKey, this.title)
-    
-    const filter = id != null ? ` WHERE ${idKey || this.primaryId} = ?` : ''
-    const result = await services.get(getDb(),
-      `SELECT COUNT(*) c FROM ${this.title}${filter}`,
-      id != null ? [id] : []
-    )
-    return result && result.c
+    return Promise.all(result.map((data) => runAdapters(adapterTypes.get, data, this)))
   }
   
-  
-  add(data: Schema, ifExists: IfExistsBehavior = 'default'): Promise<DBSchema> { return this.batchAdd([data], ifExists, true) }
-  batchAdd(dataArray: Schema[], ifExists?: IfExistsBehavior): Promise<Feedback>
-  batchAdd(dataArray: Schema[], ifExists: IfExistsBehavior, returns: false): Promise<Feedback>
-  batchAdd(dataArray: Schema[], ifExists: IfExistsBehavior, returns: true): Promise<DBSchema>
-  batchAdd(dataArray: Schema[], ifExists: IfExistsBehavior, returns: boolean): Promise<DBSchema|Feedback>
-  async batchAdd(dataArray: Schema[], ifExists: IfExistsBehavior = 'default', returns = false): Promise<DBSchema|Feedback> {
-    if (!dataArray.length) throw errors.noData('batch data')
-    dataArray = await Promise.all(dataArray.map((data) => runAdapters(adapterKey.set, { ...this.defaults, ...data }, this)))
-    dataArray = dataArray.map((data) => sanitizeSchemaData(data, this))
-    
-    const arrayKeys = Object.keys(this.arrays).filter((key) => key in dataArray[0])
-    const tableKeys = Object.keys(dataArray[0]).filter((key) => !arrayKeys.includes(key))
-    if (!tableKeys.length && !arrayKeys.length) throw errors.noData()
-
-    const missingPrimary = +!tableKeys.includes(this.primaryId)
-
-    const result = await services[returns || missingPrimary ? 'getLastEntry' : 'run'](getDb(),
-      `INSERT${ifExists ? ifExistsBehavior[ifExists] : ifExistsBehavior.default} INTO ${this.title}(${
-        tableKeys.join(',')
-      }) VALUES ${
-        dataArray.map(() => `(${tableKeys.map(() => '?').join(',')})`).join(',')
-      }`,
-      dataArray.flatMap((data) => tableKeys.map((key) => data[key])),
-      returns && this.title,
-    )
-    if (!arrayKeys.length) return returns ? result : { success: true }
-    
-    let nextId: number | undefined;
-    if (missingPrimary && typeof result[this.primaryId] === 'number')
-      nextId = result[this.primaryId] - dataArray.length
-
-    if (missingPrimary && nextId == null) throw errors.noPrimary(table,'add')
-
-    for (const key of arrayKeys) {
-      const entries = dataArray.filter((data) => data[key] && data[key].length)
-      if (!entries.length) continue
-
-      await services.run(getDb(),
-        `INSERT${ifExists ? ifExistsBehavior[ifExists] : ifExistsBehavior.default} INTO ${getArrayName(this.title, key)}(${
-          entryKeys.join(',')
-        }) VALUES ${
-          entries.flatMap((data) => data[key].map(() => `(${entryKeys.map(() => '?').join(',')})`)).join(',')
-        }`,
-        entries.flatMap((data) => {
-          const id = missingPrimary ? ++nextId : data[this.primaryId]
-          return data[key].flatMap((val, idx) => [id, idx, val])
-        })
-      )  
-    }
-    return returns ? result : { success: true }
-  }
-
-
-  async update(id: Schema[keyof Schema], data: Partial<Schema>, idKey?: keyof Schema, onChangeCb?: ChangeCallback<DBSchema>): Promise<Feedback> {
-    if (id == null) throw errors.noID()
-    return this.batchUpdate({ [idKey || this.primaryId]: id }, data, false, onChangeCb)
-  }
-
-  async batchUpdate(matching: Partial<Schema>, updates: Partial<Schema>, partialMatch: boolean = false, onChangeCb?: ChangeCallback<DBSchema>): Promise<Feedback> {
-    matching = await runAdapters(adapterKey.set, matching, this)
-    matching = sanitizeSchemaData(matching, this)
-    if (!Object.keys(matching).length) throw errors.noID()
-
-    updates = await runAdapters(adapterKey.set, updates, this)
-    updates = sanitizeSchemaData(updates, this)
-    if (!Object.keys(updates).length) throw errors.noData()
-
-    const current: DBSchema[] = await this.find(matching, partialMatch, null, true)
-    const ids = current.map((entry) => entry[this.primaryId]).filter((id) => id != null)
-    if (!ids.length) throw errors.noEntry(JSON.stringify(matching))
-
-    if (onChangeCb) {
-      const updated = await onChangeCb(updates, current)
-      if (updated) updates = updated
-      updates = sanitizeSchemaData(updates, this)
-    }
-
-    const arrayKeys = Object.keys(this.arrays).filter((key) => key in updates)
-    const tableKeys = Object.keys(updates).filter((key) => !arrayKeys.includes(key))
-    if (!tableKeys.length && !arrayKeys.length) throw errors.noData('update data after onChangeCallback')
-
-    // DB Updates
-    
-    if (tableKeys.length) await services.run(getDb(),
-      `UPDATE ${this.title} SET ${tableKeys.map(k => `${k} = ?`).join(', ')}
-      WHERE ${Object.keys(matching).map((k) => `${k} = ?`).join(' AND ')}`,
-      [...tableKeys.map((k) => updates[k]), ...Object.values(matching)]
-    )
-
-    for (const arrKey of arrayKeys) {
-      // Array Updates
-
-      if (updates[arrKey] && !Array.isArray(updates[arrKey])) throw errors.badData(arrKey, updates[arrKey], 'array')
-      const table = getArrayName(this.title, arrKey)
-
-      await services.run(getDb(),
-        `DELETE FROM ${table} WHERE ${arrayLabel.foreignId} IN (${ids.map(() => '?').join(',')})`, ids
-      )
-
-      if (!updates[arrKey] || !updates[arrKey].length) continue
-
-      await services.run(getDb(),
-        `INSERT INTO ${table}(${entryKeys.join(',')}) VALUES ${
-          ids.flatMap(() => updates[arrKey].map(() => `(${entryKeys.map(() => '?').join(',')})`)).join(', ')
-        }`,
-        ids.flatMap((id) => {
-          if (updates[this.primaryId]) id = updates[this.primaryId]
-          return updates[arrKey].flatMap((val, idx) => [id, idx, val])
-        })
-      )
-    }
-    return { success: true }
-  }
-  
-  
-  async remove(id: DBSchema[keyof DBSchema], idKey?: keyof DBSchema): Promise<Feedback> {
-    if (id == null) return Promise.reject(errors.noID())
-
-    const count = await this.count(id, idKey)
-    if (!count) throw errors.noEntry(id)
-
-    await services.run(getDb(),
-      `DELETE FROM ${this.title} WHERE ${idKey || this.primaryId} = ?`,
-    [id])
-    return { success: true }
-  }
-
-
-  async custom<ReturnT = any>(sql: string, params?: { [key: string|number]: any }, raw?: boolean): Promise<ReturnT[]> {
-    /* WARNING!! SQL CANNOT BE CHECKED FOR INJECTION */
-    const result = await services.all(getDb(), sql, params)
-      .then((res) => res.map(caseInsensitiveObject))
-    if (raw) return result
-    return Promise.all(result.map((data) => runAdapters(adapterKey.get, data, this)))
-  }
-  
-  
-  async getPaginationData(
-    { page, size }: { page?: number, size?: number },
-    { defaultSize = 5, sizeList = [], startPage = 1 }:
-    { defaultSize?: number, startPage?: number, sizeList?: number[] } = {}
-  ): Promise<{ data: Schema[], page: number, pageCount: number, size: number, sizes: number[] }> {
+  async getPageData(location: Page.Location, { defaultSize = 5, sizeList = [], startPage = 1 }: Page.Options = {}): Promise<Page.Data<Schema>> {
     const total = await this.count()
-    
-    size = +(size || defaultSize)
+    const size = location.size || defaultSize
     const pageCount = Math.ceil(total / size)
-    page = Math.max(1, Math.min(+(page || startPage), pageCount))
+    const page = Math.max(1, Math.min(location.page || startPage, pageCount))
+    const sizes = pageCount > 1 || total > Math.min(...sizeList) ? appendAndSort(sizeList, size) : undefined
     
     const data = await this.getPage(page, size)
   
-    return {
-      data, page, pageCount, size,
-      sizes: (pageCount > 1 || total > Math.min(...sizeList)) && appendAndSort(sizeList, size),
-    }
+    return { data, page, pageCount, size, sizes }
   }
 
-  // Check for injection on set
+
+
+  // Base API //
+
+  async create(overwrite?: boolean): Promise<Feedback> {
+    
+    let dbSchema: SQLSchema = { [this.title]: filterByField(this.schema, 'db') },
+      indexes: Record<string, string[]     > = {},
+      refs:    Record<string, ForeignKeyRef> = {}
+    
+    if (!this.isArrayTable) Object.entries(this.arrays).forEach(([arrayKey,definition]) => {
+      if (!definition) return;
+
+      const table = getArrayName(this.title, arrayKey)
+
+      dbSchema[table] = filterByField<any>(definition, 'db')
+      indexes[table]  = [arrayLabel.foreignId, arrayLabel.index]
+      refs[table]     = arrayTableRefs(this)
+    })
+    
+    await reset(getDb(), dbSchema, overwrite, indexes, refs)
+    return { success: true }
+  }
+
+
+  async count<ID extends keyof (Schema | DBSchema) & string>(id?: Schema[ID], idKey?: ID): Promise<number> {
+    if (!isDbKey(idKey, this.schema)) throw badKey(idKey, this.title)
+    
+    const result = await get<{ count: number }>(getDb(), ...countSQL(
+      this.title,
+      id == null ? [] : [[`${idKey || this.primaryId} = ?`, id]]
+    ))
+    return result.count
+  }
+
+  get<ID extends keyof (Schema | DBSchema) & string>(
+    id: Schema[ID], { idKey, ...options }: { idKey?: ID } & SQLOptions<DBSchema> = {}
+  ): Promise<Schema | undefined> {
+    return this.find({ [idKey || this.primaryId]: id } as any, options).then((data) => data[0])
+  }
+
+  findRaw(where?: Partial<Schema>, options: SQLOptions<DBSchema> = {}): Promise<DBSchema[]> {
+    return this._select(where, options, true)
+  }
+
+  async find(where?: Partial<Schema>, options: SQLOptions<DBSchema> = {}): Promise<Schema[]> {
+    const result = await this.findRaw(where, options)
+    return Promise.all(result.map((data) => runAdapters(adapterTypes.get, data, this)))
+  }
+
+  findBaseRaw(where?: Partial<Schema>, options: SQLOptions<DBSchema> = {}): Promise<Partial<DBSchema>[]> {
+    return this._select(where, options, false)
+  }
+
+  async findBase(where?: Partial<Schema>, options: SQLOptions<DBSchema> = {}): Promise<Partial<Schema>[]> {
+    const result = await this.findRaw(where, options)
+    return Promise.all(result.map((data) => runAdapters(adapterTypes.get, data, this)))
+  }
+  
+  
+  add(data: Schema[], ifExists: IfExistsBehavior = 'default'): Promise<Feedback> {
+    return this._insert(data, ifExists, false).then(() => ({ success: true }))
+  }
+
+  addAndReturn(data: Schema[], ifExists: IfExistsBehavior = 'default'): Promise<DBSchema> {
+    return this._insert(data, ifExists, true)
+  }
+
+
+  update<ID extends keyof (Schema | DBSchema) & string>(
+    id: Schema[ID], data: Partial<Schema>, { idKey, ...options }: { idKey?: ID } & SQLOptions<DBSchema> = {}
+  ) {
+    return this.batchUpdate({ [idKey || this.primaryId]: id } as any, data, options)
+  }
+
+  async batchUpdate(where: Partial<Schema>, data: Partial<Schema>, options: SQLOptions<DBSchema> = {}): Promise<Feedback> {
+    return this._update(data, where, options).then((success) => ({ success }))
+  }
+  
+
+  /** Checks if ID exists before removing */
+  async remove<K extends keyof DBSchema & string>(id: DBSchema[K], idKey?: K): Promise<Feedback> {
+    if (id == null) throw noID()
+
+    const count = await this.count(id, idKey)
+    if (!count) throw noEntry(id)
+
+    return this.batchRemove([id], idKey)
+  }
+
+  /** Doesn't check if IDs exist before removing */
+  async batchRemove<K extends keyof DBSchema & string>(ids: DBSchema[K][], idKey?: K): Promise<Feedback> {
+    return this._delete(ids, idKey).then((success) => ({ success }))
+  }
+
+
+  /** Use to call Custom SQL, and run result though adapter (if raw != true).
+   *  - Check sqlite3 API documentation for all() to understand sql/params
+   *  - WARNING! RETURN TYPE SHOULD BE CAST MANUALLY FROM any[]
+   *  - WARNING! sql IS NOT CHECKED FOR INJECTION, DON'T PASS UNSANITIZED UI */
+  async custom(sql: string, params?: { [key: string]: any } | any[], raw?: boolean): Promise<any[]> {
+    const result = await all(getDb(), sql, params)
+      .then((res) => res.map(caseInsensitiveObject))
+    if (raw) return result
+    return Promise.all(result.map((data) => runAdapters(adapterTypes.get, data, this)))
+  }
+
+
+
+  // Base SQL //
+
+  private async _selectRaw(where: Partial<DBSchema> | undefined, options: SQLOptions<DBSchema>, includeArrays: true): Promise<DBSchema[]>;
+  private async _selectRaw(where: Partial<DBSchema> | undefined, options: SQLOptions<DBSchema>, includeArrays: boolean): Promise<Partial<DBSchema>[]>;
+  private async _selectRaw(where: Partial<DBSchema> | undefined, { partialMatch, orderKey }: SQLOptions<DBSchema>, includeArrays: boolean): Promise<Partial<DBSchema>[]> {
+
+    const params = getSqlParams(this, where, partialMatch)
+    
+    const result = await all(getDb(), ...selectSQL(
+      this.title, this.primaryId, params,
+      includeArrays ? Object.keys(this.arrays) : [],
+      orderKey
+    ))
+
+    return result.map(caseInsensitiveObject)
+  }
+
+  private async _select(where: Partial<Schema> | undefined, options: SQLOptions<DBSchema>, includeArrays: true): Promise<DBSchema[]>;
+  private async _select(where: Partial<Schema> | undefined, options: SQLOptions<DBSchema>, includeArrays: boolean): Promise<Partial<DBSchema>[]>;
+  private async _select(where: Partial<Schema> | undefined, options: SQLOptions<DBSchema>, includeArrays: boolean): Promise<Partial<DBSchema>[]> {
+    
+    let whereData: Partial<DBSchema> | undefined
+
+    if (where)
+      whereData = await runAdapters(adapterTypes.set, where, this)
+        .then((entry) => sanitizeSchemaData(entry, this) as Partial<DBSchema>)
+
+    return this._selectRaw(whereData, options, includeArrays)
+  }
+
+
+  private async _insert(data: Schema[], ifExists: IfExistsBehavior, returnLast: false): Promise<false>;
+  private async _insert(data: Schema[], ifExists: IfExistsBehavior, returnLast:  true): Promise<DBSchema>;
+  private async _insert(data: Schema[], ifExists: IfExistsBehavior, returnLast: boolean): Promise<DBSchema|false>;
+  private async _insert(data: Schema[], ifExists: IfExistsBehavior, returnLast: boolean): Promise<DBSchema|false> {
+    if (!data.length) throw noData('batch data')
+
+    // Adapt/Sanitize data
+    const dataArray = await Promise.all(data.map(
+      (entry) => runAdapters(adapterTypes.set, { ...this.defaults, ...entry }, this)
+    ))
+    
+    const keys = splitKeys(dataArray[0], this.arrays)
+    if (!keys.base.length && !keys.array.length) throw noData()
+    
+    const params = insertSQL(this.title, dataArray, keys.base, ifExists)
+    const missingPrimary = !keys.base.includes(this.primaryId)
+
+    // Update DB
+
+    const lastEntry = await (returnLast || missingPrimary ? getLastEntry(getDb(), ...params, this.title) : run(getDb(), ...params))
+    if (!keys.array.length) return returnLast && lastEntry
+    
+    // Get rowId if primaryId wasn't provided
+    if (missingPrimary && typeof lastEntry[this.primaryId] !== 'number') throw noPrimary(this.title,'add')
+    const primaryKey = !missingPrimary ? this.primaryId : lastEntry[this.primaryId] - dataArray.length
+    
+    await run(getDb(), ...arraySQL(this.title, dataArray, keys.array, primaryKey, ifExists))
+    return returnLast && lastEntry
+  }
+
+
+  private async _update(data: Partial<Schema>, where: Partial<Schema>, { partialMatch, onChange }: SQLOptions<DBSchema>): Promise<boolean> {
+    
+    // Adapt/Sanitize data
+    const whereData = await runAdapters(adapterTypes.set, where, this)
+    if (!Object.keys(whereData).length) throw noID()
+
+    let updateData = await runAdapters(adapterTypes.set, data, this)
+    if (!Object.keys(updateData).length) throw noData()
+
+    // Find matching entries
+    let ids = [whereData[this.primaryId]] // simple method
+
+    if (ids[0] == null || onChange) { // complex method
+
+      const currentData = await this._selectRaw(whereData, { partialMatch }, !!onChange)
+
+      ids = currentData.map((entry) => entry[this.primaryId]).filter((id) => id != null)
+      if (!ids.length) throw noEntry(JSON.stringify(whereData))
+
+      if (onChange) {
+        // Run onChange callback here to avoid re-fetching 'currentData'
+        const changed = await onChange(updateData, currentData as DBSchema[])
+        if (changed) updateData = changed
+        updateData = sanitizeSchemaData(updateData, this) as Partial<DBSchema>
+      }
+    }
+    
+    // Update DB
+    const keys = splitKeys(updateData, this.arrays)
+    if (!keys.base.length && !keys.array.length) throw noData('update data after onChangeCallback')
+
+    if (keys.base.length) await run(getDb(), ...updateSQL(this.title, updateData, keys.base, whereData))
+
+    if (keys.array.length) await run(getDb(), ...arraySQL(
+      this.title,
+      [updateData],
+      keys.array,
+      this.primaryId,
+      ifExistsBehaviors.abort,
+      true,
+    ))
+
+    return true
+  }
+
+
+  private async _delete<K extends keyof DBSchema & string>(ids: DBSchema[K][], idKey?: K): Promise<boolean> {
+    if (ids.length) throw noID()
+    await run(getDb(), ...deleteSQL(this.title, idKey || this.primaryId, ids))
+    return true
+  }
+
+  
+
+  // Private getters
   get title() { return this._title }
-  set title(newTitle) { this._title = checkInjection(newTitle) }
   get primaryId() { return this._primaryId }
-  set primaryId(newId) { this._primaryId = checkInjection(newId, this.title) }
   get isArrayTable() { return this._isArrayTable }
   get hidden() { return this._hidden }
   get defaults() { return this._defaults }
   get arrays() { return this._arrays }
   get schema() { return this._schema }
   get url() { return this.isArrayTable ? getArrayPath(this.title) : this.title }
+  
+  // Check for injection on set
+  set title(newTitle) { this._title = checkInjection(newTitle) }
+  set primaryId(newId) { this._primaryId = checkInjection(newId, this.title) }
   set schema(newSchema) {
     this._arrays = extractArrays(checkInjection(newSchema, this.title), newSchema[this.primaryId])
     this._schema = newSchema
@@ -334,4 +321,4 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
   }
 }
 
-export type ModelBase<Schema extends SchemaBase = SchemaBase, DBSchema extends SchemaBase = Schema> = InstanceType<typeof Model<Schema, DBSchema>>
+export type ModelBase<Schema extends SchemaBase = any, DBSchema extends SchemaBase = Schema> = InstanceType<typeof Model<Schema, DBSchema>>
