@@ -1,5 +1,6 @@
+import type { IfExistsBehavior } from '../types/db'
 import { arrayLabel } from '../types/Model.d'
-import { getArrayName, CONCAT_DELIM, SQL_ID } from '../config/models.cfg'
+import { getArrayName, CONCAT_DELIM, SQL_ID, ifExistsBehavior } from '../config/models.cfg'
 import { illegalKeyName, illegalKeys } from '../config/validate.cfg'
 import { sqlInjection } from '../config/errors.engine'
 
@@ -30,34 +31,120 @@ export const appendAndSort = (array: number[], value: number) => array.includes(
   array.concat(value).sort(sortAlgo)
 
 
+export const combineSQL = (sql: Array<[string, any[]] | undefined>) =>
+  sql.reduce<[string, any[]]>(
+    (combo, entry) => entry ? [
+
+      `${combo[0]}; ${entry[0]}`,
+      [ ...combo[1], ...entry[1]  ]
+
+    ] : combo,
+    ['', []]
+  )
+
+
 type ArrID = string | number | string[] | number[]
 
 export const getArrayJoin = (
-  { title, primaryId }: { title: string, primaryId: string },
-  arrays: string[] = [],
+  table: string, primaryId: string, arrays: string[] = [],
   { id, idKey, idIsArray }: { id?: ArrID, idKey?: string, idIsArray?: boolean } = {}
 
 ) => !arrays.length ?
 
-  `SELECT ${primaryId === SQL_ID ? 'rowid, ' : ''}* FROM ${title}${id == null ? '' : ` WHERE ${idKey || primaryId} = ?`}` :
+  `SELECT ${primaryId === SQL_ID ? 'rowid, ' : ''}* FROM ${table}${id == null ? '' : ` WHERE ${idKey || primaryId} = ?`}` :
 
-  `SELECT ${primaryId === SQL_ID ? `${title}.rowid, ` : ''}${[`${title}.*`].concat(arrays.map((key) => `_arrays.${key}`)).join(', ')}
-    FROM ${title} LEFT JOIN (
-      SELECT ${[arrayLabel.foreignId as string].concat(arrays.map((key) => `GROUP_CONCAT(${title}_${key}, '${CONCAT_DELIM}') ${key}`)).join(', ')} FROM (${
+  `SELECT ${primaryId === SQL_ID ? `${table}.rowid, ` : ''}${[`${table}.*`].concat(arrays.map((key) => `_arrays.${key}`)).join(', ')}
+    FROM ${table} LEFT JOIN (
+      SELECT ${[arrayLabel.foreignId as string].concat(arrays.map((key) => `GROUP_CONCAT(${table}_${key}, '${CONCAT_DELIM}') ${key}`)).join(', ')} FROM (${
         arrays.map((key) => `SELECT ${[arrayLabel.foreignId, arrayLabel.index as string].concat(arrays.map((subKey) =>
-          `${key === subKey ? arrayLabel.value : 'NULL'} AS ${title}_${subKey}`
-        )).join(', ')} FROM ${getArrayName(title, key)}`).join(`
+          `${key === subKey ? arrayLabel.value : 'NULL'} AS ${table}_${subKey}`
+        )).join(', ')} FROM ${getArrayName(table, key)}`).join(`
         UNION ALL
         `)
       }
       ORDER BY ${[arrayLabel.foreignId, arrayLabel.index].join(', ')})
-    GROUP BY ${arrayLabel.foreignId}) _arrays ON _arrays.${arrayLabel.foreignId} = ${title}.${primaryId}
+    GROUP BY ${arrayLabel.foreignId}) _arrays ON _arrays.${arrayLabel.foreignId} = ${table}.${primaryId}
     ${id == null ? '' :
     `WHERE ${!idIsArray || Array.isArray(id) ? idKey || primaryId : primaryId} = ${!idIsArray || Array.isArray(id) ? '?' : 
-    `(SELECT ${arrayLabel.foreignId} FROM ${getArrayName(title, idKey || primaryId)} WHERE ${arrayLabel.value} = ?)`}`
+    `(SELECT ${arrayLabel.foreignId} FROM ${getArrayName(table, idKey || primaryId)} WHERE ${arrayLabel.value} = ?)`}`
   }`
 
 
 // Tests models.cfg values for SQL injection
 if (/['\s]/.test(CONCAT_DELIM)) throw sqlInjection(CONCAT_DELIM, false, 'models.cfg:CONCAT_DELIM')
 checkInjection(Object.values(arrayLabel), 'models.cfg:arrayLabel')
+
+
+
+// SQL Generators
+
+export const countSQL = (tableName: string, whereParams: [string, any][] = []): [string, any[]] => [
+
+  `SELECT COUNT(*) as count FROM ${tableName}${
+    whereParams.length ? `WHERE ${whereParams.map((sql) => sql[0]).join(' AND ')}` : ''
+  }`,
+
+  whereParams.map((params) => params[1])
+]
+
+
+export const selectSQL = (
+  tableName: string, primaryId: string, whereParams: [string, any][], arrayTables: string[] = [],
+  orderBy?: string, desc = false, limit = 0, page = 0,
+): [string, any[]] => [
+
+  `${getArrayJoin(tableName, primaryId, arrayTables)
+  } ${
+    whereParams.length ? 'WHERE ' : ''}${whereParams.map((sql) => sql[0]).join(' AND ')
+  }${
+    !orderBy ? '' : ` ORDER BY ${tableName}.${orderBy || primaryId} ${desc ? 'DESC' : 'ASC'}`
+  }${
+    limit ? ' LIMIT ? OFFSET ?' : ''
+  }`,
+
+  [ ...whereParams.map((params) => params[1]), ...(limit ? [limit, page * limit] : []) ]
+]
+
+
+export const insertSQL = <T>(
+  tableName: string, dataArray: T[], keys: (keyof T)[],
+  ifExists: IfExistsBehavior = 'default'
+): [string, any[]] => [
+
+  `INSERT${ifExistsBehavior[ifExists]} INTO ${tableName}(${
+      keys.join(',')
+    }) VALUES ${
+      dataArray.map(() => `(${keys.map(() => '?').join(',')})`).join(',')
+  }`,
+
+  dataArray.flatMap((data) => keys.map((key) => data[key]))
+]
+
+export const updateSQL = <K extends string>(
+  tableName: string, updateData: Record<K,any>,
+  updateKeys: K[], whereObject: Record<string,any>
+): [string, any[]] => {
+
+  const whereKeys = Object.keys(whereObject)
+
+  return [
+    `UPDATE ${tableName} SET ${
+      updateKeys.map(k => `${k} = ?`).join(',')
+    } WHERE ${
+      whereKeys.map((k) => `${k} = ?`).join(' AND ')
+    }`,
+
+    [ ...updateKeys.map((k) => updateData[k]), ...whereKeys.map((k) => whereObject[k]) ]
+  ]
+}
+
+
+export const deleteSQL = (tableName: string, idColumn: string, idList: any[]): [string, any[]] => [
+  `DELETE FROM ${tableName} WHERE ${idColumn} ${
+    idList.length > 1 ? 'IN' : '='
+  } (${
+    idList.map(() => '?').join(',')
+  })`,
+
+  idList
+]

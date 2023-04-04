@@ -1,13 +1,16 @@
+import type Model from '../models/Model'
 import type { ModelBase } from '../models/Model'
-import type { Definition, ForeignKeyRef, SchemaBase } from '../types/Model.d'
-import type { SQLSuffix, SQLType, SQLTypeFull } from '../types/db.d'
-import { HTMLType, htmlTypes } from '../types/gui.d'
+import type { CommonDefinition, Definition, DefinitionSchema, ForeignKeyRef, SchemaBase, adapterTypes } from '../types/Model.d'
+import type { IfExistsBehavior, SQLSuffix, SQLType, SQLTypeFull } from '../types/db.d'
 
 import { isDate } from '../libs/date'
+import { isIn } from './common.utils'
+import { combineSQL, insertSQL, deleteSQL } from './db.utils'
 import { parseBoolean, parseArray } from './validate.utils'
-import { CONCAT_DELIM } from '../config/models.cfg'
+import { CONCAT_DELIM, getArrayName } from '../config/models.cfg'
 import { arrayLabel } from '../types/Model.d'
 import { foreignKeyActions, sqlSuffixes, sqlTypes } from '../types/db.d'
+import { type HTMLType, htmlTypes } from '../types/gui.d'
 
 // Initialize Parsers
 const toBool = parseBoolean(true)
@@ -23,8 +26,106 @@ export const arrayTableRefs = ({ title, primaryId }: Pick<ModelBase,'title'|'pri
   onUpdate: foreignKeyActions.Cascade,
 })
 
+/** Split keys from data into Array & Non-Array lists */
+export const splitKeys = (data: any, arraySchema: any) => {
+  const array = Object.keys(arraySchema).filter((key) => key in data)
+  return {
+    array,
+    base: Object.keys(data).filter((key) => !array.includes(key)),
+  }
+}
+
+
+/** Generate SQL and Params for inserting one or more arrays.
+ *   - If primaryKey is a number, this will be treated as an auto-incrementing rowId
+ *   - IfExists.overwrite will only overwrite individual array indicies
+ *   - overwriteArray=true will clear the entire array */
+export const arraySQL = <T>(
+  tableName: string, arrayData: T[], arrayKeys: (keyof T)[],
+  primaryKey: keyof T | number, ifExists: IfExistsBehavior, overwriteArray = false
+) =>
+  combineSQL(arrayKeys.map((key) => {
+    const foreignIds: any[] = []
+
+    const entries = propertyIsArray(arrayData, key).flatMap((data, i) => {
+      const foreignId = typeof primaryKey !== 'number' ? data[primaryKey] : primaryKey + i + 1
+      overwriteArray && foreignIds.push(foreignId)
+
+      return data[key].map((value, index) => ({
+        [arrayLabel.foreignId]: foreignId,
+        [arrayLabel.index]:     index,
+        [arrayLabel.value]:     value,
+      }))
+    })
+    
+    if (!entries.length) return;
+
+    const arrayTable = getArrayName(tableName, key)
+
+    const insert = insertSQL(
+      arrayTable,
+      entries,
+      Object.values(arrayLabel),
+      ifExists
+    )
+
+    return !overwriteArray ? insert : combineSQL([
+      deleteSQL(
+        arrayTable,
+        arrayLabel.foreignId,
+        foreignIds,
+      ),
+      insert,
+    ])
+  }))
+
+
+export function getSqlParams<Schema extends SchemaBase, DBSchema extends SchemaBase>(
+  { title, schema, arrays }: Pick<Model<Schema, DBSchema>, 'title'|'schema'|'arrays'>,
+  matchData?: Partial<DBSchema>, partialMatch = false
+) {
+  let params: [string, any][] = []
+  if (!matchData) return params
+
+  Object.entries(matchData).forEach(([key,val]) => {
+    if (key in arrays) throw new Error(`Array search not implemented: ${key} in query.`)
+
+    if (!partialMatch)
+      return params.push([`${title}.${key} = ?`, val])
+      
+    if (schema[key].isBitmap && val != null) {
+      const num = +val
+      return params.push([`${title}.${key} ${num ? '&' : '='} ?`, num])
+    }
+
+    if (isBool(schema[key]))
+      return params.push([`${title}.${key} = ?`, +toBool(val)])
+
+    if (typeof val === 'string')
+      return params.push([`${title}.${key} LIKE ?`, `%${val}%`])
+
+    // DEFAULT
+    params.push([
+      `${title}.${key} = ?`,
+      !val || typeof val === 'number' ? val : JSON.stringify(val)
+    ])
+  })
+
+  return params
+}
+
 
 export const isBool = ({ type, isArray }: Pick<Definition,'type'|'isArray'>) => type === 'boolean' && !isArray
+
+/** Filter an array of objects, keeping objects where the given property is an array. */
+export const propertyIsArray = <O, P extends keyof O>(arrayOfObjects: O[], property: P) =>
+  arrayOfObjects.filter(
+    (obj) => Array.isArray(obj[property]) && (obj[property] as any[]).length
+  ) as (O & { [property in P]: any[] })[]
+
+export const isDbKey = <DBSchema extends SchemaBase, Schema extends SchemaBase>
+  (idKey: any, schema: DefinitionSchema<DBSchema,Schema>): idKey is keyof DBSchema & string =>
+    !idKey || Boolean(isIn(idKey, schema) && schema[idKey].db)
 
 
 export function sanitizeSchemaData
@@ -32,7 +133,6 @@ export function sanitizeSchemaData
   (data: T, { schema, arrays }: SanitModel<Schema, DBSchema> = {})
 {
   const validKeys = schema && Object.keys(schema)
-    // @ts-ignore -- TODO: Fix/Remove TS from global.d
     .filter((key) => schema[key].db)
     .concat(Object.keys(arrays || {}))
 
@@ -45,8 +145,8 @@ export function sanitizeSchemaData
 
 
 /** Convert primary key definition to regular definition */
-export const stripPrimaryDef = <D extends Definition>
-  ({ db, isPrimary, isOptional, ...definition }: D) => ({
+export const stripPrimaryDef = <Schema extends SchemaBase, DBSchema extends SchemaBase>
+  ({ db, isPrimary, isOptional, ...definition }: CommonDefinition<Schema,DBSchema>) => ({
     ...definition,
     db: db ? db.replace(' PRIMARY KEY', ' NOT NULL') as SQLTypeFull : false as false,
   })
@@ -95,11 +195,11 @@ export function htmlFromType<D extends Definition>
 
 
 /** Convert data from storage type to expected type */
-export function getAdapterFromType<D extends Definition>
-  ({ type, isArray, isBitmap }: Pick<D, 'type'|'isArray'|'isBitmap'>): D['getAdapter']
+export function getAdapterFromType<S extends SchemaBase, D extends SchemaBase>
+  ({ type, isArray, isBitmap }: Pick<Definition<S,D>, 'type'|'isArray'|'isBitmap'>)
 {
-  let adapter: ((v: any) => any) | undefined;
-  if (isBitmap) return adapter
+  let adapter: ((val: any) => any) | undefined;
+  if (isBitmap) return undefined
 
   switch (type) {
     case 'object':
@@ -124,16 +224,16 @@ export function getAdapterFromType<D extends Definition>
         Array.isArray(text) ? text : null
   }
 
-  return adapter
+  return adapter as Definition<S,D>[typeof adapterTypes.get]
 }
 
 
 /** Convert data from user input to storage type */
-export function setAdapterFromType<D extends Definition>
-  ({ type, isArray, isBitmap }: Pick<D, 'type'|'isArray'|'isBitmap'>): D['setAdapter']
+export function setAdapterFromType<S extends SchemaBase, D extends SchemaBase>
+  ({ type, isArray, isBitmap }: Pick<Definition<S,D>, 'type'|'isArray'|'isBitmap'>)
 {
-  let adapter: ((v: any) => any) | undefined;
-  if (isBitmap) return adapter
+  let adapter: ((val: any) => any) | undefined;
+  if (isBitmap) return undefined
 
   switch (type) {
     case 'int':
@@ -168,7 +268,7 @@ export function setAdapterFromType<D extends Definition>
         Array.isArray(arr) ? arr : null
   }
 
-  return adapter
+  return adapter as Definition<S,D>[typeof adapterTypes.set]
 }
 
 
