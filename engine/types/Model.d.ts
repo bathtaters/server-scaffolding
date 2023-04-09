@@ -84,7 +84,7 @@ export type Defaults<Schema extends SchemaBase, DBSchema extends SchemaBase> = P
 export type Feedback = { success: boolean }
 
 export type ChangeCallback<DBSchema extends SchemaBase> =
-  (update: Partial<DBSchema>, matching: DBSchema[]) => Promise<DBSchema | void> | DBSchema | void
+  (update: Partial<DBSchema>, matching: DBSchema[]) => Promise<Partial<DBSchema> | void> | Partial<DBSchema> | void
 
 /** { partialMatch?: boolean, orderKey?: keyof Schema & string, onChange?: ChangeCallback<Schema> } */
 export type SQLOptions<Schema extends SchemaBase> = {

@@ -2,7 +2,7 @@ import BitMap, { BitMapInput, BitMapValue } from '../libs/BitMap'
 import logger from '../libs/log'
 import { isIn } from './common.utils'
 import { badAccess } from '../config/errors.engine'
-import { models, modelsStrings, allModelsKey, ModelsTypes, ModelObject } from '../types/Users.d'
+import { models, modelsStrings, allModelsKey, ModelsType, ModelObject } from '../types/Users.d'
 import { allModels } from '../src.import'
 
 const modelsBitMap = new BitMap(models, modelsStrings)
@@ -49,7 +49,7 @@ export function modelAccessToInts(modelAccess: any): number | ModelObject<string
         )
       
       // Array
-      return modelAccess.reduce<BitMapValue<ModelsTypes>>(
+      return modelAccess.reduce<BitMapValue<ModelsType>>(
         (bit, str) => {
           const newVal = modelAccessToInts(str)
           if (typeof newVal === 'number') return bit.add(newVal)
@@ -87,7 +87,7 @@ export function modelsArrayToObj<Models extends string = string>
 export function hasModelAccess<Models extends string>(
   modelObj?: ModelObject<Models>,
   modelName?: Models,
-  accessType: BitMapInput<ModelsTypes> = modelsBitMap.max
+  accessType: BitMapInput<ModelsType> = modelsBitMap.max
 ) {
   return !modelObj || !modelName ? false : modelsBitMap.create(accessType).isSubset(
     modelsBitMap.create(modelObj[modelName] ?? modelObj[allModelsKey])
@@ -96,7 +96,7 @@ export function hasModelAccess<Models extends string>(
 
 
 /** Convert modelsObject into a comma-seperated list: "model [rw], name [-]" */
-export const getModelsString = <Models extends string>(modelObj: ModelObject<Models>) =>
+export const getModelsString = <Models extends string>(modelObj: ModelObject<Models> = { [allModelsKey]: 0 }) =>
   Object.entries(modelObj).map(
     ([key, int]) => `${key} ${wrapAccess(modelsBitMap.create(int).string)}`
   ).join(', ')

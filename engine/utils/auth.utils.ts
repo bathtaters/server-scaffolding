@@ -5,7 +5,7 @@ import { msAgo } from '../libs/date'
 import { encode, rateLimiter } from '../config/users.cfg'
 import { loginMessages as failureMsg } from '../config/errors.engine'
 
-export type PasswordCallback = (isMatch: boolean, userData: UsersDB) => Promise<void> | void
+export type PasswordCallback = (isMatch: boolean, userData: Partial<UsersDB>) => Promise<void> | void
 
 export const generateToken = () => hat()
 
@@ -27,17 +27,15 @@ export const encodePassword = async (password: string) => {
   return { salt, pwkey: pwkey.toString('base64url') }
 }
 
-export function testPassword(password: string, accessInt?: number, callback?: PasswordCallback) {
-  return async (userData?: UsersDB) => {
-    if (!userData) return failureMsg.noUser
-    if (userData.locked && !isPastWindow(userData)) return failureMsg.isLocked
-    if (accessInt && !(userData.access & accessInt)) return failureMsg.noAccess
-    if (!userData.pwkey) return failureMsg.noPassword
+export async function testPassword(userData: Partial<UsersDB> | undefined, password: string, accessInt?: number, callback?: PasswordCallback) {
+  if (!userData) return failureMsg.noUser
+  if (userData.locked && !isPastWindow(userData)) return failureMsg.isLocked
+  if (accessInt && !((userData.access ?? 0) & accessInt)) return failureMsg.noAccess
+  if (!userData.pwkey) return failureMsg.noPassword
 
-    const pwkey = await encrypt(password, userData.salt ?? '', encode.iters, encode.keylen, encode.digest)
-    const isMatch = crypto.timingSafeEqual(Buffer.from(userData.pwkey, 'base64url'), pwkey)
+  const pwkey = await encrypt(password, userData.salt ?? '', encode.iters, encode.keylen, encode.digest)
+  const isMatch = crypto.timingSafeEqual(Buffer.from(userData.pwkey, 'base64url'), pwkey)
 
-    if (callback) await callback(isMatch, userData)
-    return isMatch ? userData : failureMsg.noMatch
-  }
+  if (callback) await callback(isMatch, userData)
+  return isMatch ? userData : failureMsg.noMatch
 }

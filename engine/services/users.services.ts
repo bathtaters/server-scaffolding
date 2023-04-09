@@ -46,20 +46,20 @@ export function initAdapters(definitions: UserDefinition) {
 }
 
 
-export const addAdapter = (data: Partial<UsersUI>, idKey = 'id') => ({
-  [idKey]: generateToken(),
+export const addAdapter = <D extends Partial<UsersUI>>(data: D) => ({
+  id: generateToken(),
   token: generateToken(),
   ...data,
 })
 
 
 const uiToBaseHtml = ({
-  cors, access, models,
+  cors, access, models, locked,
   failCount, failTime,
   guiCount, guiTime,
   apiCount, apiTime,
   ...user
-}: UsersUI): UsersHTML => ({ ...user, models   : '', })
+}: UsersUI): UsersHTML => ({ ...user, models: '', locked: !!locked })
 
 export function guiAdapter(user: UsersUI): UsersHTML
 export function guiAdapter(user: UsersUI[]): UsersHTML[]

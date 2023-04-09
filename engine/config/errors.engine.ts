@@ -22,7 +22,7 @@ test = (msg = "API is not a Teapot.") => createError(418, msg),
 // CRUD Errors
 noID = () => createError(400, "No ID provided."),
 noData = (missingField = 'data') => createError(400, `No ${missingField} provided.`),
-noEntry = (id: string|number = '') => createError(400, `No entry exists at ID ${id}.`),
+noEntry = (id: any = '') => createError(400, `No entry exists at ID ${String(id)}.`),
 noSize = () => createError(400, "Invalid page size for paginated request."),
 badData = (key = 'data', value: any, expected?: any) => createError(400, `${key} contains invalid value: ${value}${expected ? ` (should be ${expected})` : ''}.`),
 

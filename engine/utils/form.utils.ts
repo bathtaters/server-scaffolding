@@ -1,4 +1,4 @@
-import type { ModelsTypes } from '../types/Users.d'
+import type { ModelsType } from '../types/Users.d'
 import { parseBoolean } from '../utils/validate.utils'
 import { type ProfileActions, actions } from '../types/gui.d'
 import { badData } from '../config/errors.engine'
@@ -7,7 +7,7 @@ const parseBool = parseBoolean(true)
 
 // Get list of button labels based on access
 export const actionAccess = (action: ProfileActions) => action === actions.find ? 'read' : 'write'
-export const labelsByAccess = (accessTypes: ModelsTypes[]) =>
+export const labelsByAccess = (accessTypes: ModelsType[]) =>
   Object.values(actions).filter((action) => accessTypes.includes(actionAccess(action)))
 
 

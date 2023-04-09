@@ -1,6 +1,6 @@
 import type Model from '../models/Model'
 import type { ModelBase } from '../models/Model'
-import type { CommonDefinition, Definition, DefinitionSchema, ForeignKeyRef, SchemaBase, adapterTypes } from '../types/Model.d'
+import type { ChangeCallback, CommonDefinition, Definition, DefinitionSchema, ForeignKeyRef, SchemaBase, adapterTypes } from '../types/Model.d'
 import type { IfExistsBehavior, SQLSuffix, SQLType, SQLTypeFull } from '../types/db.d'
 
 import { isDate } from '../libs/date'
@@ -34,6 +34,12 @@ export const splitKeys = (data: any, arraySchema: any) => {
     base: Object.keys(data).filter((key) => !array.includes(key)),
   }
 }
+
+/** Get an Updater Callback that will increment the given key */
+export const incrementCb = <Schema extends SchemaBase>(key: keyof Schema & string): ChangeCallback<Schema> => (update, matching) => ({
+  ...update,
+  [key]: (matching[0]?.guiCount || 0) + 1,
+})
 
 
 /** Generate SQL and Params for inserting one or more arrays.

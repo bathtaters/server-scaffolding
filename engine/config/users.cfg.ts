@@ -1,4 +1,4 @@
-import { access, models, allModelsKey, UsersUI, AccessTypes, UserDefinition } from '../types/Users.d'
+import { access, models, allModelsKey, UsersUI, AccessType, UserDefinition } from '../types/Users.d'
 import RegEx from '../libs/regex'
 import { urlCfg } from '../src.import'
 
@@ -9,16 +9,14 @@ const passwordLimits = { min: 8, max: 128 }
 export const rateLimiter = { maxFails: 5, failWindow: 10 * 60 * 1000, autoUnlock: false } // !autoUnlock: manual unlock by admin
 
 export const
-loginAccess: AccessTypes[] = [ 'gui', 'admin' ],
-requirePassword: AccessTypes[] = [ 'gui', 'admin' ],
+loginAccess: AccessType[] = [ 'gui', 'admin' ],
+requirePassword: AccessType[] = [ 'gui', 'admin' ],
 
 encode = { iters: 1049, keylen: 64, digest: 'sha512' },
 
 saveLoginMs = 5 * 24 * 60 * 60 * 1000,
 
 apiToken = { header: "Authorization", matchToken: RegEx(/^Bearer (.+)$/) },
-
-timestampKeyRegEx = RegEx(/^(.*)Time$/),
 
 tableFields: Partial<Record<keyof UsersUI, string>> = {
   username: 'Username', access: 'Access', password: 'Password',
@@ -35,7 +33,7 @@ tooltips: Partial<Record<keyof UsersUI, string>> = {
   locked: 'Lock/Unlock entire user account'
 },
 
-definition: UserDefinition = Object.freeze({
+definition: UserDefinition = {
   id: {
     typeStr: "hex",
     limits: { min: 32, max: 32 },
@@ -115,7 +113,7 @@ definition: UserDefinition = Object.freeze({
   },
   pwkey: { typeStr: "hex?", html: false, dbOnly: true },
   salt:  { typeStr: "hex?", html: false, dbOnly: true },
-}),
+} as const,
 
 searchableKeys: Array<keyof UsersUI> = ['username','token','access','cors','locked'], // 'models'
 illegalUsername = RegEx(/[^a-zA-Z0-9_-]/),

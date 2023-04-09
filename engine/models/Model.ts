@@ -10,12 +10,15 @@ import { arrayLabel, adapterTypes } from '../types/Model.d'
 import { getArrayName, getArrayPath } from '../config/models.cfg'
 import { noID, noData, noEntry, noPrimary, noSize, badKey } from '../config/errors.engine'
 
+// TODO -- Make 'PrimaryID' a settable generic type to use as defaults
+// TODO -- Use 'default' and 'isOptional' to generate InputSchema, DBSchema & OutputSchema types w/ correct optionals
 // TODO -- Get Rid of caseInsensitiveObject and use "" with all SQL column names
 // TODO -- Add documentation via JSDOC
+// TODO -- Add 'increment'/'decrement' options to update()
 
 export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBase = Schema> {
   private _title: string = 'model'
-  private _primaryId: keyof (DBSchema & Schema) & string = 'id'
+  private _primaryId: keyof (DBSchema | Schema) & string = 'id'
   private _schema!: DefinitionSchema<Schema, DBSchema>
   private _defaults: Defaults<Schema, DBSchema> = {}
   private _hidden: Array<keyof DBSchema> = []
