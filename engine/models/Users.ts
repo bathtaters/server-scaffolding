@@ -69,9 +69,9 @@ class Users extends Model<UsersUI, UsersDB> {
     return super.update(id, { token: generateToken() })
   }
 
-  async checkPassword(username: UsersUI['username'], password: string, accessLevel: AccessType) {
+  async checkPassword(username: UsersUI['username'], password: string, accessLevel: number) { // TODO: Replace with BitMap
     if (!isPm2 && !(await this.count())) {
-      const data = await this.addAndReturn([{ username, password, access: accessInt(accessLevel) }])
+      const data = await this.addAndReturn([{ username, password, access: accessLevel }])
       logger.info(`Created initial user: ${data.username}`)
       return data
     }
@@ -80,11 +80,13 @@ class Users extends Model<UsersUI, UsersDB> {
     return testPassword(data[0], password, accessInt(accessLevel), this._passwordCb)
   }
 
-  async checkToken(token: UsersUI['token'], accessLevel: AccessType) {
+  async checkToken(token: UsersUI['token'], accessLevel: number) { // TODO: Replace with BitMap
     return this.getRaw(token, { idKey: 'token', timestamp: 'api' })
       .then((user) =>
-        !user ? 'NOTFOUND' :
-        (user.locked && !isPastWindow(user)) || !hasAccess(user.access, accessInt(accessLevel)) ? false : user
+        !user ? 'NO_USER' :
+        user.locked && !isPastWindow(user) ? 'USER_LOCKED' :
+        !hasAccess(user.access, accessLevel) ? 'NO_ACCESS' :
+          user
       )
   }
 
