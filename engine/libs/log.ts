@@ -29,8 +29,8 @@ const logger = new Logger({
 
 logger.debug = () => logger.warn('Calling uninitialized logger.debug')
 
-// @ts-ignore -- https://github.com/winstonjs/winston/issues/1385
-logger.stream = { write: (msg) => logger.http(msg.trim()) } // Adapter for Morgan.stream
+// Adapter for Morgan.stream
+export const stream = { write: (msg: string) => logger.http(msg.trim()) }
 
 logger.verbose(logger.transports.map(
   ({ level, silent }, idx) => config.initMessage(['console','file'][idx], silent ? config.silent[0] : (level || logger.level) as LogLevels)).join(', ')

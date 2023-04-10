@@ -8,7 +8,7 @@ export const allModelsKey = 'default' as const
 
 // TODO: RENAME ACCESS => PRIVLEGES && MODELS => ACCESS
 
-type Cors = boolean | number | string | RegExp
+type Cors = boolean | string[] | string | RegExp
 
 export const access = Object.freeze({
     api:   0x1,
