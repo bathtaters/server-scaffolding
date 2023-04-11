@@ -47,7 +47,7 @@ export type ValidationType = {
     /** Base type (No *[]? suffixes)
      *   - Defintion MUST include a type or a typeStr
      *   - default: parsed from typeStr */
-    type:        BaseType,
+    type?:        BaseType,
     
     /** Limit object
      *   - { min?, max? } | { array: { min?, max? }, elem: { min?, max? } }
@@ -80,6 +80,26 @@ export type ValidationTypeFull = RequireOne<Partial<ValidationType> & {
 }, 'type'|'typeStr'>
 
 export type ValidationOptions = ValidationTypeFull & { key: string, isIn: RequestField[]}
+
+type ModelBase = { schema: Record<string,any> }
+export type KeyArr<Model extends ModelBase> = Array<keyof Model['schema']> 
+export type KeyObj<Model extends ModelBase> = { [inputKey: string]: keyof Model['schema'] }
+export type SchemaKeys<Model extends ModelBase> = KeyArr<Model> | KeyObj<Model> | 'all'
+
+export type ModelValidationOptions<Model extends ModelBase> = {
+    /** Keys in params: [...keyList] OR { inputKey: modelKey, ... } OR 'all' (= All keys in types) */
+    params?: SchemaKeys<Model>,
+    /** Make all body/query keys optional (params are unaffected) [default: true] */
+    optionalBody?: boolean,
+    /** Move 'body' validation to 'query' (for GET routes) [default: false] */
+    asQueryStr?: boolean,
+    /** Allow entering less than the minLength for strings (to validate for searches) [default: false] */
+    allowPartials?: boolean,
+    /** Additional validation to append to model validation */
+    additional?: readonly ValidationOptions[],
+}
+
+
 
 export type BaseType = typeof baseTypes[keyof typeof baseTypes]
 export type TypeSuffix = typeof typeSuffixes[keyof typeof typeSuffixes]

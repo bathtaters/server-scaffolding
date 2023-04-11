@@ -25,7 +25,7 @@ export const generateSchema = (
 
 
 /** Add additional validation into schema (appending isIn values to already exisiting keys) */
-export function appendToSchema(schema: Schema = {}, additional: ValidationOptions[] = []) {
+export function appendToSchema(schema: Schema = {}, additional: readonly ValidationOptions[] = []) {
   additional.forEach((data) => {
 
     if (!data.isIn) return logger.warn(`Missing "isIn" for "${data.key}" from additional validator`)

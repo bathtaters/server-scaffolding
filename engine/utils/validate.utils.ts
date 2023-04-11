@@ -44,7 +44,7 @@ function generateLimits(strArray: string[]): Limits | undefined {
 
 
 const htmlToValid = ({ type, limits }: FormDefinition['html']) => ({
-  typeStr: type === 'number' ? 'int' : 'string',
+  type: type === 'number' ? 'int' : 'string',
   limits: !limits && Array.isArray(type) ? generateLimits(type) : limits
 })
 
@@ -53,7 +53,7 @@ const htmlToValid = ({ type, limits }: FormDefinition['html']) => ({
 export const formSettingsToValidate = <S extends Record<string, FormDefinition>>(settings: S) =>
   Object.entries(settings).reduce(
     (valid, [key, { html }]) => ({ ...valid, [key]: htmlToValid(html) }),
-    {} as { [N in keyof S]: ReturnType<typeof htmlToValid> }
+    {} as { [N in keyof S]: ValidationTypeFull }
   )
 
 

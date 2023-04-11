@@ -1,7 +1,7 @@
+import type { Middleware } from '../types/express'
 import { type ErrorFormatter, validationResult } from 'express-validator'
 import { mask } from '../utils/gui.utils'
 import { guiCfg } from '../src.import'
-import { Middleware } from '../types/express'
 
 const formatError: ErrorFormatter<string> = ({ param, msg, value }) => 
   `${param} ${msg}: ${guiCfg.mask.includes(param) ? mask(value) : JSON.stringify(value)}`
