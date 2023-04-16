@@ -15,13 +15,24 @@ export function exec(db: Database | null, sql: string) {
   return new Promise<void>((res,rej) => {
     if (!db) return rej(noDb())
 
-    db.exec('BEGIN TRANSACTION; '+sql+'; COMMIT;', (err: any) => {
-      if (err) {
-        if (err.code === 'SQLITE_NOTADB') throw sqlNotDB()
-        logger.error(err, { label: 'SQL rollback' })
-        return db.run('ROLLBACK', rbErr => rej(sqlError(rbErr || err, sql)))
+    db.exec('BEGIN; '+sql+'; COMMIT;', rollback(db, sql, rej, res))
+  })
+}
+
+
+/** Run multiple statements sequentially as a transaction, reject and rollback on error */
+export function multiRun(db: Database | null, statements: [sql: string, params: Params][]) {
+  debugSQL && statements.forEach(([sql,params]) => logger.verbose(`<SQL> ${sql} ${JSON.stringify(params)}`))
+
+  return new Promise<void>((res,rej) => {
+    if (!db) return rej(noDb())
+    
+    db.serialize(() => {
+      db.run('BEGIN', rollback(db, 'BEGIN', rej))
+      for (const [sql, params] of statements) {
+        db.run(sql, params, rollback(db, sql, rej))
       }
-      return res()
+      db.run('COMMIT', rollback(db, 'COMMIT', rej, res))
     })
   })
 }
@@ -168,4 +179,22 @@ export function foreignKeys(db: Database | null, disable = false) {
       return res(db)
     })
   )
+}
+
+
+
+// HELPER
+
+/** Rollback transaction on Error, if onSuccess function provided, it will be called on non error */
+function rollback(db: Database, errInfo: string, onError: Function, onSuccess?: Function) {
+  return (err: any) => {
+    if (!err) return onSuccess?.();
+
+    if (err.code === 'SQLITE_NOTADB') onError(sqlNotDB())
+    
+    return db.run('ROLLBACK', (rbErr) => {
+      if (rbErr) logger.error(err, { label: 'Pre-Rollback Error' })
+      onError(sqlError(rbErr || err, errInfo))
+    })
+  }
 }
