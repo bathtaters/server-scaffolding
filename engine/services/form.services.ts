@@ -1,5 +1,5 @@
-import type { ModelBase } from '../models/Model'
-import { type ProfileActions, actions } from '../types/gui.d'
+import type { ModelFormBase } from '../types/controllers.d'
+import { type ActionObject, actions } from '../types/gui.d'
 import { noData, noAdd, noID } from '../config/errors.engine'
 import { isDate } from '../libs/date'
 import { extractId } from '../utils/db.utils'
@@ -9,7 +9,7 @@ const searchURL = urlCfg.gui.basic.find
 
 
 // Actions based on Form submit button label
-export default function formObject<Model extends ModelBase>(Model: Model): { [action in ProfileActions]: ActionFunction } {
+export default function modelActions<M extends ModelFormBase>(Model: M): ActionObject {
   return {
 
     // SEARCH
@@ -47,5 +47,3 @@ export default function formObject<Model extends ModelBase>(Model: Model): { [ac
     [actions.clear]: () => Model.create(true).then(() => {})
   }
 }
-
-type ActionFunction = (formData?: Record<string, any>) => Promise<any>

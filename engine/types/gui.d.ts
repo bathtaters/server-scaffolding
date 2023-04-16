@@ -39,6 +39,8 @@ export const htmlTypes = {
 
 export type HTMLType = typeof htmlTypes[keyof typeof htmlTypes]
 
+// TODO -- Convert this to FormAction + Remove PLURAL
+// TODO -- Make ProfileActions only what you can do in non-admin User Profile (Put in User?) 
 export type ProfileActionKeys = keyof typeof actions
 export type ProfileActions = typeof actions[keyof typeof actions]
 
@@ -52,3 +54,6 @@ export type FormDefinition = {
     tooltip?: string,
     formDefault?: string,
 }
+
+type ActionFunction = (formData: Record<string,any>) => Promise<string | void>
+export type ActionObject = { [action in ProfileActions]: ActionFunction }

@@ -1,5 +1,6 @@
-import type { ModelObject, ModelsType, UsersUI } from '../types/Users'
+import type { ModelsType, UsersUI } from '../types/Users'
 import type { Middleware } from '../types/express'
+
 import expressSession from 'express-session'
 import flash from 'connect-flash'
 import { use, serializeUser, deserializeUser, initialize, session, authenticate } from 'passport'
@@ -47,7 +48,7 @@ export const forwardOnAuth = (redirectURL: string, accessLevel: number): Middlew
     next()
   }
     
-export const login = (landingURL: string, loginURL: string) =>
+export const login = (landingURL: string, loginURL: string): Middleware =>
   authenticate('local', {
     successRedirect: landingURL,
     failureRedirect: loginURL,

@@ -30,8 +30,8 @@ export const settingsDefaults = filterOutProps(
 )
 
 
-export const canUndo = (session?: SessionData) => Boolean(
-  session && Array.isArray(session.undoSettings) && session.undoSettings.length
+export const canUndo = (session?: Express.Request['session']) => Boolean(
+  Array.isArray(session?.undoSettings) && session?.undoSettings.length
 )
 
 
@@ -73,4 +73,12 @@ export async function getForm() {
     newForm[+(idx >= splitForm)][key] = definitions[key]
   })
   return newForm
+}
+
+
+
+declare module 'express-session' {
+  interface SessionData {
+    undoSettings?: Partial<EnvObject>[];
+  }
 }

@@ -10,7 +10,7 @@ const logPath = parse(fullLogPath)
 const logFileRegex = logViewFileFilter(logPath.base)
 
 /** Get all log files */ 
-export const logList = (folder = logPath.dir) =>
+export const getLogList = (folder = logPath.dir) =>
   readdir(folder).then((files) =>
     files.filter((filename) => logFileRegex.test(filename)).sort((a,b) => b.localeCompare(a))
   )
@@ -19,7 +19,7 @@ export const logList = (folder = logPath.dir) =>
 /** Get one log file */ 
 export async function logFile(filename: string, folder = logPath.dir) {
   const [ files, log ] = await Promise.all([
-    logList(folder),
+    getLogList(folder),
 
     readFile(join(folder, filename))
       .then((log) => log.toString().split('\n').map(formatFileLog).filter(Boolean)),

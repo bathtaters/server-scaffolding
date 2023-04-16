@@ -1,4 +1,4 @@
-import type { EnvObject, SettingsActions } from '../types/settings.d'
+import type { SettingsActionFunc, SettingsActions } from '../types/settings.d'
 import { exec } from 'child_process'
 import { settingsDefaults, getSettings, setSettings, canUndo } from './settings.services'
 import { test as testError, noUndo } from '../config/errors.engine'
@@ -10,14 +10,14 @@ async function getRestartFunc() {
   if (process.env.NODE_ENV === 'test') throw testError('Restart triggered in test envrionment')
     
   // Restart anything monitoring file changes
-  if (!isPm2) return () => exec(`touch "${__filename}"`)
+  if (!isPm2) return () => { exec(`touch "${__filename}"`) }
 
   const env = await getSettings()
   return () => restartCluster(env)
 }
 
 
-const settingsActions: Record<SettingsActions, (settings: Partial<EnvObject>, session: any) => Promise<void>> = {
+const settingsActions: Record<SettingsActions, SettingsActionFunc> = {
   Update: (settings, session) => setSettings(settings, session),
 
   Default: (_, session) => setSettings(settingsDefaults, session),
@@ -29,7 +29,7 @@ const settingsActions: Record<SettingsActions, (settings: Partial<EnvObject>, se
   
   async Restart(settings, session) {
     if (settings) await setSettings(settings, session)
-    await getRestartFunc()
+    return getRestartFunc()
   },
 }
 

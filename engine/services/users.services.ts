@@ -90,8 +90,8 @@ export function guiAdapter(user: UsersUI | UsersUI[]): UsersHTML | UsersHTML[] {
 }
 
 
-export function adminFormAdapter(formData: UsersHTML, _: any, action: ProfileActions) {
-  const result: Omit<UsersHTML, 'models'> & { models?: UsersUI['models'] } = {
+export function adminFormAdapter(formData: UsersHTML, _?: Express.User, action?: ProfileActions) {
+  const result = {
     ...formData,
     models: formData.models ? modelsArrayToObj(formData.models) : undefined
   }
@@ -100,15 +100,15 @@ export function adminFormAdapter(formData: UsersHTML, _: any, action: ProfileAct
 }
 
 
-export function userFormAdapter(formData: UsersHTML, user: UsersUI, action: ProfileActions) {
-  if (user.id !== formData.id && !hasAccess(user.access, access.admin)) throw modifyOther()
+export function userFormAdapter(formData: UsersHTML, user?: Express.User, action?: ProfileActions) {
+  if (user?.id !== formData.id && !hasAccess(user?.access, access.admin)) throw modifyOther()
 
   return confirmPassword(formData, action)
 }
 
 
 // HELPERS -- 
-function confirmPassword<D extends Pick<UsersHTML, 'confirm'|'password'>>(formData: D, action: ProfileActions) {
+function confirmPassword<D extends Pick<UsersHTML, 'confirm'|'password'>>(formData: D, action?: ProfileActions) {
   if ((action === 'Add' || action === 'Update') && 'password' in formData) {
     if (!formData.confirm) throw noConfirm()
     if (formData.password !== formData.confirm) throw badConfirm()

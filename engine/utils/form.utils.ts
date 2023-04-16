@@ -7,7 +7,7 @@ const parseBool = parseBoolean(true)
 
 // Get list of button labels based on access
 export const actionAccess = (action: ProfileActions) => action === actions.find ? 'read' : 'write'
-export const labelsByAccess = (accessTypes: ModelsType[]) =>
+export const labelsByAccess = (accessTypes: (ModelsType | null)[]) =>
   Object.values(actions).filter((action) => accessTypes.includes(actionAccess(action)))
 
 
@@ -28,11 +28,14 @@ export const filterFormData = <T extends object, B extends object = {}, Result e
   formData: T, baseObject?: B,
   filterCb = defaultFilter<T>
 ) =>
-  Object.entries(formData).reduce((filtered, [key, val]) =>
-    filterCb(val, key as keyof T) ?
-      Object.assign(filtered, { [key]: baseObject && key in baseObject ? parseBool(val) : val }) :
-      filtered
-, { ...(baseObject || {}) } as Result)
+  Object.entries(formData).reduce(
+    (filtered, [key, val]) =>
+      filterCb(val, key as keyof T) ?
+        { ...filtered, [key]: baseObject && key in baseObject ? parseBool(val) : val } :
+        filtered,
+
+    { ...(baseObject || {}) } as Result
+  )
 
 
 // Convert object to queryString (Accepts stringified object, deletes null/empty values)

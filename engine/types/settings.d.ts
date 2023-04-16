@@ -35,6 +35,8 @@ export type EnvObject = Record<keyof EnvParsed & string, ProcessEnvValue>
 export type SettingsDefinitions = Record<keyof EnvParsed & string, FormDefinition>
 
 
+export type SettingsActionFunc = (settings: Partial<EnvObject>, session: any) => Promise<void | (() => void)>
+
 
 // Override process.env type
 declare global {

@@ -38,8 +38,8 @@ export const landingPage = Object.freeze({
   logout: gui.root.login,
 })
 
-// Add URL to force 301 redirect instead of using index.pug splash page
-export const overrideSplash = null
+// null will use index.pug as splash page, URL string will 301 redirect
+export const overrideSplash: string | null = null
 
 export const jquery = Object.freeze({
   // src: "/javascripts/jquery-3.6.0.min.js", // Local copy

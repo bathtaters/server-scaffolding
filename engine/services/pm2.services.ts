@@ -8,7 +8,11 @@ async function restartInstance({ pm_id, pid, pm2_env }: ProcessDescription, isSe
   
   const current = await list().then((list) => list.find((proc) => proc.pid === pid))
 
-  if (current?.pm_id == null) return logger.warn(`Instance ${process.env.NODE_APP_INSTANCE} [${pm_id} ${pid}]${isSelf ? ' (self)' : ''} has already shutdown.`)
+  if (current?.pm_id == null) {
+    logger.warn(`Instance ${process.env.NODE_APP_INSTANCE} [${pm_id} ${pid}]${isSelf ? ' (self)' : ''} has already shutdown.`)
+    return
+  }
+  
   logger.verbose(`Closing instance ${process.env.NODE_APP_INSTANCE} [${pm_id} ${pid}]${isSelf ? ' (self)' : ''}`)
 
   return restart(current.pm_id)
@@ -33,10 +37,10 @@ async function restartWithEnv(env: Record<string,any>) {
   }
 
   // Restart self
-  return self && restartInstance(self, true)
+  if (self) await restartInstance(self, true)
 }
 
 export async function restartCluster(withEnv: Record<string,any> = {}) {
   await connect()
-  return restartWithEnv(withEnv)
+  await restartWithEnv(withEnv)
 }
