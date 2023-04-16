@@ -1,14 +1,14 @@
 import type { Feedback, ForeignKeyRef, ArrayDefinition, SchemaBase, DefinitionSchema, ArrayDefinitions, Defaults, SQLOptions, Page, SQLSchema } from '../types/Model.d'
 import { ifExistsBehaviors, type IfExistsBehavior } from '../types/db.d'
 import { openDb, getDb } from '../libs/db'
-import { all, get, run, reset, getLastEntry } from '../services/db.services'
+import { all, get, run, reset, getLastEntry, multiRun } from '../services/db.services'
 import { getPrimaryIdAndAdaptSchema, runAdapters, extractArrays } from '../services/model.services'
-import { checkInjection, appendAndSort, insertSQL, selectSQL, countSQL, updateSQL, deleteSQL } from '../utils/db.utils'
+import { checkInjection, appendAndSort, insertSQL, selectSQL, countSQL, updateSQL, deleteSQL, swapSQL } from '../utils/db.utils'
 import { caseInsensitiveObject, filterByField, isIn } from '../utils/common.utils'
 import { sanitizeSchemaData, arrayTableRefs, isDbKey, getSqlParams, arraySQL, splitKeys } from '../utils/model.utils'
 import { arrayLabel, adapterTypes } from '../types/Model.d'
 import { getArrayName, getArrayPath } from '../config/models.cfg'
-import { noID, noData, noEntry, noPrimary, noSize, badKey } from '../config/errors.engine'
+import { noID, noData, noEntry, noPrimary, noSize, badKey, multiAction } from '../config/errors.engine'
 
 // TODO -- Make 'PrimaryID' a settable generic type to use as defaults
 // TODO -- Use 'default' and 'isOptional' to generate InputSchema, DBSchema & OutputSchema types w/ correct optionals
@@ -25,6 +25,7 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
   protected _arrays: ArrayDefinitions<Schema & DBSchema> = {}
   private _isArrayTable: boolean = false
   readonly isInitialized: Promise<boolean>
+  private _tmpID = -0xFF // Temporary ID to use for swaps
 
   constructor(title: string, definitions: DefinitionSchema<Schema, DBSchema>, isArrayTable: boolean = false) {
     this._isArrayTable = isArrayTable
@@ -147,12 +148,20 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
   }
 
 
-  update<ID extends keyof (Schema | DBSchema) & string>(
+  /** Checks if ID exists before updating */
+  async update<ID extends keyof (Schema | DBSchema) & string>(
     id: Schema[ID], data: Partial<Schema>, { idKey, ...options }: { idKey?: ID } & SQLOptions<DBSchema> = {}
   ) {
+    if (id == null) throw noID()
+
+    const count = await this.count(id, idKey)
+    if (!count) throw noEntry(id)
+    if (count !== 1) throw multiAction('Updating',count)
+
     return this.batchUpdate({ [idKey || this.primaryId]: id } as any, data, options)
   }
 
+  /** Doesn't check if IDs exist before updating */
   async batchUpdate(where: Partial<Schema>, data: Partial<Schema>, options: SQLOptions<DBSchema> = {}): Promise<Feedback> {
     return this._update(data, where, options).then((success) => ({ success }))
   }
@@ -164,6 +173,7 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
 
     const count = await this.count(id, idKey)
     if (!count) throw noEntry(id)
+    if (count !== 1) throw multiAction('Deleting',count)
 
     return this.batchRemove([id], idKey)
   }
@@ -171,6 +181,16 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
   /** Doesn't check if IDs exist before removing */
   async batchRemove<K extends keyof DBSchema & string>(ids: DBSchema[K][], idKey?: K): Promise<Feedback> {
     return this._delete(ids, idKey).then((success) => ({ success }))
+  }
+
+  /** Checks if 1st ID exists before swapping, if missing 2nd ID just rename 1st ID */
+  async swap<K extends keyof DBSchema & string>(idA: DBSchema[K], idB: DBSchema[K], idKey?: K): Promise<Feedback> {
+    if (idA == null || idA == null) throw noID()
+
+    const count = await this.count(idA)
+    if (!count) throw noEntry(idA)
+
+    return this._swap(idA, idB, idKey).then((success) => ({ success }))
   }
 
 
@@ -301,6 +321,13 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
     return true
   }
 
+
+  private async _swap<K extends keyof DBSchema & string>(idA: DBSchema[K], idB: DBSchema[K], idKey?: K): Promise<boolean> {
+    if (!idA || !idB) throw noID()
+
+    await multiRun(getDb(), swapSQL(this.title, idKey || this.primaryId, idA, idB, this._tmpID))
+    return true
+  }
   
 
   // Private getters

@@ -148,3 +148,17 @@ export const deleteSQL = (tableName: string, idColumn: string, idList: any[]): [
 
   idList
 ]
+
+
+export const swapSQL = (tableName: string, idColumn: string, idA: any, idB: any, tmpID: any): [string, any[]][] => [
+  [
+    `UPDATE ${tableName} SET ${idColumn} = ? WHERE ${idColumn} = ?;`,
+    [tmpID, idA]
+  ],[
+    `UPDATE ${tableName} SET ${idColumn} = ? WHERE ${idColumn} = ?;`,
+    [idA,   idB]
+  ],[
+    `UPDATE ${tableName} SET ${idColumn} = ? WHERE ${idColumn} = ?;`,
+    [idB, tmpID]
+  ]
+]
