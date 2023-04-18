@@ -107,16 +107,16 @@ export function toValidationSchema(
   // Set type-specific validators/sanitizers
   switch (type) {
     case 'b64': 
-    case 'b64url': // pass to string
+    case 'b64url':
       ptr.isBase64 = { options: { urlSafe: type === 'b64url' }, errorMessage }
-    case 'uuid': // pass to string
-      if (!ptr.isBase64)
-        ptr.isUUID = { errorMessage }
-    case 'hex': // pass to string
-      if (!ptr.isBase64 && !ptr.isUUID)
-        ptr.isHexadecimal = { errorMessage }
+      // pass to string
+    case 'uuid':
+    case 'hex':
+      if (type === 'uuid') ptr.isUUID = { errorMessage }
+      if (type === 'hex')  ptr.isHexadecimal = { errorMessage }
+      // pass to string
     case 'string':
-      ptr.isString = { errorMessage }
+      if (type === 'string') ptr.isString = { errorMessage }
       if (limits) ptr.isLength = { options: limits, errorMessage }
       if (!hasSpaces) { 
         ptr.stripLow = true
