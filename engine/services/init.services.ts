@@ -7,7 +7,7 @@ import { varName } from '../utils/gui.utils'
 import { isInitialized } from '../middleware/rateLimit.middleware'
 import { useLocalCert, closeEvents, errorEvents } from '../config/server.cfg'
 import * as meta from '../config/meta'
-import { serverProcs, guiCfg, urlCfg, allModels } from '../src.import'
+import { userServer, guiCfg, urlCfg, allModels } from '../src.import'
 
 
 let server: ServerInfo = {
@@ -33,7 +33,7 @@ export default async function initializeServer(app: Express) {
   if (!getDb()) await openDb()
   await Promise.all(Object.values(allModels).map((m) => m.isInitialized))
   await isInitialized
-  await serverProcs.startup(app)
+  await userServer.startup(app)
   logger.info(`${meta.name} services started`)
 
   // Get secure credentials
@@ -51,7 +51,7 @@ async function terminateServer() {
   if (server.isTerminating) return
   server.isTerminating = true
 
-  await serverProcs.teardown()
+  await userServer.teardown()
 
   if (getDb()) await closeDb()
 
