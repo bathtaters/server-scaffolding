@@ -52,7 +52,8 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
 
   async getPage(page: number, size: number, reverseSort?: boolean, orderKey?: keyof DBSchema): Promise<Schema[]> {
     if (size < 1 || page < 1) return Promise.reject(noSize())
-    if (typeof orderKey !== 'string' || (orderKey && !isIn(orderKey, this.schema))) throw badKey(orderKey, this.title)
+    if (orderKey != null && (typeof orderKey !== 'string' || (orderKey && !isIn(orderKey, this.schema))))
+      throw badKey(orderKey, this.title)
     
     const result = await all(getDb(), ...selectSQL(
       this.title,
