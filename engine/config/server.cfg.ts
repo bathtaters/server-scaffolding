@@ -1,7 +1,8 @@
 import type { ProcessEnvValue } from "../types/settings.d"
 import type { GracefulExitConfig } from "../types/server.d"
 import { definitions } from './settings.cfg'
-import { logLevels } from "../types/log"
+import { logLevels } from '../types/log'
+import pm2Cfg from './pm2.cfg.json'
 
 const isTest = process.env.NODE_ENV === 'test'
 
@@ -11,15 +12,15 @@ export const useLocalCert = process.env.NODE_ENV === 'secure-dev'
 
 
 export const
-isCluster = false, // Forced off because cluster mode not working
-processCount = 6,
+isCluster = pm2Cfg.exec_mode === "cluster", // alternative is fork (NOTE: cluster mode not working)
+processCount = process.env.NODE_ENV === 'production' ? pm2Cfg.instances : pm2Cfg.dev_instances,
 trustProxy = isTest || decodeTrustProxy(process.env.TRUST_PROXY),
 isSecure = !isTest && (process.env.NODE_ENV === 'production' ? productionIsSecure : useLocalCert),
 csrfEnable = !isTest && true,
 preflightCors = { origin: '*' }, 
 
 gracefulExitOptions: GracefulExitConfig = {
-  suicideTimeout: 4000,
+  suicideTimeout: pm2Cfg.kill_timeout - pm2Cfg.restart_delay,
   log: true,
   logger: logLevels.verbose,
   performLastRequest: true,

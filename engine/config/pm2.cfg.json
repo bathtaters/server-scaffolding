@@ -1,0 +1,24 @@
+{
+    "instances"        : 6,
+    "dev_instances"    : 2,
+    "exec_mode"        : "fork",
+    "kill_timeout"     : 4100,
+    "restart_delay"    : 100,
+
+    "args"             : [],
+    "node_args"        : ["--harmony", "--stack-size=1024"],
+    
+    "autorestart"      : true,
+    "stop_exit_codes"  : [0],
+    "max_restarts"     : 10,
+    "max_memory_restart":"150M",
+    "min_uptime"       : "90s",
+    "exp_backoff_restart_delay": "100",
+    "watch"            : false,
+    "vizion"           : false,
+
+    "merge_logs"       : true,
+    "log_date_format"  : "YY-MM-DD HH:mm",
+    "error_file"       : "/dev/null",
+    "out_file"         : "/dev/null"
+}
