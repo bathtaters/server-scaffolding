@@ -1,5 +1,5 @@
 import type { ProcessDescription } from 'pm2'
-import { connect, list, restart } from '../utils/pm2.promises'
+import { connect, list, restart } from '../libs/pm2'
 import logger from '../libs/log'
 import { name } from '../config/meta'
 
