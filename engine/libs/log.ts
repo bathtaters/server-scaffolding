@@ -1,5 +1,5 @@
 import type { LogLevels } from '../types/log.d'
-import { Logger, transports } from 'winston'
+import { createLogger, transports } from 'winston'
 import DailyRotateFile from 'winston-daily-rotate-file'
 import { getLogLevel } from '../services/log.services'
 import * as config from '../config/log.cfg'
@@ -21,7 +21,7 @@ const fileLogs = !config.testLevel ? null : new DailyRotateFile({
   format: config.logFormat.file,
 })
 
-const logger = new Logger({
+const logger = createLogger({
   levels: config.levels,
   format: config.logFormat.common,
   transports: fileLogs ? [consoleLogs, fileLogs] : [consoleLogs],
