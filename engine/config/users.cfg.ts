@@ -17,7 +17,7 @@ encode = { iters: 1049, keylen: 64, digest: 'sha512' },
 
 saveLoginMs = 5 * 24 * 60 * 60 * 1000,
 
-apiToken = { header: "Authorization", matchToken: RegEx(/^Bearer (.+)$/) },
+apiToken = { header: 'Authorization', matchToken: RegEx(/^Bearer (.+)$/) },
 
 tableFields: Partial<Record<keyof UsersUI, string>> = {
   username: 'Username', access: 'Access', password: 'Password',
@@ -36,82 +36,84 @@ tooltips: Partial<Record<keyof UsersUI, string>> = {
 
 definition: UserDefinition = {
   id: {
-    typeStr: "hex",
+    typeStr: 'hex',
     limits: { min: 32, max: 32 },
   },
   username: {
-    typeStr: "string",
-    default: "user",
+    typeStr: 'string',
+    default: 'user',
     limits: { min: 2, max: 255 },
   },
   password: {
-    typeStr: "string?",
+    typeStr: 'string?',
     limits: passwordLimits,
     db: false,
   },
   confirm: {
-    typeStr: "string?",
+    typeStr: 'string?',
     limits: passwordLimits,
     db: false,
     dbOnly: true,
   },
   token: {
-    typeStr: "hex",
+    typeStr: 'hex?',
     limits: { min: 32, max: 32 },
+    db: 'TEXT NOT NULL',
   },
   access: {
-    typeStr: "int?",
+    typeStr: 'string[]?',
     default: access.api & access.gui,
     limits: { elem: { max: 16 }, array: { max: Object.keys(access).length } },
     isBitmap: true,
+    db: 'INTEGER',
   },
   cors: {
-    typeStr: "string*",
+    typeStr: 'string*',
     default: '*',
     limits: { min: 0, max: 2048 },
   },
   models: {
-    typeStr: "string[]",
+    typeStr: 'string[]',
     default: { [allModelsKey]: ['read','write'] } as any,
     limits: { elem: { max: 64 }, array: { max: 100 * Object.keys(models).length } },
     db: 'TEXT',
   },
   failCount: {
-    typeStr: "int?",
+    typeStr: 'int?',
     default: 0,
     limits: { min: 0, max: rateLimiter.maxFails + 1 },
     html: false,
   },
   failTime: {
-    typeStr: "datetime?",
+    typeStr: 'datetime?',
     html: false,
   },
   guiCount: {
-    typeStr: "int?",
+    typeStr: 'int?',
     default: 0,
     limits:  { min: 0, max: Number.MAX_SAFE_INTEGER  },
     html: false,
   },
   guiTime: {
-    typeStr: "datetime?",
+    typeStr: 'datetime?',
     html: false,
   },
   apiCount: {
-    typeStr: "int?",
+    typeStr: 'int?',
     default: 0,
     limits:  { min: 0, max: Number.MAX_SAFE_INTEGER  },
     html: false,
   },
   apiTime: {
-    typeStr: "datetime?",
+    typeStr: 'datetime?',
     html: false,
   },
   locked: {
-    typeStr: "boolean",
+    typeStr: 'boolean',
     default: false,
   },
-  pwkey: { typeStr: "hex?", html: false, dbOnly: true },
-  salt:  { typeStr: "hex?", html: false, dbOnly: true },
+  pwkey: { typeStr: 'hex?', html: false, dbOnly: true },
+  salt:  { typeStr: 'hex?', html: false, dbOnly: true },
 } as const,
 
 searchableKeys: Array<keyof UsersUI> = ['username','token','access','cors','locked'], // 'models'
