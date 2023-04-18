@@ -4,7 +4,7 @@ import { timestamps } from '../types/Users'
 
 import expressSession from 'express-session'
 import flash from 'connect-flash'
-import { use, serializeUser, deserializeUser, initialize, session, authenticate } from 'passport'
+import { Passport } from 'passport'
 import { Strategy as LocalStrategy } from 'passport-local'
 
 import Users from '../models/Users'
@@ -16,17 +16,17 @@ import { loginAccess as loginAccessArray } from '../config/users.cfg'
 
 const loginAccess = accessInt(loginAccessArray) // TODO: Use BitMap
 
+const passport = new Passport()
 
 export function initAuth() {
-  use('gui', new LocalStrategy(authorizeUser(Users, loginAccess)))
-  serializeUser(storeUser(Users))
-  deserializeUser(loadUser(Users, timestamps.gui))
+  passport.use('gui', new LocalStrategy(authorizeUser(Users, loginAccess)))
+  passport.serializeUser(storeUser(Users))
+  passport.deserializeUser(loadUser(Users, timestamps.gui))
 
   return [
     expressSession(sessionOptions),
     flash(),
-    initialize(),
-    session(),
+    passport.session(),
   ]
 }
 
@@ -50,7 +50,7 @@ export const forwardOnAuth = (redirectURL: string, accessLevel: number): Middlew
   }
     
 export const login = (landingURL: string, loginURL: string): Middleware =>
-  authenticate('local', {
+  passport.authenticate('gui', {
     successRedirect: landingURL,
     failureRedirect: loginURL,
     failureFlash: true,

@@ -2,17 +2,15 @@ import type { Request, Middleware } from '../types/express.d'
 import type { ModelsType } from '../types/Users.d'
 import { access } from '../types/Users'
 import cors, { CorsOptionsDelegate } from 'cors'
-import { use, authenticate } from 'passport'
+import { Passport } from 'passport'
 import { Strategy } from 'passport-http-bearer'
 import Users from '../models/Users'
 import { authorizeBearer } from '../services/auth.services'
 import { hasModelAccess } from '../utils/users.model'
 import { noModel, noAccess } from '../config/errors.engine'
-
-use(new Strategy(authorizeBearer(Users, access.api)))
-
-const bearerAuth = authenticate('bearer', { session: false })
   
+const passport = new Passport()
+
 const modelAuth = (modelName: string, accessType?: ModelsType): Middleware =>
   (req, _, next) => 
     req.isAuthenticated() && hasModelAccess(req.user.models, modelName, accessType) ?
@@ -27,6 +25,10 @@ const getCors: CorsOptionsDelegate<Request> = (req, next) =>
     })
 
 export default function corsMiddleware(modelName?: string, accessType?: ModelsType) {
+  passport.use('api', new Strategy(authorizeBearer(Users, access.api)))
+
+  const bearerAuth = passport.authenticate('api', { session: false })
+
   return modelName ?
     [bearerAuth, modelAuth(modelName, accessType), cors(getCors)] :
     [bearerAuth, cors(getCors)]
