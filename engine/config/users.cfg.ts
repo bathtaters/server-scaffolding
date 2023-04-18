@@ -1,4 +1,4 @@
-import { UsersUI, AccessType, UserDefinition } from '../types/Users.d'
+import type { UsersUI, AccessType, UserDefinition } from '../types/Users.d'
 import RegEx from '../libs/regex'
 import { access, models, allModelsKey } from '../types/Users'
 import { urlCfg } from '../src.import'

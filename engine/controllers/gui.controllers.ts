@@ -1,6 +1,6 @@
 import type { Middleware } from '../types/express.d'
 import type { GuiOptions, ModelGuiBase } from '../types/controllers.d'
-import { access, profileLabels } from '../types/Users'
+import { access } from '../types/Users'
 import { actions } from '../types/gui'
 
 import { matchedData } from 'express-validator'
@@ -10,7 +10,7 @@ import { guiAdapter } from '../services/users.services'
 import { hasAccess } from '../utils/users.access'
 import { hasModelAccess } from '../utils/users.model'
 import { labelsByAccess, actionURLs } from '../utils/form.utils'
-import { tableFields, tooltips } from '../config/users.cfg'
+import { tableFields, tooltips, profileActions } from '../config/users.cfg'
 import { noData } from '../config/errors.engine'
 
 import { guiCfg, urlCfg, allModels } from '../src.import'
@@ -92,7 +92,7 @@ const staticUserParams = {
   tooltips,
   tableFields,
   idKey: Users.primaryId,
-  buttons: profileLabels,
+  buttons: profileActions.map((action) => actions[action]),
   schema: Users.schema,
   regenURL:   `${urls.prefix}${urls.user}${urls.token}`,
   submitURLs: actionURLs(`${urls.prefix}${urls.user}${urls.form}/`),

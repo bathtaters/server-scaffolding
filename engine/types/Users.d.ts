@@ -1,4 +1,4 @@
-import type { allModelsKey, access, models, modelsStrings, timestamps, profileLabels } from "./Users"
+import type { allModelsKey, access, models, modelsStrings, timestamps } from "./Users"
 import type { DefinitionSchema, SQLOptions } from "./Model.d"
 
 // TODO: RENAME ACCESS => PRIVLEGES && MODELS => ACCESS
@@ -49,8 +49,6 @@ export type TimestampType  = typeof timestamps[keyof typeof timestamps]
 export type ModelObject<Models extends string> = { [M in Models]+?: number } & { [allModelsKey]: number }
 
 export type UserDefinition = DefinitionSchema<UsersUI, UsersDB>
-
-export type ProfileActions = typeof profileLabels[number]
 
 type TimestampTimes<DateType = Date>  = { [T in TimestampType as `${T}Time`]+?: DateType }
 type TimestampCounts = { [T in TimestampType as `${T}Count`]+?: number }

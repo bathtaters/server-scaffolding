@@ -1,6 +1,3 @@
-import { actions } from "./gui"
-import { profileActions } from "../config/users.cfg"
-
 // TODO: RENAME ACCESS => PRIVLEGES && MODELS => ACCESS
 
 export const noAccess = 'none' as const
@@ -31,5 +28,3 @@ export const timestamps = {
     api:  'api',
     fail: 'fail',
 } as const
-
-export const profileLabels = profileActions.map((action) => actions[action])
