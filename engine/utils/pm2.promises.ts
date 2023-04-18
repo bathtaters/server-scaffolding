@@ -15,3 +15,13 @@ export const list = () => new Promise<pm2.ProcessDescription[]>((res, rej) => {
 export const restart = (procId: string | number, updateEnv = true) => new Promise<void>((res, rej) => {
   (pm2.restart as typeof pm2.reload)(procId, { updateEnv }, (err) => err ? rej(err) : res())
 })
+
+
+// Include process.env vars
+declare global {
+  namespace NodeJS {
+      interface ProcessEnv {
+          NODE_APP_INSTANCE?: string;
+      }
+  }
+}
