@@ -79,7 +79,7 @@ class User extends Model<UsersUI, UsersDB> {
     }
 
     const data = await super.findBaseRaw({ username: username.toLowerCase() })
-    const result = await testPassword(data[0], password, accessInt(accessLevel), this._passwordCb)
+    const result = await testPassword(data[0], password, accessInt(accessLevel), this._passwordCb.bind(this))
     return 'fail' in result ? result : runAdapters(adapterTypes.get, result, this)
   }
 
