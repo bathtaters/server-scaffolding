@@ -35,7 +35,7 @@ export const checkAuth = (redirectURL: string, accessLevel: number): Middleware 
     res.redirect(redirectURL)
   }
 
-export const checkModel = (redirectURL: string, modelName: string, accessType: ModelAccess): Middleware =>
+export const checkModel = (redirectURL: string | null, modelName: string, accessType?: ModelAccess): Middleware =>
   (req, res, next) => {
     const access = typeof accessType === 'function' ? accessType(req) : accessType
     if (hasModelAccess(req.user?.models, modelName, access)) return next()
