@@ -1,6 +1,6 @@
-import type { Middleware } from '../types/express'
-import Users from '../models/Users'
+import type { Middleware } from '../types/express.d'
 import { access } from '../types/Users'
+import Users from '../models/Users'
 import { forwardOnAuth } from '../middleware/auth.middleware'
 import { isPm2 } from '../config/meta'
 import { urlCfg } from '../src.import'

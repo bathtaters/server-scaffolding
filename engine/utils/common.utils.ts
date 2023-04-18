@@ -1,5 +1,5 @@
+import type { ObjectOf, NestedObject } from '../types/global.d'
 import type { Middleware } from '../types/express.d'
-import type { ObjectOf, NestedObject, NestedObjectValue } from '../types/global.d'
 import RegEx, { RegExp, escapeRegexPattern } from '../libs/regex'
 
 /** Remove hyphens & Capitalize all words (For App Title) */
@@ -71,9 +71,9 @@ export function deepMap<T = any, Ret = any, K extends keyof T = keyof T>(
     return input.map((val) => deepMap(val, callback)) 
   
   if (isObj<ObjectOf<T,K>>(input))
-    return Object.keys(input).reduce((obj, key) => ({
+    return Object.entries(input).reduce((obj, [key,val]) => ({
       ...obj,
-      [key]: deepMap(input[key], callback),
+      [key]: deepMap(val as T, callback),
     }), {} as ObjectOf<Ret, K>)
 
   return callback(input)

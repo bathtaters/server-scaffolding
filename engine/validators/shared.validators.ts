@@ -1,13 +1,13 @@
-import type { RequestField, ValidationOptions, ModelValidationOptions, SchemaKeys, KeyArr, KeyObj } from '../types/validate'
+import type { RequestField, ValidationOptions, ModelValidationOptions, SchemaKeys, KeyArr, KeyObj } from '../types/validate.d'
 import type { Middleware } from '../types/express'
+import type { DefinitionSchema, SchemaBase } from '../types/Model.d'
+import type { ModelBase } from '../models/Model'
 import { type Schema, checkSchema } from 'express-validator'
 import checkValidation from '../middleware/validate.middleware'
 import { generateSchema, appendToSchema } from '../services/validate.services'
 import { adaptSchemaEntry } from '../services/model.services'
 import { toArraySchema } from '../utils/validate.utils'
 import { filterDupes } from '../utils/common.utils'
-import { DefinitionSchema, SchemaBase } from '../types/Model'
-import { ModelBase } from '../models/Model'
 
 
 /** Convert express-validator Schema to Middleware  */

@@ -1,5 +1,5 @@
 import type { ProcessEnvValue } from "../types/settings.d"
-import type { GracefulExitConfig } from "../types/server"
+import type { GracefulExitConfig } from "../types/server.d"
 import { definitions } from './settings.cfg'
 import { logLevels } from "../types/log"
 

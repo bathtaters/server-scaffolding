@@ -1,4 +1,4 @@
-import type { ProfileActions } from './gui'
+import type { ProfileActions } from './gui.d'
 import type { ModelBase } from '../models/Model'
 
 export type ControllerCallback<T extends Record<string,any>> =

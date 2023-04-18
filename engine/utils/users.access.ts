@@ -1,6 +1,7 @@
+import type { AccessType } from '../types/Users.d'
+import { access } from '../types/Users'
 import BitMap, { BitMapInput } from '../libs/BitMap'
 import { requirePassword } from '../config/users.cfg'
-import { access, AccessType } from '../types/Users.d'
 
 // TODO: Make BitMaps in Model auto-convert to BitMap class
 // TODO: Rename: access (this, not modelAccess) -> groups | privlege | ...etc

@@ -1,8 +1,8 @@
 import type { Schema } from 'express-validator'
 import type { Limits, BaseType, ValidationType, ValidationTypeFull } from '../types/validate.d'
 import type { FormDefinition } from '../types/gui.d'
+import { baseTypes } from '../types/validate'
 import RegEx from '../libs/regex'
-import { baseTypes } from '../types/validate.d'
 import { boolOptions } from '../config/validate.cfg'
 import { splitUnenclosed } from './common.utils'
 

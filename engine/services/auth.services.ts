@@ -1,3 +1,8 @@
+import type { Users } from '../models/Users'
+import type { TimestampType } from '../types/Users.d'
+import type { DoneCallback } from 'passport'
+import type { VerifyFunction as VerifyBearer } from 'passport-http-bearer'
+import type { VerifyFunction as VerifyLocal  } from 'passport-local'
 import session, { type Store, type SessionOptions } from 'express-session'
 import SQLite from 'connect-sqlite3'
 import { dirname } from 'path'
@@ -6,12 +11,7 @@ import logger from '../libs/log'
 import { saveLoginMs } from '../config/users.cfg'
 import { dbPath } from '../config/meta'
 import { concurrentDB, isSecure, sessionCookie, sessionFile, sessionTable } from '../config/server.cfg'
-import { noToken, badToken, noAccess, noUser } from '../config/errors.engine'
-
-import type UserModel from '../models/Users'
-import { AccessType, TimestampType, UsersUI } from '../types/Users'
-type User = typeof UserModel
-type Done = (error: any | null, userData?: any | false, flashData?: any) => void
+import { noToken, badToken, noAccess } from '../config/errors.engine'
 
 
 const dbDir = dirname(dbPath)
@@ -35,8 +35,8 @@ export const sessionOptions: SessionOptions = {
 }
 
 
-export function authorizeBearer(Model: User, accessLevel: number) {
-  return (token: string | undefined, done: Done) => {
+export function authorizeBearer(Model: Users, accessLevel: number): VerifyBearer {
+  return (token: string | undefined, done) => {
     if (!token) return done(noToken())
 
     return Model.checkToken(token, accessLevel)
@@ -50,8 +50,8 @@ export function authorizeBearer(Model: User, accessLevel: number) {
 }
 
 
-export function authorizeUser(Model: User, accessLevel: number) {
-  return (username: string, password: string, done: Done) => 
+export function authorizeUser(Model: Users, accessLevel: number): VerifyLocal {
+  return (username, password, done) => 
     Model.checkPassword(username, password, accessLevel)
       .then((user) => {
         if ('fail' in user) return done(null, false, { message: user.fail })
@@ -61,10 +61,12 @@ export function authorizeUser(Model: User, accessLevel: number) {
 }
 
 
-export const storeUser = (Model: User) => (user: any, done: Done) => done(null, user[Model.primaryId])
+export const storeUser = (Model: Users) =>
+  (user: any, done: DoneCallback) => done(null, user[Model.primaryId])
 
 
-export const loadUser = (Model: User, accessType: TimestampType) =>
-  (id: string, done: Done) => Model.get(id, { timestamp: accessType, ignoreCounter: true })
-    .then((user) => user ? done(null, user) : done(null, false, noUser()))
-    .catch(done)
+export const loadUser = (Model: Users, accessType: TimestampType) =>
+  (id: string, done: DoneCallback) =>
+    Model.get(id, { timestamp: accessType, ignoreCounter: true })
+      .then((user) => user ? done(null, user) : done(null, false))
+      .catch(done)

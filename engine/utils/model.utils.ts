@@ -1,16 +1,17 @@
 import type Model from '../models/Model'
 import type { ModelBase } from '../models/Model'
-import type { ChangeCallback, CommonDefinition, Definition, DefinitionSchema, ForeignKeyRef, SchemaBase, adapterTypes } from '../types/Model.d'
+import type { ChangeCallback, CommonDefinition, Definition, DefinitionSchema, ForeignKeyRef, SchemaBase } from '../types/Model.d'
 import type { IfExistsBehavior, SQLSuffix, SQLType, SQLTypeFull } from '../types/db.d'
+import type { HTMLType } from '../types/gui.d'
+import { adapterTypes, arrayLabel } from '../types/Model'
+import { foreignKeyActions, sqlSuffixes, sqlTypes } from '../types/db'
+import { htmlTypes } from '../types/gui'
 
 import { isDate } from '../libs/date'
 import { isIn } from './common.utils'
 import { combineSQL, insertSQL, deleteSQL } from './db.utils'
 import { parseBoolean, parseArray } from './validate.utils'
 import { CONCAT_DELIM, getArrayName } from '../config/models.cfg'
-import { arrayLabel } from '../types/Model.d'
-import { foreignKeyActions, sqlSuffixes, sqlTypes } from '../types/db.d'
-import { type HTMLType, htmlTypes } from '../types/gui.d'
 
 // Initialize Parsers
 const toBool = parseBoolean(true)

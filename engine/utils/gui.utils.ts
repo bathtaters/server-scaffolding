@@ -1,4 +1,4 @@
-import type { Recur } from '../types/global'
+import type { Recur } from '../types/global.d'
 import RegEx from '../libs/regex'
 import { isDate } from '../libs/date'
 import { guiCfg } from '../src.import'

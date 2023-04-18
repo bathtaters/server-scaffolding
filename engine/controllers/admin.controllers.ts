@@ -1,5 +1,5 @@
-import type { Middleware } from '../types/express'
-import { access, allModelsKey, models } from '../types/Users.d'
+import type { Middleware } from '../types/express.d'
+import { access, allModelsKey, models } from '../types/Users'
 
 import { matchedData } from 'express-validator'
 import Users from '../models/Users'

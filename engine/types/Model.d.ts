@@ -1,9 +1,10 @@
-import type { AddAsPartial } from './global.d'
+import type { adapterTypes, arrayLabel } from './Model'
 import type { HTMLType } from './gui.d'
-import type { BaseType, Limits, ValidationTypeFull } from './validate.d'
+import type { ValidationTypeFull } from './validate.d'
 import type { SQLTypeFull, ForeignKeyAction } from './db.d'
 
 // TODO -- Organize into namespaces
+// TODO -- Ability to derive 'Schema'/'DBSchema' from Model.SchemaDefinition
 
 /** Definitions for a column of the Model */
 export type Definition<
@@ -15,12 +16,12 @@ export type Definition<
   /** Default value
    *   - Default value to use for that column if nothing provided on creation 
    *   - This value is run through setAdapter each time */
-  default?:     Schema[K] | UI[K],
+  default?:     K extends keyof Schema ? Schema[K] : K extends keyof DBSchema ? DBSchema[K] : never,
 
   /** if column is SQL primary key
    *   - When no type/typeStr is provided,
    *     it will be set as auto-incrementing Int */
-  isPrimary?:   boolean,
+  isPrimary?:   K extends keyof (Schema | DBSchema) ? boolean : false,
   
   /** Function called whenever this column is retrieved from the database
    *   - false = skip automatic conversions
@@ -116,7 +117,6 @@ export interface ForeignKeyRef {
   onUpdate?: ForeignKeyAction
 }
 
-export const arrayLabel = { foreignId: 'fid', index: 'idx', value: 'val' } as const
 export type ArrayDefinition<Value = any, Key = any> = {
   [arrayLabel.foreignId]: Key,
   [arrayLabel.index]:     number,
@@ -134,7 +134,10 @@ export type CreateTableRefs = { [arrayName: string]: ForeignKeyRef }
  * @returns adapted value
  */
 export type Adapter<Key extends keyof SchemaIn, SchemaIn extends SchemaBase, SchemaOut extends SchemaBase = SchemaIn> =
-  (value: SchemaIn[Key] | undefined, data: Partial<SchemaIn & SchemaOut>) => Promise<SchemaOut[Key] | undefined> | SchemaOut[Key] | undefined
+  (value: SchemaIn[Key] | undefined, data: Partial<SchemaIn & SchemaOut>) =>
+    Key extends keyof SchemaOut ?
+      Promise<SchemaOut[Key] | undefined | void> | SchemaOut[Key] | undefined | void :
+      Promise<undefined | void> | undefined | void
 
-export const adapterTypes = { get: 'getAdapter', set: 'setAdapter' } as const
+
 export type AdapterType = typeof adapterTypes[keyof typeof adapterTypes]

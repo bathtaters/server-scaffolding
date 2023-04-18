@@ -1,4 +1,4 @@
-import type { ValidationTypeFull } from "../types/validate"
+import type { ValidationTypeFull } from "../types/validate.d"
 
 export const
   defaultPrimary = 'id',

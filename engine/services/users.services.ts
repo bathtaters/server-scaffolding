@@ -1,5 +1,7 @@
-import type { ProfileActions } from '../types/gui'
+import type { ProfileActions } from '../types/gui.d'
 import type { ModelObject, UserDefinition, UsersHTML, UsersUI } from '../types/Users.d'
+import { access, allModelsKey } from '../types/Users'
+import { adapterTypes } from '../types/Model'
 import logger from '../libs/log'
 import { formatLong } from '../libs/date'
 import { accessArray, accessInt, hasAccess } from '../utils/users.access'
@@ -7,8 +9,6 @@ import { decodeCors, encodeCors, displayCors, isRegEx } from '../utils/users.cor
 import { getModelsString, modelsArrayToObj, modelAccessToInts } from '../utils/users.model'
 import { generateToken, encodePassword } from '../utils/auth.utils'
 import { modifyOther, noConfirm, badConfirm } from '../config/errors.engine'
-import { access, allModelsKey } from '../types/Users.d'
-import { adapterTypes } from '../types/Model.d'
 
 // TODO: Add default BitMap getters/setters
 // TODO: Update getters/setters to use BitMaps/etc

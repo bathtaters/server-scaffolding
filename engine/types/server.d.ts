@@ -1,15 +1,9 @@
-import http from "http"
-import GracefulExit from "express-graceful-exit"
-import { LogLevels } from "./log"
-
-const processEvents = [
-    'beforeExit', 'disconnect', 'exit', 'message',
-    'multipleResolves', 'rejectionHandled', 'uncaughtException',
-    'uncaughtExceptionMonitor', 'unhandledRejection', 'warning', 'worker',
-] as const
+import type http from "http"
+import type GracefulExit from "express-graceful-exit"
+import type { processEvents } from "./server"
+import type { LogLevels } from "./log.d"
 
 export type ProcessEvents = typeof processEvents[number] | NodeJS.Signals
-
 
 export type GracefulExitConfig = Omit<GracefulExit.Configuration, 'logger'> & { logger: LogLevels }
 

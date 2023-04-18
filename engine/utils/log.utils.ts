@@ -1,4 +1,5 @@
-import { logLevels, LogLevels, LogObject } from '../types/log.d'
+import { LogLevels, LogObject } from '../types/log.d'
+import { logLevels } from '../types/log'
 import { parseISO, formatLong, formatShort } from '../libs/date'
 
 

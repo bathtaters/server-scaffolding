@@ -1,6 +1,7 @@
-import type { UsersDB, UsersUI, GetOptions, UpdateOptions, AccessType, TimestampType } from '../types/Users'
-import type { SQLOptions } from '../types/Model'
-import type { IfExistsBehavior } from '../types/db'
+import type { UsersDB, UsersUI, GetOptions, UpdateOptions, TimestampType } from '../types/Users.d'
+import type { SQLOptions } from '../types/Model.d'
+import type { IfExistsBehavior } from '../types/db.d'
+import { access } from '../types/Users'
 import Model from './Model'
 import logger from '../libs/log'
 import { now } from '../libs/date'
@@ -10,12 +11,13 @@ import { rateLimiter, illegalUsername, definition } from '../config/users.cfg'
 import { generateToken, testPassword, isLocked, isPastWindow } from '../utils/auth.utils'
 import { incrementCb } from '../utils/model.utils'
 import { hasDupes, isIn } from '../utils/common.utils'
-import { access } from '../types/Users'
 import { isPm2 } from '../config/meta'
 import { badUsername, noData, usernameMessages, deleteAdmin, badKey, noID, noEntry } from '../config/errors.engine'
+import { runAdapters } from '../services/model.services'
+import { adapterTypes } from '../types/Model'
 
 
-class Users extends Model<UsersUI, UsersDB> {
+class User extends Model<UsersUI, UsersDB> {
 
   constructor() { 
     super('_users', definition)
@@ -73,20 +75,21 @@ class Users extends Model<UsersUI, UsersDB> {
     if (!isPm2 && !(await this.count())) {
       const data = await this.addAndReturn([{ username, password, access: accessLevel }])
       logger.info(`Created initial user: ${data.username}`)
-      return data
+      return runAdapters(adapterTypes.get, data, this)
     }
 
     const data = await super.findBaseRaw({ username: username.toLowerCase() })
-    return testPassword(data[0], password, accessInt(accessLevel), this._passwordCb)
+    const result = await testPassword(data[0], password, accessInt(accessLevel), this._passwordCb)
+    return 'fail' in result ? result : runAdapters(adapterTypes.get, result, this)
   }
 
   async checkToken(token: UsersUI['token'], accessLevel: number) { // TODO: Replace with BitMap
     return this.getRaw(token, { idKey: 'token', timestamp: 'api' })
-      .then((user) =>
+      .then(async (user) =>
         !user ? 'NO_USER' :
         user.locked && !isPastWindow(user) ? 'USER_LOCKED' :
         !hasAccess(user.access, accessLevel) ? 'NO_ACCESS' :
-          user
+          runAdapters(adapterTypes.get, user, this)
       )
   }
 
@@ -214,4 +217,6 @@ class Users extends Model<UsersUI, UsersDB> {
 }
 
 
-export default new Users()
+export default new User()
+
+export type Users = User

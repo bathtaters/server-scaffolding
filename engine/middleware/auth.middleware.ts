@@ -1,5 +1,5 @@
-import type { ModelsType, UsersUI } from '../types/Users'
-import type { Middleware } from '../types/express'
+import type { ModelsType, UsersUI } from '../types/Users.d'
+import type { Middleware } from '../types/express.d'
 
 import expressSession from 'express-session'
 import flash from 'connect-flash'

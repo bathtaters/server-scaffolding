@@ -1,4 +1,5 @@
-import type { TypeOf, TypeDef, Limit } from '../types/validate.d'
+import type { TypeDef, Limit } from '../types/validate.d'
+import { TypeOf } from '../types/global.d'
 import RegEx from '../libs/regex'
 import { isIn } from '../utils/common.utils'
 

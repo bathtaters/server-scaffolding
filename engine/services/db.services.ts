@@ -1,5 +1,5 @@
 import type { Database } from '@journeyapps/sqlcipher'
-import type { ForeignKeyRef } from '../types/Model'
+import type { ForeignKeyRef } from '../types/Model.d'
 import logger from '../libs/log'
 import { noDb, sqlError, sqlNotDB } from '../config/errors.engine'
 import { debugSQL } from '../config/models.cfg'

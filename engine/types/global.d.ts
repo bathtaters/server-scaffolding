@@ -1,7 +1,7 @@
 // -- TYPESCRIPT HELPERS -- \\
 
 /** Object of a single type value (Inverse of Record<>) */
-export type ObjectOf<T, K extends string | number | symbol = string | number | symbol> = { [K in P]: T }
+export type ObjectOf<T, K extends string | number | symbol = string | number | symbol> = { [P in K]: T }
 
 
 /** Object of nested objects <T>, OK = outermost key type, IK = inner object <T> key type */
@@ -30,6 +30,8 @@ export type RequireOne<T, Keys extends keyof T = keyof T> =
 /** Add properties from type S to T, make any properties only on type S optional. */
 export type AddAsPartial<T, S> = T & Partial<Omit<S, keyof T>>
 
+/** All possible results of 'typeof' operator */
+export type TypeOf = "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"
     
 // -- TYPESCRIPT FIXES -- \\
 

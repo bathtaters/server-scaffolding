@@ -1,4 +1,4 @@
-import type { Middleware } from '../types/express'
+import type { Middleware } from '../types/express.d'
 import { type ErrorFormatter, validationResult } from 'express-validator'
 import { mask } from '../utils/gui.utils'
 import { guiCfg } from '../src.import'

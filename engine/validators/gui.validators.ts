@@ -1,6 +1,7 @@
-import type { ModelValidationOptions, SchemaKeys, ValidationOptions } from '../types/validate'
+import type { ModelValidationOptions, SchemaKeys, ValidationOptions } from '../types/validate.d'
+import type { ProfileActions } from '../types/gui.d'
+import { actions } from '../types/gui'
 import Users from '../models/Users'
-import { type ProfileActions, actions } from '../types/gui'
 import { type ModelValBase, byModel, byObject } from './shared.validators'
 
 export { swap, all } from './api.validators'

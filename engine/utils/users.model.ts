@@ -1,8 +1,9 @@
-import BitMap, { BitMapInput, BitMapValue } from '../libs/BitMap'
+import type { ModelsType, ModelObject } from '../types/Users.d'
+import { models, modelsStrings, allModelsKey } from '../types/Users'
+import BitMap, { type BitMapInput, type BitMapValue } from '../libs/BitMap'
 import logger from '../libs/log'
 import { isIn } from './common.utils'
 import { badAccess } from '../config/errors.engine'
-import { models, modelsStrings, allModelsKey, ModelsType, ModelObject } from '../types/Users.d'
 import { allModels } from '../src.import'
 
 const modelsBitMap = new BitMap(models, modelsStrings)

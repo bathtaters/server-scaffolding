@@ -1,5 +1,6 @@
-import { access, models, allModelsKey, UsersUI, AccessType, UserDefinition } from '../types/Users.d'
+import { UsersUI, AccessType, UserDefinition } from '../types/Users.d'
 import RegEx from '../libs/regex'
+import { access, models, allModelsKey } from '../types/Users'
 import { urlCfg } from '../src.import'
 
 const urls = urlCfg.gui.admin
@@ -56,15 +57,13 @@ definition: UserDefinition = {
   },
   token: {
     typeStr: "hex",
-    default: null,
     limits: { min: 32, max: 32 },
   },
   access: {
-    typeStr: "string[]?",
-    default: [ 'api', 'gui' ],
+    typeStr: "int?",
+    default: access.api & access.gui,
     limits: { elem: { max: 16 }, array: { max: Object.keys(access).length } },
     isBitmap: true,
-    db: 'INTEGER',
   },
   cors: {
     typeStr: "string*",
@@ -73,7 +72,7 @@ definition: UserDefinition = {
   },
   models: {
     typeStr: "string[]",
-    default: { [allModelsKey]: ['read','write'] },
+    default: { [allModelsKey]: ['read','write'] } as any,
     limits: { elem: { max: 64 }, array: { max: 100 * Object.keys(models).length } },
     db: 'TEXT',
   },

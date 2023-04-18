@@ -1,5 +1,6 @@
 import type * as config from '../config/log.cfg'
-import { logLevels, LogLevels } from '../types/log.d'
+import type { LogLevels } from '../types/log.d'
+import { logLevels } from '../types/log'
 import { readdir, readFile } from 'fs/promises'
 import { join, parse } from 'path'
 import { formatFileLog, getMaxEntry, isLogLevel } from '../utils/log.utils'

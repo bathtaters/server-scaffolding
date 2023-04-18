@@ -1,7 +1,7 @@
 import type Model from '../models/Model'
 import type { AdapterType, Definition, DefinitionSchema, SchemaBase, ArrayDefinitions, CommonDefinition } from '../types/Model.d'
 import { hasDupes, isIn } from '../utils/common.utils'
-import { arrayLabel, adapterTypes } from '../types/Model.d'
+import { arrayLabel, adapterTypes } from '../types/Model'
 import { defaultPrimary, defaultPrimaryType, SQL_ID } from '../config/models.cfg'
 import { dbFromType, htmlFromType, getAdapterFromType, setAdapterFromType, stripPrimaryDef, sanitizeSchemaData } from '../utils/model.utils'
 import { parseTypeStr } from '../utils/validate.utils'

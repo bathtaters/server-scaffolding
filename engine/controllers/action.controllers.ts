@@ -1,7 +1,8 @@
 import type { ModelActionBase, FormOptions } from '../types/controllers.d'
 import type { Middleware, Request } from '../types/express.d'
-import { type ProfileActions, actions } from '../types/gui.d'
-import { access } from '../types/Users.d'
+import type { ProfileActions } from '../types/gui.d'
+import { actions } from '../types/gui'
+import { access } from '../types/Users'
 
 import { matchedData } from 'express-validator'
 import Users from '../models/Users'

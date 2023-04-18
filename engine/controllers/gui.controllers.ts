@@ -1,4 +1,5 @@
-import type { Middleware } from '../types/express'
+import type { Middleware } from '../types/express.d'
+import type { GuiOptions, ModelGuiBase } from '../types/controllers.d'
 import { access, profileLabels } from '../types/Users'
 import { actions } from '../types/gui'
 
@@ -13,7 +14,6 @@ import { tableFields, tooltips } from '../config/users.cfg'
 import { noData } from '../config/errors.engine'
 
 import { guiCfg, urlCfg, allModels } from '../src.import'
-import { GuiOptions, ModelGuiBase } from '../types/controllers'
 
 const urls = urlCfg.gui.basic
 const models = allModels.map(({title, url}) => ({title, url}))

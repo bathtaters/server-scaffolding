@@ -1,6 +1,5 @@
 import type { NestedObjectValue } from '../types/global.d'
 import type { EnvObject, SettingsDefinitions } from '../types/settings.d'
-import type { SessionData } from '../types/Users.d'
 import { writeFile, readFile } from 'fs/promises'
 import { parse } from 'dotenv'
 import logger from '../libs/log'
@@ -41,7 +40,7 @@ export async function getSettings() {
 }
 
 
-export async function setSettings(settings: Partial<EnvObject>, session?: SessionData) {
+export async function setSettings(settings: Partial<EnvObject>, session?: UserSessionData) {
   const oldSettings = await getSettings()
 
   if (session) {
@@ -76,9 +75,5 @@ export async function getForm() {
 }
 
 
-
-declare module 'express-session' {
-  interface SessionData {
-    undoSettings?: Partial<EnvObject>[];
-  }
-}
+type UserSessionData = { undoSettings?: Partial<EnvObject>[] }
+declare module 'express-session' { interface SessionData extends UserSessionData {} }

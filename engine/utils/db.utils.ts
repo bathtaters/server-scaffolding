@@ -1,5 +1,5 @@
-import type { IfExistsBehavior } from '../types/db'
-import { arrayLabel } from '../types/Model.d'
+import type { IfExistsBehavior } from '../types/db.d'
+import { arrayLabel } from '../types/Model'
 import { getArrayName, CONCAT_DELIM, SQL_ID, ifExistsBehavior } from '../config/models.cfg'
 import { illegalKeyName, illegalKeys } from '../config/validate.cfg'
 import { sqlInjection } from '../config/errors.engine'

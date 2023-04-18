@@ -1,4 +1,5 @@
-import type { Middleware, Response as Res } from '../types/express'
+import type { Middleware, Response as Res } from '../types/express.d'
+import { httpLog } from '../types/log'
 import httpLogger from 'morgan'
 import { randomUUID } from 'crypto'
 import logger, { stream } from '../libs/log'
@@ -6,7 +7,6 @@ import { now } from '../libs/date'
 import { httpHdr, httpReq, httpRes } from '../utils/http.utils'
 import { httpDebug, silent, httpMessage } from '../config/log.cfg'
 import { definitions } from '../config/settings.cfg'
-import { httpLog } from '../types/log'
 
 const isMember = <E extends string>(enumArray: E[], text: string): text is E => (enumArray as string[]).includes(text)
 

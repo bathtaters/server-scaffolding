@@ -1,6 +1,7 @@
+import type { LogLevels, HttpLog, NoLog } from '../types/log.d'
 import { format } from 'winston'
 import RegEx, { escapeRegexPattern } from '../libs/regex'
-import { noLog, LogLevels, HttpLog, NoLog } from '../types/log.d'
+import { noLog } from '../types/log'
 import { varName } from '../utils/gui.utils'
 import { getMaxEntry } from '../utils/log.utils'
 import { testLog } from '../testing/test.cfg'

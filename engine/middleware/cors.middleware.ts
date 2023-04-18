@@ -1,5 +1,6 @@
-import type { Request, Middleware } from '../types/express'
-import { AccessType, type ModelsType, access } from '../types/Users'
+import type { Request, Middleware } from '../types/express.d'
+import type { ModelsType } from '../types/Users.d'
+import { access } from '../types/Users'
 import cors, { CorsOptionsDelegate } from 'cors'
 import { use, authenticate } from 'passport'
 import { Strategy } from 'passport-http-bearer'

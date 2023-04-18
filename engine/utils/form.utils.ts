@@ -1,6 +1,7 @@
 import type { ModelsType } from '../types/Users.d'
+import type { ProfileActions } from '../types/gui.d'
+import { actions } from '../types/gui'
 import { parseBoolean } from '../utils/validate.utils'
-import { type ProfileActions, actions } from '../types/gui.d'
 import { badData } from '../config/errors.engine'
 const parseBool = parseBoolean(true)
 

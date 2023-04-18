@@ -1,7 +1,8 @@
 import type { Schema } from 'express-validator'
+import type { Limit, RequestField, ValidationType, ValidationOptions } from '../types/validate.d'
+import { requestFields } from '../types/validate'
 import logger from '../libs/log'
 import { errorMsgs, dateOptions, ignoreDisableMin, defaultLimits } from "../config/validate.cfg"
-import { Limit, RequestField, ValidationType, ValidationOptions, requestFields } from '../types/validate.d'
 import { isBoolean, parseBoolean, toTypeString, hidingMin, parseTypeStr } from '../utils/validate.utils'
 import { concatUnique } from '../utils/common.utils'
 

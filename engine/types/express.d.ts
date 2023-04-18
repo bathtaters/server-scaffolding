@@ -1,16 +1,18 @@
 import type express from 'express'
-import type { HttpError } from 'http-errors'
+import type { ParamsDictionary, Query as ParsedQuery } from 'express-serve-static-core'
+
+// TODO -- Implement stricter typing with routes and middleware
 
 export type GuiHandler<Params extends object = {}> = express.RequestHandler<Params, any, {},   {}>
 export type FormHandler<Body  extends object = {}> = express.RequestHandler<{},     any, Body, {}>
 
 export type Request<
-  P extends ParamsDictionary = ParamsDictionary,
+  Params extends ParamsDictionary = ParamsDictionary,
   ResBody = any,
   ReqBody = any,
-  ReqQuery extends QueryString.ParsedQs = QueryString.ParsedQs,
+  Query extends ParsedQuery = ParsedQuery,
   Locals extends Record<string, any> = Record<string, any>
-> = express.Request<P,ResBody,ReqBody,ReqQuery,Locals>
+> = express.Request<Params,ResBody,ReqBody,Query,Locals>
 
 export type Response<
   ResBody = any,
@@ -20,13 +22,13 @@ export type Response<
 export type Next = express.NextFunction
 
 export type Middleware = <
-  P extends ParamsDictionary = ParamsDictionary,
+  Params extends ParamsDictionary = ParamsDictionary,
   ResBody = any,
   ReqBody = any,
-  ReqQuery extends QueryString.ParsedQs = QueryString.ParsedQs,
+  Query extends ParsedQuery = ParsedQuery,
   Locals extends Record<string, any> = Record<string, any>
 >(
-  req: Request<P,ResBody,ReqBody,ReqQuery,Locals>,
+  req: Request<Params,ResBody,ReqBody,Query,Locals>,
   res: Response<ResBody,Locals>,
   next: Next,
 ) => void

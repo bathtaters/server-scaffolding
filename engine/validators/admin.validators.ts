@@ -1,5 +1,5 @@
-import type { ProfileActions } from '../types/gui'
-import type { KeyObj } from '../types/validate'
+import type { ProfileActions } from '../types/gui.d'
+import type { KeyObj } from '../types/validate.d'
 import Users from '../models/Users'
 import { definition, searchableKeys } from '../config/users.cfg'
 import { definitions as settingsDefinition } from '../config/settings.cfg'

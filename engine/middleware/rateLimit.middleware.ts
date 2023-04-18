@@ -1,5 +1,5 @@
-import type { Middleware } from '../types/express'
-import { RateLimitInfo, rateLimit } from 'express-rate-limit'
+import type { Middleware } from '../types/express.d'
+import { type RateLimitInfo, rateLimit } from 'express-rate-limit'
 import { dirname } from 'path'
 import logger from '../libs/log'
 import RateLimitStore from '../libs/rateLimitStore'

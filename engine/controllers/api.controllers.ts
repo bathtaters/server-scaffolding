@@ -1,8 +1,8 @@
+import type { ModelBase } from '../models/Model'
+import type { Middleware } from '../types/express.d'
 import { matchedData } from 'express-validator'
 import * as errors from '../config/errors.engine'
 import { getMatchingKey } from '../utils/common.utils'
-import { ModelBase } from '../models/Model'
-import { Middleware } from '../types/express'
 
 
 export const create = <M extends ModelBase>(Model: M): Middleware =>

@@ -1,4 +1,4 @@
-import type { UsersDB } from '../types/Users'
+import type { UsersDB } from '../types/Users.d'
 import hat from 'hat'
 import crypto from 'crypto'
 import { msAgo } from '../libs/date'
@@ -9,10 +9,10 @@ export type PasswordCallback = (isMatch: boolean, userData: Partial<UsersDB>) =>
 
 export const generateToken = () => hat()
 
-export const isLocked = ({ failCount }: Pick<UsersDB,'failCount'>) =>
+export const isLocked = ({ failCount }: Partial<Pick<UsersDB,'failCount'>>) =>
   (failCount || 0) + 1 >= rateLimiter.maxFails
 
-export const isPastWindow = ({ failTime, locked }: Pick<UsersDB,'failTime'|'locked'>) =>
+export const isPastWindow = ({ failTime, locked }: Partial<Pick<UsersDB,'failTime'|'locked'>>) =>
   failTime && (rateLimiter.autoUnlock || !locked) &&
     msAgo(failTime) > rateLimiter.failWindow
 

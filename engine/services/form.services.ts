@@ -1,5 +1,6 @@
 import type { ModelFormBase } from '../types/controllers.d'
-import { type ActionObject, actions } from '../types/gui.d'
+import { type ActionObject } from '../types/gui.d'
+import { actions } from '../types/gui'
 import { noData, noAdd, noID } from '../config/errors.engine'
 import { isDate } from '../libs/date'
 import { extractId } from '../utils/db.utils'

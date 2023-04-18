@@ -1,16 +1,8 @@
-import type { LogLevels, HttpLog } from "./log.d"
+import type { nodeEnv, settingsActions } from "./settings"
+import type { LogLevels, HttpLog, NoLog } from "./log.d"
 import type { FormDefinition } from "./gui.d"
 
-export const nodeEnv = ['development','secure-dev','production','test'] as const
 export type NodeEnv = typeof nodeEnv[number]
-
-
-const settingsActions = {
-    update:   'Update',
-    default:  'Default',
-    undo:     'Undo',
-    restart:  'Restart',
-} as const
 
 export type SettingsActionKeys = keyof typeof settingsActions
 export type SettingsActions = typeof settingsActions[keyof typeof settingsActions]
@@ -31,7 +23,7 @@ export type EnvParsed = {
     LOG_DIR?: string,
 }
 
-export type EnvObject = Record<keyof EnvParsed & string, ProcessEnvValue>
+export type EnvObject = { [P in keyof EnvParsed & string]+?: string }
 export type SettingsDefinitions = Record<keyof EnvParsed & string, FormDefinition>
 
 
@@ -41,8 +33,6 @@ export type SettingsActionFunc = (settings: Partial<EnvObject>, session: any) =>
 // Override process.env type
 declare global {
     namespace NodeJS {
-        interface ProcessEnv extends EnvObject {
-            NODE_APP_INSTANCE: ProcessEnvValue;
-        }
+        interface ProcessEnv extends EnvObject {}
     }
 }
