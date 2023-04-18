@@ -1,5 +1,6 @@
 import type { ModelsType, UsersUI } from '../types/Users.d'
 import type { Middleware } from '../types/express.d'
+import { timestamps } from '../types/Users'
 
 import expressSession from 'express-session'
 import flash from 'connect-flash'
@@ -17,9 +18,9 @@ const loginAccess = accessInt(loginAccessArray) // TODO: Use BitMap
 
 
 export function initAuth() {
-  use(new LocalStrategy(authorizeUser(Users, loginAccess)))
+  use('gui', new LocalStrategy(authorizeUser(Users, loginAccess)))
   serializeUser(storeUser(Users))
-  deserializeUser(loadUser(Users, 'gui'))
+  deserializeUser(loadUser(Users, timestamps.gui))
 
   return [
     expressSession(sessionOptions),

@@ -1,7 +1,7 @@
 import type { UsersDB, UsersUI, GetOptions, UpdateOptions, TimestampType } from '../types/Users.d'
 import type { SQLOptions } from '../types/Model.d'
 import type { IfExistsBehavior } from '../types/db.d'
-import { access } from '../types/Users'
+import { access, timestamps } from '../types/Users'
 import Model from './Model'
 import logger from '../libs/log'
 import { now } from '../libs/date'
@@ -84,7 +84,7 @@ class User extends Model<UsersUI, UsersDB> {
   }
 
   async checkToken(token: UsersUI['token'], accessLevel: number) { // TODO: Replace with BitMap
-    return this.getRaw(token, { idKey: 'token', timestamp: 'api' })
+    return this.getRaw(token, { idKey: 'token', timestamp: timestamps.api })
       .then(async (user) =>
         !user ? 'NO_USER' :
         user.locked && !isPastWindow(user) ? 'USER_LOCKED' :
