@@ -81,7 +81,7 @@ checkInjection(Object.values(arrayLabel), 'models.cfg:arrayLabel')
 export const countSQL = (tableName: string, whereParams: [string, any][] = []): [string, any[]] => [
 
   `SELECT COUNT(*) as count FROM ${tableName}${
-    whereParams.length ? `WHERE ${whereParams.map((sql) => sql[0]).join(' AND ')}` : ''
+    whereParams.length ? ` WHERE ${whereParams.map((sql) => sql[0]).join(' AND ')}` : ''
   }`,
 
   whereParams.map((params) => params[1])
