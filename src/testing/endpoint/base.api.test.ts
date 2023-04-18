@@ -9,6 +9,7 @@ const apiPrefix = '/api/base' // change 'base' to Model title
 
 describe.skip('Test Base model API', () => {
   let header: { Authorization: string }, testId: number
+  // @ts-ignore -- TODO: Fix when testing is typescript
   beforeAll(() => testEndpoint.getApiHeader().then((token) => { header = token }))
 
   test('Confirm login works', async () => {

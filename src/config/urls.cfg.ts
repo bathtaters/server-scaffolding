@@ -1,17 +1,17 @@
 import RegEx from '../../engine/libs/regex'
 
-export const api = Object.freeze({
+export const api = {
   prefix: '/api',
   swap:   '/swap',
-}),
+} as const,
 
-gui = Object.freeze({
+gui = {
   splashRedirect: RegEx(/\/index(?:\.html?)?|\/home(?:\.html?)?/),
-  root: Object.freeze({
+  root: {
     login:  '/login',
     logout: '/logout',
-  }),
-  basic: Object.freeze({
+  },
+  basic: {
     prefix: '/gui',
     home: '/db',
     user: '/profile',
@@ -19,8 +19,8 @@ gui = Object.freeze({
     form: '/form',
     find: '/results',
     token: '/regenToken',
-  }),
-  admin: Object.freeze({
+  },
+  admin: {
     prefix: '/admin',
     home:  '/settings',
     user:  '/users',
@@ -28,27 +28,27 @@ gui = Object.freeze({
     form:  '/form',
     find: '/results',
     token: '/regenToken',
-  }),
-})
+  },
+} as const
 
-export const landingPage = Object.freeze({
+export const landingPage = {
   gui:   gui.basic.prefix + gui.basic.home,
   admin: gui.admin.prefix + gui.admin.home,
   login: gui.basic.prefix + gui.basic.home,
   logout: gui.root.login,
-})
+} as const
 
 // null will use index.pug as splash page, URL string will 301 redirect
 export const overrideSplash: string | null = null
 
-export const jquery = Object.freeze({
+export const jquery = {
   // src: "/javascripts/jquery-3.6.0.min.js", // Local copy
   src: "https://code.jquery.com/jquery-3.6.0.min.js",
   integrity: "sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=",
-}),
+} as const,
 
-minicss = Object.freeze({
+minicss = {
   // href: "/stylesheets/mini-dark.min.css", // Local copy
   href: "https://cdn.jsdelivr.net/gh/Chalarangelo/mini.css@v3.0.1/dist/mini-dark.min.css",
   // href: "https://cdnjs.cloudflare.com/ajax/libs/mini.css/2.3.7/mini-dark.css", // WRONG STYLES
-})
+} as const

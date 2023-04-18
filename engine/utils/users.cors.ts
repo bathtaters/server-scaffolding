@@ -24,21 +24,20 @@ const regEx = {
 
 export function decodeCors(cors?: Cors): Cors | undefined {
   if (cors == null) return undefined
-  if (cors === "true" || cors === "false") return cors === "true"
-  if (cors === "0" || cors === "1" || cors === 0 || cors === 1) return Boolean(+cors)
-  const unescCors = cors
-  if (regEx.canParse(unescCors)) return regEx.parse(unescCors)
+  if (cors === 'true' || cors === 'false') return cors === 'true'
+  if (cors === '0' || cors === '1') return Boolean(+cors)
+  if (regEx.canParse(cors)) return regEx.parse(cors)
   return typeof cors === 'string' && jsonRegex.test(cors) ? JSON.parse(cors) : cors
 }
 
-export function encodeCors(cors?: Cors) {
+export function encodeCors(cors?: Cors | number) {
   if (cors == null) return undefined
   if (Array.isArray(cors)) return JSON.stringify(cors)
   if (regEx.canString(cors)) return regEx.stringify(cors)
-  if (typeof cors === 'boolean') return cors.toString()
-  if (cors === "0" || cors === "1" || cors === 0 || cors === 1) return JSON.stringify(Boolean(+cors))
+  if (typeof cors === 'number' || cors === '0' || cors === '1') cors = Boolean(+cors)
+  if (typeof cors === 'boolean') return String(cors)
   if (typeof cors ==='string' && cors.includes(',')) return JSON.stringify(cors.split(commaRegex))
-  return cors
+  return cors as string
 }
 
 export function displayCors(cors?: Cors) {
