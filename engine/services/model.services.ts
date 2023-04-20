@@ -83,7 +83,7 @@ export async function runAdapters<S extends SchemaBase, D extends SchemaBase = S
     const adapter = model.schema[key][adapterType]
     if (typeof adapter !== 'function') return result[key] = data[key]
     
-    const adapterResult = await adapter(data[key], data)
+    const adapterResult = await adapter(data[key], result)
     result[key] = adapterResult ?? data[key]
   }))
 
