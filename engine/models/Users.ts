@@ -189,7 +189,7 @@ class User extends Model<UsersUI, UsersDB> {
     const oldData = matchingData[0]
 
     if ('role' in newData && newData.role !== oldData.role) {
-      if (!oldData.pwkey && !newData.pwkey && passwordRoles.intersects(newData.role))
+      if (!oldData.password && !newData.password && passwordRoles.intersects(newData.role))
         throw noData('password for GUI access')
 
       if (Role.map.admin.intersects(oldData.role) && !Role.map.admin.intersects(newData.role))

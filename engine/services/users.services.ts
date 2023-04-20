@@ -16,7 +16,7 @@ export function initAdapters(definitions: UserDefinition) {
 
   definitions.role[adapterTypes.get] = (role) => new Role(role)
 
-  definitions.pwkey[adapterTypes.get] = (pwkey,data) => { data.password = Boolean(pwkey) }
+  definitions.password[adapterTypes.get] = (password) => password ? 'YES' : undefined
 
   definitions.access[adapterTypes.get] = (access) => access ? new ModelAccess(JSON.parse(access)) : undefined
 
@@ -32,8 +32,8 @@ export function initAdapters(definitions: UserDefinition) {
   definitions.password[adapterTypes.set] = async (password, data) => {
     if (typeof password !== 'string' || !password) return
     const { pwkey, salt } = await encodePassword(password)
-    data.pwkey = pwkey
     data.salt = salt
+    return pwkey
   }
 }
 

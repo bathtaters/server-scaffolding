@@ -31,10 +31,10 @@ export async function testPassword(userData: Partial<UsersDB> | undefined, passw
   if (!userData) return failureMsg.noUser
   if (userData.locked && !isPastWindow(userData)) return failureMsg.isLocked
   if (role && !role.intersects(userData.role)) return failureMsg.noRole
-  if (!userData.pwkey) return failureMsg.noPassword
+  if (!userData.password) return failureMsg.noPassword
 
   const pwkey = await encrypt(password, userData.salt ?? '', encode.iters, encode.keylen, encode.digest)
-  const isMatch = crypto.timingSafeEqual(Buffer.from(userData.pwkey, 'base64url'), pwkey)
+  const isMatch = crypto.timingSafeEqual(Buffer.from(userData.password, 'base64url'), pwkey)
 
   if (callback) await callback(isMatch, userData)
   return isMatch ? userData : failureMsg.noMatch

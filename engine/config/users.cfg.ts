@@ -47,7 +47,6 @@ definition: UserDefinition = {
   password: {
     typeStr: 'string?',
     limits: passwordLimits,
-    db: false,
   },
   confirm: {
     typeStr: 'string?',
@@ -112,7 +111,6 @@ definition: UserDefinition = {
     typeStr: 'boolean',
     default: false,
   },
-  pwkey: { typeStr: 'hex?', html: false, dbOnly: true },
   salt:  { typeStr: 'hex?', html: false, dbOnly: true },
 } as const,
 

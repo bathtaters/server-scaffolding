@@ -6,6 +6,7 @@ import type { BitMapObjBase, BitMapObjToValue, BitMapObjType, ExtractBitMap, Obj
 type UsersBase = {
     id:       string, // hex
     username: string,
+    password?: string,
     token:    string, // hex
     locked?:  boolean,
 } & TimestampCounts
@@ -14,7 +15,6 @@ export type UsersDB = UsersBase & {
     cors?:  string,
     role:   number, // Bitmap
     access: string, // JSON
-    pwkey?: string, // hex
     salt?:  string, // hex
 } & TimestampTimes<number>
 
@@ -22,7 +22,6 @@ export type UsersUI = UsersBase & {
     cors?:     Cors,
     role?:     RoleType,
     access?:   AccessType,
-    password?: boolean | string,
     confirm?:  string,
 } & TimestampTimes<Date>
 
