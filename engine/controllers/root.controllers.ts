@@ -1,5 +1,5 @@
 import type { Middleware } from '../types/express.d'
-import { access } from '../types/Users'
+import { Role } from '../types/Users'
 import Users from '../models/Users'
 import { forwardOnAuth } from '../middleware/auth.middleware'
 import { isPm2 } from '../config/meta'
@@ -7,8 +7,8 @@ import { urlCfg } from '../src.import'
 
 
 export const loginPage: Middleware[] = [
-  forwardOnAuth(urlCfg.landingPage.gui,   access.gui  ),
-  forwardOnAuth(urlCfg.landingPage.admin, access.admin),
+  forwardOnAuth(urlCfg.landingPage.gui,   Role.map.gui  ),
+  forwardOnAuth(urlCfg.landingPage.admin, Role.map.admin),
 
   (req, res) => Users.count().then((isUser) => 
     res.render('login', {

@@ -1,5 +1,5 @@
 import { actions } from '../types/gui'
-import { access } from '../types/Users'
+import { Role } from '../types/Users'
 import { Router } from 'express'
 import { userTable, settings, logList, logView } from '../controllers/admin.controllers'
 import { regenToken, adminForm, settingsForm } from '../controllers/action.controllers'
@@ -10,7 +10,7 @@ import { urlCfg } from '../src.import'
 const router = Router()
 const { admin, root } = urlCfg.gui
 
-router.use(checkAuth(root.login, access.admin))
+router.use(checkAuth(root.login, Role.map.admin))
 
 // User Table
 router.get( admin.user,             valid.page,  userTable.model)

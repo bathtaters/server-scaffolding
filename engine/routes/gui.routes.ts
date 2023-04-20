@@ -1,5 +1,5 @@
 import { actions } from '../types/gui'
-import { access } from '../types/Users'
+import { ModelAccess, Role } from '../types/Users'
 import { Router } from 'express'
 import { dbHome, userProfile, modelDb } from '../controllers/gui.controllers'
 import { regenToken, userForm, form, swap } from '../controllers/action.controllers'
@@ -12,7 +12,7 @@ const router = Router()
 const { basic, root } = urlCfg.gui
 const redir = `${basic.prefix}${basic.home}`
 
-router.use(checkAuth(root.login, access.gui))
+router.use(checkAuth(root.login, Role.map.gui))
 
 router.get( basic.home,                                    dbHome)
 router.get( basic.user,                                    userProfile)
@@ -26,9 +26,9 @@ allModels.forEach((Model) => {
   const controller = modelDb(Model)
   const formHandler = form(Model)
 
-  router.get( `${basic.home}/${Model.url}`,              checkModel(redir, Model.title),          validate.page,        controller.model)
-  router.get( `${basic.home}/${Model.url}${basic.find}`, checkModel(redir, Model.title, 'read'),  validate.find(Model), controller.find)
-  router.post(`${basic.home}/${Model.url}${basic.swap}`, checkModel(null,  Model.title, 'write'), validate.swap(Model), swap(Model))
+  router.get( `${basic.home}/${Model.url}`,              checkModel(redir, Model.title),                        validate.page,        controller.model)
+  router.get( `${basic.home}/${Model.url}${basic.find}`, checkModel(redir, Model.title, ModelAccess.map.read),  validate.find(Model), controller.find)
+  router.post(`${basic.home}/${Model.url}${basic.swap}`, checkModel(null,  Model.title, ModelAccess.map.write), validate.swap(Model), swap(Model))
 
   Object.values(actions).forEach((action) => {
     router.post(

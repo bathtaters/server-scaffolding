@@ -35,7 +35,7 @@ noCSRF = () => createError(403, "Form expired or was tampered with (Missing or i
 noSession = () => createError(403, "Error retrieving session (Check if cookies are being blocked)"),
 noAccess = () => createError(403, "User does not have access."),
 badAccess = (access: string, type = 'key') => createError(500, `Invalid access ${type}: ${access}.`),
-noModel = (model = 'this model', access = '') => createError(403, `User does not have ${access} access to ${model}.`),
+noModelAccess = (model = 'this model', access = '') => createError(403, `User does not have ${access} access to ${model}.`),
 badModels = (models: any) => createError(500, `Invalid model list: [${typeof models}] ${JSON.stringify(models)}.`),
 rateLimit = (data: any) => appendToError(createError(429, `Too many requests. Try again in a bit.`), { stack: JSON.stringify(data) }),
 
@@ -43,7 +43,7 @@ loginMessages = {
   noUser:     { fail: 'Incorrect username or user was deleted' },
   isLocked:   { fail: 'User is locked out due to too many failed attempts' },
   noPassword: { fail: 'Password not created (Contact administrator)' },
-  noAccess:   { fail: 'Insufficient access level' },
+  noRole:     { fail: 'User does not have access to this service' },
   noMatch:    { fail: 'Incorrect password or misspelled username' },
 },
 usernameMessages = {

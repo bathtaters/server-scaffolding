@@ -1,13 +1,12 @@
-import type { UsersDB, UsersUI, GetOptions, UpdateOptions, TimestampType } from '../types/Users.d'
+import type { UsersDB, UsersUI, GetOptions, UpdateOptions, TimestampType, RoleType } from '../types/Users.d'
 import type { SQLOptions } from '../types/Model.d'
 import type { IfExistsBehavior } from '../types/db.d'
-import { access, timestamps } from '../types/Users'
+import { Role, timestamps } from '../types/Users'
 import Model from './Model'
 import logger from '../libs/log'
 import { now } from '../libs/date'
-import { passwordAccess, accessInt, hasAccess } from '../utils/users.access'
 import { addAdapter, initAdapters } from '../services/users.services'
-import { rateLimiter, illegalUsername, definition } from '../config/users.cfg'
+import { definition, rateLimiter, passwordRoles, illegalUsername } from '../config/users.cfg'
 import { generateToken, testPassword, isLocked, isPastWindow } from '../utils/auth.utils'
 import { incrementCb } from '../utils/model.utils'
 import { hasDupes, isIn } from '../utils/common.utils'
@@ -53,12 +52,13 @@ class User extends Model<UsersUI, UsersDB> {
 
   async batchUpdate(where: Partial<UsersUI>, data: Partial<UsersUI>, options: SQLOptions<UsersDB> = {}) {
     const oldOnChange = options.onChange
-    if (!oldOnChange) options.onChange = this._updateCb
+    if (!oldOnChange) options.onChange = this._updateCb.bind(this)
 
     else options.onChange = async (update, matching) => {
       await oldOnChange(update, matching)
-      return this._updateCb(update, matching)
+      return this._updateCb.call(this, update, matching)
     }
+
     return super.batchUpdate(where, data, options)
   }
 
@@ -71,24 +71,24 @@ class User extends Model<UsersUI, UsersDB> {
     return super.update(id, { token: generateToken() })
   }
 
-  async checkPassword(username: UsersUI['username'], password: string, accessLevel: number) { // TODO: Replace with BitMap
+  async checkPassword(username: UsersUI['username'], password: string, role: RoleType) {
     if (!isPm2 && !(await this.count())) {
-      const data = await this.addAndReturn([{ username, password, access: accessLevel }])
+      const data = await this.addAndReturn([{ username, password, role }])
       logger.info(`Created initial user: ${data.username}`)
       return runAdapters(adapterTypes.get, data, this)
     }
 
     const data = await super.findBaseRaw({ username: username.toLowerCase() })
-    const result = await testPassword(data[0], password, accessInt(accessLevel), this._passwordCb.bind(this))
+    const result = await testPassword(data[0], password, role, this._passwordCb.bind(this))
     return 'fail' in result ? result : runAdapters(adapterTypes.get, result, this)
   }
 
-  async checkToken(token: UsersUI['token'], accessLevel: number) { // TODO: Replace with BitMap
+  async checkToken(token: UsersUI['token'], role: RoleType) {
     return this.getRaw(token, { idKey: 'token', timestamp: timestamps.api })
       .then(async (user) =>
         !user ? 'NO_USER' :
         user.locked && !isPastWindow(user) ? 'USER_LOCKED' :
-        !hasAccess(user.access, accessLevel) ? 'NO_ACCESS' :
+        !role.intersects(user.role) ? 'NO_ACCESS' :
           runAdapters(adapterTypes.get, user, this)
       )
   }
@@ -98,8 +98,8 @@ class User extends Model<UsersUI, UsersDB> {
       throw badKey(idKey, this.title)
 
     const admins: Pick<UsersDB, ID>[] = await this.custom(
-      `SELECT ${idKey} FROM ${this.title} WHERE access & ?`,
-      [access.admin]
+      `SELECT ${idKey} FROM ${this.title} WHERE role & ?`,
+      [Role.map.admin.int]
     )
     
     return !admins.filter((user) => !ids.includes(user[idKey])).length
@@ -116,8 +116,8 @@ class User extends Model<UsersUI, UsersDB> {
     username = username.toLowerCase()
 
     const users = await super.findRaw()
-    const nameExists = users.every((user) =>
-      user.id === ignoreId || user.username !== username
+    const nameExists = users.some((user) =>
+      user.id !== ignoreId && user.username === username
     )
     return nameExists && usernameMessages.exists
   }
@@ -172,7 +172,7 @@ class User extends Model<UsersUI, UsersDB> {
 
     const userData = users.map((user) => {
       const newUser = addAdapter(user)
-      if ((passwordAccess & accessInt(newUser.access)) && !newUser.password)
+      if (passwordRoles.intersects(newUser.role) && !newUser.password)
         throw noData('password for GUI access')
       return newUser
     })
@@ -188,11 +188,11 @@ class User extends Model<UsersUI, UsersDB> {
   private async _updateCb(newData: Partial<UsersDB>, matchingData: UsersDB[])  {
     const oldData = matchingData[0]
 
-    if ('access' in newData && newData.access !== oldData.access) {
-      if (!oldData.pwkey && !newData.pwkey && (passwordAccess & accessInt(newData.access)))
+    if ('role' in newData && newData.role !== oldData.role) {
+      if (!oldData.pwkey && !newData.pwkey && passwordRoles.intersects(newData.role))
         throw noData('password for GUI access')
 
-      if (accessInt(oldData.access) & access.admin && !(accessInt(newData.access) & access.admin))
+      if (Role.map.admin.intersects(oldData.role) && !Role.map.admin.intersects(newData.role))
         await this.throwLastAdmins(matchingData.map((u) => u.id), 'id')
     }
     

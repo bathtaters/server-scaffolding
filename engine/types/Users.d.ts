@@ -1,30 +1,29 @@
-import type { allModelsKey, access, models, modelsStrings, timestamps } from "./Users"
+import type { Role, ModelAccess, timestamps, NO_ACCESS } from "./Users"
 import type { DefinitionSchema, SQLOptions } from "./Model.d"
-
-// TODO: RENAME ACCESS => PRIVLEGES && MODELS => ACCESS
-
-type Cors = boolean | string[] | string | RegExp
+import type { BitMapBase, BitMapValue, FlagType } from "./BitMap"
+import type { BitMapObjBase, BitMapObjToValue, BitMapObjType, ExtractBitMap, ObjFlagType, ObjKeyType } from "./BitMapObj.d"
 
 type UsersBase = {
-    id: string, // hex
+    id:       string, // hex
     username: string,
-    token: string, // hex
-    cors?: Cors,
-    locked?: boolean,
+    token:    string, // hex
+    locked?:  boolean,
 } & TimestampCounts
 
 export type UsersDB = UsersBase & {
-    access: number, // bitmap
-    models: string, // JSON
+    cors?:  string,
+    role:   number, // Bitmap
+    access: string, // JSON
     pwkey?: string, // hex
     salt?:  string, // hex
 } & TimestampTimes<number>
 
 export type UsersUI = UsersBase & {
-    access?: number, // not Access[], doesn't run through Setter
-    models?: ModelObject<string>,
+    cors?:     Cors,
+    role?:     RoleType,
+    access?:   AccessType,
     password?: boolean | string,
-    confirm?: string,
+    confirm?:  string,
 } & TimestampTimes<Date>
 
 export type UsersHTML = {
@@ -34,22 +33,23 @@ export type UsersHTML = {
     cors?: string,
     regExCors?: boolean,
     arrayCors?: boolean,
-    locked: boolean,
-    access?: string,
-    models: string | string[],
+    locked: boolean, 
+    role?: string | string[],
+    access: string | string[],
     password?: boolean | string,
     confirm?: string,
     hadError?: boolean,
 } & TimestampHTML
 
-export type AccessType  = keyof typeof access
-export type ModelsType  = keyof typeof models
-export type ModelsString = typeof modelsStrings[keyof typeof modelsStrings] | `${typeof modelsStrings['read']}${typeof modelsStrings['write']}`
-export type TimestampType  = typeof timestamps[keyof typeof timestamps]
-export type ModelObject<Models extends string> = { [M in Models]+?: number } & { [allModelsKey]: number }
-
 export type UserDefinition = DefinitionSchema<UsersUI, UsersDB>
 
+export type RoleType     = BitMapBase<FlagType<typeof Role>>
+export type AccessType   = BitMapObjBase<ObjKeyType<typeof ModelAccess>, ObjFlagType<typeof ModelAccess>>
+export type AccessBitMap = ExtractBitMap<typeof ModelAccess>
+
+export type Cors = boolean | string[] | string | RegExp
+
+export type TimestampType  = typeof timestamps[keyof typeof timestamps]
 type TimestampTimes<DateType = Date>  = { [T in TimestampType as `${T}Time`]+?: DateType }
 type TimestampCounts = { [T in TimestampType as `${T}Count`]+?: number }
 type TimestampHTML   = { [T in TimestampType as `${T}Time`]+?:  string }

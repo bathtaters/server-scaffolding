@@ -1,27 +1,22 @@
 import type { Middleware } from '../types/express.d'
-import { access, allModelsKey, models } from '../types/Users'
+import { ModelAccess, Role, NO_ACCESS } from '../types/Users'
 
 import { matchedData } from 'express-validator'
 import Users from '../models/Users'
+import { DEFAULT_KEY } from '../libs/BitMapObj'
 import { modelDb } from './gui.controllers'
 import { guiAdapter } from '../services/users.services'
 import settingsActions from '../services/settings.form'
 import { getSettings, getForm, canUndo } from '../services/settings.services'
 import { getLogList, logFile } from '../services/log.services'
-import { hasAccess } from '../utils/users.access'
 import { actionURLs } from '../utils/form.utils'
 import { getAllLevels } from '../utils/log.utils'
 import { tableFields, tooltips } from '../config/users.cfg'
 import { colors, maxLogLine, trimLogMessage } from '../config/log.cfg'
-import { urlCfg, allModels } from '../src.import'
+import { urlCfg } from '../src.import'
 
 const urls = urlCfg.gui.admin
 const logBaseURL = `${urls.prefix}${urls.logs}`
-
-const modelsList = [
-  allModels.map(({title}) => title).concat(allModelsKey),
-  Object.keys(models)
-]
 
 
 // USER TABLE
@@ -32,8 +27,8 @@ export const userTable = modelDb(Users, {
     title: 'Users',
     tooltips,
     tableFields,
-    modelsList,
-    accessLevels: Object.keys(access),
+    accessList: [ ModelAccess.keys.concat(DEFAULT_KEY), ModelAccess.values ],
+    roles:    Role.flags.concat(NO_ACCESS),
     baseURL:  `${urls.prefix}${urls.user}`,
     regenURL: `${urls.prefix}${urls.user}${urls.token}`,
     submitURLs: actionURLs(`${urls.prefix}${urls.user}${urls.form}/`),
@@ -51,7 +46,7 @@ export const settings: Middleware = async (req, res) =>
     buttons: Object.keys(settingsActions),
     postURL: `${urls.prefix}${urls.home}${urls.form}`,
     user: req.user?.username,
-    isAdmin: hasAccess(req.user?.access, access.admin),
+    isAdmin: Role.map.admin.intersects(req.user?.role),
     csrfToken: req.csrfToken?.(),
     userIP: req.ip,
   })
@@ -65,7 +60,7 @@ export const logList: Middleware = (req, res, next) =>
       logs,
       baseURL: `${logBaseURL}/`,
       user: req.user?.username,
-      isAdmin: hasAccess(req.user?.access, access.admin),
+      isAdmin: Role.map.admin.intersects(req.user?.role),
     })
   ).catch(next)
 
@@ -81,7 +76,7 @@ export const logView: Middleware = (req, res, next) => {
       levels: getAllLevels(logData.log),
       baseURL: `${logBaseURL}/`,
       user: req.user?.username,
-      isAdmin: hasAccess(req.user?.access, access.admin),
+      isAdmin: Role.map.admin.intersects(req.user?.role),
     })
   ).catch(next)
 }

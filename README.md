@@ -157,7 +157,7 @@ upstream myserver {
 
 ### User GUI
 `[Domain]/gui/...`
-##### _Must login as user with `GUI` access._
+##### _Must login as user with `GUI` role._
 | User URL | Description |
 |------|------|
 |`/db`|Index of all models|
@@ -166,7 +166,7 @@ upstream myserver {
 
 ### Admin GUI
 `[Domain]/admin/...`
-##### _Must login as user with `ADMIN` access._
+##### _Must login as user with `ADMIN` role._
 | Admin URL | Description |
 |------|------|
 |`/settings`|Change server settings & reboot|

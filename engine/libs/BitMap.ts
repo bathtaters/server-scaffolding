@@ -1,220 +1,150 @@
-import logger from './log'
-import { hasDupes, invertObject } from '../utils/common.utils'
+import type { BitMapBase, BitMapStatic, BitMapValue, CharMap } from "../types/BitMap.d"
+import { mapObject } from "../utils/common.utils"
 
-export type BitMapInput<Keys extends string> = BitMapValue<Keys> | Keys[] | Keys | number
+const MAX_LENGTH = 32, STR_DELIM = '/'
+
+const toMap = <Flag extends string>(flagList: readonly Flag[]) =>
+    flagList.reduce(
+        (map, flag, n) => ({ ...map, [flag]: 1 << n }),
+        {} as Record<Flag, number>
+    )
 
 
-/** Class representing a BitMap, from which to create values */
-export default class BitMap<Name extends string> {
-    private readonly _map
-    private readonly _inverse
-    private readonly _stringmap
-    private readonly _invstring?: { [str: string]: Name }
-    private readonly _max
-    private readonly _zero
-  
-    private static hasDupes(array: any[]) { return hasDupes(array) }
-    private static isOneBit(n: number) { return Math.log2(n) % 1 === 0 }
-  
-    constructor(bitmap: { [N in Name]: number }, stringmap?: { [N in Name]: string }) {
-        const values = Object.values<number>(bitmap)
+export default function BitMapFactory<Flag extends string>(flagList: readonly Flag[], emptyKey?: Flag, characterMap?: CharMap<Flag>) {
+    if (flagList.length <          1) throw new Error(`BitMap flagList must have at least 1 flag.`)
+    if (flagList.length > MAX_LENGTH) throw new Error(`BitMap flagList must be shorter than ${MAX_LENGTH} flags: length is ${flagList.length}.`)
+    if (characterMap && Object.values<string>(characterMap).some((c) => c.length !== 1))
+        throw new Error(`BitMap characterMap must contain single-character values only: ${JSON.stringify(characterMap)}`)
 
-        if (BitMap.hasDupes(values))
-            throw Error(`Bitmap has repeated values: ${JSON.stringify(bitmap)}`)
-            
-        if (!values.every((n) => BitMap.isOneBit(n)))
-            throw Error(`Bitmap has non bit values: ${JSON.stringify(bitmap)}`)
-            
-        if (!values.includes(0))
-            throw Error(`Bitmap must have '0' value: ${JSON.stringify(bitmap)}`)
+    /** Represents a set of on/off flags mapped to binary positions */
+    class BitMap implements BitMapBase<Flag> {
+        //  **** STATIC **** \\
+        private static readonly _flags:  BitMapStatic<Flag>['flags']   = [ ...flagList ] as const
+        private static readonly _mask:   BitMapStatic<Flag>['mask']    = (1 << this._flags.length) - 1
+        private static readonly _char:   BitMapStatic<Flag>['charMap'] = characterMap
+        private static readonly _intmap: Record<Flag, number>          = toMap(this._flags)
+        private static          _map?:   BitMapStatic<Flag>['map']
 
-        this._map = { ...bitmap }
-        this._inverse = invertObject(this._map)
+        /** Main Flag to Int map */
+        static get map()     { return this._map ?? (this._map = mapObject(this._intmap, (int) => new this(int))) }
+        /** List of all Flags */
+        static get flags()   { return this._flags }
+        /** Integer mask to exclude non-BitMap bits */
+        static get mask()    { return this._mask  }
+        /** Map of Flags to single-character representations */
+        static get charMap() { return this._char  }
+        /** Total number of flags in BitMap */
+        static get count()   { return this.flags.length }
+        /** Total number of flags in BitMap */
+        static get byteLen() { return Math.ceil(this.count / 8) }
         
+        /** Test if string is a valid Flag */
+        static isIn(str: string): str is Flag { return str in this._intmap }
 
-        this._stringmap = stringmap
-        if (this._stringmap) this._invstring = invertObject(this._stringmap)
 
-        this._zero = this._inverse[0 as keyof typeof this._inverse] as Name
-        this._max = Object.values<number>(this._map).reduce<number>((sum,n) => sum | n, 0)
-    }
-
-    create(value?: BitMapInput<Name>) {
-        return new BitMapValue(this, value)
-    }
-
-    fromString(str: string) {
-        return new BitMapValue(this, this.stringToArray(str))
-    }
-
-    isValidString(str: string) {
-        if (!this._stringmap) return false
+        //  **** INSTANCE **** \\
+        private _value = 0
         
-        // Match each key, deleting them from the string as they are matched
-        let substr = ''
-        for (const key in this._stringmap) {
-            const idx = str.indexOf(substr = this._stringmap[key])
-            if (idx >= 0) str = `${str.slice(0, idx)}${str.slice(idx + substr.length)}`
-        }
-        return str.length === 0
-    }
+        constructor(...values: BitMapValue<BitMapBase<Flag>>[]) { this.set(...values) }
 
-    stringToArray(str: string) {
-        if (!this._stringmap) throw new Error('BitMap is missing associated StringMap')
-        if (str === this._stringmap[this._zero]) return []
+        set int(value) { this._value = value & BitMap.mask }
+        get int()      { return this._value }
 
-        let keys: Name[] = [],
-            orig = str,
-            substr = ''
+        set bin(value) { this.int = parseInt(value, 2) }
+        get bin()      { return this.int.toString(2).padStart(BitMap.count, '0') }
 
-        // Match each key, deleting them from the string as they are matched
-        for (const key in this._stringmap) {
-            const idx = str.indexOf(substr = this._stringmap[key])
-            if (idx < 0) continue
+        set hex(value) { this.int = parseInt(value, 16) }
+        get hex()      { return `0x${this.int.toString(16).padStart(BitMap.byteLen, '0')}` }
 
-            str = `${str.slice(0, idx)}${str.slice(idx + substr.length)}`
-            keys.push(key)
+        set chars(value) { if (BitMap.charMap && value) this.list = BitMap._fromChars(value) }
+        get chars()      { return BitMap.charMap && this._toChars() }
+
+        set list(array) { this.int = BitMap._toInt(array) }
+        get list()      {
+            if (!this.int) return emptyKey ? [emptyKey] : []
+            return BitMap.flags.filter((flag: Flag) => this.intersects(BitMap._intmap[flag]))
         }
 
-        if (str.length) throw new Error(`BitMap string "${orig}" contains un-mapped characters: ${str}`)
-        return keys
-    }
-  
-    get map()       { return this._map       }
-    get inverse()   { return this._inverse   }
-    get stringmap() { return this._stringmap }
-    get invstring() { return this._invstring }
-    get max()       { return this._max       }
-    get zero()      { return this._zero      }
-  
-    get keys():   Name[]    { return Object.keys(this._map) as Name[] }
-    get values(): number[]  { return Object.values(this._map) }
-}
-
-
-
-
-/** Class representing a BitMapped value */
-export class BitMapValue<Name extends string> {
-    private readonly _bitmap: BitMap<Name>
-    private _set = new Set<Name>()
-    
-    constructor(bitmap: BitMap<Name>, fromValue?: BitMapInput<Name>) {
-        this._bitmap = bitmap
-        this.reset(fromValue)
-    }
-
-    /** @returns A boolean indicating whether the specified value is in this BitMap. */
-    has(value: Name | number) {
-        return typeof value === 'number' ? !!(this.int & value) : this._set.has(value)
-    }
-
-    /** @returns A boolean indicating whether this BitMap is a superset of the referenced BitMap. */
-    isSubset(bitmap: BitMapValue<Name>): boolean {
-        for (const val of this._set.values()) { if (!bitmap._set.has(val)) return false }
-        return true
-    }
-
-    /** @returns A boolean indicating whether the BitMap is a subset of the referenced BitMap. */
-    isSuperset(bitmap: BitMapValue<Name>): boolean {
-        return bitmap.isSubset(this)
-    }
-
-    /** @returns A boolean indicating whether the BitMap intersects the referenced BitMap at all. */
-    intersects(bitmap: BitMapValue<Name>) {
-        for (const val of this._set.values()) { if (bitmap._set.has(val)) return true }
-        return false
-    }
-
-    /** @returns A boolean indicating whether the BitMap exactly equals the referenced BitMap. */
-    equals(bitmap: BitMapValue<Name>) {
-        return this.int === bitmap.int
-    }
-
-    /** Appends the specified value(s) to the BitMap. */
-    add(value: BitMapInput<Name>) {
-        // Value is an instance of this class
-        if (value instanceof BitMapValue) value = Array.from(value._set)
-        // Value is an array of Names
-        if (Array.isArray(value)) value.forEach((v) => this._set.add(v))
-        // Value is a single Name
-        else if (typeof value !== 'number') this._set.add(value)
-        // Value is a number
-        else for (const key in this._bitmap.map) {
-            if (this._bitmap.map[key] & value) this._set.add(key)
+        set inverse(array) { this.int = ~BitMap._toInt(array) }
+        get inverse()      {
+            const flags = BitMap.flags.filter((flag: Flag) => !this.intersects(BitMap._intmap[flag]))
+            if (!flags.length) return emptyKey ? [emptyKey] : []
+            return flags
         }
-        return this
-    }
 
-    /** Removes the specified value(s) from the BitMap.
-     * @returns Returns true if a value has been removed, or false if it did not exist.
-     *          (If called with an array, response will be an array of booleans)
-     */
-    delete(value:  Name | number): boolean;
-    delete(value: Name[] | BitMapValue<Name>): boolean[];
-    delete(value: BitMapInput<Name>): boolean[] | boolean {
-        // Value is an instance of this class
-        if (value instanceof BitMapValue) value = Array.from(value._set)
-        // Value is an array of Names
-        if (Array.isArray(value))         return value.map((v) => this._set.delete(v))
-        // Value is a single Name
-        if (typeof value !== 'number')    return this._set.delete(value)
-        // Value is a number
-        let deleted = false
-        for (const key in this._bitmap.map) {
-            if (this._bitmap.map[key] & value) deleted ||= this._set.delete(key)
+        get count() { return this.int ? this.list.length : 0 }
+
+        toJSON()   { return this.int }
+        toString() { return this.chars ?? this.list.join(STR_DELIM)}
+
+        set(...values: BitMapValue<BitMapBase<Flag>>[]) {
+            this.int = BitMap._toInt(values)
+            return this
         }
-        return deleted
-    }
 
-    /** Resets the BitMap to hold exactly the specified value(s) */
-    reset(value?: BitMapInput<Name>) {
-        // Value is undefined
-        if      (!value)                       { this._set = new Set()           }
-        // Value is an instance of this class  
-        else if (value instanceof BitMapValue) { this._set = new Set(value._set) }
-        // Value is an array of Names
-        else if (Array.isArray(value))         { this._set = new Set(value)      }
-        // Value is a single Name
-        else if (typeof value !== 'number')    { this._set = new Set([value])    }
-        // Value is a number
-        else {
-            this._set = new Set(this._bitmap.keys.filter((key) => this._bitmap.map[key] & value))
+        add(...values: BitMapValue<BitMapBase<Flag>>[]) {
+            this.int |= BitMap._toInt(values)
+            return this
+        }
+
+        remove(...values: BitMapValue<BitMapBase<Flag>>[]) {
+            this.int &= ~BitMap._toInt(values)
+            return this
+        }
+
+        isSubset(...values: BitMapValue<BitMapBase<Flag>>[]) {
+            return this.int ? (this.int & BitMap._toInt(values)) === this.int : false
+        }
+
+        isSuperset(...values: BitMapValue<BitMapBase<Flag>>[]) {
+            const int = BitMap._toInt(values)
+            return int ? (this.int & int) === int : false
+        }
+
+        intersects(...values: BitMapValue<BitMapBase<Flag>>[]) {
+            return Boolean(this.int & BitMap._toInt(values))
+        }
+
+        isExclusive(...values: BitMapValue<BitMapBase<Flag>>[]) {
+            return this.int ? !(this.int & BitMap._toInt(values)) : !!BitMap._toInt(values)
+        }
+
+        equals(...values: BitMapValue<BitMapBase<Flag>>[]) {
+            return this.int === BitMap._toInt(values)
+        }
+
+
+
+        //  **** PRIVATE HELPERS **** \\
+
+        /** Convert any BitMapValue to a Number */
+        private static _toInt(value?: BitMapValue<BitMapBase<Flag>> | BitMapValue<BitMapBase<Flag>>[]): number {
+            if (!value)                    return 0
+            if (typeof value === 'number') return value & this.mask
+            if (typeof value === 'string') return BitMap._intmap[value] ?? 0
+            if (!Array.isArray(value))     return value.int ?? 0
+            return (value as any[])
+                .reduce((int, flag) => int | this._toInt(flag), 0)
+        }
+
+        /** Convert a BitMap to a string using CharacterMap */
+        private _toChars() {
+            if (!BitMap.charMap) throw new Error(`Character Map is not defined for BitMap.chars`)
+
+            return this.list
+                .map((flag) => BitMap.charMap?.[flag])
+                .join('')
+        }
+        
+        /** Convert a string to a flagList using CharacterMap */
+        private static _fromChars(chars: string) {
+            if (!this.charMap) throw new Error(`Character Map is not defined for BitMap.chars`)
+
+            return (this.flags as Flag[])
+                .filter((flag) => this.charMap?.[flag] && chars.includes(this.charMap[flag]))
         }
     }
 
-    
-
-    /** Parent BitMap object */
-    get bitmap() { return this._bitmap }
-    
-    /** Indicates if BitMap equals zero */
-    get isZero() { return !this._set.size }
-
-    /** List of enabled values in this BitMap */
-    get values() {
-        if (this.isZero) return [this._bitmap.zero]
-        return this._bitmap.keys.filter(this._set.has)
-    }
-
-    /** Integer representing the binary value of this BitMap */
-    get int() {
-        return this.values.reduce((val, key) => val | this._bitmap.map[key], 0)
-    }
-
-    /** String concatenation of enable values in this BitMap (NOTE: Bitmap must have associated StringMap or this will throw) */
-    get string() {
-        if (!this._bitmap.stringmap) throw new Error('BitMap is missing associated StringMap')
-
-        if (this.isZero) return this._bitmap.stringmap[this._bitmap.zero]
-        return this.values.reduce(
-            (str, key) => `${str}${this._bitmap.stringmap?.[key] ?? ''}`, ''
-        ) || this._bitmap.stringmap[this._bitmap.zero]
-    }
-
-    // Set-able props
-    set values(value) { this.reset(value) }
-    set int(num)      { this.reset(num)   }
-    set string(str)   { this.reset(this._bitmap.stringToArray(str)) }
+    return BitMap
 }
 

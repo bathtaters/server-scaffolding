@@ -1,6 +1,6 @@
-import type { UsersUI, AccessType, UserDefinition } from '../types/Users.d'
+import type { UsersUI, UserDefinition } from '../types/Users.d'
 import RegEx from '../libs/regex'
-import { access, models, allModelsKey } from '../types/Users'
+import { ModelAccess, Role } from '../types/Users'
 import { urlCfg } from '../src.import'
 
 const urls = urlCfg.gui.admin
@@ -10,8 +10,8 @@ const passwordLimits = { min: 8, max: 128 }
 export const rateLimiter = { maxFails: 5, failWindow: 10 * 60 * 1000, autoUnlock: false } // !autoUnlock: manual unlock by admin
 
 export const
-loginAccess: AccessType[] = [ 'gui', 'admin' ],
-requirePassword: AccessType[] = [ 'gui', 'admin' ],
+loginRoles    = new Role('gui', 'admin'),
+passwordRoles = new Role('gui', 'admin'),
 
 encode = { iters: 1049, keylen: 64, digest: 'sha512' },
 
@@ -20,8 +20,8 @@ saveLoginMs = 5 * 24 * 60 * 60 * 1000,
 apiToken = { header: 'Authorization', matchToken: RegEx(/^Bearer (.+)$/) },
 
 tableFields: Partial<Record<keyof UsersUI, string>> = {
-  username: 'Username', access: 'Access', password: 'Password',
-  token: 'API Token', cors: 'CORS Origin', models: 'Model Access', 
+  username: 'Username', role: 'Role', password: 'Password',
+  token: 'API Token', cors: 'CORS Origin', access: 'Model Access', 
   guiTime: 'GUI Access', apiTime: 'API Access', failTime: 'Fails',
   locked: 'Locked',
 },
@@ -30,7 +30,7 @@ tooltips: Partial<Record<keyof UsersUI, string>> = {
   password: `Must be at least ${passwordLimits.min} characters.`,
   confirm: 'Must match Password.',
   cors: 'Enter: * (all), true/false (all/none), comma-seperated urls, or RegExp(&quot;<regexp>&quot;).',
-  models: 'Set read/write access based on model. No setting for a model uses default setting.',
+  access: 'Set read/write access based on model. No setting for a model uses default setting.',
   locked: 'Lock/Unlock entire user account'
 },
 
@@ -60,10 +60,10 @@ definition: UserDefinition = {
     limits: { min: 32, max: 32 },
     db: 'TEXT NOT NULL',
   },
-  access: {
+  role: {
     typeStr: 'string[]?',
-    default: access.api & access.gui,
-    limits: { elem: { max: 16 }, array: { max: Object.keys(access).length } },
+    default: new Role('api', 'gui'),
+    limits: { elem: { max: 16 }, array: { max: Role.count } },
     isBitmap: true,
     db: 'INTEGER',
   },
@@ -72,10 +72,10 @@ definition: UserDefinition = {
     default: '*',
     limits: { min: 0, max: 2048 },
   },
-  models: {
+  access: {
     typeStr: 'string[]',
-    default: { [allModelsKey]: ['read','write'] } as any,
-    limits: { elem: { max: 64 }, array: { max: 100 * Object.keys(models).length } },
+    default: new ModelAccess(undefined, ['read', 'write']),
+    limits: { elem: { max: 64 }, array: { max: ModelAccess.keys.length * ModelAccess.values.length } },
     db: 'TEXT',
   },
   failCount: {
@@ -116,11 +116,11 @@ definition: UserDefinition = {
   salt:  { typeStr: 'hex?', html: false, dbOnly: true },
 } as const,
 
-searchableKeys: Array<keyof UsersUI> = ['username','token','access','cors','locked'], // 'models'
+searchableKeys: Array<keyof UsersUI> = ['username','token','role','cors','locked'], // 'access'
 illegalUsername = RegEx(/[^a-zA-Z0-9_-]/),
 
 // Paths that expect JSON responses (not HTML)
-jsonPaths = [ urls.prefix + urls.user + urls.token ],
+jsonPaths = [ `${urls.prefix}${urls.user}${urls.token}` ],
 
 // Buttons available in gui User profile editor
 profileActions = [ 'update', 'delete' ] as const

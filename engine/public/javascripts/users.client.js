@@ -47,7 +47,7 @@ $( 'tr.tableRow' ).on('click', function() {
       return true;
     }
 
-    if (key !== 'access' && key !== 'models') {
+    if (key !== 'role' && key !== 'access') {
       var elem = $('#' + key);
       var val = $(this).text();
       
@@ -65,9 +65,9 @@ $( 'tr.tableRow' ).on('click', function() {
     var checks = $(this).text().split(', ')
     
     // Grouped checkboxes
-    if (key !== 'models') {
-      checks.forEach(function(accessType) {
-        $( 'input.'+key+'Checks#'+accessType ).prop('checked', true);
+    if (key !== 'access') {
+      checks.forEach(function(roleType) {
+        $( 'input.'+key+'Checks#'+roleType ).prop('checked', true);
       });
       return;
     }
@@ -96,23 +96,23 @@ $( 'tr.tableRow' ).on('click', function() {
 });
 
 /* Auto-select checkboxes */
-$( 'input.accessChecks' ).on('input', function() {
+$( 'input.roleChecks' ).on('input', function() {
   if (!$(this).prop('checked')) return;
 
   if ($(this).attr('id') === "none") {
-    $( 'input.accessChecks' ).not( '#none' ).prop('checked', false);
+    $( 'input.roleChecks' ).not( '#none' ).prop('checked', false);
   } else {
     $( 'input#none' ).prop('checked', false);
   }
 });
-$( 'input.modelsChecks' ).on('input', function() {
+$( 'input.roleChecks' ).on('input', function() {
   if (!$(this).prop('checked')) return;
 
   var row = $(this).attr('data-row')
   if ($(this).attr('data-col') === "none") {
-    $( 'input.modelsChecks[data-row="'+row+'"]' ).not(this).prop('checked', false);
+    $( 'input.roleChecks[data-row="'+row+'"]' ).not(this).prop('checked', false);
   } else {
-    $( 'input.modelsChecks[data-row="'+row+'"][data-col="none"]' ).prop('checked', false);
+    $( 'input.roleChecks[data-row="'+row+'"][data-col="none"]' ).prop('checked', false);
   }
 });
 
@@ -176,12 +176,12 @@ $(function() {
 });
 
 $.setSearch = function(enable) {
-  if (enable) $( 'input#expandModels' ).prop('checked', false)
+  if (enable) $( 'input#expandAccess' ).prop('checked', false)
   $( 'input#token' ).attr('readonly', !enable);
   $( 'input#password' ).attr('disabled', enable);
   $( 'input#confirm' ).attr('disabled', enable);
-  $( 'input#expandModels' ).attr('disabled', enable);
-  $( 'label[for="expandModels"]' ).attr('disabled', enable);
+  $( 'input#expandAccess' ).attr('disabled', enable);
+  $( 'label[for="expandAccess"]' ).attr('disabled', enable);
   $( 'input[type="submit"]:not(#_actionSearch)' ).attr('disabled', enable);
   $( 'input[data-min]' ).each(function() { $(this).attr('min', !enable && $(this).attr('data-min')); });
   $( 'input[data-minLength]' ).each(function() { $(this).attr('minLength', !enable && $(this).attr('data-minLength')); });

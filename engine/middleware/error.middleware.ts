@@ -1,9 +1,8 @@
 import type { Middleware, Next, Request, Response } from '../types/express.d'
-import { access } from '../types/Users'
+import { Role } from '../types/Users'
 import httpErrs, { type HttpError } from 'http-errors'
 import logger from '../libs/log'
 import { unknown, missing, noCSRF, noSession } from '../config/errors.engine'
-import { hasAccess } from '../utils/users.access'
 import { varName } from '../utils/gui.utils'
 
 const defaultError = unknown()
@@ -41,7 +40,7 @@ const sendAsJSON: Middleware = (req, res) => res.send({ error: req.error } as an
 const sendAsHTML: Middleware = (req, res) => res.render('error', {
   title: 'Error',
   user: req.user && req.user.username,
-  isAdmin: req.user && hasAccess(req.user.access, access.admin),
+  isAdmin: Role.map.admin.intersects(req.user?.role),
   showStack: process.env.NODE_ENV !== 'production',
   header: varName(req.error?.name ?? 'ERROR').trim(),
   error: req.error,

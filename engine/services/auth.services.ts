@@ -1,5 +1,5 @@
 import type { Users } from '../models/Users'
-import type { TimestampType } from '../types/Users.d'
+import type { RoleType, TimestampType } from '../types/Users.d'
 import type { DoneCallback } from 'passport'
 import type { VerifyFunction as VerifyBearer } from 'passport-http-bearer'
 import type { VerifyFunction as VerifyLocal  } from 'passport-local'
@@ -35,11 +35,11 @@ export const sessionOptions: SessionOptions = {
 }
 
 
-export function authorizeBearer(Model: Users, accessLevel: number): VerifyBearer {
+export function authorizeBearer(Model: Users, role: RoleType): VerifyBearer {
   return (token: string | undefined, done) => {
     if (!token) return done(noToken())
 
-    return Model.checkToken(token, accessLevel)
+    return Model.checkToken(token, role)
       .then((user) => {
         if (typeof user !== 'string') return done(null, user)
         if (user === 'NO_USER') return done(badToken())
@@ -50,9 +50,9 @@ export function authorizeBearer(Model: Users, accessLevel: number): VerifyBearer
 }
 
 
-export function authorizeUser(Model: Users, accessLevel: number): VerifyLocal {
+export function authorizeUser(Model: Users, role: RoleType): VerifyLocal {
   return (username, password, done) => 
-    Model.checkPassword(username, password, accessLevel)
+    Model.checkPassword(username, password, role)
       .then((user) => {
         if ('fail' in user) return done(null, false, { message: user.fail })
         done(null, user)
@@ -65,8 +65,8 @@ export const storeUser = (Model: Users) =>
   (user: any, done: DoneCallback) => done(null, user[Model.primaryId])
 
 
-export const loadUser = (Model: Users, accessType: TimestampType) =>
+export const loadUser = (Model: Users, roleType: TimestampType) =>
   (id: string, done: DoneCallback) =>
-    Model.get(id, { timestamp: accessType, ignoreCounter: true })
+    Model.get(id, { timestamp: roleType, ignoreCounter: true })
       .then((user) => user ? done(null, user) : done(null, false))
       .catch(done)

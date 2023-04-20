@@ -11,17 +11,17 @@ block form
         +formInput(key, val, schema[key].limits, searchData ? searchData[key] : schema[key].default, tableFields[key], '', tooltips[key])
 
       .collapse
-        input.ignoreClear(type="checkbox" id="expandModels" aria-hidden="true" checked=false)
-        label.center.tooltip(for="expandModels" aria-hidden="true" aria-label=tooltips.models role="button")= tableFields.models
+        input.ignoreClear(type="checkbox" id="expandAccess" aria-hidden="true" checked=false)
+        label.center.tooltip(for="expandAccess" aria-hidden="true" aria-label=tooltips.access role="button")= tableFields.access
         .row
           .col.autoMargin
-            +checkboxes('models', modelsList[0], 'Models', modelsList[1], searchData ? searchData.models : schema.models.default)
+            +checkboxes('access', accessList[0], 'Model Access', accessList[1], searchData ? searchData.access : schema.access.default)
     
     .col-sm
       div(style='text-align:right;'): i: a#copyToken.small(href="#") Copy API Key
       +buttonInput('token', 'readonly', 'Regen', schema.token.limits, searchData ? searchData.token : schema.token.default, regenURL, tableFields.token, tooltips.token)
 
-      +checkboxes('access', accessLevels, tableFields.access, null, searchData ? searchData.access : schema.access.default)
+      +checkboxes('role', roles, tableFields.role, null, searchData ? searchData.role : schema.role.default)
 
       .row.responsive-padding
         +formInput('locked', 'checkbox', null, searchData ? searchData.locked : schema.locked.default, tableFields.locked, '', tooltips.locked)

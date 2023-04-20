@@ -1,4 +1,4 @@
-import type { UsersDB } from '../types/Users.d'
+import type { RoleType, UsersDB } from '../types/Users.d'
 import hat from 'hat'
 import crypto from 'crypto'
 import { msAgo } from '../libs/date'
@@ -27,10 +27,10 @@ export const encodePassword = async (password: string) => {
   return { salt, pwkey: pwkey.toString('base64url') }
 }
 
-export async function testPassword(userData: Partial<UsersDB> | undefined, password: string, accessInt?: number, callback?: PasswordCallback) {
+export async function testPassword(userData: Partial<UsersDB> | undefined, password: string, role?: RoleType, callback?: PasswordCallback) {
   if (!userData) return failureMsg.noUser
   if (userData.locked && !isPastWindow(userData)) return failureMsg.isLocked
-  if (accessInt && !((userData.access ?? 0) & accessInt)) return failureMsg.noAccess
+  if (role && !role.intersects(userData.role)) return failureMsg.noRole
   if (!userData.pwkey) return failureMsg.noPassword
 
   const pwkey = await encrypt(password, userData.salt ?? '', encode.iters, encode.keylen, encode.digest)

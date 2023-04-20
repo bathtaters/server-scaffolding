@@ -1,30 +1,35 @@
-import type { ModelsType } from '../types/Users.d'
+import type { AccessBitMap } from '../types/Users.d'
 import type { ProfileActions } from '../types/gui.d'
+import { ModelAccess } from '../types/Users'
 import { actions } from '../types/gui'
 import { parseBoolean } from '../utils/validate.utils'
 import { badData } from '../config/errors.engine'
+
 const parseBool = parseBoolean(true)
 
 
-// Get list of button labels based on access
-export const actionAccess = (action: ProfileActions) => action === actions.find ? 'read' : 'write'
-export const labelsByAccess = (accessTypes: (ModelsType | null)[]) =>
-  Object.values(actions).filter((action) => accessTypes.includes(actionAccess(action)))
+/** Get an access type based on profile action */
+export const actionAccess = (action: ProfileActions) =>
+  action === actions.find ? ModelAccess.map.read : ModelAccess.map.write
+
+/** Get list of button labels based on access */
+export const labelsByAccess = (access?: AccessBitMap) => !access ? [] :
+  Object.values(actions).filter((action) => access.intersects(actionAccess(action)))
 
 
-// Get links to post from base URL
+/** Get links to post from base URL */
 export const actionURLs = <List extends ProfileActions = ProfileActions>(baseURL: string, actionList?: List[]) =>
   (actionList || Object.values(actions)).reduce(
     (urls, action) => Object.assign(urls, { [action]: baseURL + action.toLowerCase() })
   , {} as Record<List, string>)
 
 
-// Default filter for filterFormData & toQueryString
+/** Default filter for filterFormData & toQueryString */
 const defaultFilter = <T extends Record<string | number | symbol, any>>
   (val: T[keyof T], key: keyof T) => val != null && val !== ''
 
 
-// Filter function for Object
+/** Filter function for Object */
 export const filterFormData = <T extends object, B extends object = {}, Result extends object = Partial<T & B>>(
   formData: T, baseObject?: B,
   filterCb = defaultFilter<T>
@@ -39,12 +44,12 @@ export const filterFormData = <T extends object, B extends object = {}, Result e
   )
 
 
-// Convert object to queryString (Accepts stringified object, deletes null/empty values)
 const hasStrValues = (obj: any): obj is Record<string, string> => {
   const vals = Object.values(obj)
   return vals.length ? vals.every((v) => typeof v === 'string') : false
 }
 
+/** Convert object to queryString (Accepts stringified object, deletes null/empty values) */
 export const toQueryString = <T extends Record<string,any>>(obj: string | T, filter = defaultFilter<T>) => {
   if (!obj) return ''
   

@@ -1,14 +1,12 @@
 import type { Middleware } from '../types/express.d'
 import type { GuiOptions, ModelGuiBase } from '../types/controllers.d'
-import { access } from '../types/Users'
+import { Role, anyAccess } from '../types/Users'
 import { actions } from '../types/gui'
 
 import { matchedData } from 'express-validator'
 import Users from '../models/Users'
 import { getTableFields, varName, formatGuiData } from '../utils/gui.utils'
 import { guiAdapter } from '../services/users.services'
-import { hasAccess } from '../utils/users.access'
-import { hasModelAccess } from '../utils/users.model'
 import { labelsByAccess, actionURLs } from '../utils/form.utils'
 import { tableFields, tooltips, profileActions } from '../config/users.cfg'
 import { noData } from '../config/errors.engine'
@@ -22,9 +20,11 @@ const models = allModels.map(({title, url}) => ({title, url}))
 export const dbHome: Middleware = (req, res) => res.render('dbHome', {
   title: 'Home',
   user: req.user?.username,
-  isAdmin: hasAccess(req.user?.access, access.admin),
+  isAdmin: Role.map.admin.intersects(req.user?.role),
   baseURL: `${urls.prefix}${urls.home}/`,
-  models: models.filter(({ title }) => hasModelAccess(req.user?.models, title)).map(({ url }) => url),
+  models: models
+    .filter(({ title }) => req.user?.access?.intersects(anyAccess, title))
+    .map(({ url }) => url),
 })
 
 
@@ -48,18 +48,18 @@ export function modelDb<M extends ModelGuiBase>(Model: M, {
 
   return {
     model: (req, res, next) => Model.getPageData(matchedData(req), guiCfg.pageOptions).then(({ data, ...pageData}) => {
-      const canRead  = hasModelAccess(req.user?.models, Model.title, 'read')
-      const canWrite = hasModelAccess(req.user?.models, Model.title, 'write')
+      const access = req.user?.access?.get(Model.title)
 
       return res.render(view, {
         ...staticDbParams,
         ...pageData,
         data: formatData(data, req.user),
-        buttons: labelsByAccess([canRead ? 'read' : null, canWrite ? 'write' : null]),
+        buttons: labelsByAccess(access),
         user: req.user?.username,
-        isAdmin:  hasAccess(req.user?.access, access.admin),
+        isAdmin:  Role.map.admin.intersects(req.user?.role),
         csrfToken: req.csrfToken?.(),
-        canRead, canWrite,
+        canRead: access?.intersects('read'),
+        canWrite: access?.intersects('write'),
       })
     }).catch(next),
 
@@ -68,18 +68,18 @@ export function modelDb<M extends ModelGuiBase>(Model: M, {
         const searchData = matchedData(req)
         const data = await Model.find(searchData, { partialMatch })
 
-        const canRead  = hasModelAccess(req.user?.models, Model.title, 'read')
-        const canWrite = hasModelAccess(req.user?.models, Model.title, 'write')
+        const access = req.user?.access?.get(Model.title)
 
         return res.render(view, {
           ...staticDbParams,
           data: formatData(data, req.user),
           searchData: formatData(searchData, req.user, actions.find),
-          buttons: labelsByAccess([canRead ? 'read' : null, canWrite ? 'write' : null]),
+          buttons: labelsByAccess(access),
           user: req.user?.username,
-          isAdmin: hasAccess(req.user?.access, access.admin),
+          isAdmin: Role.map.admin.intersects(req.user?.role),
           csrfToken: req.csrfToken?.(),
-          canRead, canWrite,
+          canRead: access?.intersects('read'),
+          canWrite: access?.intersects('write'),
         })
       } catch (err) { next(err) }
     },
@@ -106,6 +106,6 @@ export const userProfile: Middleware = (req, res, next) =>
       ...staticUserParams,
       user: req.user.username,
       userData: guiAdapter(req.user),
-      isAdmin: hasAccess(req.user.access, access.admin),
+      isAdmin: Role.map.admin.intersects(req.user.role),
       csrfToken: req.csrfToken?.(),
     })

@@ -40,7 +40,7 @@ mixin checkboxes(key, rows, label, columns, defaults)
     if !columns
       each row in rows
         .input-group
-          input(type='checkbox' class=key+'Checks' name=key id=row value=row checked=(defaults && defaults.includes(row)))
+          input(type='checkbox' class=key+'Checks' name=key id=row value=row checked=(defaults && defaults.intersects(row)))
           label(for=row)= varName(row)
     else
       .grid(style=(columns && `grid-template-columns: repeat(${columns.length + 1}, min-content)`))
@@ -54,7 +54,7 @@ mixin checkboxes(key, rows, label, columns, defaults)
               type='checkbox' name=key title=`${row} ${col}`
               class=`${key}Checks` data-row=row data-col=col
               id=`${row}-${col}` value=`${row}-${col}`
-              checked=(defaults && defaults[row] && defaults[row].includes(col))
+              checked=(defaults && defaults.obj && defaults.obj[row] && defaults.obj[row].intersects(col))
             )
 
 mixin buttonInput(key, inpType, button, limits, defaultValue, url, label, tooltip, buttonKey = '_action', buttonType = 'button')

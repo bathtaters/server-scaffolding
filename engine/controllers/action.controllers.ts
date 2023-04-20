@@ -2,7 +2,7 @@ import type { ModelActionBase, FormOptions } from '../types/controllers.d'
 import type { Middleware, Request } from '../types/express.d'
 import type { ProfileActions } from '../types/gui.d'
 import { actions } from '../types/gui'
-import { access } from '../types/Users'
+import { Role } from '../types/Users'
 
 import { matchedData } from 'express-validator'
 import Users from '../models/Users'
@@ -11,7 +11,6 @@ import modelActions from '../services/form.services'
 import settingsActions from '../services/settings.form'
 import { login as authLogin, logout as authLogout } from '../middleware/auth.middleware'
 import { filterFormData, toQueryString } from '../utils/form.utils'
-import { hasAccess } from '../utils/users.access'
 import { isBool } from '../utils/model.utils'
 import { isIn } from '../utils/common.utils'
 import { restartTimeout } from '../config/settings.cfg'
@@ -49,7 +48,7 @@ const restartParams = (req: Request) => ({
   seconds: restartTimeout,
   url: urlCfg.landingPage.admin,
   user: req.user?.username,
-  isAdmin: hasAccess(req.user?.access, access.admin),
+  isAdmin: Role.map.admin.intersects(req.user?.role),
 })
 
 

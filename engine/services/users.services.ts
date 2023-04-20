@@ -1,41 +1,33 @@
 import type { ProfileActions } from '../types/gui.d'
-import type { ModelObject, UserDefinition, UsersHTML, UsersUI } from '../types/Users.d'
-import { access, allModelsKey } from '../types/Users'
+import type { UserDefinition, UsersHTML, UsersUI } from '../types/Users.d'
+import { ModelAccess, Role, NO_ACCESS } from '../types/Users'
 import { adapterTypes } from '../types/Model'
 import logger from '../libs/log'
 import { formatLong } from '../libs/date'
-import { accessArray, accessInt, hasAccess } from '../utils/users.access'
 import { decodeCors, encodeCors, displayCors, isRegEx } from '../utils/users.cors'
-import { getModelsString, modelsArrayToObj, modelAccessToInts } from '../utils/users.model'
 import { generateToken, encodePassword } from '../utils/auth.utils'
 import { modifyOther, noConfirm, badConfirm } from '../config/errors.engine'
 
 // TODO: Add default BitMap getters/setters
-// TODO: Update getters/setters to use BitMaps/etc
 
 export function initAdapters(definitions: UserDefinition) {
   // GET ADAPTERS
   definitions.cors[adapterTypes.get] = decodeCors
 
+  definitions.role[adapterTypes.get] = (role) => new Role(role)
+
   definitions.pwkey[adapterTypes.get] = (pwkey,data) => { data.password = Boolean(pwkey) }
 
-  definitions.models[adapterTypes.get] = (models) => {
-    if (typeof models !== 'string') return;
-
-    let updated: ModelObject<string> = { [allModelsKey]: 0 }
-    try { updated = typeof models === 'string' && models ? JSON.parse(models) : models || updated }
-    catch (err: any) { err.name = 'User.get'; logger.error(err) }
-    return updated
-  }
+  definitions.access[adapterTypes.get] = (access) => access ? new ModelAccess(JSON.parse(access)) : undefined
 
   // SET ADAPTERS
   definitions.cors[adapterTypes.set] = encodeCors
 
-  definitions.access[adapterTypes.set] = accessInt
+  definitions.role[adapterTypes.set] = (role) => role?.int
 
   definitions.username[adapterTypes.set] = (username) => username?.toLowerCase()
 
-  definitions.models[adapterTypes.set] = (models) => models == null ? undefined : JSON.stringify(modelAccessToInts(models) || {})
+  definitions.access[adapterTypes.set] = (access) => access ? JSON.stringify(access) : undefined
 
   definitions.password[adapterTypes.set] = async (password, data) => {
     if (typeof password !== 'string' || !password) return
@@ -54,12 +46,12 @@ export const addAdapter = <D extends Partial<UsersUI>>(data: D) => ({
 
 
 const uiToBaseHtml = ({
-  cors, access, models, locked,
+  cors, role, access, locked,
   failCount, failTime,
   guiCount, guiTime,
   apiCount, apiTime,
   ...user
-}: UsersUI): UsersHTML => ({ ...user, models: '', locked: !!locked })
+}: UsersUI): UsersHTML => ({ ...user, access: '', locked: !!locked })
 
 export function guiAdapter(user: UsersUI): UsersHTML
 export function guiAdapter(user: UsersUI[]): UsersHTML[]
@@ -69,8 +61,8 @@ export function guiAdapter(user: UsersUI | UsersUI[]): UsersHTML | UsersHTML[] {
 
   let output = uiToBaseHtml(user);
   try {
-    if ('access'   in user) output.access   = accessArray(user.access).join(', ')
-    if ('models'   in user) output.models   = getModelsString(user.models)
+    if ('role'     in user) output.role     = user.role?.list.join(', ') ?? NO_ACCESS
+    if ('access'   in user) output.access   = user.access?.toString() ?? ''
     if ('locked'   in user) output.locked   = Boolean(user.locked)
     if ('guiTime'  in user) output.guiTime  = `${formatLong(user.guiTime) } [${user.guiCount  || 0}]`
     if ('apiTime'  in user) output.apiTime  = `${formatLong(user.apiTime) } [${user.apiCount  || 0}]`
@@ -90,10 +82,11 @@ export function guiAdapter(user: UsersUI | UsersUI[]): UsersHTML | UsersHTML[] {
 }
 
 
-export function adminFormAdapter(formData: UsersHTML, _?: Express.User, action?: ProfileActions) {
+export function adminFormAdapter({ access, ...formData }: UsersHTML, _?: Express.User, action?: ProfileActions) {
   const result = {
     ...formData,
-    models: formData.models ? modelsArrayToObj(formData.models) : undefined
+    access: !access ? undefined :
+      typeof access === 'string' ? new ModelAccess([access]) : new ModelAccess(access)
   }
 
   return confirmPassword(result, action)
@@ -101,7 +94,7 @@ export function adminFormAdapter(formData: UsersHTML, _?: Express.User, action?:
 
 
 export function userFormAdapter(formData: UsersHTML, user?: Express.User, action?: ProfileActions) {
-  if (user?.id !== formData.id && !hasAccess(user?.access, access.admin)) throw modifyOther()
+  if (user?.id !== formData.id && !Role.map.admin.intersects(user?.role)) throw modifyOther()
 
   return confirmPassword(formData, action)
 }

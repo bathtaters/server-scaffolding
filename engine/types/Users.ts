@@ -1,26 +1,13 @@
-// TODO: RENAME ACCESS => PRIVLEGES && MODELS => ACCESS
+import BitMapFactory from "../libs/BitMap"
+import BitMapObjFactory from "../libs/BitMapObj"
+import { allModels } from "../src.import"
 
-export const noAccess = 'none' as const
-export const noModelAccessChar = '-' as const
-export const allModelsKey = 'default' as const
+export const NO_ACCESS = 'none'
 
-export const access = {
-    api:   0x1,
-    gui:   0x2,
-    admin: 0x4,
-    [noAccess]: 0x0,
-} as const
-
-export const models = {
-    read:  0x1,
-    write: 0x2,
-    [noAccess]: 0x0,
-} as const
-
-export const modelsStrings = {
+export const accessStrings = {
     read:  'r',
     write: 'w',
-    [noAccess]: noModelAccessChar,
+    [NO_ACCESS]: '-',
 } as const
 
 export const timestamps = {
@@ -28,3 +15,13 @@ export const timestamps = {
     api:  'api',
     fail: 'fail',
 } as const
+
+export const Role = BitMapFactory(['api', 'gui', 'admin'], NO_ACCESS)
+
+export const ModelAccess = BitMapObjFactory(
+    allModels.map(({ title }) => title),
+    [ NO_ACCESS, 'read', 'write' ],
+    accessStrings
+)
+
+export const anyAccess = ModelAccess.bitMap(ModelAccess.mask(NO_ACCESS))
