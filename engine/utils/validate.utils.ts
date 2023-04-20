@@ -4,7 +4,7 @@ import type { FormDefinition } from '../types/gui.d'
 import { baseTypes } from '../types/validate'
 import RegEx from '../libs/regex'
 import { boolOptions } from '../config/validate.cfg'
-import { splitUnenclosed } from './common.utils'
+import { mapObject, splitUnenclosed } from './common.utils'
 
 // *** TypeString Parse *** \\
 
@@ -51,10 +51,7 @@ const htmlToValid = ({ type, limits }: FormDefinition['html']) => ({
 
 /** Get validation & limits from html object { key, type, limits } */
 export const formSettingsToValidate = <S extends Record<string, FormDefinition>>(settings: S) =>
-  Object.entries(settings).reduce(
-    (valid, [key, { html }]) => ({ ...valid, [key]: htmlToValid(html) }),
-    {} as { [N in keyof S]: ValidationTypeFull }
-  )
+  mapObject(settings, ({ html }) => htmlToValid(html)) as Record<keyof S, ValidationTypeFull>
 
 
   

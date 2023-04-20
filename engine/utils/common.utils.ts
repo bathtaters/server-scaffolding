@@ -28,6 +28,13 @@ export const concatUnique = <T = any, S = T>(arr1: T[], arr2?: S | S[]) => {
 export const hasDupes = <T = any>(array: T[]) =>
   array.findIndex((val, idx) => array.slice(0, idx).includes(val)) + 1
 
+/** Array.Map() method for an Object, Maps values to new values, return a new object */
+export const mapObject = <T extends Record<any,any>, R>(object: T, callback: (value: T[keyof T], key: keyof T) => R) =>
+  Object.entries(object).reduce(
+    (result, [key, value]) => ({ ...result, [key]: callback(value, key) }),
+    {} as Record<keyof T, R>,
+  )
+
 
 /** Assigns inner prop in object of objects to each outer key */
 export const filterByField = <
@@ -63,18 +70,15 @@ export function deepMap<T = any, Ret = any>(input: T, callback: (value: T) => Re
 export function deepMap<T = any, Ret = any>(input: T[], callback: (value: T) => Ret): Ret[];
 export function deepMap<T = any, Ret = any, K extends keyof T = keyof T>(input: ObjectOf<T>, callback: (value: T) => Ret): ObjectOf<Ret, K>;
 export function deepMap<T = any, Ret = any, K extends keyof T = keyof T>(
-  input: ObjectOf<T,K> | T[] | T,
+  input: Record<K,T> | T[] | T,
   callback: (value: T) => Ret
-): Ret | Ret[] | ObjectOf<Ret, K> {
+): Ret | Ret[] | Record<K, Ret> {
 
   if (Array.isArray(input))
     return input.map((val) => deepMap(val, callback)) 
   
-  if (isObj<ObjectOf<T,K>>(input))
-    return Object.entries(input).reduce((obj, [key,val]) => ({
-      ...obj,
-      [key]: deepMap(val as T, callback),
-    }), {} as ObjectOf<Ret, K>)
+  if (isObj<Record<K,T>>(input))
+    return mapObject(input, (val) => deepMap(val, callback))
 
   return callback(input)
 }
