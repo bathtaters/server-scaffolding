@@ -1,9 +1,8 @@
 import type { Middleware } from '../types/express.d'
-import { ModelAccess, Role, NO_ACCESS } from '../types/Users'
+import { ModelAccess, Role } from '../types/Users'
 
 import { matchedData } from 'express-validator'
 import Users from '../models/Users'
-import { DEFAULT_KEY } from '../libs/BitMapObj'
 import { modelDb } from './gui.controllers'
 import { guiAdapter } from '../services/users.services'
 import settingsActions from '../services/settings.form'
@@ -27,8 +26,8 @@ export const userTable = modelDb(Users, {
     title: 'Users',
     tooltips,
     tableFields,
-    accessList: [ ModelAccess.keys.concat(DEFAULT_KEY), ModelAccess.values ],
-    roles:    Role.flags.concat(NO_ACCESS),
+    accessList: [ ModelAccess.allKeys, ModelAccess.values ],
+    roles:    [ ...Role.flags, ...Role.emptyList ],
     baseURL:  `${urls.prefix}${urls.user}`,
     regenURL: `${urls.prefix}${urls.user}${urls.token}`,
     submitURLs: actionURLs(`${urls.prefix}${urls.user}${urls.form}/`),

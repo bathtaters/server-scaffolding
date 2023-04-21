@@ -2,6 +2,7 @@ import BitMapFactory from "../libs/BitMap"
 import BitMapObjFactory from "../libs/BitMapObj"
 import { allModels } from "../src.import"
 
+export const DEFAULT_ACCESS = 'default'
 export const NO_ACCESS = 'none'
 
 export const accessStrings = {
@@ -21,6 +22,7 @@ export const Role = BitMapFactory(['api', 'gui', 'admin'], NO_ACCESS)
 export const ModelAccess = BitMapObjFactory(
     allModels.map(({ title }) => title),
     [ NO_ACCESS, 'read', 'write' ],
+    DEFAULT_ACCESS,
     accessStrings
 )
 

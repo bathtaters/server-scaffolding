@@ -1,7 +1,7 @@
-import type { Role, ModelAccess, timestamps, NO_ACCESS } from "./Users"
+import type { Role, ModelAccess, timestamps } from "./Users"
 import type { DefinitionSchema, SQLOptions } from "./Model.d"
-import type { BitMapBase, BitMapValue, FlagType } from "./BitMap"
-import type { BitMapObjBase, BitMapObjToValue, BitMapObjType, ExtractBitMap, ObjFlagType, ObjKeyType } from "./BitMapObj.d"
+import type { BitMapBase, FlagType } from "./BitMap"
+import type { BitMapObjBase, ExtractBitMap, ObjDefType, ObjFlagType, ObjKeyType } from "./BitMapObj.d"
 
 type UsersBase = {
     id:       string, // hex
@@ -35,7 +35,7 @@ export type UsersHTML = {
     locked: boolean, 
     role?: string | string[],
     access: string | string[],
-    password?: boolean | string,
+    password?: string,
     confirm?: string,
     hadError?: boolean,
 } & TimestampHTML
@@ -43,7 +43,7 @@ export type UsersHTML = {
 export type UserDefinition = DefinitionSchema<UsersUI, UsersDB>
 
 export type RoleType     = BitMapBase<FlagType<typeof Role>>
-export type AccessType   = BitMapObjBase<ObjKeyType<typeof ModelAccess>, ObjFlagType<typeof ModelAccess>>
+export type AccessType   = BitMapObjBase<ObjKeyType<typeof ModelAccess>, ObjFlagType<typeof ModelAccess>, ObjDefType<typeof ModelAccess>>
 export type AccessBitMap = ExtractBitMap<typeof ModelAccess>
 
 export type Cors = boolean | string[] | string | RegExp

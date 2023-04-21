@@ -2,25 +2,21 @@
 export interface BitMapStatic<Flag extends string> {
     /** Main Flag to Int map */
     readonly map: Readonly<Record<Flag, BitMapBase<Flag>>>;
-
-    /** List of all Flags */
+    /** List of Flags (Excluding emptyFlag) */
     readonly flags: Readonly<Flag[]>;
-
+    /** List of empty flag only (or empty list if no empty flag) */
+    readonly emptyList: Flag[];
     /** Integer mask to exclude non-BitMap bits */
     readonly mask: number;
-
     /** Map of Flags to single-character representations */
     readonly charMap?: CharMap<Flag>;
-
     /** Total number of flags in BitMap */
     readonly count: number;
-
     /** Total number of flags in BitMap */
     readonly byteLen: number;
     
     /** Test if string is a valid Flag */
     isIn(str: string): str is Flag;
-
     /** Create a BitMap from a number, flag, flag array or another BitMap (copy) */
     new(...values: BitMapValue<BitMapBase<Flag>>[]): any;
 }
@@ -33,22 +29,16 @@ export abstract class BitMapBase<Flag extends string> {
 
     /** Integer representation of BitMap */
     abstract int: number
-
     /** Binary representation of BitMap */
     abstract bin: string
-
     /** Hexadecimal representation of BitMap */
     abstract hex: string
-
     /** String of BitMap using CharacterMap (Returns undefined if CharacterMap is not defined) */
     abstract chars: string | undefined
-
     /** List of enabled flags */
     abstract list: Flag[]
-
     /** List of disabled flags */
     abstract inverse: Flag[]
-
     /** Count of number of enabled flags */
     abstract readonly count: number
 

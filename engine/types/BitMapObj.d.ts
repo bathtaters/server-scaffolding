@@ -1,13 +1,17 @@
 import type { BitMapStatic, BitMapBase, BitMapValue } from "./BitMap.d"
-import type { DEFAULT_KEY, KF_DELIM } from "../libs/BitMapObj"
+import type { KF_DELIM } from "../libs/BitMapObj"
 
 
 /** Static BitMaObj members */
-export interface BitMapObjStatic<Key extends string, Flag extends string> {
+export interface BitMapObjStatic<Key extends string, Flag extends string, DefKey extends string> {
     /** Main Flag to Int map */
     readonly map:     BitMapStatic<Flag>['map']
     /** List of all object Keys (Except for the default key) */
     readonly keys:    Readonly<Key[]>
+    /** Default key */
+    readonly defKey:  DefKey
+    /** List of all object Keys (Including the default key) */
+    readonly allKeys: (Key | DefKey)[]
     /** List of all Flags/Values */
     readonly values:  BitMapStatic<Flag>['flags']
     /** Map of Flags to single-character representations */
@@ -29,58 +33,61 @@ export interface BitMapObjStatic<Key extends string, Flag extends string> {
     isKeyFlag(str: string): str is `${Key}${typeof KF_DELIM}${Flag}`
 
     /** Create a BitMapObject from an array of KeyFlags or an Object of numbers */
-    new(): BitMapObjBase<Key, Flag>
-    new(bitmapObjStr?: string, defaultValue?: BitMapValue<BitMapBase<Flag>>): BitMapObjBase<Key, Flag>
-    new(keyFlagArr?: string[], defaultValue?: BitMapValue<BitMapBase<Flag>>): BitMapObjBase<Key, Flag>
-    new(keyNumObj?: BitMapObjValue<Key, Flag>, defaultValue?: BitMapValue<BitMapBase<Flag>>): BitMapObjBase<Key, Flag>
-    new(objOrArr?: BitMapObjValue<Key, Flag> | string[] | string, defaultValue?: BitMapValue<BitMapBase<Flag>>): BitMapObjBase<Key, Flag>
+    new(): BitMapObjBase<Key, Flag, DefKey>
+    new(bitmapObjStr?: string, defaultValue?: BitMapValue<BitMapBase<Flag>>): BitMapObjBase<Key, Flag, DefKey>
+    new(keyFlagArr?: string[], defaultValue?: BitMapValue<BitMapBase<Flag>>): BitMapObjBase<Key, Flag, DefKey>
+    new(keyNumObj?: BitMapObjValue<Key, Flag, DefKey>, defaultValue?: BitMapValue<BitMapBase<Flag>>): BitMapObjBase<Key, Flag, DefKey>
+    new(objOrArr?: BitMapObjValue<Key, Flag, DefKey> | string[] | string, defaultValue?: BitMapValue<BitMapBase<Flag>>): BitMapObjBase<Key, Flag, DefKey>
 }
 
 
 /** A Class representing set of on/off flags (flagList), mapped to binary positions */
-export abstract class BitMapObjBase<Key extends string, Flag extends string> {
+export abstract class BitMapObjBase<Key extends string, Flag extends string, DefKey extends string> {
     /** Create a BitMapObject from an array of KeyFlags or an Object of numbers */
     constructor()
     constructor(bitmapObjStr?: string, defaultValue?: BitMapValue<BitMapBase<Flag>>)
     constructor(keyFlagArr?: string[], defaultValue?: BitMapValue<BitMapBase<Flag>>)
-    constructor(keyNumObj?: BitMapObjValue<Key, Flag>, defaultValue?: BitMapValue<BitMapBase<Flag>>)
-    constructor(objOrArr?: BitMapObjValue<Key, Flag> | string[] | string, defaultValue?: BitMapValue<BitMapBase<Flag>>)
+    constructor(keyNumObj?: BitMapObjValue<Key, Flag, DefKey>, defaultValue?: BitMapValue<BitMapBase<Flag>>)
+    constructor(objOrArr?: BitMapObjValue<Key, Flag, DefKey> | string[] | string, defaultValue?: BitMapValue<BitMapBase<Flag>>)
 
     /** Main BitMapObject of form { Key: BitMapObj, ... default: BitMapObj } */
-    abstract readonly obj: BitMapObject<Key, Flag>
+    abstract readonly obj: BitMapObject<Key, Flag, DefKey>
+
+    /** Default key */
+    abstract readonly defKey: DefKey
 
     /** @returns the cooresponding BitMapObj for a Key OR the default BitMapObj if Key has no BitMapObj */
-    abstract get(key: Key | typeof DEFAULT_KEY): BitMapBase<Flag>
+    abstract get(key: Key | DefKey): BitMapBase<Flag>
 
     /** Reset all BitMaps to reference the default, reset the default to the given value or zero 
      *  @returns Self */
-    abstract reset(defaultValue?: BitMapValue<BitMapBase<Flag>>): BitMapObjBase<Key, Flag>
+    abstract reset(defaultValue?: BitMapValue<BitMapBase<Flag>>): BitMapObjBase<Key, Flag, DefKey>
 
     /** Sets the BitMapObject to the specified key-flag array.
      *  (Missing keys will become zero AKA all off)
      * @returns Self */
-    abstract setArray(keyFlagArr: string[]): BitMapObjBase<Key, Flag>
+    abstract setArray(keyFlagArr: string[]): BitMapObjBase<Key, Flag, DefKey>
 
     /** Sets the BitMapObject to the specified key:number object.
      *  (Missing keys will become zero AKA all off)
      * @returns Self */
-    abstract setObject(bitmapValueObj: BitMapObjValue<Key, Flag>): BitMapObjBase<Key, Flag>
+    abstract setObject(bitmapValueObj: BitMapObjValue<Key, Flag, DefKey>): BitMapObjBase<Key, Flag, DefKey>
 
     /** Add specified flag(s) to every key (That is non-zero)
      * @returns Self */
-    abstract addAll(value: BitMapValue<BitMapBase<Flag>>): BitMapObjBase<Key, Flag>
+    abstract addAll(value: BitMapValue<BitMapBase<Flag>>): BitMapObjBase<Key, Flag, DefKey>
 
     /** Remove specified flag(s) from every key
      * @returns Self */
-    abstract removeAll(value: BitMapValue<BitMapBase<Flag>>): BitMapObjBase<Key, Flag>
+    abstract removeAll(value: BitMapValue<BitMapBase<Flag>>): BitMapObjBase<Key, Flag, DefKey>
 
     /** Add specified flag(s) to specified keys
      * @returns Self */
-    abstract addObject(valueObj: BitMapObjValue<Key, Flag>): BitMapObjBase<Key, Flag>
+    abstract addObject(valueObj: BitMapObjValue<Key, Flag, DefKey>): BitMapObjBase<Key, Flag, DefKey>
 
     /** Remove specified flag(s) from specified keys
      * @returns Self */
-    abstract removeObject(valueObj: BitMapObjValue<Key, Flag>): BitMapObjBase<Key, Flag>
+    abstract removeObject(valueObj: BitMapObjValue<Key, Flag, DefKey>): BitMapObjBase<Key, Flag, DefKey>
 
     /** @returns A boolean indicating whether the key/default is a subset of the value. */
     abstract isSuperset(value?: BitMapValue<BitMapBase<Flag>>, key?: string): boolean
@@ -97,7 +104,7 @@ export abstract class BitMapObjBase<Key extends string, Flag extends string> {
     abstract toString(): string
 
     /** Get object as a JSON string of form { Key: number, ... default: number } */
-    abstract toJSON(): BitMapObject<Key, Flag>
+    abstract toJSON(): BitMapObject<Key, Flag, DefKey>
 
     /** Get object as a list of strings of form "key-flag" */
     abstract toArray(): string[]
@@ -105,32 +112,37 @@ export abstract class BitMapObjBase<Key extends string, Flag extends string> {
 
 
 /** Base object at the core of a BitMapObj */
-export type BitMapObject<Key extends string, Flag extends string> =
-    { [key in Key]: BitMapBase<Flag> } & { [DEFAULT_KEY]: BitMapBase<Flag> }
+export type BitMapObject<Key extends string, Flag extends string, DefKey extends string> =
+    { [key in Key]: BitMapBase<Flag> } & { [key in DefKey]: BitMapBase<Flag> }
 
 /** Constructor input value for BitMapObj from Keys & Flags */
-export type BitMapObjValue<Key extends string, Flag extends string> =
-    { [key in Key]+?: BitMapValue<BitMapBase<Flag>> } & { [DEFAULT_KEY]?: BitMapValue<BitMapBase<Flag>> }
+export type BitMapObjValue<Key extends string, Flag extends string, DefKey extends string> =
+    { [key in Key]+?: BitMapValue<BitMapBase<Flag>> } & { [key in DefKey]+?: BitMapValue<BitMapBase<Flag>> }
 
 /** Constructor input value for BitMapObj from Class or Instance */
-export type BitMapObjToValue<BitMapObj extends BitMapObjBase<any,any> | BitMapObjStatic<any,any>> =
-    BitMapObjValue<ObjKeyType<BitMapObj>, ObjFlagType<BitMapObj>>
+export type BitMapObjToValue<BitMapObj extends BitMapObjBase<any,any,any> | BitMapObjStatic<any,any,any>> =
+    BitMapObjValue<ObjKeyType<BitMapObj>, ObjFlagType<BitMapObj>, ObjDefType<BitMapObj>>
 
 /** Extract base object type from BitMapObj Class or Instance */
-export type BitMapObjType<BitMapObj extends BitMapObjBase<any,any> | BitMapObjStatic<any,any>> = 
-    BitMapObject<ObjKeyType<BitMapObj>, ObjFlagType<BitMapObj>>
+export type BitMapObjType<BitMapObj extends BitMapObjBase<any,any,any> | BitMapObjStatic<any,any,any>> = 
+    BitMapObject<ObjKeyType<BitMapObj>, ObjFlagType<BitMapObj>, ObjDefType<BitMapObj>>
 
-export type ExtractBitMap<BitMapObj extends BitMapObjBase<any,any> | BitMapObjStatic<any,any>> =
+/** Extract base BitMap type from BitMapObj Class or Instance */
+export type ExtractBitMap<BitMapObj extends BitMapObjBase<any,any,any> | BitMapObjStatic<any,any,any>> =
     BitMapBase<ObjFlagType<BitMapObj>>
 
 /** Extract flags from BitMapObj Class or Instance */
-export type ObjFlagType<BitMapObj extends BitMapObjBase<any,any> | BitMapObjStatic<any,any>> = 
-    BitMapObj extends BitMapObjStatic<any, any> ? BitMapObj['values'][number] :
-    BitMapObj extends BitMapObjBase<any, any>   ? BitMapObj['obj'][typeof DEFAULT_KEY]['list'][number] :
+export type ObjFlagType<BitMapObj extends BitMapObjBase<any,any,any> | BitMapObjStatic<any,any,any>> = 
+    BitMapObj extends BitMapObjStatic<any,any,any> ? BitMapObj['values'][number] :
+    BitMapObj extends BitMapObjBase<any,any,any>   ? BitMapObj['obj'][any]['list'][number] :
         never
 
 /** Extract keys from BitMapObj Class or Instance */
-export type ObjKeyType<BitMapObj extends BitMapObjBase<any,any> | BitMapObjStatic<any,any>> = 
-    BitMapObj extends BitMapObjStatic<any, any> ? BitMapObj['keys'][number] :
-    BitMapObj extends BitMapObjBase<any, any>   ? Exclude<keyof BitMapObj['obj'], typeof DEFAULT_KEY> :
+export type ObjKeyType<BitMapObj extends BitMapObjBase<any,any,any> | BitMapObjStatic<any,any,any>> = 
+    BitMapObj extends BitMapObjStatic<any,any,any> ? BitMapObj['keys'][number] :
+    BitMapObj extends BitMapObjBase<any,any,any>   ? Exclude<keyof BitMapObj['obj'], ObjDefType<BitMapObj>> :
         never
+
+/** Extract default key from BitMapObj Class or Instance */
+export type ObjDefType<BitMapObj extends BitMapObjBase<any,any,any> | BitMapObjStatic<any,any,any>> = 
+    BitMapObj['defKey']
