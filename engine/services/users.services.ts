@@ -1,5 +1,6 @@
+import type {} from '../middleware/auth.middleware' // Express.User type
 import type { ProfileActions } from '../types/gui.d'
-import type { UserDefinition, UsersHTML, UsersUI } from '../types/Users.d'
+import type { AccessType, RoleType, UserDefinition, UsersHTML, UsersUI } from '../types/Users.d'
 import { ModelAccess, Role, NO_ACCESS } from '../types/Users'
 import { adapterTypes } from '../types/Model'
 import logger from '../libs/log'
@@ -13,22 +14,15 @@ import { modifyOther, noConfirm, badConfirm } from '../config/errors.engine'
 export function initAdapters(definitions: UserDefinition) {
   // GET ADAPTERS
   definitions.cors[adapterTypes.get] = decodeCors
-
   definitions.role[adapterTypes.get] = (role) => new Role(role)
-
   definitions.password[adapterTypes.get] = (password) => password ? 'YES' : undefined
-
   definitions.access[adapterTypes.get] = (access) => access ? new ModelAccess(JSON.parse(access)) : undefined
 
   // SET ADAPTERS
   definitions.cors[adapterTypes.set] = encodeCors
-
   definitions.role[adapterTypes.set] = (role) => role?.int
-
   definitions.username[adapterTypes.set] = (username) => username?.toLowerCase()
-
   definitions.access[adapterTypes.set] = (access) => access ? JSON.stringify(access) : undefined
-
   definitions.password[adapterTypes.set] = async (password, data) => {
     if (typeof password !== 'string' || !password) return
     const { pwkey, salt } = await encodePassword(password)
@@ -82,18 +76,17 @@ export function guiAdapter(user: UsersUI | UsersUI[]): UsersHTML | UsersHTML[] {
 }
 
 
-export function adminFormAdapter({ access, ...formData }: UsersHTML, _?: Express.User, action?: ProfileActions) {
-  const result = {
-    ...formData,
-    access: !access ? undefined :
-      typeof access === 'string' ? new ModelAccess([access]) : new ModelAccess(access)
-  }
+export function adminFormAdapter({ access, role, ...formData }: UsersHTML, _?: Express.User, action?: ProfileActions) {
+  let adapted: Omit<UsersHTML, 'role'|'access'> & { role?: RoleType, access?: AccessType } = formData
+  
+  if (role) adapted.role = new Role(role as any)
+  if (access) adapted.access = typeof access === 'string' ? new ModelAccess([access]) : new ModelAccess(access)
 
-  return confirmPassword(result, action)
+  return confirmPassword(adapted, action)
 }
 
 
-export function userFormAdapter(formData: UsersHTML, user?: Express.User, action?: ProfileActions) {
+export function userFormAdapter({ access, role, ...formData }: UsersHTML, user?: Express.User, action?: ProfileActions) {
   if (user?.id !== formData.id && !Role.map.admin.intersects(user?.role)) throw modifyOther()
 
   return confirmPassword(formData, action)
