@@ -1,6 +1,6 @@
 import type { AccessBitMap, RoleType, UsersUI } from '../types/Users.d'
 import type { Middleware } from '../types/express.d'
-import { timestamps } from '../types/Users'
+import { anyAccess, timestamps } from '../types/Users'
 
 import expressSession from 'express-session'
 import flash from 'connect-flash'
@@ -32,7 +32,7 @@ export const checkAuth = (redirectURL: string, role: RoleType): Middleware => //
     res.redirect(redirectURL)
   }
 
-export const checkModel = (redirectURL: string | null, modelName: string, accessType?: ModelAccess): Middleware =>
+export const checkModel = (redirectURL: string | null, modelName: string, accessType: ModelAccess = anyAccess): Middleware =>
   (req, res, next) => {
     const access = typeof accessType === 'function' ? accessType(req) : accessType
     if (req.user?.access?.intersects(access, modelName)) return next()
