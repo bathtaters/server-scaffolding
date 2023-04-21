@@ -73,9 +73,9 @@ $( 'tr.tableRow' ).on('click', function() {
     }
 
     // Table checkboxes
-    var i = checks.length;
+    var i = checks.length, tableRegex = /^\s*([^\s:]+):\s*\[([^\]]+)\]\s*$/;
     while (i-- > 0) {
-      var check = checks[i].match(/^([^[\s]+)\s*\[([^\]]+)\]$/);
+      var check = checks[i].match(tableRegex);
       if (!check || !check[1]) { continue; }
 
       var anyChecked = false;
@@ -105,14 +105,14 @@ $( 'input.roleChecks' ).on('input', function() {
     $( 'input#none' ).prop('checked', false);
   }
 });
-$( 'input.roleChecks' ).on('input', function() {
+$( 'input.accessChecks' ).on('input', function() {
   if (!$(this).prop('checked')) return;
 
   var row = $(this).attr('data-row')
   if ($(this).attr('data-col') === "none") {
-    $( 'input.roleChecks[data-row="'+row+'"]' ).not(this).prop('checked', false);
+    $( 'input.accessChecks[data-row="'+row+'"]' ).not(this).prop('checked', false);
   } else {
-    $( 'input.roleChecks[data-row="'+row+'"][data-col="none"]' ).prop('checked', false);
+    $( 'input.accessChecks[data-row="'+row+'"][data-col="none"]' ).prop('checked', false);
   }
 });
 
