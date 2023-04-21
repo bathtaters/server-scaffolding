@@ -44,9 +44,9 @@ export const filterFormData = <T extends object, B extends object = {}, Result e
   )
 
 
-const hasStrValues = (obj: any): obj is Record<string, string> => {
+const strOrNumOnly = (obj: any): obj is Record<string, string> => {
   const vals = Object.values(obj)
-  return vals.length ? vals.every((v) => typeof v === 'string') : false
+  return vals.length ? vals.every((v) => typeof v === 'string' || typeof v === 'number') : false
 }
 
 /** Convert object to queryString (Accepts stringified object, deletes null/empty values) */
@@ -63,5 +63,5 @@ export const toQueryString = <T extends Record<string,any>>(obj: string | T, fil
     if (!filter(obj[key], key)) delete obj[key]
   }
 
-  return hasStrValues(obj) ? `?${new URLSearchParams(obj).toString()}` : ''
+  return strOrNumOnly(obj) ? `?${new URLSearchParams(obj).toString()}` : ''
 }
