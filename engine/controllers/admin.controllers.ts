@@ -1,3 +1,4 @@
+import type {} from '../middleware/auth.middleware' // Express.User type
 import type { Middleware } from '../types/express.d'
 import { ModelAccess, Role } from '../types/Users'
 
