@@ -32,13 +32,13 @@ export function formatGuiData<T extends object>(data: T[]) {
 
 const toGuiString = (val: any): string => {
   if (typeof val === 'string') return val
-  if (val == null) return `${val}`
 
   if (Array.isArray(val)) return val.map(toGuiString).join(', ')
 
-  if (typeof val === 'object' && !isDate(val)) return JSON.stringify(val)
-
-  return 'toLocaleString' in val ? val.toLocaleString() : `${val}`
+  if (!val || typeof val.toLocaleString !== 'function') return String(val)
+  
+  const str = val.toLocaleString()
+  return str === '[object Object]' ? JSON.stringify(val) : str
 }
 
 
