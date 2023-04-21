@@ -11,7 +11,7 @@ const consoleLogs = new transports.Console({
   format: config.logFormat.console,
 })
 
-const fileLogs = !config.testLevel ? null : new DailyRotateFile({
+const fileLogs = config.testLevel ? null : new DailyRotateFile({
   ...getLogLevel(process.env.LOG_FILE, config, definitions.LOG_FILE.default),
   filename: logPath,
   datePattern: 'YYYY-MM-DD' + (config.files.splitHourly ? '.HH' : ''),
