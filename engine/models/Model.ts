@@ -318,7 +318,7 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
 
 
   private async _delete<K extends keyof DBSchema & string>(ids: DBSchema[K][], idKey?: K): Promise<boolean> {
-    if (ids.length) throw noID()
+    if (!ids.length) throw noID()
     await run(getDb(), ...deleteSQL(this.title, idKey || this.primaryId, ids))
     return true
   }

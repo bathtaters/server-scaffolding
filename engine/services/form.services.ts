@@ -32,7 +32,7 @@ export default function modelActions<M extends ModelFormBase>(Model: M): ActionO
     // UPDATE
     [actions.update]: async (formData = {}) => {
       const [id, data] = extractId(formData, Model.primaryId)
-      if (!id && id !== 0) throw noID()
+      if (id == null) throw noID()
       if (!data || !Object.keys(data).length) throw noData()
       return Model.update(id, data).then(() => {})
     },
@@ -40,7 +40,7 @@ export default function modelActions<M extends ModelFormBase>(Model: M): ActionO
     // REMOVE
     [actions.delete]: async (formData = {}) => {
       const id = formData[Model.primaryId]
-      if (!id && id !== 0) throw noID()
+      if (id == null) throw noID()
       return Model.remove(id).then(() => {})
     },
 
