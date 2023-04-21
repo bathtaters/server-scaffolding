@@ -26,8 +26,9 @@ export const getTableFields = <T extends Record<string,any>>(schema: T, idKey: s
 
 
 /** Default 'formatData' callback for GUI */
-export function formatGuiData<T extends object>(data: T[]) {
-  return data.map((row) => mapObject(row, (val) => toGuiString(val)))
+export function formatGuiData(data?: any) {
+  if (Array.isArray(data)) return data.map((row) => mapObject(row, toGuiString))
+  if (data && typeof data === 'object') return mapObject(data, toGuiString)
 }
 
 const toGuiString = (val: any): string => {
