@@ -3,7 +3,7 @@ import type { ModelBase } from '../models/Model'
 import type { ChangeCallback, CommonDefinition, Definition, DefinitionSchema, ForeignKeyRef, SchemaBase } from '../types/Model.d'
 import type { IfExistsBehavior, SQLSuffix, SQLType, SQLTypeFull } from '../types/db.d'
 import type { HTMLType } from '../types/gui.d'
-import { adapterTypes, arrayLabel } from '../types/Model'
+import { adapterTypes, childLabel } from '../types/Model'
 import { foreignKeyActions, sqlSuffixes, sqlTypes } from '../types/db'
 import { htmlTypes } from '../types/gui'
 
@@ -11,7 +11,7 @@ import { isDate } from '../libs/date'
 import { isIn } from './common.utils'
 import { combineSQL, insertSQL, deleteSQL } from './db.utils'
 import { parseBoolean, parseArray } from './validate.utils'
-import { CONCAT_DELIM, getArrayName } from '../config/models.cfg'
+import { CONCAT_DELIM, getChildName } from '../config/models.cfg'
 
 // Initialize Parsers
 const toBool = parseBoolean(true)
@@ -19,20 +19,20 @@ const toArray = parseArray(true)
 
 
 /** Default entry for db.services.reset.refs */
-export const arrayTableRefs = ({ title, primaryId }: Pick<ModelBase,'title'|'primaryId'>): ForeignKeyRef => ({
-  key: arrayLabel.foreignId,
+export const childTableRefs = ({ title, primaryId }: Pick<ModelBase,'title'|'primaryId'>): ForeignKeyRef => ({
+  key: childLabel.foreignId,
   table: title,
   refKey: primaryId,
   onDelete: foreignKeyActions.Cascade,
   onUpdate: foreignKeyActions.Cascade,
 })
 
-/** Split keys from data into Array & Non-Array lists */
-export const splitKeys = (data: any, arraySchema: any) => {
-  const array = Object.keys(arraySchema).filter((key) => key in data)
+/** Split keys from data into Parent & Child lists */
+export const splitKeys = (data: any, childSchema: any) => {
+  const children = Object.keys(childSchema).filter((key) => key in data)
   return {
-    array,
-    base: Object.keys(data).filter((key) => !array.includes(key)),
+    children,
+    parent: Object.keys(data).filter((key) => !children.includes(key)),
   }
 }
 
@@ -43,43 +43,43 @@ export const incrementCb = <Schema extends SchemaBase>(key: keyof Schema & strin
 })
 
 
-/** Generate SQL and Params for inserting one or more arrays.
+/** Generate SQL and Params for inserting one or more children.
  *   - If primaryKey is a number, this will be treated as an auto-incrementing rowId
- *   - IfExists.overwrite will only overwrite individual array indicies
- *   - overwriteArray=true will clear the entire array */
-export const arraySQL = <T>(
-  tableName: string, arrayData: T[], arrayKeys: (keyof T)[],
-  primaryKey: keyof T | number, ifExists: IfExistsBehavior, overwriteArray = false
+ *   - IfExists.overwrite will only overwrite individual child indicies
+ *   - overwriteChild=true will clear the entire child object/array */
+export const childSQL = <T>(
+  tableName: string, childData: T[], childKeys: (keyof T)[],
+  primaryKey: keyof T | number, ifExists: IfExistsBehavior, overwriteChild = false
 ) =>
-  combineSQL(arrayKeys.map((key) => {
+  combineSQL(childKeys.map((key) => {
     const foreignIds: any[] = []
 
-    const entries = propertyIsArray(arrayData, key).flatMap((data, i) => {
+    const entries = propertyIsChild(childData, key).flatMap((data, i) => {
       const foreignId = typeof primaryKey !== 'number' ? data[primaryKey] : primaryKey + i + 1
-      overwriteArray && foreignIds.push(foreignId)
+      overwriteChild && foreignIds.push(foreignId)
 
       return data[key].map((value, index) => ({
-        [arrayLabel.foreignId]: foreignId,
-        [arrayLabel.index]:     index,
-        [arrayLabel.value]:     value,
+        [childLabel.foreignId]: foreignId,
+        [childLabel.index]:     index,
+        [childLabel.value]:     value,
       }))
     })
     
     if (!entries.length) return;
 
-    const arrayTable = getArrayName(tableName, key)
+    const childTable = getChildName(tableName, key)
 
     const insert = insertSQL(
-      arrayTable,
+      childTable,
       entries,
-      Object.values(arrayLabel),
+      Object.values(childLabel),
       ifExists
     )
 
-    return !overwriteArray ? insert : combineSQL([
+    return !overwriteChild ? insert : combineSQL([
       deleteSQL(
-        arrayTable,
-        arrayLabel.foreignId,
+        childTable,
+        childLabel.foreignId,
         foreignIds,
       ),
       insert,
@@ -88,14 +88,14 @@ export const arraySQL = <T>(
 
 
 export function getSqlParams<Schema extends SchemaBase, DBSchema extends SchemaBase>(
-  { title, schema, arrays }: Pick<Model<Schema, DBSchema>, 'title'|'schema'|'arrays'>,
+  { title, schema, children }: Pick<Model<Schema, DBSchema>, 'title'|'schema'|'children'>,
   matchData?: Partial<DBSchema>, partialMatch = false
 ) {
   let params: [string, any][] = []
   if (!matchData) return params
 
   Object.entries(matchData).forEach(([key,val]) => {
-    if (key in arrays) throw new Error(`Array search not implemented: ${key} in query.`)
+    if (key in children) throw new Error(`Child search not implemented: Child key "${key}" in query.`)
 
     if (!partialMatch)
       return params.push([`${title}.${key} = ?`, val])
@@ -125,7 +125,7 @@ export function getSqlParams<Schema extends SchemaBase, DBSchema extends SchemaB
 export const isBool = ({ type, isArray }: Pick<Definition,'type'|'isArray'>) => type === 'boolean' && !isArray
 
 /** Filter an array of objects, keeping objects where the given property is an array. */
-export const propertyIsArray = <O, P extends keyof O>(arrayOfObjects: O[], property: P) =>
+export const propertyIsChild = <O, P extends keyof O>(arrayOfObjects: O[], property: P) =>
   arrayOfObjects.filter(
     (obj) => Array.isArray(obj[property]) && (obj[property] as any[]).length
   ) as (O & { [property in P]: any[] })[]
@@ -137,11 +137,11 @@ export const isDbKey = <DBSchema extends SchemaBase, Schema extends SchemaBase>
 
 export function sanitizeSchemaData
   <Schema extends SchemaBase, DBSchema extends SchemaBase, T extends SchemaBase>
-  (data: T, { schema, arrays }: SanitModel<Schema, DBSchema> = {})
+  (data: T, { schema, children }: SanitModel<Schema, DBSchema> = {})
 {
   const validKeys = schema && Object.keys(schema)
     .filter((key) => schema[key].db)
-    .concat(Object.keys(arrays || {}))
+    .concat(Object.keys(children || {}))
 
   return Object.keys(data).reduce(
     (obj, key) =>
@@ -281,5 +281,5 @@ export function setAdapterFromType<S extends SchemaBase, D extends SchemaBase>
 
 // TYPE HELPERS
 
-type Sanitized<T extends SchemaBase, Schema extends SchemaBase, DBSchema extends SchemaBase> = Pick<T, (keyof Schema | keyof SanitModel<Schema, DBSchema>['arrays']) & keyof T>
-type SanitModel<Schema extends SchemaBase, DBSchema extends SchemaBase> = Partial<Pick<ModelBase<Schema, DBSchema>,'schema'|'arrays'>>
+type Sanitized<T extends SchemaBase, Schema extends SchemaBase, DBSchema extends SchemaBase> = Pick<T, (keyof Schema | keyof SanitModel<Schema, DBSchema>['children']) & keyof T>
+type SanitModel<Schema extends SchemaBase, DBSchema extends SchemaBase> = Partial<Pick<ModelBase<Schema, DBSchema>,'schema'|'children'>>

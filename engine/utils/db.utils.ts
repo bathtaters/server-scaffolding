@@ -1,6 +1,6 @@
 import type { IfExistsBehavior } from '../types/db.d'
-import { arrayLabel } from '../types/Model'
-import { getArrayName, CONCAT_DELIM, SQL_ID, ifExistsBehavior } from '../config/models.cfg'
+import { childLabel } from '../types/Model'
+import { getChildName, CONCAT_DELIM, SQL_ID, ifExistsBehavior } from '../config/models.cfg'
 import { illegalKeyName, illegalKeys } from '../config/validate.cfg'
 import { sqlInjection } from '../config/errors.engine'
 
@@ -46,33 +46,33 @@ export const combineSQL = (sql: Array<[string, any[]] | undefined>) =>
 type ArrID = string | number | string[] | number[]
 
 export const getArrayJoin = (
-  table: string, primaryId: string, arrays: string[] = [],
+  table: string, primaryId: string, children: string[] = [],
   { id, idKey, idIsArray }: { id?: ArrID, idKey?: string, idIsArray?: boolean } = {}
 
-) => !arrays.length ?
+) => !children.length ?
 
   `SELECT ${primaryId === SQL_ID ? 'rowid, ' : ''}* FROM ${table}${id == null ? '' : ` WHERE ${idKey || primaryId} = ?`}` :
 
-  `SELECT ${primaryId === SQL_ID ? `${table}.rowid, ` : ''}${[`${table}.*`].concat(arrays.map((key) => `_arrays.${key}`)).join(', ')}
+  `SELECT ${primaryId === SQL_ID ? `${table}.rowid, ` : ''}${[`${table}.*`].concat(children.map((key) => `_children.${key}`)).join(', ')}
     FROM ${table} LEFT JOIN (
-      SELECT ${[arrayLabel.foreignId as string].concat(arrays.map((key) => `GROUP_CONCAT(${table}_${key}, '${CONCAT_DELIM}') ${key}`)).join(', ')} FROM (${
-        arrays.map((key) => `SELECT ${[arrayLabel.foreignId, arrayLabel.index as string].concat(arrays.map((subKey) =>
-          `${key === subKey ? arrayLabel.value : 'NULL'} AS ${table}_${subKey}`
-        )).join(', ')} FROM ${getArrayName(table, key)}`).join(`
+      SELECT ${[childLabel.foreignId as string].concat(children.map((key) => `GROUP_CONCAT(${table}_${key}, '${CONCAT_DELIM}') ${key}`)).join(', ')} FROM (${
+        children.map((key) => `SELECT ${[childLabel.foreignId, childLabel.index as string].concat(children.map((subKey) =>
+          `${key === subKey ? childLabel.value : 'NULL'} AS ${table}_${subKey}`
+        )).join(', ')} FROM ${getChildName(table, key)}`).join(`
         UNION ALL
         `)
       }
-      ORDER BY ${[arrayLabel.foreignId, arrayLabel.index].join(', ')})
-    GROUP BY ${arrayLabel.foreignId}) _arrays ON _arrays.${arrayLabel.foreignId} = ${table}.${primaryId}
+      ORDER BY ${[childLabel.foreignId, childLabel.index].join(', ')})
+    GROUP BY ${childLabel.foreignId}) _children ON _children.${childLabel.foreignId} = ${table}.${primaryId}
     ${id == null ? '' :
     `WHERE ${!idIsArray || Array.isArray(id) ? idKey || primaryId : primaryId} = ${!idIsArray || Array.isArray(id) ? '?' : 
-    `(SELECT ${arrayLabel.foreignId} FROM ${getArrayName(table, idKey || primaryId)} WHERE ${arrayLabel.value} = ?)`}`
+    `(SELECT ${childLabel.foreignId} FROM ${getChildName(table, idKey || primaryId)} WHERE ${childLabel.value} = ?)`}`
   }`
 
 
 // Tests models.cfg values for SQL injection
 if (/['\s]/.test(CONCAT_DELIM)) throw sqlInjection(CONCAT_DELIM, false, 'models.cfg:CONCAT_DELIM')
-checkInjection(Object.values(arrayLabel), 'models.cfg:arrayLabel')
+checkInjection(Object.values(childLabel), 'models.cfg:childLabel')
 
 
 

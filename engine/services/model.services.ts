@@ -1,7 +1,7 @@
 import type Model from '../models/Model'
 import type { AdapterType, Definition, DefinitionSchema, SchemaBase, ArrayDefinitions, CommonDefinition } from '../types/Model.d'
 import { hasDupes, isIn } from '../utils/common.utils'
-import { arrayLabel, adapterTypes } from '../types/Model'
+import { childLabel, adapterTypes } from '../types/Model'
 import { defaultPrimary, defaultPrimaryType, SQL_ID } from '../config/models.cfg'
 import { dbFromType, htmlFromType, getAdapterFromType, setAdapterFromType, stripPrimaryDef, sanitizeSchemaData } from '../utils/model.utils'
 import { parseTypeStr } from '../utils/validate.utils'
@@ -63,7 +63,7 @@ export function getPrimaryIdAndAdaptSchema
 }
 
 
-type RAModel<S extends SchemaBase, D extends SchemaBase> = Pick<Model<S,D>, 'schema'|'hidden'|'arrays'>
+type RAModel<S extends SchemaBase, D extends SchemaBase> = Pick<Model<S,D>, 'schema'|'hidden'|'children'>
 
 export async function runAdapters<S extends SchemaBase, D extends SchemaBase>(adapterType: typeof adapterTypes.set, data: S, model: RAModel<S,D>):
   Promise<D>;
@@ -92,7 +92,7 @@ export async function runAdapters<S extends SchemaBase, D extends SchemaBase = S
 
 
 
-export function extractArrays<S extends SchemaBase, D extends SchemaBase>(schema: DefinitionSchema<S,D>, idDefinition: CommonDefinition<S,D>) {
+export function extractChildren<S extends SchemaBase, D extends SchemaBase>(schema: DefinitionSchema<S,D>, idDefinition: CommonDefinition<S,D>) {
   return Object.entries(schema).reduce<ArrayDefinitions<S & D>>(
     (arrayTables, [arrayName, def]) => {
       if (!def.isArray || def.db) return arrayTables
@@ -101,14 +101,14 @@ export function extractArrays<S extends SchemaBase, D extends SchemaBase>(schema
         ...arrayTables,
 
         [arrayName]: {
-          [arrayLabel.foreignId]: stripPrimaryDef(idDefinition),
+          [childLabel.foreignId]: stripPrimaryDef(idDefinition),
 
-          [arrayLabel.index]: adaptSchemaEntry({
+          [childLabel.index]: adaptSchemaEntry({
             typeStr: 'int',
             limits: def.limits && (def.limits.elem || def.limits.array) ? def.limits.array : def.limits,
           }),
 
-          [arrayLabel.value]: adaptSchemaEntry({
+          [childLabel.value]: adaptSchemaEntry({
             typeStr: (def.typeStr || def.type).replace('[]','') as NonNullable<Definition['typeStr']>,
             limits: def.limits && (def.limits.elem || def.limits.array) ? def.limits.elem : undefined,
             isHTML: def.isHTML,

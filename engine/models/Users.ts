@@ -24,9 +24,9 @@ class User extends Model<UsersUI, UsersDB> {
   }
 
 
-  async get<ID extends keyof (UsersUI | UsersDB) & string>(
-    id: UsersUI[ID], { timestamp, ignoreCounter, ...options }: GetOptions = {}
-  ): Promise<UsersUI | undefined> {
+  async get<ID extends keyof (UsersUI | UsersDB) & string, O extends GetOptions<ID>>(
+    id: UsersUI[ID], { timestamp, ignoreCounter, ...options }: O = {} as O
+  ) {
 
     const user = await super.get(id, options)
     if (user) this._updateTimestamp(user, timestamp, ignoreCounter)
@@ -34,10 +34,11 @@ class User extends Model<UsersUI, UsersDB> {
   }
 
   async getRaw<ID extends keyof (UsersUI | UsersDB) & string>(
-    id: UsersUI[ID], { timestamp, ignoreCounter, ...options }: GetOptions = {}
+    id: UsersUI[ID], { timestamp, ignoreCounter, idKey, ...options }: GetOptions = {}
   ): Promise<Partial<UsersDB> | undefined> {
 
-    const user = await super.findBaseRaw({ [options.idKey || this.primaryId]: id }, options).then((users) => users[0])
+    const user = await super.find({ [idKey || this.primaryId]: id }, { ...options, raw: true, skipChildren: true })
+      .then((users) => users[0])
     if (user) this._updateTimestamp(user, timestamp, ignoreCounter)
     return user
   }
@@ -78,7 +79,7 @@ class User extends Model<UsersUI, UsersDB> {
       return runAdapters(adapterTypes.get, data, this)
     }
 
-    const data = await super.findBaseRaw({ username: username.toLowerCase() })
+    const data = await super.find({ username: username.toLowerCase() }, { raw: true, skipChildren: true })
     const result = await testPassword(data[0], password, role, this._passwordCb.bind(this))
     return 'fail' in result ? result : runAdapters(adapterTypes.get, result, this)
   }
@@ -97,10 +98,10 @@ class User extends Model<UsersUI, UsersDB> {
     if (!Object.keys(this.schema).includes(idKey))
       throw badKey(idKey, this.title)
 
-    const admins: Pick<UsersDB, ID>[] = await this.custom(
+    const admins = await this.custom(
       `SELECT ${idKey} FROM ${this.title} WHERE role & ?`,
       [Role.map.admin.int]
-    )
+    ) as Pick<UsersDB, ID>[]
     
     return !admins.filter((user) => !ids.includes(user[idKey])).length
   }
@@ -115,7 +116,7 @@ class User extends Model<UsersUI, UsersDB> {
 
     username = username.toLowerCase()
 
-    const users = await super.findRaw()
+    const users = await super.find(undefined, { raw: true })
     const nameExists = users.some((user) =>
       user.id !== ignoreId && user.username === username
     )

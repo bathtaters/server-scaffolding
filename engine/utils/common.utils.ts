@@ -37,7 +37,7 @@ export const mapObject = <T extends Record<any,any>, R>(object: T, callback: (va
 
 
 /** Assigns inner prop in object of objects to each outer key */
-export const filterByField = <
+export const mapToField = <
   O extends NestedObject<Record<string,any>,any> = NestedObject<Record<string,any>,any>,
   F extends keyof O[keyof O] & string = keyof O[keyof O] & string
 >

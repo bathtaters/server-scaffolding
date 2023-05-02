@@ -1,10 +1,13 @@
-import type { adapterTypes, arrayLabel } from './Model'
+import type { adapterTypes, childLabel } from './Model'
 import type { HTMLType } from './gui.d'
 import type { ValidationTypeFull } from './validate.d'
 import type { SQLTypeFull, ForeignKeyAction } from './db.d'
 
-// TODO -- Organize into namespaces
-// TODO -- Ability to derive 'Schema'/'DBSchema' from Model.SchemaDefinition
+// TODO -- Add a type "ModelName" that is the name of any model in allModels (Use with ModelAccess)
+// TODO -- Organize types into namespaces
+// TODO -- Derive schema types from Model.SchemaDefinition
+// TODO -- Add BitMap/BitMapObj(bitmap2d) type as option, remove 'isBitmap'
+// TODO -- Each definition has 'dbType' <-> 'baseType' <-> 'htmlType' w/ 4 adapters (toDb [set], fromDb [get], toHtml, fromHtml)
 
 /** Definitions for a column of the Model */
 export type Definition<
@@ -87,15 +90,40 @@ export type Feedback = { success: boolean }
 export type ChangeCallback<DBSchema extends SchemaBase> =
   (update: Partial<DBSchema>, matching: DBSchema[]) => Promise<Partial<DBSchema> | void> | Partial<DBSchema> | void
 
-/** { partialMatch?: boolean, orderKey?: keyof Schema & string, onChange?: ChangeCallback<Schema> } */
+/** { partialMatch?: bool, orderKey?: keyof Schema, onChange?: ChangeCallback<Schema>, raw?: bool, skipChildren?: bool } */
 export type SQLOptions<Schema extends SchemaBase> = {
   /** True = Fuzzy match input data */
   partialMatch?: boolean,
   /** (getter only) Order results by this key */
   orderKey?: keyof Schema & string,
   /** (update only) Called with newData & oldData before updating DB */
-  onChange?: ChangeCallback<Schema>
+  onChange?: ChangeCallback<Schema>,
+  /** (getter only) Skip getAdapters, returning raw DB values */
+  raw?: boolean,
+  /** (getter only) Skip DB Joins, returned value will not include children from related tables */
+  skipChildren?: boolean
 }
+
+/** Result of "Find" operation */
+type FindResult<
+  O extends SQLOptions<DBSchema>,
+  Schema extends SchemaBase,
+  DBSchema extends SchemaBase,
+> = Promise<Array<
+  O['skipChildren'] extends true ?
+    Partial<O['raw'] extends true ? DBSchema : Schema> :
+    O['raw'] extends true ? DBSchema : Schema
+>>
+
+/** Result of "_Select" operation */
+type SelectResult<
+  O extends SQLOptions<Schema>,
+  Schema extends SchemaBase,
+> = Promise<Array<
+  O['skipChildren'] extends true ?
+    Partial<Schema> : Schema
+>>
+
 
 export namespace Page {
   type Location = { page?: number, size?: number }
@@ -118,9 +146,9 @@ export interface ForeignKeyRef {
 }
 
 export type ArrayDefinition<Value = any, Key = any> = {
-  [arrayLabel.foreignId]: Key,
-  [arrayLabel.index]:     number,
-  [arrayLabel.value]:     Value
+  [childLabel.foreignId]: Key,
+  [childLabel.index]:     number,
+  [childLabel.value]:     Value
 }
 
 export type ArrayDefinitions<Schema extends SchemaBase> = Partial<{ [arrayName in keyof Schema]: DefinitionSchema<ArrayDefinition> }>
