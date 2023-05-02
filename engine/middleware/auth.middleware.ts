@@ -26,7 +26,7 @@ export function initAuth() {
   ]
 }
 
-export const checkAuth = (redirectURL: string, role: RoleType): Middleware => // TODO: Use BitMap
+export const checkAuth = (redirectURL: string, role: RoleType): Middleware =>
   (req, res, next) => {
     if (req.isAuthenticated() && role.intersects(req.user.role)) return next()
     res.redirect(redirectURL)
@@ -39,7 +39,7 @@ export const checkModel = (redirectURL: string | null, modelName: string, access
     redirectURL ? res.redirect(redirectURL) : next(noModelAccess(modelName, access?.toString()))
   }
     
-export const forwardOnAuth = (redirectURL: string, role: RoleType): Middleware => // TODO: Use BitMap
+export const forwardOnAuth = (redirectURL: string, role: RoleType): Middleware =>
   (req, res, next) => {
     if (req.isAuthenticated() && role.intersects(req.user.role)) return res.redirect(redirectURL)
     next()
