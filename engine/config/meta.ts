@@ -4,7 +4,6 @@ import { join } from 'path'
 import { definitions, updateRootPath } from './settings.cfg'
 import pkg from '../../package.json'
 
-
 // Set Project Path (NOTE: Must be updated if this file moves!)
 export const rootPath = join(__dirname,'..','..')
 export const staticRootPath = rootPath.replace(/\/built$/,'')
@@ -17,22 +16,6 @@ envConfig({ path: envPath })
 // Import configs that depend on process.env
 import { isCluster } from './server.cfg'
 import { port as testPort } from '../testing/test.cfg'
-
-// Determine listen port
-function getPort() {
-  if (process.env.NODE_ENV === 'test') return testPort
-
-  const basePort = +(process.env.port || 0) || +((pkg as any).config?.port || 0) || 8080
-  if (isCluster || !process.env.NODE_APP_INSTANCE) return basePort
-
-  const portExt = +process.env.NODE_APP_INSTANCE
-  return basePort + (isNaN(portExt) ? 0 : portExt)
-}
-
-// TODO -- Move these helpers to meta.utils
-const getEnv = (key: keyof EnvObject, defaultValue: string) =>
-  typeof process.env[key] === 'string' && process.env[key] ?
-    process.env[key] as string : definitions[key].default || defaultValue
 
 // App Metadata
 export const
@@ -50,3 +33,23 @@ export const
   dbPath =  join(getEnv('DB_DIR',  '.'), 'database.db'),
   logPath = join(getEnv('LOG_DIR', '.'), `${pkg.name || 'server'}_%DATE%.log`),
   credPath = { key: join(staticRootPath,'.key.pem'), cert: join(staticRootPath,'.cert.pem') }
+
+
+
+
+// CONFIG HELPERS
+
+function getPort() {
+  if (process.env.NODE_ENV === 'test') return testPort
+
+  const basePort = +(process.env.port || 0) || +((pkg as any).config?.port || 0) || 8080
+  if (isCluster || !process.env.NODE_APP_INSTANCE) return basePort
+
+  const portExt = +process.env.NODE_APP_INSTANCE
+  return basePort + (isNaN(portExt) ? 0 : portExt)
+}
+
+function getEnv(key: keyof EnvObject, defaultValue: string) {
+  return typeof process.env[key] === 'string' && process.env[key] ?
+    process.env[key] as string : definitions[key].default || defaultValue
+}
