@@ -1,8 +1,9 @@
-import type { IfExistsBehavior } from '../types/db.d'
+import type { IfExistsBehavior, SQLParams, WhereLogic } from '../types/db.d'
 import { childLabel } from '../types/Model'
 import { getChildName, CONCAT_DELIM, SQL_ID, ifExistsBehavior } from '../config/models.cfg'
 import { illegalKeyName, illegalKeys } from '../config/validate.cfg'
 import { sqlInjection } from '../config/errors.engine'
+import { whereLogic } from '../types/db'
 
 
 export const checkInjection = <T = any>(val: T, tableName = ''): T => {
@@ -87,22 +88,43 @@ export const countSQL = (tableName: string, whereParams: [string, any][] = []): 
   whereParams.map((params) => params[1])
 ]
 
+const paramsToSQL = (params: SQLParams): string[] => params.reduce<string[]>((sql, param) => {
+  if (0 in param) return sql.concat(param[0])
+
+  for (const [logic, paramArr] of Object.entries(param)) {
+    if (paramArr) {
+      const nestedArr = paramsToSQL(paramArr)
+      if (nestedArr.length)
+        return sql.concat(`(${nestedArr.join(` ${whereLogic[logic as WhereLogic]} `)})`)
+    }
+  }
+  return sql
+}, [])
+
+const paramsToValues = (params: SQLParams): any[] => params.flatMap((param) => {
+  if (1 in param) return [param[1]]
+  for (const paramArr of Object.values(param)) {
+    if (paramArr) return paramsToValues(paramArr)
+  }
+  return []
+})
+
 
 export const selectSQL = (
-  tableName: string, primaryId: string, whereParams: [string, any][], arrayTables: string[] = [],
+  tableName: string, primaryId: string, whereParams: SQLParams, arrayTables: string[] = [],
   orderBy?: string, desc = false, limit = 0, page = 0,
 ): [string, any[]] => [
 
   `${getArrayJoin(tableName, primaryId, arrayTables)
   } ${
-    whereParams.length ? 'WHERE ' : ''}${whereParams.map((sql) => sql[0]).join(' AND ')
+    whereParams.length ? 'WHERE ' : ''}${paramsToSQL(whereParams).join(' AND ')
   }${
     !orderBy ? '' : ` ORDER BY ${tableName}.${orderBy || primaryId} ${desc ? 'DESC' : 'ASC'}`
   }${
     limit ? ' LIMIT ? OFFSET ?' : ''
   }`,
 
-  [ ...whereParams.map((params) => params[1]), ...(limit ? [limit, page * limit] : []) ]
+  [ ...paramsToValues(whereParams), ...(limit ? [limit, page * limit] : []) ]
 ]
 
 

@@ -90,10 +90,8 @@ export type Feedback = { success: boolean }
 export type ChangeCallback<DBSchema extends SchemaBase> =
   (update: Partial<DBSchema>, matching: DBSchema[]) => Promise<Partial<DBSchema> | void> | Partial<DBSchema> | void
 
-/** { partialMatch?: bool, orderKey?: keyof Schema, onChange?: ChangeCallback<Schema>, raw?: bool, skipChildren?: bool } */
+/** { orderKey?: keyof Schema, onChange?: ChangeCallback<Schema>, raw?: bool, skipChildren?: bool } */
 export type SQLOptions<Schema extends SchemaBase> = {
-  /** True = Fuzzy match input data */
-  partialMatch?: boolean,
   /** (getter only) Order results by this key */
   orderKey?: keyof Schema & string,
   /** (update only) Called with newData & oldData before updating DB */

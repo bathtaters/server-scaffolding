@@ -1,12 +1,13 @@
 import type Model from '../models/Model'
 import type { ModelBase } from '../models/Model'
 import type { ChangeCallback, CommonDefinition, Definition, DefinitionSchema, ForeignKeyRef, SchemaBase } from '../types/Model.d'
-import type { IfExistsBehavior, SQLSuffix, SQLType, SQLTypeFull } from '../types/db.d'
+import type { IfExistsBehavior, SQLParams, SQLSuffix, SQLType, SQLTypeFull, WhereData, WhereLogic, WhereNot, WhereOps } from '../types/db.d'
 import type { HTMLType } from '../types/gui.d'
 import { adapterTypes, childLabel } from '../types/Model'
-import { foreignKeyActions, sqlSuffixes, sqlTypes } from '../types/db'
+import { foreignKeyActions, sqlSuffixes, sqlTypes, whereLogic, whereNot, whereOp, whereOpPartial } from '../types/db'
 import { htmlTypes } from '../types/gui'
 
+import RegEx from '../libs/regex'
 import { isDate } from '../libs/date'
 import { isIn } from './common.utils'
 import { combineSQL, insertSQL, deleteSQL } from './db.utils'
@@ -87,39 +88,83 @@ export const childSQL = <T>(
   }))
 
 
+const hasNot = RegEx(/^NOT\s/i)
+function notParams<P extends SQLParams | SQLParams[number]>(params: P) {
+  if (!Array.isArray(params) || typeof params[0] !== 'string')
+    Object.values(params).forEach(notParams)
+  else
+    params[0] = hasNot.test(params[0]) ? params[0].slice(4) : `NOT ${params[0]}`
+  return params
+}
+
+const inequalities = Object.keys(whereOp).filter((op) => op !== whereOpPartial) as WhereOps[]
 export function getSqlParams<Schema extends SchemaBase, DBSchema extends SchemaBase>(
   { title, schema, children }: Pick<Model<Schema, DBSchema>, 'title'|'schema'|'children'>,
-  matchData?: Partial<DBSchema>, partialMatch = false
-) {
-  let params: [string, any][] = []
+  matchData?: WhereData<DBSchema>,
+): SQLParams {
+
+  let params: SQLParams = []
   if (!matchData) return params
 
   Object.entries(matchData).forEach(([key,val]) => {
+    // Child search (Not implemented)
     if (key in children) throw new Error(`Child search not implemented: Child key "${key}" in query.`)
 
-    if (!partialMatch)
-      return params.push([`${title}.${key} = ?`, val])
-      
-    if (schema[key].isBitmap && val != null) {
-      const num = +val
-      return params.push([`${title}.${key} ${num ? '&' : '='} ?`, num])
+    // Default Inequality (Equals)
+    if (typeof val !== 'object')
+      return params.push([`${title}.${key} ${whereOp._eq} ?`, val])
+    
+    // Nested Logic
+    if (whereNot in val)
+      return params.push(
+        ...notParams(getSqlParams({ title, schema, children }, val[whereNot]))
+      )
+    
+    for (const logic in whereLogic) {
+      if (logic in val) return params.push({
+        [logic]: getSqlParams({ title, schema, children }, val[logic])
+      })
     }
 
-    if (isBool(schema[key]))
-      return params.push([`${title}.${key} = ?`, +toBool(val)])
+    // Inequalities
+    for (const op in inequalities) {
+      if (op in val) return params.push(
+        [`${title}.${key} ${whereOp[op as WhereOps]} ?`, val[op]]
+      )
+    }
+    
+    // Includes
+    if (whereOpPartial in val) {
+      val = val[whereOpPartial]
+        
+      if (schema[key].isBitmap && val != null)
+        return params.push([`${title}.${key} ${+val ? '&' : '=='} ?`, +val])
+  
+      if (isBool(schema[key]))
+        return params.push([`${title}.${key} == ?`, +toBool(val)])
+  
+      if (typeof val === 'string')
+        return params.push([`${title}.${key} LIKE ?`, `%${val}%`])
+    }
+    
 
-    if (typeof val === 'string')
-      return params.push([`${title}.${key} LIKE ?`, `%${val}%`])
-
-    // DEFAULT
+    // Default (Equals stringified value)
     params.push([
-      `${title}.${key} = ?`,
+      `${title}.${key} ${whereOp._eq} ?`,
       !val || typeof val === 'number' ? val : JSON.stringify(val)
     ])
   })
 
   return params
 }
+
+/** Convert standard Schema to All Partial Matches */
+export const toPartialMatch = <T extends object>(data: T): WhereData<object> =>
+  Object.entries(data).reduce<WhereData<object>>(
+    (where, [key,val]) => ({ ...where, [key]: { [whereOpPartial]: val } }),
+    {}
+  )
+
 
 
 export const isBool = ({ type, isArray }: Pick<Definition,'type'|'isArray'>) => type === 'boolean' && !isArray
@@ -137,7 +182,7 @@ export const isDbKey = <DBSchema extends SchemaBase, Schema extends SchemaBase>
 
 export function sanitizeSchemaData
   <Schema extends SchemaBase, DBSchema extends SchemaBase, T extends SchemaBase>
-  (data: T, { schema, children }: SanitModel<Schema, DBSchema> = {})
+  (data: T, { schema, children }: SanitModel<Schema, DBSchema> = {}): Sanitized<T, Schema, DBSchema>
 {
   const validKeys = schema && Object.keys(schema)
     .filter((key) => schema[key].db)
@@ -145,7 +190,10 @@ export function sanitizeSchemaData
 
   return Object.keys(data).reduce(
     (obj, key) =>
-      !validKeys || validKeys.includes(key) ? { ...obj, [key]: data[key] } : obj,
+      !validKeys || validKeys.includes(key)             ? { ...obj, [key]: data[key]                           } :
+      key === whereNot && typeof data[key] === 'object' ? { ...obj, [key]: sanitizeSchemaData(data[key] || {}) } :
+      key in whereLogic && Array.isArray(data[key])     ? { ...obj, [key]: data[key].map(sanitizeSchemaData)   } :
+        obj,
     {} as Sanitized<T, Schema, DBSchema>
   )
 }
@@ -281,5 +329,7 @@ export function setAdapterFromType<S extends SchemaBase, D extends SchemaBase>
 
 // TYPE HELPERS
 
-type Sanitized<T extends SchemaBase, Schema extends SchemaBase, DBSchema extends SchemaBase> = Pick<T, (keyof Schema | keyof SanitModel<Schema, DBSchema>['children']) & keyof T>
+type Sanitized<T extends SchemaBase, Schema extends SchemaBase, DBSchema extends SchemaBase> =
+  Pick<T, (keyof Schema | WhereLogic | WhereNot | keyof SanitModel<Schema, DBSchema>['children']) & keyof T>
+
 type SanitModel<Schema extends SchemaBase, DBSchema extends SchemaBase> = Partial<Pick<ModelBase<Schema, DBSchema>,'schema'|'children'>>

@@ -1,10 +1,12 @@
 import type Model from '../models/Model'
 import type { AdapterType, Definition, DefinitionSchema, SchemaBase, ArrayDefinitions, CommonDefinition } from '../types/Model.d'
+import type { WhereData, WhereDataValue } from '../types/db.d'
 import { hasDupes, isIn } from '../utils/common.utils'
 import { childLabel, adapterTypes } from '../types/Model'
 import { defaultPrimary, defaultPrimaryType, SQL_ID } from '../config/models.cfg'
 import { dbFromType, htmlFromType, getAdapterFromType, setAdapterFromType, stripPrimaryDef, sanitizeSchemaData } from '../utils/model.utils'
 import { parseTypeStr } from '../utils/validate.utils'
+import { whereLogic, whereNot, whereOp } from '../types/db'
 
 
 export function adaptSchemaEntry
@@ -65,6 +67,9 @@ export function getPrimaryIdAndAdaptSchema
 
 type RAModel<S extends SchemaBase, D extends SchemaBase> = Pick<Model<S,D>, 'schema'|'hidden'|'children'>
 
+const opType = (data: any) => typeof data !== 'object' || !data ? undefined :
+  Object.keys(whereOp).find((key) => key in data) as keyof typeof whereOp | undefined
+
 export async function runAdapters<S extends SchemaBase, D extends SchemaBase>(adapterType: typeof adapterTypes.set, data: S, model: RAModel<S,D>):
   Promise<D>;
 export async function runAdapters<S extends SchemaBase, D extends SchemaBase>(adapterType: typeof adapterTypes.get, data: D, model: RAModel<S,D>):
@@ -73,18 +78,29 @@ export async function runAdapters<S extends SchemaBase, D extends SchemaBase>(ad
   Promise<Partial<D>>;
 export async function runAdapters<S extends SchemaBase, D extends SchemaBase>(adapterType: typeof adapterTypes.get, data: Partial<D>, model: RAModel<S,D>):
   Promise<Partial<S>>;
-export async function runAdapters<S extends SchemaBase, D extends SchemaBase = S>(adapterType: AdapterType, data:  Partial<S & D>, model: RAModel<S,D>) {
+export async function runAdapters<S extends SchemaBase, D extends SchemaBase>(adapterType: typeof adapterTypes.set, data: WhereData<S>, model: RAModel<S,D>):
+  Promise<WhereData<D>>;
+export async function runAdapters<S extends SchemaBase, D extends SchemaBase>(adapterType: AdapterType, data: WhereData<S & D>, model: RAModel<S,D>):
+  Promise<Partial<WhereData<D> | S>>;
+export async function runAdapters<S extends SchemaBase, D extends SchemaBase = S>(adapterType: AdapterType, data: WhereData<S & D>, model: RAModel<S,D>) {
   let result: any = {}
 
-  await Promise.all(Object.keys(model.schema).map(async (key) => {
+  await Promise.all(Object.entries<WhereDataValue<S & D>>(data).map(async ([key,val]) => {
 
-    if (!isIn(key, data) || (adapterType === adapterTypes.get && model.hidden.includes(key))) return;
+    if (isIn(key, whereLogic) || key === whereNot) return Array.isArray(val) ?
+      Promise.all(val.map((d) => runAdapters(adapterType, d, model))) :
+      runAdapters(adapterType, val ?? {}, model)
+
+    if (!isIn(key, model.schema) || (adapterType === adapterTypes.get && model.hidden.includes(key))) return;
     
     const adapter = model.schema[key][adapterType]
-    if (typeof adapter !== 'function') return result[key] = data[key]
+    if (typeof adapter !== 'function') return result[key] = val
+
+    const opKey = opType(val)
+    const opVal: (S & D)[keyof (S & D)] = opKey ? (val as any)[opKey] : val
     
-    const adapterResult = await adapter(data[key], result)
-    result[key] = adapterResult ?? data[key]
+    const adapterResult = await adapter(opVal, result)
+    result[key] = opKey ? { [opKey]: adapterResult ?? opVal } : adapterResult ?? opVal
   }))
 
   return adapterType === adapterTypes.set ? sanitizeSchemaData(result, model) : result

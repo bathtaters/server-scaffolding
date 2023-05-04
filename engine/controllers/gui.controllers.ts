@@ -5,8 +5,9 @@ import { actions } from '../types/gui'
 
 import { matchedData } from 'express-validator'
 import Users from '../models/Users'
-import { getTableFields, varName, formatGuiData } from '../utils/gui.utils'
 import { guiAdapter } from '../services/users.services'
+import { getTableFields, varName, formatGuiData } from '../utils/gui.utils'
+import { toPartialMatch } from '../utils/model.utils'
 import { labelsByAccess, actionURLs } from '../utils/form.utils'
 import { tableFields, tooltips, profileActions } from '../config/users.cfg'
 import { noData } from '../config/errors.engine'
@@ -66,7 +67,8 @@ export function modelDb<M extends ModelGuiBase>(Model: M, {
     find: async (req, res, next) => {
       try {
         const searchData = matchedData(req)
-        const data = await Model.find(searchData, { partialMatch })
+        const whereData = partialMatch ? toPartialMatch(searchData) : {...searchData}
+        const data = await Model.find(whereData)
 
         const access = req.user?.access?.get(Model.title)
 
