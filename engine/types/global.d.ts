@@ -21,11 +21,24 @@ export type Recur<T, End = any> =
     End
 
 
-/** An object that requires AT LEAST ONE of the Keys */
-export type RequireOne<T, Keys extends keyof T = keyof T> =
+/** Require EXACTLY ONE of the given Keys */
+export type ExactlyOne<T, Keys extends keyof T = keyof T> =
+  Pick<T, Exclude<keyof T, Keys>> & {
+      [K in Keys]-?: Required<Pick<T, K>> & Partial<Record<Exclude<Keys, K>, never>>
+  }[Keys]
+
+/** Require AT MOST ONE of the given Keys */
+export type OneOrNone<T, Keys extends keyof T = keyof T> =
+  Pick<T, Exclude<keyof T, Keys>> & {
+      [K in Keys]-?: Partial<Pick<T, K> & Record<Exclude<Keys, K>, never>>
+  }[Keys]
+
+/** Require AT LEAST ONE of the given Keys */
+export type OneOrMore<T, Keys extends keyof T = keyof T> =
   Pick<T, Exclude<keyof T, Keys>> & {
       [K in Keys]-?: Required<Pick<T, K>> & Partial<Pick<T, Exclude<Keys, K>>>
   }[Keys]
+
 
 /** Add properties from type S to T, make any properties only on type S optional. */
 export type AddAsPartial<T, S> = T & Partial<Omit<S, keyof T>>

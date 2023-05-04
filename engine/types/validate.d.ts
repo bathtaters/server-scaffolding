@@ -1,5 +1,5 @@
 import type { baseTypes, typeSuffixes, requestFields } from "./validate"
-import type { RequireOne } from "./global.d"
+import type { OneOrMore } from "./global.d"
 
 /** Validation type of form: type*[]? (All suffixes are optional)
  *   - type = string, uuid, b64[url], hex, date, datetime, boolean, int, float, object, any
@@ -42,7 +42,7 @@ export type ValidationType = {
     hasSpaces?:   boolean,
 }
 
-export type ValidationTypeFull = RequireOne<Partial<ValidationType> & {
+export type ValidationTypeFull = OneOrMore<Partial<ValidationType> & {
     /** Validation type of form: type*[]? (All suffixes are optional)
     *   - type = string, uuid, b64[url], hex, date, datetime, boolean, int, float, object, any
     *   - [] = array of type
