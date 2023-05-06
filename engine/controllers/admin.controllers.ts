@@ -5,7 +5,7 @@ import { ModelAccess, Role } from '../types/Users'
 import { matchedData } from 'express-validator'
 import Users from '../models/Users'
 import { modelDb } from './gui.controllers'
-import { guiAdapter } from '../services/users.services'
+import { adminFormAdapter, guiAdapter } from '../services/users.services'
 import settingsActions from '../services/settings.form'
 import { getSettings, getForm, canUndo } from '../services/settings.services'
 import { getLogList, logFile } from '../services/log.services'
@@ -23,6 +23,7 @@ const logBaseURL = `${urls.prefix}${urls.logs}`
 export const userTable = modelDb(Users, {
   view: 'users',
   formatData: guiAdapter,
+  formatParams: adminFormAdapter,
   overrideDbParams: {
     title: 'Users',
     tooltips,

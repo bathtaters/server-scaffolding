@@ -89,7 +89,7 @@ export const countSQL = (tableName: string, whereParams: [string, any][] = []): 
 ]
 
 const paramsToSQL = (params: SQLParams): string[] => params.reduce<string[]>((sql, param) => {
-  if (0 in param) return sql.concat(param[0])
+  if (0 in param) return param[0] ? sql.concat(param[0]) : sql
 
   for (const [logic, paramArr] of Object.entries(param)) {
     if (paramArr) {

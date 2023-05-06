@@ -38,6 +38,15 @@ export default function BitMapFactory<Flag extends string>(flagList: readonly Fl
         /** Test if string is a valid Flag */
         static isIn(str: string): str is Flag { return str in this._intmap }
 
+        /** Construct from String representation (ignoreCharMap will interpret strings as full Flag names even if a charMap is present) */
+        static fromString(str: string | string[], ignoreCharMap = false) {
+            return new this(ignoreCharMap || !this.charMap ? this._fromString(str) : this._fromChars(str))
+        }
+        /** Construct from JSON representation */
+        static fromJSON(json: string)  {
+            if (isNaN(+json)) throw new Error(`Invalid number while parsing BitMap: ${json}`)
+            return new this(+json)
+        }
 
         //  **** INSTANCE **** \\
         private _value = 0
@@ -123,6 +132,16 @@ export default function BitMapFactory<Flag extends string>(flagList: readonly Fl
                 .reduce((int, flag) => int | this._toInt(flag), 0)
         }
 
+        /** Convert a string to a flagList using toString encoding */
+        private static _fromString(str: string | string[]): Flag[] {
+            if (Array.isArray(str)) return str.flatMap((s) => this._fromString(s))
+            if (this.isIn(str)) return [str]
+            if (str === this._empty) return []
+            if (str.includes(STR_DELIM)) return this._fromString(str.split(STR_DELIM))
+            if (!str) return []
+            throw new Error(`Unrecognized string while parsing BitMap: ${str}`)
+        }
+
         /** Convert a BitMap to a string using CharacterMap */
         private _toChars() {
             if (!BitMap.charMap) throw new Error(`Character Map is not defined for BitMap.chars`)
@@ -133,9 +152,10 @@ export default function BitMapFactory<Flag extends string>(flagList: readonly Fl
         }
         
         /** Convert a string to a flagList using CharacterMap */
-        private static _fromChars(chars: string) {
+        private static _fromChars(chars: string | string[]) {
             if (!this.charMap) throw new Error(`Character Map is not defined for BitMap.chars`)
 
+            if (Array.isArray(chars)) chars.join('')
             return (this.flags as Flag[])
                 .filter((flag) => this.charMap?.[flag] && chars.includes(this.charMap[flag]))
         }

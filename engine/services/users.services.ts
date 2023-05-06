@@ -79,7 +79,7 @@ export function guiAdapter(user: UsersUI | UsersUI[]): UsersHTML | UsersHTML[] {
 export function adminFormAdapter({ access, role, ...formData }: UsersHTML, _?: Express.User, action?: ProfileActions) {
   let adapted: Omit<UsersHTML, 'role'|'access'> & { role?: RoleType, access?: AccessType } = formData
   
-  if (role) adapted.role = new Role(role as any)
+  if (role) adapted.role = Role.fromString(role)
   if (access) adapted.access = typeof access === 'string' ? new ModelAccess([access]) : new ModelAccess(access)
 
   return confirmPassword(adapted, action)

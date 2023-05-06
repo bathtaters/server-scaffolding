@@ -159,8 +159,8 @@ export function getSqlParams<Schema extends SchemaBase, DBSchema extends SchemaB
 }
 
 /** Convert standard Schema to All Partial Matches */
-export const toPartialMatch = <T extends object>(data: T): WhereData<object> =>
-  Object.entries(data).reduce<WhereData<object>>(
+export const toPartialMatch = <T extends object>(data?: T): WhereData<object> | undefined =>
+  data && Object.entries(data).reduce<WhereData<object>>(
     (where, [key,val]) => ({ ...where, [key]: { [whereOpPartial]: val } }),
     {}
   )

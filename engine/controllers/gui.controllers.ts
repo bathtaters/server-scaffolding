@@ -34,6 +34,7 @@ export function modelDb<M extends ModelGuiBase>(Model: M, {
   partialMatch = true,
   overrideDbParams = {},
   formatData = formatGuiData,
+  formatParams = (p) => p,
 }: GuiOptions<any> = {}): Record<'model'|'find', Middleware> {
 
   const staticDbParams = {
@@ -66,16 +67,15 @@ export function modelDb<M extends ModelGuiBase>(Model: M, {
 
     find: async (req, res, next) => {
       try {
-        const searchData = matchedData(req)
-        const whereData = partialMatch ? toPartialMatch(searchData) : {...searchData}
-        const data = await Model.find(whereData)
+        const searchData = formatParams(matchedData(req), req.user, actions.find)
+        const data = await Model.find(partialMatch ? toPartialMatch(searchData) : searchData)
 
         const access = req.user?.access?.get(Model.title)
 
         return res.render(view, {
           ...staticDbParams,
           data: formatData(data, req.user),
-          searchData: formatData(searchData, req.user, actions.find),
+          searchData,
           buttons: labelsByAccess(access),
           user: req.user?.username,
           isAdmin: Role.map.admin.intersects(req.user?.role),

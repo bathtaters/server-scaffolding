@@ -8,7 +8,8 @@ export type GuiOptions<T extends Record<string,any>> = {
     view?: string,
     partialMatch?: boolean,
     overrideDbParams?: Record<string, any>,
-    formatData?: ControllerCallback<T>
+    formatData?: ControllerCallback<T>,
+    formatParams?: ControllerCallback<T>,
 }
 
 export type FormOptions<T extends Record<string,any>> = {
