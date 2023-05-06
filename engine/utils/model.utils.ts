@@ -112,7 +112,7 @@ export function getSqlParams<Schema extends SchemaBase, DBSchema extends SchemaB
 
     // Default Inequality (Equals)
     if (typeof val !== 'object')
-      return params.push([`${title}.${key} ${whereOp._eq} ?`, val])
+      return params.push([`${title}.${key} ${whereOp.$eq} ?`, val])
     
     // Nested Logic
     if (whereNot in val)
@@ -137,8 +137,11 @@ export function getSqlParams<Schema extends SchemaBase, DBSchema extends SchemaB
     if (whereOpPartial in val) {
       val = val[whereOpPartial]
         
-      if (schema[key].isBitmap && val != null)
-        return params.push([`${title}.${key} ${+val ? '&' : '=='} ?`, +val])
+      if (schema[key].isBitmap && val != null) {
+        const num = +val
+        params.push([`${title}.${key} ${num ? '& ? ==' : '=='} ?`, +val])
+        return num && params.push([null,+val])
+      }
   
       if (isBool(schema[key]))
         return params.push([`${title}.${key} == ?`, +toBool(val)])
@@ -150,7 +153,7 @@ export function getSqlParams<Schema extends SchemaBase, DBSchema extends SchemaB
 
     // Default (Equals stringified value)
     params.push([
-      `${title}.${key} ${whereOp._eq} ?`,
+      `${title}.${key} ${whereOp.$eq} ?`,
       !val || typeof val === 'number' ? val : JSON.stringify(val)
     ])
   })

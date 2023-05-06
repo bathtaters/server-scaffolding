@@ -26,12 +26,12 @@ export const foreignKeyActions = {
 
 /** Key to Where operation for a partial match,
  *  using these type-dependant rules:
- *   - Bitmap: Intersects with (Or equals, if zero) value
+ *   - Bitmap: Is superset of (Or equals, if zero) value
  *   - Boolean: Equals value after converting to boolean
  *   - String: Contains value as a substring
  *   - Number: (TODO) Is in range of value
 */
-export const whereOpPartial = '_in'
+export const whereOpPartial = '$in'
 
 /** Special operations for Where data
  *   - Using these keys, create a nested object under the schema key 
@@ -39,17 +39,17 @@ export const whereOpPartial = '_in'
  **/
 export const whereOp = {
     /** Greater than */
-    _gt:  '>',
+    $gt:  '>',
     /** Less than */
-    _lt:  '<',
+    $lt:  '<',
     /** Greater than or equal to */
-    _gte: '>=',
+    $gte: '>=',
     /** Less than or equal to */
-    _lte: '<=',
+    $lte: '<=',
     /** Equals */
-    _eq:  '==',
+    $eq:  '==',
     /** Partial match (Type dependant):
-     *   - Bitmap: Intersects with (Or equals, if zero) value
+     *   - Bitmap: Is superset of (Or equals, if zero) value
      *   - Boolean: Equals value after converting to boolean
      *   - String: Contains value as a substring
      *   - Number: (TODO) Is in range of value
@@ -58,21 +58,23 @@ export const whereOp = {
 } as const
 
 /** Matches inverse of contained rules */
-export const whereNot = '_not'
+export const whereNot = '$not'
 
 /** Joining logic for Where data
  *   - Value of the key should be an array of Where data
  *   - Base value if none given = AND
  **/
 export const whereLogic = {
-    _or:  'OR',
-    _and: 'AND',
+    $or:  'OR',
+    $and: 'AND',
 } as const
 
 /** Special operations for updating numeric values
  *   - Value should be amount to increment/decrement by
  */
 export const updateNumberOp = {
-    _inc: '+',
-    _dec: '-',
+    /** Increment */
+    $inc: '+',
+    /** Decrement */
+    $dec: '-',
 }
