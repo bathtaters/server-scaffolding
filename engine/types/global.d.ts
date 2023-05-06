@@ -43,9 +43,31 @@ export type OneOrMore<T, Keys extends keyof T = keyof T> =
 /** Add properties from type S to T, make any properties only on type S optional. */
 export type AddAsPartial<T, S> = T & Partial<Omit<S, keyof T>>
 
-/** All possible results of 'typeof' operator */
-export type TypeOf = "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function"
-    
-// -- TYPESCRIPT FIXES -- \\
+
+/** Convet from a Type into a string of that type */
+export type TypeOf<T = any> =
+  (T extends boolean   ? "boolean"   : never) |
+  (T extends string    ? "string"    : never) |
+  (T extends number    ? "number"    : never) |
+  (T extends bigint    ? "bigint"    : never) |
+  (T extends symbol    ? "symbol"    : never) |
+  (T extends object    ? "object"    : never) |
+  (T extends Function  ? "function"  : never) |
+  (T extends undefined ? "undefined" : never) |
+    never
+
+
+/** Convert from 'typeof' operator result string to type */
+export type TypeStr<T extends string> =
+  T extends "boolean"   ? boolean   :
+  T extends "string"    ? string    :
+  T extends "number"    ? number    :
+  T extends "bigint"    ? bigint    :
+  T extends "symbol"    ? symbol    :
+  T extends "object"    ? object    :
+  T extends "function"  ? Function  :
+  T extends "undefined" ? undefined :
+    any
+
 
 // TODO -- add ts-reset

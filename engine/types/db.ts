@@ -1,3 +1,5 @@
+import type { TypeOf, TypeStr } from "./global.d"
+
 export const sqlTypes = {
     Text:   "TEXT",
     Int:    "INTEGER",
@@ -69,12 +71,45 @@ export const whereLogic = {
     $and: 'AND',
 } as const
 
-/** Special operations for updating numeric values
- *   - Value should be amount to increment/decrement by
- */
-export const updateNumberOp = {
-    /** Increment */
-    $inc: '+',
-    /** Decrement */
-    $dec: '-',
+/** Special operations for updating values in database
+ *   - Only applied if value type matches cooresponding key (ie. 'number')
+ *   - Will not work on child tables (ie. array entries) */
+export const updateOps = {
+    /** Operations for Numeric data (Including Bitmaps) */
+    number: {
+        /** Increment */
+        $inc: '+',
+        /** Decrement */
+        $dec: '-',
+        /** Bitwise AND (Mask value) */
+        $mask: '&',
+        /** Bitwise OR (Add to Bitmap) */
+        $or:  '|',
+        /** Bitwise Exclusive OR */
+        $xor:  '^',
+    },
+} as const
+
+
+/** Related functions of updateOps */
+export const updateFunctions: UpdateFunc<typeof updateOps> = {
+    number: {
+        $inc:  (value, amount) => value + amount,
+        $dec:  (value, amount) => value - amount,
+        $mask: (value, amount) => value & amount,
+        $or:   (value, amount) => value | amount,
+        $xor:  (value, amount) => value ^ amount,
+    },
 }
+
+
+export const allOps = [
+    ...Object.keys(whereOp),
+    ...Object.values(updateOps).flatMap((op) => Object.keys(op)),
+]
+
+
+/** Enforces creation of a valid update function for each update op */
+type UpdateFunc<T extends Record<string,Record<string, any>>> = {
+    [K in keyof T & string]: Record<keyof T[K], (a: TypeStr<K>, b: TypeStr<K>) => TypeStr<K>>
+} & Omit<Partial<Record<TypeOf,undefined>>, keyof T>

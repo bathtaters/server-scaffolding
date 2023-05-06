@@ -2,7 +2,8 @@ import type {
   Feedback, ForeignKeyRef, ArrayDefinition, ArrayDefinitions, SchemaBase, DefinitionSchema,
   Defaults, SQLOptions, Page, SQLSchema, FindResult, SelectResult
 } from '../types/Model.d'
-import type { IfExistsBehavior, WhereData } from '../types/db.d'
+import type { IfExistsBehavior, UpdateData, WhereData } from '../types/db.d'
+import logger from '../libs/log'
 import { childLabel, adapterTypes } from '../types/Model'
 import { ifExistsBehaviors } from '../types/db'
 import { openDb, getDb } from '../libs/db'
@@ -12,10 +13,9 @@ import { checkInjection, appendAndSort, insertSQL, selectSQL, countSQL, updateSQ
 import { caseInsensitiveObject, mapToField, isIn } from '../utils/common.utils'
 import { sanitizeSchemaData, childTableRefs, isDbKey, getSqlParams, childSQL, splitKeys } from '../utils/model.utils'
 import { getChildName, getChildPath } from '../config/models.cfg'
-import { noID, noData, noEntry, noPrimary, noSize, badKey, multiAction } from '../config/errors.engine'
+import { noID, noData, noEntry, noPrimary, noSize, badKey, multiAction, updatePrimary } from '../config/errors.engine'
 
 // TODO -- Use 'default' and 'isOptional' to generate InputSchema, DBSchema & OutputSchema types w/ correct optionals
-// TODO -- Add 'increment'/'decrement' options to updates
 // TODO -- Make _delete/batchDelete use Where value instead of ID array
 // TODO -- Test Arrays!! (These were not tested since migrating to TypeScript)
 
@@ -232,7 +232,7 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
    * @returns Object: { success: true/false }
    */
   async update<ID extends keyof (Schema | DBSchema) & string>(
-    id: Schema[ID], data: Partial<Schema>, { idKey, ...options }: { idKey?: ID } & SQLOptions<DBSchema> = {}
+    id: Schema[ID], data: UpdateData<Schema>, { idKey, ...options }: { idKey?: ID } & SQLOptions<DBSchema> = {}
   ) {
     if (id == null) throw noID()
 
@@ -256,7 +256,7 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
    *  - Returns: New value for "update" OR mutates update within function
    * @returns Object: { success: true/false }
    */
-  async batchUpdate(where: WhereData<Schema>, data: Partial<Schema>, options: SQLOptions<DBSchema> = {}): Promise<Feedback> {
+  async batchUpdate(where: WhereData<Schema>, data: UpdateData<Schema>, options: SQLOptions<DBSchema> = {}): Promise<Feedback> {
     return this._update(data, where, options).then((success) => ({ success }))
   }
   
@@ -328,11 +328,11 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
 
   /** Run SELECT query using WHERE data & SQL Options (WHERE is RAW DB VALUES) */
   private async _selectRaw<O extends SQLOptions<DBSchema>>(where: WhereData<DBSchema> | undefined, options: O): SelectResult<O, DBSchema> {
-
-    const params = getSqlParams(this, where)
     
     const result = await all(getDb(), ...selectSQL(
-      this.title, this.primaryId, params,
+      this.title,
+      this.primaryId,
+      getSqlParams(this, where),
       options.skipChildren ? Object.keys(this.children) : [],
       options.orderKey
     ))
@@ -358,7 +358,7 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
   /** Execute INSERT command using DATA values, IFEXISTS behavior if matching record exists,
    * and returning last record if RETURNLAST is true (Otherwise it returns TRUE/FALSE if successful) */
   private async _insert(data: Schema[], ifExists: IfExistsBehavior, returnLast: false): Promise<boolean>;
-  private async _insert(data: Schema[], ifExists: IfExistsBehavior, returnLast:  true): Promise<DBSchema>;
+  private async _insert(data: Schema[], ifExists: IfExistsBehavior, returnLast: true):  Promise<DBSchema>;
   private async _insert(data: Schema[], ifExists: IfExistsBehavior, returnLast: boolean): Promise<DBSchema|boolean>;
   private async _insert(data: Schema[], ifExists: IfExistsBehavior, returnLast: boolean): Promise<DBSchema|boolean> {
     if (!data.length) throw noData('batch data')
@@ -390,7 +390,7 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
 
   /** Execute UPDATE command using DATA values on records match WHERE values
    *  and calling ONCHANGE if provided (Returns TRUE/FALSE if successful) */
-  private async _update(data: Partial<Schema>, where: WhereData<Schema>, { onChange }: SQLOptions<DBSchema>) {
+  private async _update(data: UpdateData<Schema>, where: WhereData<Schema>, { onChange }: SQLOptions<DBSchema>) {
     
     // Adapt/Sanitize data
     const whereData = await runAdapters(adapterTypes.set, where, this)
@@ -409,23 +409,34 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
       ids = currentData.map((entry) => entry[this.primaryId]).filter((id) => id != null)
       if (!ids.length) throw noEntry(JSON.stringify(whereData))
 
+      if (ids.length > 1) logger.verbose(`ALERT! Updating ${ids.length} rows of table ${this.title} with one statement.`)
+
       if (onChange) {
         // Run onChange callback here to avoid re-fetching 'currentData'
         const changed = await onChange(updateData, currentData as DBSchema[])
         if (changed) updateData = changed
-        updateData = sanitizeSchemaData(updateData, this) as Partial<DBSchema>
+        updateData = sanitizeSchemaData(updateData, this) as UpdateData<DBSchema>
       }
     }
+
+    // Final error check
+    if (!Object.keys(updateData).length) throw noData()
+    if (this.primaryId in updateData)    throw updatePrimary(this.primaryId, this.title)
     
     // Update DB
     const keys = splitKeys(updateData, this.children)
     if (!keys.parent.length && !keys.children.length) throw noData('update data after onChangeCallback')
 
-    if (keys.parent.length) await run(getDb(), ...updateSQL(this.title, updateData, keys.parent, whereData))
+    if (keys.parent.length) await run(getDb(), ...updateSQL(
+      this.title,
+      updateData,
+      keys.parent,
+      getSqlParams(this, whereData)
+    ))
 
     if (keys.children.length) await run(getDb(), ...childSQL(
       this.title,
-      [updateData],
+      ids.map((id) => ({ ...updateData, [this.primaryId]: id })),
       keys.children,
       this.primaryId,
       ifExistsBehaviors.abort,

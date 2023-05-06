@@ -1,7 +1,7 @@
 import type { adapterTypes, childLabel } from './Model'
 import type { HTMLType } from './gui.d'
 import type { ValidationTypeFull } from './validate.d'
-import type { SQLTypeFull, ForeignKeyAction } from './db.d'
+import type { SQLTypeFull, ForeignKeyAction, UpdateData, WhereData, WhereDataValue, UpdateDataValue } from './db.d'
 
 // TODO -- Add a type "ModelName" that is the name of any model in allModels (Use with ModelAccess)
 // TODO -- Organize types into namespaces
@@ -88,7 +88,8 @@ export type Defaults<Schema extends SchemaBase, DBSchema extends SchemaBase> = P
 export type Feedback = { success: boolean }
 
 export type ChangeCallback<DBSchema extends SchemaBase> =
-  (update: Partial<DBSchema>, matching: DBSchema[]) => Promise<Partial<DBSchema> | void> | Partial<DBSchema> | void
+  (update: UpdateData<DBSchema>, matching: DBSchema[]) =>
+    Promise<UpdateData<DBSchema> | void> | UpdateData<DBSchema> | void
 
 /** { orderKey?: keyof Schema, onChange?: ChangeCallback<Schema>, raw?: bool, skipChildren?: bool } */
 export type SQLOptions<Schema extends SchemaBase> = {
@@ -167,3 +168,6 @@ export type Adapter<Key extends keyof SchemaIn, SchemaIn extends SchemaBase, Sch
 
 
 export type AdapterType = typeof adapterTypes[keyof typeof adapterTypes]
+
+export type AdapterData<S extends SchemaBase> = S | Partial<S> | WhereData<S> | UpdateData<S>
+export type AdapterDataValue<S extends SchemaBase> = WhereDataValue<S> | UpdateDataValue<S>

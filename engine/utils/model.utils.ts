@@ -37,12 +37,6 @@ export const splitKeys = (data: any, childSchema: any) => {
   }
 }
 
-/** Get an Updater Callback that will increment the given key */
-export const incrementCb = <Schema extends SchemaBase>(key: keyof Schema & string): ChangeCallback<Schema> => (update, matching) => ({
-  ...update,
-  [key]: (matching[0]?.guiCount || 0) + 1,
-})
-
 
 /** Generate SQL and Params for inserting one or more children.
  *   - If primaryKey is a number, this will be treated as an auto-incrementing rowId

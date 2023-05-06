@@ -1,6 +1,6 @@
 import type { UsersDB, UsersUI, GetOptions, UpdateOptions, TimestampType, RoleType } from '../types/Users.d'
 import type { SQLOptions } from '../types/Model.d'
-import type { IfExistsBehavior } from '../types/db.d'
+import type { IfExistsBehavior, UpdateData } from '../types/db.d'
 import { Role, timestamps } from '../types/Users'
 import Model from './Model'
 import logger from '../libs/log'
@@ -8,11 +8,10 @@ import { now } from '../libs/date'
 import { addAdapter, initAdapters } from '../services/users.services'
 import { definition, rateLimiter, passwordRoles, illegalUsername } from '../config/users.cfg'
 import { generateToken, testPassword, isLocked, isPastWindow } from '../utils/auth.utils'
-import { incrementCb } from '../utils/model.utils'
 import { hasDupes, isIn } from '../utils/common.utils'
 import { isPm2 } from '../config/meta'
 import { badUsername, noData, usernameMessages, deleteAdmin, badKey, noID, noEntry } from '../config/errors.engine'
-import { runAdapters } from '../services/model.services'
+import { projectedValue, runAdapters } from '../services/model.services'
 import { adapterTypes } from '../types/Model'
 
 
@@ -128,7 +127,7 @@ class User extends Model<UsersUI, UsersDB> {
       .then((errMsg) => { if (errMsg) throw badUsername(username, errMsg) })
   }
 
-  async incFailCount(userData?: Partial<UsersDB>, { reset, idKey, onChange }: UpdateOptions = {}) {
+  async incFailCount(userData?: Partial<UsersDB>, { reset, idKey, counter, ...options }: UpdateOptions = {}) {
     let user = userData
     if (user && idKey) {
       if (!(idKey in user)) throw noID()
@@ -137,15 +136,17 @@ class User extends Model<UsersUI, UsersDB> {
 
     if (!user) throw userData ? noEntry(userData[idKey || this.primaryId]) : noID()
     
-    const newData: Partial<UsersUI> =
+    let newData: UpdateData<UsersUI> =
       reset              ? { failCount: 0, failTime: undefined,  locked: false } : // TODO: Test that UNDEFINED works like NULL here
       isPastWindow(user) ? { failCount: 1, failTime: new Date(), locked: false } : {
-        failCount: (user.failCount || 0) + 1,
+        failCount: { $inc: 1 },
         failTime: new Date(),
         locked: isLocked(user)
       }
     
-    return super.update(user[this.primaryId], newData, { onChange })
+    if (counter) newData[`${counter}Count`] = { $inc: 1 }
+    
+    return super.update(user[this.primaryId], newData, options)
   }
 
 
@@ -156,13 +157,11 @@ class User extends Model<UsersUI, UsersDB> {
     if (!timestamp || !isIn(this.primaryId, userData) || !userData[this.primaryId])
       return false
 
-    const counter: Partial<UsersUI> = ignoreCounter ? {} : {
-      [`${timestamp}Count`]: (userData[`${timestamp}Count`] || 0) + 1
-    }
-    return super.update(userData[this.primaryId], {
-      [`${timestamp}Time`]: now(),
-      ...counter,
-    }).then(({ success }) => success)
+    let data: UpdateData<UsersUI> = { [`${timestamp}Time`]: now() }
+    if (!ignoreCounter) data[`${timestamp}Count`] = { $inc: 1 }
+
+    return super.update(userData[this.primaryId], data)
+      .then(({ success }) => success)
   }
 
 
@@ -186,24 +185,26 @@ class User extends Model<UsersUI, UsersDB> {
     return userData
   }
 
-  private async _updateCb(newData: Partial<UsersDB>, matchingData: UsersDB[])  {
-    const oldData = matchingData[0]
+  private async _updateCb(newData: UpdateData<UsersDB>, matchingData: UsersDB[])  {
+    const oldData = matchingData[0],    
+      newRole   = newData.role   != null ? projectedValue(oldData.role,   newData.role)   : oldData.role,
+      newLocked = projectedValue(oldData.locked, newData.locked)
 
-    if ('role' in newData && newData.role !== oldData.role) {
-      if (!oldData.password && !newData.password && passwordRoles.intersects(newData.role))
+    if (newRole !== oldData.role) {
+      if (!oldData.password && !newData.password && passwordRoles.intersects(newRole))
         throw noData('password for GUI access')
 
-      if (Role.map.admin.intersects(oldData.role) && !Role.map.admin.intersects(newData.role))
+      if (Role.map.admin.intersects(oldData.role) && !Role.map.admin.intersects(newRole))
         await this.throwLastAdmins(matchingData.map((u) => u.id), 'id')
     }
     
     if (newData.username)
-      await this.throwInvalidUsername(newData.username, oldData.id)
+      await this.throwInvalidUsername(projectedValue(oldData.username, newData.username), oldData.id)
 
-    if (oldData.locked && !newData.locked) {
+    if (oldData.locked && !newLocked) {
       newData.failCount = 0
       newData.failTime = undefined // TODO: Test that UNDEFINED works like NULL here
-    } else if (!oldData.locked && newData.locked) {
+    } else if (!oldData.locked && newLocked) {
       newData.failCount = rateLimiter.maxFails
       newData.failTime = now()
     }
@@ -211,8 +212,8 @@ class User extends Model<UsersUI, UsersDB> {
 
   private async _passwordCb(isMatch: boolean, userData: Partial<UsersDB>) {
     await this.incFailCount(userData, {
-      reset: isMatch,
-      onChange: isMatch ? incrementCb('guiCount') : undefined
+      reset:   isMatch,
+      counter: isMatch ? 'gui' : undefined
     })
   }
 }

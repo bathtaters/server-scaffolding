@@ -54,4 +54,4 @@ type TimestampCounts = { [T in TimestampType as `${T}Count`]+?: number }
 type TimestampHTML   = { [T in TimestampType as `${T}Time`]+?:  string }
 
 export type GetOptions<ID extends string = keyof (UsersUI | UsersDB) & string> = { idKey?: ID, timestamp?: TimestampType, ignoreCounter?: boolean } & SQLOptions<UsersDB>
-export type UpdateOptions<ID extends string = keyof (UsersUI | UsersDB) & string> = { idKey?: ID, reset?: boolean } & SQLOptions<UsersDB>
+export type UpdateOptions<ID extends string = keyof (UsersUI | UsersDB) & string> = { idKey?: ID, reset?: boolean, counter?: TimestampType } & SQLOptions<UsersDB>

@@ -1,9 +1,11 @@
-import type { IfExistsBehavior, SQLParams, WhereLogic } from '../types/db.d'
+import type { AllOps, IfExistsBehavior, SQLParams, UpdateData, WhereLogic } from '../types/db.d'
 import { childLabel } from '../types/Model'
+import logger from '../libs/log'
 import { getChildName, CONCAT_DELIM, SQL_ID, ifExistsBehavior } from '../config/models.cfg'
 import { illegalKeyName, illegalKeys } from '../config/validate.cfg'
 import { sqlInjection } from '../config/errors.engine'
-import { whereLogic } from '../types/db'
+import { allOps, updateOps, whereLogic } from '../types/db'
+import { isIn } from './common.utils'
 
 
 export const checkInjection = <T = any>(val: T, tableName = ''): T => {
@@ -24,6 +26,11 @@ export const extractId = <O extends Record<string|number,any>, ID extends keyof 
     delete data[idKey]
     return [id, data]
   }
+
+
+/** Determine which Operation (if any) is being used on the data */
+export const getOpType = <T>(data: T) => typeof data !== 'object' || !data ? undefined :
+  Object.keys(allOps).find((key) => key in data) as AllOps
 
 
 const sortAlgo = (a: number, b: number) => a - b
@@ -88,12 +95,12 @@ export const countSQL = (tableName: string, whereParams: [string, any][] = []): 
   whereParams.map((params) => params[1])
 ]
 
-const paramsToSQL = (params: SQLParams): string[] => params.reduce<string[]>((sql, param) => {
+const whereCmds = (params: SQLParams): string[] => params.reduce<string[]>((sql, param) => {
   if (0 in param) return param[0] ? sql.concat(param[0]) : sql
 
   for (const [logic, paramArr] of Object.entries(param)) {
     if (paramArr) {
-      const nestedArr = paramsToSQL(paramArr)
+      const nestedArr = whereCmds(paramArr)
       if (nestedArr.length)
         return sql.concat(`(${nestedArr.join(` ${whereLogic[logic as WhereLogic]} `)})`)
     }
@@ -101,13 +108,26 @@ const paramsToSQL = (params: SQLParams): string[] => params.reduce<string[]>((sq
   return sql
 }, [])
 
-const paramsToValues = (params: SQLParams): any[] => params.flatMap((param) => {
+const whereValues = (params: SQLParams): any[] => params.flatMap((param) => {
   if (1 in param) return [param[1]]
   for (const paramArr of Object.values(param)) {
-    if (paramArr) return paramsToValues(paramArr)
+    if (paramArr) return whereValues(paramArr)
   }
   return []
 })
+
+const updateParams = (key: string, value: any): [string,any] => {
+  if (typeof value === 'object' && value != null && !Array.isArray(value)) {
+    for (const [op, paramValue] of Object.entries(value)) {
+      const valType = typeof paramValue
+  
+      if (isIn(valType, updateOps) && isIn(op, updateOps[valType]))
+        return [`${key} = ${key} ${updateOps[valType][op]} ?`, paramValue]
+    }
+  }
+
+  return [`${key} = ?`, value] // Default
+}
 
 
 export const selectSQL = (
@@ -117,14 +137,14 @@ export const selectSQL = (
 
   `${getArrayJoin(tableName, primaryId, arrayTables)
   } ${
-    whereParams.length ? 'WHERE ' : ''}${paramsToSQL(whereParams).join(' AND ')
+    whereParams.length ? `WHERE ${whereCmds(whereParams).join(' AND ')}` : ''
   }${
-    !orderBy ? '' : ` ORDER BY ${tableName}.${orderBy || primaryId} ${desc ? 'DESC' : 'ASC'}`
+    orderBy ? ` ORDER BY ${tableName}.${orderBy} ${desc ? 'DESC' : 'ASC'}` : ''
   }${
     limit ? ' LIMIT ? OFFSET ?' : ''
   }`,
 
-  [ ...paramsToValues(whereParams), ...(limit ? [limit, page * limit] : []) ]
+  [ ...whereValues(whereParams), ...(limit ? [limit, page * limit] : []) ]
 ]
 
 
@@ -142,21 +162,24 @@ export const insertSQL = <T>(
   dataArray.flatMap((data) => keys.map((key) => data[key]))
 ]
 
-export const updateSQL = <K extends string>(
-  tableName: string, updateData: Record<K,any>,
-  updateKeys: K[], whereObject: Record<string,any>
-): [string, any[]] => {
 
-  const whereKeys = Object.keys(whereObject)
+export const updateSQL = <K extends string>(
+  tableName: string, updateData: UpdateData<Record<K,any>>,
+  updateKeys: K[],   whereParams: SQLParams,
+): [string, any[]] => {
+  
+  if (!whereParams.length) logger.verbose(`ALERT! Updating ${tableName} table values without WHERE clause.`)
+
+  const updateSql = updateKeys.map((k) => updateParams(k, updateData[k]))
 
   return [
     `UPDATE ${tableName} SET ${
-      updateKeys.map(k => `${k} = ?`).join(',')
-    } WHERE ${
-      whereKeys.map((k) => `${k} = ?`).join(' AND ')
+      updateSql.map(([s]) => s).join(',')
+    } ${
+      whereParams.length ? `WHERE ${whereCmds(whereParams).join(' AND ')}` : ''
     }`,
 
-    [ ...updateKeys.map((k) => updateData[k]), ...whereKeys.map((k) => whereObject[k]) ]
+    [ ...updateSql.map(([_,p]) => p), ...whereValues(whereParams) ]
   ]
 }
 
