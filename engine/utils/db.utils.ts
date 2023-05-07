@@ -34,7 +34,7 @@ export const extractId = <O extends Record<string|number,any>, ID extends keyof 
 
 /** Determine which Operation (if any) is being used on the data */
 export const getOpType = <T>(data: T) => typeof data !== 'object' || !data ? undefined :
-  Object.keys(allOps).find((key) => key in data) as AllOps
+  allOps.find((key) => key in data) as AllOps
 
 
 const sortAlgo = (a: number, b: number) => a - b
