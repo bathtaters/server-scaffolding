@@ -6,7 +6,7 @@ mixin typedInp(key, inpType, limits, defaultValue, classes, readonly)
   else if isNaN(inpType)
     input(
       name=key id=key class=classes readonly=(inpType === 'readonly' || readonly)
-      value=(inpType !== 'checkbox' ? defaultValue : undefined)
+      value=(inpType === 'checkbox' ? undefined : Array.isArray(defaultValue) ? defaultValue.join(', ') : defaultValue)
       checked=(inpType === 'checkbox' ? defaultValue : undefined)
       type=(inpType === 'id' ? "number" : inpType === 'readonly' ? "text" : inpType)
       step=(inpType === 'number' ? "any" : inpType === 'id' ? "1" : undefined)
