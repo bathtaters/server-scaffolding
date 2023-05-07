@@ -32,3 +32,14 @@ export type Middleware = <
   res: Response<ResBody,Locals>,
   next: Next,
 ) => void
+
+export type Endware<ResBody> = <
+  Params extends ParamsDictionary = ParamsDictionary,
+  ReqBody = any,
+  Query extends ParsedQuery = ParsedQuery,
+  Locals extends Record<string, any> = Record<string, any>
+>(
+  req: Request<Params,ResBody,ReqBody,Query,Locals>,
+  res: Response<ResBody,Locals>,
+  next: Next,
+) => void

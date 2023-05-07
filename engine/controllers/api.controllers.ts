@@ -1,11 +1,12 @@
-import type { ModelBase } from '../models/Model'
-import type { Middleware } from '../types/express.d'
+import type Model from '../models/Model'
+import type { Feedback } from '../types/Model.d'
+import type { Endware } from '../types/express.d'
 import { matchedData } from 'express-validator'
 import * as errors from '../config/errors.engine'
 import { getMatchingKey } from '../utils/common.utils'
 
 
-export const create = <M extends ModelBase>(Model: M): Middleware =>
+export const create = <M extends Model<any>>(Model: M): Endware<M extends Model<infer S> ? S : never> =>
   function create(req,res,next) {
     const data = matchedData(req)
     if (!data || !Object.keys(data).length) return next(errors.noData())
@@ -15,7 +16,7 @@ export const create = <M extends ModelBase>(Model: M): Middleware =>
   }
 
 
-export const read = <M extends ModelBase>(Model: M): Middleware =>
+export const read = <M extends Model<any>>(Model: M): Endware<M extends Model<infer S> ? S | S[] : never> =>
   async function read(req,res,next) {
     const id = matchedData(req)[Model.primaryId]
 
@@ -25,30 +26,30 @@ export const read = <M extends ModelBase>(Model: M): Middleware =>
   }
 
 
-export const update = <M extends ModelBase>(Model: M): Middleware =>
+export const update = <M extends Model<any>>(Model: M): Endware<Feedback> =>
   async function update(req,res,next) {
     const data = matchedData(req)
     if (data[Model.primaryId] == null) return next(errors.noID())
     if (!data || !Object.keys(data).length) return next(errors.noData())
 
     return Model.update(data[Model.primaryId], data)
-      .then((fdbk) => res.send(fdbk as any))
+      .then((fdbk) => res.send(fdbk))
       .catch(next)
   }
 
 
-export const remove = <M extends ModelBase>(Model: M): Middleware =>
+export const remove = <M extends Model<any>>(Model: M): Endware<Feedback> =>
   async function remove(req,res,next) {
     const id = matchedData(req)[Model.primaryId]
     if (id == null) return next(errors.noID())
 
     return Model.remove(id)
-      .then((fdbk) => res.send(fdbk as any))
+      .then((fdbk) => res.send(fdbk))
       .catch(next)
   }
 
 
-export const swap = <M extends ModelBase>(Model: M): Middleware =>
+export const swap = <M extends Model<any>>(Model: M): Endware<Feedback> =>
   async function swap(req,res,next) {
     const data = matchedData(req)
     
@@ -56,6 +57,6 @@ export const swap = <M extends ModelBase>(Model: M): Middleware =>
     if (!idKey) return next(errors.noID())
     
     return Model.swap(data[idKey], data.swap)
-      .then((fdbk) => res.send(fdbk as any))
+      .then((fdbk) => res.send(fdbk))
       .catch(next)
   }
