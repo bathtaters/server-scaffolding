@@ -47,7 +47,8 @@ export const childSQL = <T>(
   primaryKey: keyof T | number, ifExists: IfExistsBehavior, overwriteChild = false
 ) =>
   childKeys.flatMap((key) => {
-    const foreignIds: any[] = []
+    const childTable = getChildName(tableName, key)
+    let foreignIds: any[] = []
 
     const entries = propertyIsChild(childData, key).flatMap((data, i) => {
       const foreignId = typeof primaryKey !== 'number' ? data[primaryKey] : primaryKey + i + 1
@@ -60,28 +61,22 @@ export const childSQL = <T>(
       }))
     })
     
-    if (!entries.length) return []
+    const overwriteSQL = overwriteChild && foreignIds.length && deleteSQL(
+      childTable,
+      foreignIds.map((id, idx) => [
+        !idx ? `${childLabel.foreignId} IN (${foreignIds.map(() => '?').join(',')})` : '',
+        id
+      ])
+    )
+    if (!entries.length) return overwriteSQL ? [overwriteSQL] : []
 
-    const childTable = getChildName(tableName, key)
-
-    const insert = insertSQL(
+    const addSQL = insertSQL(
       childTable,
       entries,
       Object.values(childLabel),
       ifExists
     )
-    if (!overwriteChild) return [insert]
-
-    return [
-      deleteSQL(
-        childTable,
-        foreignIds.map((id, idx) => [
-          !idx ? `${childLabel.foreignId} IN (${foreignIds.map(() => '?').join(',')})` : null,
-          id
-        ])
-      ),
-      insert,
-    ]
+    return overwriteSQL ? [overwriteSQL, addSQL] : [addSQL]
   })
 
 
@@ -178,7 +173,7 @@ export const isBool = ({ type, isArray }: Pick<Definition,'type'|'isArray'>) => 
 /** Filter an array of objects, keeping objects where the given property is an array. */
 export const propertyIsChild = <O, P extends keyof O>(arrayOfObjects: O[], property: P) =>
   arrayOfObjects.filter(
-    (obj) => Array.isArray(obj[property]) && (obj[property] as any[]).length
+    (obj) => Array.isArray(obj[property])
   ) as (O & { [property in P]: any[] })[]
 
 export const isDbKey = <DBSchema extends SchemaBase, Schema extends SchemaBase>
