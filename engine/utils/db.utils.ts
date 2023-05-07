@@ -94,22 +94,46 @@ export const getArrayJoin = (
 
 ) => !children.length ?
 
-  `SELECT ${primaryId === SQL_ID ? 'rowid, ' : ''}* FROM ${table}${id == null ? '' : ` WHERE ${idKey || primaryId} = ?`}` :
+  `SELECT ${primaryId === SQL_ID ? 'rowid, ' : ''}* FROM ${table}${
+    id == null ? '' : ` WHERE ${idKey || primaryId} = ?`
+  }` :
 
-  `SELECT ${primaryId === SQL_ID ? `${table}.rowid, ` : ''}${[`${table}.*`].concat(children.map((key) => `_children.${key}`)).join(', ')}
-    FROM ${table} LEFT JOIN (
-      SELECT ${[childLabel.foreignId as string].concat(children.map((key) => `GROUP_CONCAT(${table}_${key}, '${CONCAT_DELIM}') ${key}`)).join(', ')} FROM (${
-        children.map((key) => `SELECT ${[childLabel.foreignId, childLabel.index as string].concat(children.map((subKey) =>
-          `${key === subKey ? childLabel.value : 'NULL'} AS ${table}_${subKey}`
-        )).join(', ')} FROM ${getChildName(table, key)}`).join(`
-        UNION ALL
-        `)
-      }
-      ORDER BY ${[childLabel.foreignId, childLabel.index].join(', ')})
-    GROUP BY ${childLabel.foreignId}) _children ON _children.${childLabel.foreignId} = ${table}.${primaryId}
-    ${id == null ? '' :
-    `WHERE ${!idIsArray || Array.isArray(id) ? idKey || primaryId : primaryId} = ${!idIsArray || Array.isArray(id) ? '?' : 
-    `(SELECT ${childLabel.foreignId} FROM ${getChildName(table, idKey || primaryId)} WHERE ${childLabel.value} = ?)`}`
+  `SELECT ${primaryId === SQL_ID ? `${table}.rowid, ` : ''}${
+    [`${table}.*`].concat(children.map((key) => `_children.${key}`)).join(', ')
+  } FROM ${table} LEFT JOIN (\n  SELECT ${
+    [
+      childLabel.foreignId,
+      ...children.map((key) => `GROUP_CONCAT(${table}_${key}, '${CONCAT_DELIM}') ${key}`)
+    ].join(', ')
+  } FROM (${
+    children.map((key) =>
+      `\n    SELECT ${[
+        childLabel.foreignId, childLabel.index,
+        ...children.map((subKey) => `${key === subKey ? childLabel.value : 'NULL'} AS ${table}_${subKey}`)
+      ].join(', ')} FROM ${
+        getChildName(table, key)
+      }`
+    ).join(`\n     UNION ALL`)
+
+  }\n    ORDER BY ${
+    [childLabel.foreignId, childLabel.index].join(', ')
+
+  }\n  )\n  GROUP BY ${
+    childLabel.foreignId
+
+  }\n) _children ON _children.${
+    childLabel.foreignId} = ${table}.${primaryId
+  }${
+
+    id == null ? '' :
+      ` WHERE ${
+        !idIsArray || Array.isArray(id) ? idKey || primaryId : primaryId
+      } = ${
+        !idIsArray || Array.isArray(id) ? '?' : 
+          `(SELECT ${childLabel.foreignId} FROM ${
+            getChildName(table, idKey || primaryId)
+          } WHERE ${childLabel.value} = ?)`
+      }`
   }`
 
 
