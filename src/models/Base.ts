@@ -17,10 +17,17 @@ export default new Model<Base>('base', {
 
     // Standard Num/Char limits
     limits: { min: 0, max: 1000 },
-    // Array size / Element num/char limits = { array: { min: 1, max: 10 }, elem: { min: 4, max: 100 } },
+    
 
     // Default value (used when adding entry if no value provided)
     default: "DEFAULT VALUE",
+  },
+  demoArray: {
+    // Array type
+    typeStr: "string[]",
+
+    // Array size / Element num/char limits
+    limits: { array: { max: 5 }, elem: { max: 100 } },
   },
 })
 

@@ -3,4 +3,5 @@
 export interface Base {
   id:    number,
   data?: string,
+  demoArray: string[],
 }
