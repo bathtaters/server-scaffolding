@@ -57,7 +57,7 @@ export const
       
       let msg = 'must be '
       if (type) {
-        msg += type + ' '
+        msg += `a${['a','e','i','o','u'].includes(type.charAt(0)) ? 'n' : ''} ${type} `
 
         if (type in defaultLimits && max === defaultLimits[type]?.max && min === defaultLimits[type]?.min) {
           msg += 'within default limits'
@@ -66,8 +66,9 @@ export const
         }  
       }
 
-      msg += max == null ? `more than ${min}` :
-             min == null ? `less than ${max}` :
+      if (suffix) msg += 'with '
+      msg += max == null ? `${suffix ? 'more' : 'larger'} than ${min}` :
+             min == null ? `${suffix ? 'less' : 'larger'} than ${max}` :
                            `between ${min} & ${max}`
       return msg + suffix
     },
