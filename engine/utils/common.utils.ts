@@ -203,8 +203,8 @@ export const getMatchingKey = <O extends Record<string,any>>(object: O, propAnyC
 
 
 /** Create object w/ case insensitive keys */
-export function caseInsensitiveObject<O extends Record<string,any>>(object?: O) {
-  return object && new Proxy(object, {
+export function caseInsensitiveObject<O extends Record<string,any>>(object: O) {
+  return new Proxy(object, {
     has(object: O, prop: string) {
       return Boolean(getMatchingKey(object, prop))
     },
