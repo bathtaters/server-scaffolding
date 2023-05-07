@@ -205,18 +205,28 @@ export const updateSQL = <K extends string>(
   ]
 }
 
+const singleSQLswap = (table: string, idFrom: any, idTo: any, idKey: string): [string, any[]] => [
+  `UPDATE ${table} SET ${idKey} = ? WHERE ${idKey} = ?`,
+  [idTo, idFrom]
+]
 
-export const swapSQL = (tableName: string, idColumn: string, idA: any, idB: any, tmpID: any): [string, any[]][] => [
-  [
-    `UPDATE ${tableName} SET ${idColumn} = ? WHERE ${idColumn} = ?;`,
-    [tmpID, idA]
-  ],[
-    `UPDATE ${tableName} SET ${idColumn} = ? WHERE ${idColumn} = ?;`,
-    [idA,   idB]
-  ],[
-    `UPDATE ${tableName} SET ${idColumn} = ? WHERE ${idColumn} = ?;`,
-    [idB, tmpID]
-  ]
+export const swapSQL = 
+(table: string, idKey: string, idA: any, idB: any, tmpID: any, children: string[]):
+[string, any[]][] => [
+  singleSQLswap(table, idA, tmpID, idKey),
+  ...children.map((child) => 
+    singleSQLswap(getChildName(table, child), idA, tmpID, childLabel.foreignId),
+  ),
+  
+  singleSQLswap(table, idB,   idA, idKey),
+  ...children.map((child) => 
+    singleSQLswap(getChildName(table, child), idB,   idA, childLabel.foreignId),
+  ),
+  
+  singleSQLswap(table, tmpID, idB, idKey),
+  ...children.map((child) => 
+    singleSQLswap(getChildName(table, child), tmpID, idB, childLabel.foreignId),
+  ),
 ]
 
 

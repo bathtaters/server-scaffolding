@@ -490,7 +490,13 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
   private async _swap<ID extends Model<Schema,DBSchema>['primaryId']>(idA: DBSchema[ID], idB: DBSchema[ID], idKey?: ID) {
     if (!idA || !idB) throw noID()
 
-    await multiRun(getDb(), swapSQL(this.title, idKey || this.primaryId, idA, idB, this._tmpID))
+    await multiRun(getDb(), swapSQL(
+      this.title,
+      idKey || this.primaryId,
+      idA, idB,
+      this._tmpID,
+      Object.keys(this.children))
+    )
     return true
   }
   
