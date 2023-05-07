@@ -10,7 +10,7 @@ import { htmlTypes } from '../types/gui'
 import RegEx from '../libs/regex'
 import { isDate } from '../libs/date'
 import { isIn } from './common.utils'
-import { combineSQL, insertSQL, deleteSQL } from './db.utils'
+import { insertSQL, deleteSQL } from './db.utils'
 import { parseBoolean, parseArray } from './validate.utils'
 import { CONCAT_DELIM, getChildName } from '../config/models.cfg'
 
@@ -46,7 +46,7 @@ export const childSQL = <T>(
   tableName: string, childData: T[], childKeys: (keyof T)[],
   primaryKey: keyof T | number, ifExists: IfExistsBehavior, overwriteChild = false
 ) =>
-  combineSQL(childKeys.map((key) => {
+  childKeys.flatMap((key) => {
     const foreignIds: any[] = []
 
     const entries = propertyIsChild(childData, key).flatMap((data, i) => {
@@ -60,7 +60,7 @@ export const childSQL = <T>(
       }))
     })
     
-    if (!entries.length) return;
+    if (!entries.length) return []
 
     const childTable = getChildName(tableName, key)
 
@@ -70,8 +70,9 @@ export const childSQL = <T>(
       Object.values(childLabel),
       ifExists
     )
+    if (!overwriteChild) return [insert]
 
-    return !overwriteChild ? insert : combineSQL([
+    return [
       deleteSQL(
         childTable,
         foreignIds.map((id, idx) => [
@@ -80,8 +81,8 @@ export const childSQL = <T>(
         ])
       ),
       insert,
-    ])
-  }))
+    ]
+  })
 
 
 const hasNot = RegEx(/^NOT\s/i)

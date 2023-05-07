@@ -42,19 +42,7 @@ export const appendAndSort = (array: number[], value: number) => array.includes(
   array.slice().sort(sortAlgo) :
   array.concat(value).sort(sortAlgo)
 
-
-export const combineSQL = (sql: Array<[string, any[]] | undefined>) =>
-  sql.reduce<[string, any[]]>(
-    (combo, entry) => entry ? [
-
-      `${combo[0]}; ${entry[0]}`,
-      [ ...combo[1], ...entry[1]  ]
-
-    ] : combo,
-    ['', []]
-  )
-
-
+  
 
 // Useful Generators
 

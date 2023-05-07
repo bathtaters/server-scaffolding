@@ -16,7 +16,7 @@ import { getChildName, getChildPath } from '../config/models.cfg'
 import { noID, noData, noEntry, noPrimary, noSize, badKey, multiAction, updatePrimary } from '../config/errors.engine'
 
 // TODO -- Use 'default' and 'isOptional' to generate InputSchema, DBSchema & OutputSchema types w/ correct optionals
-// TODO -- Test Arrays!! (These were not tested since migrating to TypeScript)
+// TODO -- Create PageData object & absorb selectSQL call from this.getPage into this._select
 
 /** Base Model Class, each instance represents a separate model */
 export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBase = Schema> {
@@ -413,7 +413,7 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
     if (missingPrimary && typeof lastEntry[this.primaryId] !== 'number') throw noPrimary(this.title,'add')
     const primaryKey = !missingPrimary ? this.primaryId : lastEntry[this.primaryId] - dataArray.length
     
-    await run(getDb(), ...childSQL(this.title, dataArray, keys.children, primaryKey, ifExists))
+    await multiRun(getDb(), childSQL(this.title, dataArray, keys.children, primaryKey, ifExists))
     return !returnLast || lastEntry
   }
 
@@ -462,7 +462,7 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
       getSqlParams(this, whereData)
     ))
 
-    if (keys.children.length) await run(getDb(), ...childSQL(
+    if (keys.children.length) await multiRun(getDb(), childSQL(
       this.title,
       ids.map((id) => ({ ...updateData, [this.primaryId]: id })),
       keys.children,
