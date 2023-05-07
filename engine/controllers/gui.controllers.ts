@@ -49,21 +49,23 @@ export function modelDb<M extends ModelGuiBase>(Model: M, {
   }
 
   return {
-    model: (req, res, next) => Model.getPageData(matchedData(req), guiCfg.pageOptions).then(({ data, ...pageData}) => {
-      const access = req.user?.access?.get(Model.title)
+    model: (req, res, next) => Model.getPageData(matchedData(req), guiCfg.pageOptions)
+      .then(({ data, ...pageData}) => {
+        const access = req.user?.access?.get(Model.title)
 
-      return res.render(view, {
-        ...staticDbParams,
-        ...pageData,
-        data: formatData(data, req.user),
-        buttons: labelsByAccess(access),
-        user: req.user?.username,
-        isAdmin:  Role.map.admin.intersects(req.user?.role),
-        csrfToken: req.csrfToken?.(),
-        canRead: access?.intersects('read'),
-        canWrite: access?.intersects('write'),
+        return res.render(view, {
+          ...staticDbParams,
+          ...pageData,
+          data: formatData(data, req.user),
+          buttons: labelsByAccess(access),
+          user: req.user?.username,
+          isAdmin:  Role.map.admin.intersects(req.user?.role),
+          csrfToken: req.csrfToken?.(),
+          canRead: access?.intersects('read'),
+          canWrite: access?.intersects('write'),
+        })
       })
-    }).catch(next),
+      .catch(next),
 
     find: async (req, res, next) => {
       try {
