@@ -10,6 +10,7 @@ import { getTableFields, varName, formatGuiData } from '../utils/gui.utils'
 import { toPartialMatch } from '../utils/model.utils'
 import { labelsByAccess, actionURLs } from '../utils/form.utils'
 import { tableFields, tooltips, profileActions } from '../config/users.cfg'
+import { getChildPath } from '../config/models.cfg'
 import { noData } from '../config/errors.engine'
 
 import { guiCfg, urlCfg, allModels } from '../src.import'
@@ -38,7 +39,7 @@ export function modelDb<M extends ModelGuiBase>(Model: M, {
 }: GuiOptions<any> = {}): Record<'model'|'find', Middleware> {
 
   const staticDbParams = {
-    title: varName(Model.title),
+    title: varName(Model.isChildModel ? getChildPath(Model.title) : Model.title),
     idKey: Model.primaryId,
     baseURL: `${urls.prefix}${urls.home}/${Model.url}`,
     swapURL: `${urls.prefix}${urls.home}/${Model.url}${urls.swap}`,

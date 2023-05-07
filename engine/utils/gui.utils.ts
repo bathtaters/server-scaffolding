@@ -1,11 +1,10 @@
 import type { Recur } from '../types/global.d'
 import RegEx from '../libs/regex'
-import { isDate } from '../libs/date'
 import { guiCfg } from '../src.import'
 import { mapObject } from './common.utils'
 const { varNameDict, MASK_CHAR } = guiCfg
 
-const capitalRegex = RegEx(/([A-Z])/g), firstRegex = RegEx(/^./)
+const capitalRegex = RegEx(/([A-Z])/g), firstRegex = RegEx(/^.|[/ ]\w/g)
 export const varName = (str: string): string =>
   str in varNameDict    ? varNameDict[str] :
   str.charAt(0) === '_' ? varName(str.slice(1)) :

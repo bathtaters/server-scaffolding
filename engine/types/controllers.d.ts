@@ -17,6 +17,6 @@ export type FormOptions<T extends Record<string,any>> = {
     formatData?: ControllerCallback<T>
 }
 
-export type ModelGuiBase    = Pick<ModelBase, 'title'|'primaryId'|'url'|'schema'|'getPageData'|'find'>
+export type ModelGuiBase    = Pick<ModelBase, 'title'|'primaryId'|'url'|'schema'|'getPageData'|'find'|'isChildModel'>
 export type ModelFormBase   = Pick<ModelBase, 'primaryId'|'addAndReturn'|'update'|'remove'|'create'>
 export type ModelActionBase = Pick<ModelBase, 'schema'|'url'> & ModelFormBase
