@@ -19,6 +19,7 @@
   flex-grow: 1;
   align-self: center;
   width: calc(100% - 2rem);
+  overflow-wrap: break-word;
 }
 @media screen and (max-width: 767px) {
   #pageContainer { 
@@ -79,3 +80,7 @@ fieldset > .row { align-items: flex-end; }
 .solid { opacity: 1.0 !important; }
 .small { font-size: 0.9em; font-weight: 300; }
 .marginX { margin-left: 1em; margin-right: 1em; }
+.full-width {
+  width: calc(100vw - 1.5rem);
+  margin-left: calc((100% - 100vw)/2 + 1rem);
+}
