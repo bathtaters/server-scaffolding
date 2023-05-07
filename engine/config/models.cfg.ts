@@ -13,8 +13,8 @@ export const
     overwrite: ' OR REPLACE',
   },
   
-  getChildName = (mainTable: string, arrayKey: string | number | symbol) => `[${mainTable}:${String(arrayKey)}]`,
-  getChildPath = (arrayName: string) => arrayName.replace(/^\[|\]$/g,'').replace(':','/'),
+  getChildName = (mainTable: string, arrayKey: string | number | symbol) => `[${mainTable}.${String(arrayKey)}]`,
+  getChildPath = (arrayName: string) => arrayName.replace(/^\[|\]$/g,'').replace('.','/'),
   CONCAT_DELIM = '~|~',
 
   debugSQL = false
