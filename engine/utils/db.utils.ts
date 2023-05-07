@@ -19,6 +19,10 @@ export const checkInjection = <T = any>(val: T, tableName = ''): T => {
   return val
 }
 
+// Tests models.cfg values for SQL injection
+if (/['\s]/.test(CONCAT_DELIM)) throw sqlInjection(CONCAT_DELIM, false, 'models.cfg:CONCAT_DELIM')
+checkInjection(Object.values(childLabel), 'models.cfg:childLabel')
+
 
 export const extractId = <O extends Record<string|number,any>, ID extends keyof O>
   (data: O, idKey: ID): [O[ID], Partial<O>] => {
@@ -51,7 +55,50 @@ export const combineSQL = (sql: Array<[string, any[]] | undefined>) =>
   )
 
 
-type ArrID = string | number | string[] | number[]
+
+// Useful Generators
+
+export function whereClause(whereParams: SQLParams, starting: 'WHERE' | 'WHEN' = 'WHERE') {
+  
+  const whereArray = (params: SQLParams): string[] => params.reduce<string[]>(
+    (sql, param) => {
+      if (0 in param) return param[0] ? sql.concat(param[0]) : sql
+    
+      for (const [logic, paramArr] of Object.entries(param)) {
+        if (paramArr) {
+          const nestedArr = whereArray(paramArr)
+          if (nestedArr.length)
+            return sql.concat(`(${nestedArr.join(` ${whereLogic[logic as WhereLogic]} `)})`)
+        }
+      }
+      return sql
+    }, [])
+
+  const sql = whereArray(whereParams)
+  return sql.length ? `${starting} ${sql.join(' AND ')}` : ''
+}
+
+export const whereValues = (params: SQLParams): any[] => params.flatMap((param) => {
+  if (1 in param) return [param[1]]
+  for (const paramArr of Object.values(param)) {
+    if (paramArr) return whereValues(paramArr)
+  }
+  return []
+})
+
+const updateParams = (key: string, value: any): [string,any] => {
+  if (typeof value === 'object' && value != null && !Array.isArray(value)) {
+    for (const [op, paramValue] of Object.entries(value)) {
+      const valType = typeof paramValue
+  
+      if (isIn(valType, updateOps) && isIn(op, updateOps[valType]))
+        return [`${key} = ${key} ${updateOps[valType][op]} ?`, paramValue]
+    }
+  }
+
+  return [`${key} = ?`, value] // Default
+}
+
 
 export const getArrayJoin = (
   table: string, primaryId: string, children: string[] = [],
@@ -78,66 +125,29 @@ export const getArrayJoin = (
   }`
 
 
-// Tests models.cfg values for SQL injection
-if (/['\s]/.test(CONCAT_DELIM)) throw sqlInjection(CONCAT_DELIM, false, 'models.cfg:CONCAT_DELIM')
-checkInjection(Object.values(childLabel), 'models.cfg:childLabel')
-
-
 
 // SQL Generators
 
-export const countSQL = (tableName: string, whereParams: [string, any][] = []): [string, any[]] => [
-
-  `SELECT COUNT(*) as count FROM ${tableName}${
-    whereParams.length ? ` WHERE ${whereParams.map((sql) => sql[0]).join(' AND ')}` : ''
-  }`,
-
-  whereParams.map((params) => params[1])
+export const deleteSQL = (tableName: string, whereParams: SQLParams): [string, any[]] => [
+  `DELETE FROM ${tableName} ${whereClause(whereParams)}`,
+  whereValues(whereParams)
 ]
 
-const whereCmds = (params: SQLParams): string[] => params.reduce<string[]>((sql, param) => {
-  if (0 in param) return param[0] ? sql.concat(param[0]) : sql
 
-  for (const [logic, paramArr] of Object.entries(param)) {
-    if (paramArr) {
-      const nestedArr = whereCmds(paramArr)
-      if (nestedArr.length)
-        return sql.concat(`(${nestedArr.join(` ${whereLogic[logic as WhereLogic]} `)})`)
-    }
-  }
-  return sql
-}, [])
-
-const whereValues = (params: SQLParams): any[] => params.flatMap((param) => {
-  if (1 in param) return [param[1]]
-  for (const paramArr of Object.values(param)) {
-    if (paramArr) return whereValues(paramArr)
-  }
-  return []
-})
-
-const updateParams = (key: string, value: any): [string,any] => {
-  if (typeof value === 'object' && value != null && !Array.isArray(value)) {
-    for (const [op, paramValue] of Object.entries(value)) {
-      const valType = typeof paramValue
-  
-      if (isIn(valType, updateOps) && isIn(op, updateOps[valType]))
-        return [`${key} = ${key} ${updateOps[valType][op]} ?`, paramValue]
-    }
-  }
-
-  return [`${key} = ?`, value] // Default
-}
+export const countSQL = (tableName: string, whereParams: SQLParams): [string, any[]] => [
+  `SELECT COUNT(*) as count FROM ${tableName} ${whereClause(whereParams)}`,
+  whereValues(whereParams)
+]
 
 
 export const selectSQL = (
   tableName: string, primaryId: string, whereParams: SQLParams, arrayTables: string[] = [],
   orderBy?: string, desc = false, limit = 0, page = 0,
 ): [string, any[]] => [
-
-  `${getArrayJoin(tableName, primaryId, arrayTables)
+  `${
+    getArrayJoin(tableName, primaryId, arrayTables)
   } ${
-    whereParams.length ? `WHERE ${whereCmds(whereParams).join(' AND ')}` : ''
+    whereClause(whereParams)
   }${
     orderBy ? ` ORDER BY ${tableName}.${orderBy} ${desc ? 'DESC' : 'ASC'}` : ''
   }${
@@ -176,23 +186,12 @@ export const updateSQL = <K extends string>(
     `UPDATE ${tableName} SET ${
       updateSql.map(([s]) => s).join(',')
     } ${
-      whereParams.length ? `WHERE ${whereCmds(whereParams).join(' AND ')}` : ''
+      whereClause(whereParams)
     }`,
 
     [ ...updateSql.map(([_,p]) => p), ...whereValues(whereParams) ]
   ]
 }
-
-
-export const deleteSQL = (tableName: string, idColumn: string, idList: any[]): [string, any[]] => [
-  `DELETE FROM ${tableName} WHERE ${idColumn} ${
-    idList.length > 1 ? 'IN' : '='
-  } (${
-    idList.map(() => '?').join(',')
-  })`,
-
-  idList
-]
 
 
 export const swapSQL = (tableName: string, idColumn: string, idA: any, idB: any, tmpID: any): [string, any[]][] => [
@@ -207,3 +206,8 @@ export const swapSQL = (tableName: string, idColumn: string, idA: any, idB: any,
     [idB, tmpID]
   ]
 ]
+
+
+// TYPES
+
+type ArrID = string | number | string[] | number[]

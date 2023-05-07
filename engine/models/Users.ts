@@ -1,18 +1,20 @@
 import type { UsersDB, UsersUI, GetOptions, UpdateOptions, TimestampType, RoleType } from '../types/Users.d'
 import type { SQLOptions } from '../types/Model.d'
-import type { IfExistsBehavior, UpdateData } from '../types/db.d'
+import type { IfExistsBehavior, UpdateData, WhereData } from '../types/db.d'
 import { Role, timestamps } from '../types/Users'
+import { adapterTypes } from '../types/Model'
 import Model from './Model'
 import logger from '../libs/log'
 import { now } from '../libs/date'
 import { addAdapter, initAdapters } from '../services/users.services'
-import { definition, rateLimiter, passwordRoles, illegalUsername } from '../config/users.cfg'
+import { projectedValue, runAdapters } from '../services/model.services'
 import { generateToken, testPassword, isLocked, isPastWindow } from '../utils/auth.utils'
+import { whereClause, whereValues } from '../utils/db.utils'
+import { getSqlParams } from '../utils/model.utils'
 import { hasDupes, isIn } from '../utils/common.utils'
 import { isPm2 } from '../config/meta'
-import { badUsername, noData, usernameMessages, deleteAdmin, badKey, noID, noEntry } from '../config/errors.engine'
-import { projectedValue, runAdapters } from '../services/model.services'
-import { adapterTypes } from '../types/Model'
+import { definition, rateLimiter, passwordRoles, illegalUsername } from '../config/users.cfg'
+import { badUsername, noData, usernameMessages, deleteAdmin, noID, noEntry } from '../config/errors.engine'
 
 
 class User extends Model<UsersUI, UsersDB> {
@@ -23,34 +25,36 @@ class User extends Model<UsersUI, UsersDB> {
   }
 
 
-  async get<ID extends keyof (UsersUI | UsersDB) & string, O extends GetOptions<ID>>(
+  async get<ID extends User['primaryId'], O extends GetOptions<ID>>(
     id: UsersUI[ID], { timestamp, ignoreCounter, ...options }: O = {} as O
   ) {
 
     const user = await super.get(id, options)
-    if (user) this._updateTimestamp(user, timestamp, ignoreCounter)
+    if (user) await this._updateTimestamp(user, timestamp, ignoreCounter)
     return user
   }
 
-  async getRaw<ID extends keyof (UsersUI | UsersDB) & string>(
-    id: UsersUI[ID], { timestamp, ignoreCounter, idKey, ...options }: GetOptions = {}
-  ): Promise<Partial<UsersDB> | undefined> {
+  private async _getRaw<ID extends User['primaryId']>
+  (id: UsersUI[ID], { timestamp, ignoreCounter, idKey, ...options }: GetOptions = {}): Promise<Partial<UsersDB> | undefined> {
 
-    const user = await super.find({ [idKey || this.primaryId]: id }, { ...options, raw: true, skipChildren: true })
-      .then((users) => users[0])
-    if (user) this._updateTimestamp(user, timestamp, ignoreCounter)
+    const [user] = await super.find({ [idKey || this.primaryId]: id }, { ...options, raw: true, skipChildren: true })
+
+    if (user) await this._updateTimestamp(user, timestamp, ignoreCounter)
     return user
   }
 
   async add(users: Omit<UsersUI,'id'|'token'>[], ifExists: IfExistsBehavior = 'default') {
-    return this._addAdapter(users).then((userData) => super.add(userData, ifExists))
+    const userData = await this._addAdapter(users)
+    return await super.add(userData, ifExists)
   }
 
   async addAndReturn(users: Omit<UsersUI,'id'|'token'>[], ifExists: IfExistsBehavior = 'default') {
-    return this._addAdapter(users).then((userData) => super.addAndReturn(userData, ifExists))
+    const userData = await this._addAdapter(users)
+    return await super.addAndReturn(userData, ifExists)
   }
 
-  async batchUpdate(where: Partial<UsersUI>, data: Partial<UsersUI>, options: SQLOptions<UsersDB> = {}) {
+  private async _updateOVR<ID extends User['primaryId']>
+  (id: UsersUI[ID], data: UpdateData<UsersUI>, options: SQLOptions<UsersDB> & { idKey?: ID } = {}) {
     const oldOnChange = options.onChange
     if (!oldOnChange) options.onChange = this._updateCb.bind(this)
 
@@ -59,13 +63,17 @@ class User extends Model<UsersUI, UsersDB> {
       return this._updateCb.call(this, update, matching)
     }
 
-    return super.batchUpdate(where, data, options)
+    return super.update(id, data, options)
   }
+  override update: Model<UsersUI,UsersDB>['update'] = this._updateOVR.bind(this)
 
-  async batchRemove<ID extends keyof UsersDB & string>(ids: UsersDB[ID][], idKey?: ID) {
-    await this.throwLastAdmins(ids, idKey)
-    return super.batchRemove(ids, idKey)
+  
+  async _removeOVR<ID extends User['primaryId']>(id: UsersUI[ID], idKey?: ID) {
+    await this.throwLastAdmins({ [idKey || this.primaryId]: id })
+    return super.remove(id, idKey)
   }
+  override remove: Model<UsersUI,UsersDB>['remove'] = this._removeOVR.bind(this)
+
 
   regenToken(id: UsersDB['id']) {
     return super.update(id, { token: generateToken() })
@@ -84,29 +92,31 @@ class User extends Model<UsersUI, UsersDB> {
   }
 
   async checkToken(token: UsersUI['token'], role: RoleType) {
-    return this.getRaw(token, { idKey: 'token', timestamp: timestamps.api })
-      .then(async (user) =>
-        !user ? 'NO_USER' :
-        user.locked && !isPastWindow(user) ? 'USER_LOCKED' :
-        !role.intersects(user.role) ? 'NO_ACCESS' :
-          runAdapters(adapterTypes.get, user, this)
-      )
+    const user = await this._getRaw(token, { idKey: 'token', timestamp: timestamps.api })
+    return !user ? 'NO_USER' :
+      user.locked && !isPastWindow(user) ? 'USER_LOCKED' :
+      !role.intersects(user.role) ? 'NO_ACCESS' :
+        runAdapters(adapterTypes.get, user, this)
   }
 
-  async areLastAdmins<ID extends keyof UsersDB & string>(ids: UsersDB[ID][], idKey = this.primaryId as ID) {
-    if (!Object.keys(this.schema).includes(idKey))
-      throw badKey(idKey, this.title)
+  async areLastAdmins(where: WhereData<UsersUI>) {
+    const whereData = await runAdapters(adapterTypes.set, where, this)
+    const params = getSqlParams(this, whereData)
 
     const admins = await this.custom(
-      `SELECT ${idKey} FROM ${this.title} WHERE role & ?`,
-      [Role.map.admin.int]
-    ) as Pick<UsersDB, ID>[]
+      `SELECT CASE ${
+        whereClause(params, 'WHEN') || 'WHEN TRUE'} THEN 0 ELSE 1 END as remains FROM ${
+        this.title} WHERE role & ?`,
+      [...whereValues(params), Role.map.admin.int],
+      true,
+    ) as { remains: number }[]
     
-    return !admins.filter((user) => !ids.includes(user[idKey])).length
+    return !admins.filter(({ remains }) => remains).length
   }
 
-  async throwLastAdmins<ID extends keyof UsersDB & string>(ids: UsersDB[ID][], idKey?: ID) {
-    return this.areLastAdmins(ids, idKey).then((isLast) => { if (isLast) throw deleteAdmin() })
+  async throwLastAdmins(where: WhereData<UsersUI>) {
+    const isLast = await this.areLastAdmins(where)
+    if (isLast) throw deleteAdmin()
   }
 
   async isInvalidUsername(username?: UsersDB['username'], ignoreId?: UsersDB['id']) {
@@ -123,15 +133,15 @@ class User extends Model<UsersUI, UsersDB> {
   }
 
   async throwInvalidUsername(username?: UsersDB['username'], ignoreId?: UsersDB['id']) {
-    return this.isInvalidUsername(username, ignoreId)
-      .then((errMsg) => { if (errMsg) throw badUsername(username, errMsg) })
+    const errMsg = await this.isInvalidUsername(username, ignoreId)
+    if (errMsg) throw badUsername(username, errMsg)
   }
 
   async incFailCount(userData?: Partial<UsersDB>, { reset, idKey, counter, ...options }: UpdateOptions = {}) {
     let user = userData
     if (user && idKey) {
       if (!(idKey in user)) throw noID()
-      user = await this.getRaw(user[idKey], { idKey })
+      user = await this._getRaw(user[idKey], { idKey })
     }
 
     if (!user) throw userData ? noEntry(userData[idKey || this.primaryId]) : noID()
@@ -160,8 +170,8 @@ class User extends Model<UsersUI, UsersDB> {
     let data: UpdateData<UsersUI> = { [`${timestamp}Time`]: now() }
     if (!ignoreCounter) data[`${timestamp}Count`] = { $inc: 1 }
 
-    return super.update(userData[this.primaryId], data)
-      .then(({ success }) => success)
+    const { success } = await super.update(userData[this.primaryId], data)
+    return success
   }
 
 
@@ -195,7 +205,7 @@ class User extends Model<UsersUI, UsersDB> {
         throw noData('password for GUI access')
 
       if (Role.map.admin.intersects(oldData.role) && !Role.map.admin.intersects(newRole))
-        await this.throwLastAdmins(matchingData.map((u) => u.id), 'id')
+        await this.throwLastAdmins({ id: { $in: matchingData.map(({ id }) => id) } })
     }
     
     if (newData.username)

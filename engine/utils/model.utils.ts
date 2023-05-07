@@ -74,8 +74,10 @@ export const childSQL = <T>(
     return !overwriteChild ? insert : combineSQL([
       deleteSQL(
         childTable,
-        childLabel.foreignId,
-        foreignIds,
+        foreignIds.map((id, idx) => [
+          !idx ? `${childLabel.foreignId} IN (${foreignIds.map(() => '?').join(',')})` : null,
+          id
+        ])
       ),
       insert,
     ])
@@ -130,11 +132,17 @@ export function getSqlParams<Schema extends SchemaBase, DBSchema extends SchemaB
     // Includes
     if (whereOpPartial in val) {
       val = val[whereOpPartial]
+
+      if (Array.isArray(val))
+        return val.forEach((entry,idx) => params.push([
+          idx ? '' : `${title}.${key} IN (${val.map(() => '?').join(',')})`,
+          entry
+        ]))
         
       if (schema[key].isBitmap && val != null) {
         const num = +val
         params.push([`${title}.${key} ${num ? '& ? ==' : '=='} ?`, +val])
-        return num && params.push([null,+val])
+        return num && params.push(['',+val])
       }
   
       if (isBool(schema[key]))
@@ -179,7 +187,7 @@ export const isDbKey = <DBSchema extends SchemaBase, Schema extends SchemaBase>
 
 export function sanitizeSchemaData
   <Schema extends SchemaBase, DBSchema extends SchemaBase, T extends SchemaBase>
-  (data: T, { schema, children }: SanitModel<Schema, DBSchema> = {}): Sanitized<T, Schema, DBSchema>
+  (data: T, { schema, children }: SanitModel<Schema, DBSchema> = {}): T
 {
   const validKeys = schema && Object.keys(schema)
     .filter((key) => schema[key].db)
@@ -191,7 +199,7 @@ export function sanitizeSchemaData
       key === whereNot && typeof data[key] === 'object' ? { ...obj, [key]: sanitizeSchemaData(data[key] || {}) } :
       key in whereLogic && Array.isArray(data[key])     ? { ...obj, [key]: data[key].map(sanitizeSchemaData)   } :
         obj,
-    {} as Sanitized<T, Schema, DBSchema>
+    {} as T
   )
 }
 

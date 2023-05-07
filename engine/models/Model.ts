@@ -11,12 +11,11 @@ import { all, get, run, reset, getLastEntry, multiRun } from '../services/db.ser
 import { getPrimaryIdAndAdaptSchema, runAdapters, extractChildren } from '../services/model.services'
 import { checkInjection, appendAndSort, insertSQL, selectSQL, countSQL, updateSQL, deleteSQL, swapSQL } from '../utils/db.utils'
 import { caseInsensitiveObject, mapToField, isIn } from '../utils/common.utils'
-import { sanitizeSchemaData, childTableRefs, isDbKey, getSqlParams, childSQL, splitKeys } from '../utils/model.utils'
+import { sanitizeSchemaData, childTableRefs, getSqlParams, childSQL, splitKeys } from '../utils/model.utils'
 import { getChildName, getChildPath } from '../config/models.cfg'
 import { noID, noData, noEntry, noPrimary, noSize, badKey, multiAction, updatePrimary } from '../config/errors.engine'
 
 // TODO -- Use 'default' and 'isOptional' to generate InputSchema, DBSchema & OutputSchema types w/ correct optionals
-// TODO -- Make _delete/batchDelete use Where value instead of ID array
 // TODO -- Test Arrays!! (These were not tested since migrating to TypeScript)
 
 /** Base Model Class, each instance represents a separate model */
@@ -50,7 +49,8 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
 
     this.isInitialized = (async () => {
       if (!getDb()) { await openDb() }
-      return this.create().then((r) => r.success)
+      const { success } = await this.create()
+      return success
     })()
   }
   
@@ -77,7 +77,7 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
     if (orderKey != null && (typeof orderKey !== 'string' || (orderKey && !isIn(orderKey, this.schema))))
       throw badKey(orderKey, this.title)
     
-    const result = await all(getDb(), ...selectSQL(
+    let result = await all<DBSchema>(getDb(), ...selectSQL(
       this.title,
       this.primaryId,
       [],
@@ -86,7 +86,8 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
       reverseSort,
       size,
       page - 1
-    )).then((res) => res.map(caseInsensitiveObject) as DBSchema[])
+    ))
+    result = result.map(caseInsensitiveObject)
 
     return Promise.all(result.map((data) => runAdapters(adapterTypes.get, data, this)))
   }
@@ -148,18 +149,15 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
   }
 
   /** Count the number of records of this model
-   * @param id     - (Optional) If provided, only count records whose ID matches this value
-   * @param idKey  - (Default: Primary ID) Use this key when searching for value of ID
-   * @returns Promise of records count
+   * @param where - (Optional) Key/Value pairs to count matches of
+   *    - Can also use { key: whereLogic OR { whereOp: value } } instead of { key: value }
+   *    - WhereLogic is { $and/$or: [ ...WhereData ] } OR { $not: WhereData }
+   *    - WhereOps are: $gt(e), $lt(e), $eq, $in (Partial match)
+   * @returns Count of matching records (or all records if 'where' is omitted)
    */
-  async count<K extends keyof (Schema | DBSchema) & string>(id?: Schema[K], idKey?: K): Promise<number> {
-    if (!isDbKey(idKey, this.schema)) throw badKey(idKey, this.title)
-    
-    const result = await get<{ count: number }>(getDb(), ...countSQL(
-      this.title,
-      id == null ? [] : [[`${idKey || this.primaryId} = ?`, id]]
-    ))
-    return result.count
+  async count(where?: WhereData<Schema>): Promise<number> {
+    const whereData = where && await runAdapters(adapterTypes.set, where, this)
+    return this._countRaw(whereData)
   }
 
   /** Get the first record that matches the given ID
@@ -171,17 +169,18 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
    * @param options.raw - Skip getAdapters, return raw DB values
    * @returns First record matching ID, or undefined if no match
    */
-  get<ID extends keyof (Schema | DBSchema) & string, O extends SQLOptions<DBSchema>>(
-    id: Schema[ID],
-    { idKey, ...options }: { idKey?: ID } & O = {} as O
-  ) {
+  async get<ID extends Model<Schema,DBSchema>['primaryId'], O extends SQLOptions<DBSchema>>
+  (id: Schema[ID], { idKey, ...options }: { idKey?: ID } & O = {} as O) {
     
-    return this.find({ [idKey || this.primaryId]: id } as any, options)
-      .then((data) => data[0])
+    const [data] = await this.find({ [idKey || this.primaryId]: id } as Schema, options)
+    return data
   }
 
   /** Lookup and return multiple records
-   * @param where - Key/Value pairs to lookup matches for (Can also use {whereOp: value} instead of value)
+   * @param where - Key/Value pairs to return matches of
+   *    - Can also use { [whereOp/whereLogic]: value } instead of value
+   *    - WhereOps are: $gt(e), $lt(e), $eq, $in (Partial match)
+   *    - WhereLogic is { $and/$or: [ ...WhereData ] }, { $not: WhereData }
    * @param options - (Optional) Lookup options
    * @param options.orderKey - Order results by this key
    * @param options.skipChildren - Avoid joins, returned value will not include children
@@ -204,8 +203,9 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
    * @param ifExists - How to handle non-unique entries (Default: default)
    * @returns Object: { success: true/false }
    */
-  add(data: Schema[], ifExists: IfExistsBehavior = 'default'): Promise<Feedback> {
-    return this._insert(data, ifExists, false).then((success) => ({ success }))
+  async add(data: Schema[], ifExists: IfExistsBehavior = 'default'): Promise<Feedback> {
+    const success = await this._insert(data, ifExists, false)
+    return ({ success })
   }
 
   /** Add entrie(s) to database, returning last entry added
@@ -231,23 +231,32 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
    *  - Returns: New value for "update" OR mutates update within function
    * @returns Object: { success: true/false }
    */
-  async update<ID extends keyof (Schema | DBSchema) & string>(
-    id: Schema[ID], data: UpdateData<Schema>, { idKey, ...options }: { idKey?: ID } & SQLOptions<DBSchema> = {}
-  ) {
+  async update<ID extends Model<Schema,DBSchema>['primaryId']>
+  (id: Schema[ID], data: UpdateData<Schema>, { idKey, ...options }: { idKey?: ID } & SQLOptions<DBSchema> = {}) {
     if (id == null) throw noID()
 
-    const count = await this.count(id, idKey)
+    const whereData = await runAdapters(
+      adapterTypes.set,
+      { [idKey || this.primaryId]: id } as Partial<Schema>,
+      this
+    )
+
+    const count = await this._countRaw(whereData)
     if (!count) throw noEntry(id)
     if (count !== 1) throw multiAction('Updating',count)
 
-    return this.batchUpdate({ [idKey || this.primaryId]: id } as any, data, options)
+    const success = await this._update(data, whereData, options)
+    return { success }
   }
 
 
   /** Update given data fields in record matching "where"
    * - Doesn't modify any keys not present in "data"
    * - Doesn't check if IDs exist before updating
-   * @param where - Key/Value pairs to lookup matches for (Can also use {whereOp: value} instead of value)
+   * @param where - Key/Value pairs to select data for updating
+   *    - Can also use { [whereOp/whereLogic]: value } instead of value
+   *    - WhereOps are: $gt(e), $lt(e), $eq, $in (Partial match)
+   *    - WhereLogic is { $and/$or: [ ...WhereData ] }, { $not: WhereData }
    * @param data - Key/Value object to update matching record to
    * @param options - (Optional) Update options
    * @param options.onChange - Function (Sync/Async) called immediately before records are updated
@@ -257,7 +266,9 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
    * @returns Object: { success: true/false }
    */
   async batchUpdate(where: WhereData<Schema>, data: UpdateData<Schema>, options: SQLOptions<DBSchema> = {}): Promise<Feedback> {
-    return this._update(data, where, options).then((success) => ({ success }))
+    const whereData = await runAdapters(adapterTypes.set, where, this)
+    const success = await this._update(data, whereData, options)
+    return { success }
   }
   
 
@@ -267,24 +278,35 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
    * @param idKey - (Default: Primary ID) Key of ID to remove
    * @returns Object: { success: true/false }
    */
-  async remove<K extends keyof DBSchema & string>(id: DBSchema[K], idKey?: K): Promise<Feedback> {
+  async remove<ID extends Model<Schema,DBSchema>['primaryId']>(id: Schema[ID], idKey?: ID): Promise<Feedback> {
     if (id == null) throw noID()
 
-    const count = await this.count(id, idKey)
+    const whereData = await runAdapters(
+      adapterTypes.set,
+      { [idKey || this.primaryId]: id } as Partial<Schema>,
+      this
+    )
+
+    const count = await this._countRaw(whereData)
     if (!count) throw noEntry(id)
     if (count !== 1) throw multiAction('Deleting',count)
 
-    return this.batchRemove([id], idKey)
+    const success = await this._delete(whereData)
+    return { success }
   }
 
   /** Remove record(s) matching ID
    *  - Doesn't check if IDs exist before removing
-   * @param ids - List of ID values to remove
-   * @param idKey - (Default: Primary ID) Key of IDs to remove
+   * @param where - Key/Value pairs to remove matches of
+   *    - Can also use { [whereOp/whereLogic]: value } instead of value
+   *    - WhereOps are: $gt(e), $lt(e), $eq, $in (Partial match)
+   *    - WhereLogic is { $and/$or: [ ...WhereData ] }, { $not: WhereData }
    * @returns Object: { success: true/false }
    */
-  async batchRemove<K extends keyof DBSchema & string>(ids: DBSchema[K][], idKey?: K): Promise<Feedback> {
-    return this._delete(ids, idKey).then((success) => ({ success }))
+  async batchRemove(where: WhereData<Schema>): Promise<Feedback> {
+    const whereData = await runAdapters(adapterTypes.set, where, this)
+    const success = await this._delete(whereData)
+    return { success }
   }
 
 
@@ -295,13 +317,14 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
    * @param idKey - (Default: Primary ID) Key of ID A & B values
    * @returns Object: { success: true/false }
    */
-  async swap<K extends keyof DBSchema & string>(idA: DBSchema[K], idB: DBSchema[K], idKey?: K): Promise<Feedback> {
+  async swap<ID extends Model<Schema,DBSchema>['primaryId']>(idA: DBSchema[ID], idB: DBSchema[ID], idKey?: ID): Promise<Feedback> {
     if (idA == null || idA == null) throw noID()
 
-    const count = await this.count(idA)
+    const count = await this._countRaw({ [idKey || this.primaryId]: idA } as Partial<DBSchema>)
     if (!count) throw noEntry(idA)
 
-    return this._swap(idA, idB, idKey).then((success) => ({ success }))
+    const success = await this._swap(idA, idB, idKey)
+    return { success }
   }
 
 
@@ -316,8 +339,8 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
    *  - WARNING! Return type is unknown[], should be manually cast
    */
   async custom(sql: string, params?: { [key: string]: any } | any[], raw?: boolean): Promise<unknown[]> {
-    const result = await all(getDb(), sql, params)
-      .then((res) => res.map(caseInsensitiveObject))
+    let result = await all(getDb(), sql, params)
+    result = result.map(caseInsensitiveObject)
     if (raw) return result
     return Promise.all(result.map((data) => runAdapters(adapterTypes.get, data, this)))
   }
@@ -325,6 +348,15 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
 
 
   // Base SQL //
+
+  /** Run SELECT COUNT query using raw WHERE data */
+  async _countRaw(whereData: WhereData<DBSchema> = {}): Promise<number> {
+    const result = await get<{ count: number }>(
+      getDb(),
+      ...countSQL(this.title, getSqlParams(this, whereData))
+    )
+    return result.count
+  }
 
   /** Run SELECT query using WHERE data & SQL Options (WHERE is RAW DB VALUES) */
   private async _selectRaw<O extends SQLOptions<DBSchema>>(where: WhereData<DBSchema> | undefined, options: O): SelectResult<O, DBSchema> {
@@ -342,14 +374,12 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
 
 
   /** Run SELECT query using WHERE data & SQL Options (WHERE is PRE-ADAPTER SCHEMA) */
-  private async _select<O extends SQLOptions<DBSchema>>(where: WhereData<Schema> | undefined, options: O)
-  {
+  private async _select<O extends SQLOptions<DBSchema>>(where: WhereData<Schema> | undefined, options: O) {
     
     let whereData: WhereData<DBSchema> | undefined
 
     if (where)
       whereData = await runAdapters(adapterTypes.set, where, this)
-        .then((entry) => sanitizeSchemaData(entry, this) as WhereData<DBSchema>)
 
     return this._selectRaw(whereData, options)
   }
@@ -390,17 +420,15 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
 
   /** Execute UPDATE command using DATA values on records match WHERE values
    *  and calling ONCHANGE if provided (Returns TRUE/FALSE if successful) */
-  private async _update(data: UpdateData<Schema>, where: WhereData<Schema>, { onChange }: SQLOptions<DBSchema>) {
+  private async _update(data: UpdateData<Schema>, whereData: WhereData<DBSchema>, { onChange }: SQLOptions<DBSchema>) {
     
     // Adapt/Sanitize data
-    const whereData = await runAdapters(adapterTypes.set, where, this)
     if (!Object.keys(whereData).length) throw noID()
-
     let updateData = await runAdapters(adapterTypes.set, data, this)
     if (!Object.keys(updateData).length) throw noData()
 
     // Find matching entries
-    let ids = [(whereData as Partial<Schema>)[this.primaryId]] // simple method
+    let ids = [(whereData as Partial<DBSchema>)[this.primaryId]] // simple method
 
     if (ids[0] == null || onChange) { // complex method
 
@@ -413,9 +441,9 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
 
       if (onChange) {
         // Run onChange callback here to avoid re-fetching 'currentData'
-        const changed = await onChange(updateData, currentData as DBSchema[])
+        const changed = await onChange(updateData, currentData)
         if (changed) updateData = changed
-        updateData = sanitizeSchemaData(updateData, this) as UpdateData<DBSchema>
+        updateData = sanitizeSchemaData(updateData, this)
       }
     }
 
@@ -449,16 +477,17 @@ export default class Model<Schema extends SchemaBase, DBSchema extends SchemaBas
 
   /** Execute DELETE command on one or more of ID values that match IDKEY (Or Primary ID if none provided)
    * (Returns TRUE/FALSE if successful) */
-  private async _delete<K extends keyof DBSchema & string>(ids: DBSchema[K][], idKey?: K) {
-    if (!ids.length) throw noID()
-    await run(getDb(), ...deleteSQL(this.title, idKey || this.primaryId, ids))
+  private async _delete(whereData: WhereData<DBSchema>) {
+    if (!Object.keys(whereData).length) throw noID()
+    
+    await run(getDb(), ...deleteSQL(this.title, getSqlParams(this, whereData)))
     return true
   }
 
 
   /** Swap the ID values of one or two records using IDKEY (Or Primary ID if none given)
    * (Returns TRUE/FALSE if successful) */
-  private async _swap<K extends keyof DBSchema & string>(idA: DBSchema[K], idB: DBSchema[K], idKey?: K) {
+  private async _swap<ID extends Model<Schema,DBSchema>['primaryId']>(idA: DBSchema[ID], idB: DBSchema[ID], idKey?: ID) {
     if (!idA || !idB) throw noID()
 
     await multiRun(getDb(), swapSQL(this.title, idKey || this.primaryId, idA, idB, this._tmpID))
