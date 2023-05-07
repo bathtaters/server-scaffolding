@@ -1,6 +1,6 @@
 import type Model from '../models/Model'
 import type { ModelBase } from '../models/Model'
-import type { ChangeCallback, CommonDefinition, Definition, DefinitionSchema, ForeignKeyRef, SchemaBase } from '../types/Model.d'
+import type { CommonDefinition, Definition, DefinitionSchema, ForeignKeyRef, SchemaBase } from '../types/Model.d'
 import type { IfExistsBehavior, SQLParams, SQLSuffix, SQLType, SQLTypeFull, WhereData, WhereLogic, WhereNot, WhereOps } from '../types/db.d'
 import type { HTMLType } from '../types/gui.d'
 import { adapterTypes, childLabel } from '../types/Model'
@@ -278,10 +278,10 @@ export function getAdapterFromType<S extends SchemaBase, D extends SchemaBase>
     const entryGet = adapter
     adapter = entryGet ? 
       (text) => typeof text === 'string' && text ? text.split(CONCAT_DELIM).map(entryGet) :
-        Array.isArray(text) ? text.map(entryGet) : null
+        Array.isArray(text) ? text.map(entryGet) : []
       : 
       (text) => typeof text === 'string' && text ? text.split(CONCAT_DELIM) :
-        Array.isArray(text) ? text : null
+        Array.isArray(text) ? text : []
   }
 
   return adapter as Definition<S,D>[typeof adapterTypes.get]

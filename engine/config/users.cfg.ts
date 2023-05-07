@@ -60,7 +60,7 @@ definition: UserDefinition = {
     db: 'TEXT NOT NULL',
   },
   role: {
-    typeStr: 'string[]?',
+    typeStr: 'string[]',
     default: new Role('api', 'gui'),
     limits: { elem: { max: 16 }, array: { max: Role.count } },
     isBitmap: true,

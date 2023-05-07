@@ -9,9 +9,7 @@ import type { OneOrMore } from "./global.d"
 export type ValidationString =  `${
     BaseType | `${typeof baseTypes.string}${typeof typeSuffixes.hasSpaces}` /* string* */
 }${
-    "" | typeof typeSuffixes.isArray /* [] */
-}${
-    "" | typeof typeSuffixes.isOptional /* ? */
+    "" | typeof typeSuffixes.isArray /* [] */ | typeof typeSuffixes.isOptional /* ? */
 }`
 
 
