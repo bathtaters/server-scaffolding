@@ -49,7 +49,7 @@ export const addListeners = (events: readonly ProcessEvents[], handler: (...args
 
 export function buildErrorHandler(app: Express, procInfo: ServerInfo) {
   return (err: any) => {
-    logger.error(err || 'Unknown', { label: 'unhandled' })
+    logger.error(err ? JSON.stringify(err) : 'Unknown', { label: 'unhandled' })
     if (procInfo.isClosing) return process.exit(-1)
     return buildCloseHandler(app, procInfo)()
   }
