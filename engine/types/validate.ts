@@ -1,14 +1,26 @@
-export const baseTypes = {
+export const stringTypes = {
     string:   "string",
     uuid:     "uuid",
     b64:      "b64",
     b64url:   "b64url",
     hex:      "hex",
-    date:     "date",
-    datetime: "datetime",
-    boolean:  "boolean",
+} as const
+
+export const numTypes = {
     int:      "int",
     float:    "float",
+} as const
+
+export const dateTypes = {
+    date:     "date",
+    datetime: "datetime",
+} as const
+
+export const baseTypes = {
+    ...stringTypes,
+    ...numTypes,
+    ...dateTypes,
+    boolean:  "boolean",
     object:   "object",
     any:      "any",
 } as const

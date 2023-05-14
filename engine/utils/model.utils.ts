@@ -1,9 +1,10 @@
 import type Model from '../models/Model'
 import type { ModelBase } from '../models/Model'
-import type { CommonDefinition, Definition, DefinitionSchema, ForeignKeyRef, SchemaBase } from '../types/Model.d'
+import type { Adapter, CommonDefinition, Definition, DefinitionSchema, ForeignKeyRef, SchemaBase } from '../types/Model.d'
 import type { IfExistsBehavior, SQLParams, SQLSuffix, SQLType, SQLTypeFull, WhereData, WhereLogic, WhereNot, WhereOps } from '../types/db.d'
+import type { ValidationExpanded } from '../types/validate.d'
 import type { HTMLType } from '../types/gui.d'
-import { adapterTypes, childLabel } from '../types/Model'
+import { childLabel } from '../types/Model'
 import { foreignKeyActions, sqlSuffixes, sqlTypes, whereLogic, whereNot, whereOp, whereOpPartial } from '../types/db'
 import { htmlTypes } from '../types/gui'
 
@@ -168,7 +169,7 @@ export const toPartialMatch = <T extends object>(data?: T): WhereData<object> | 
 
 
 
-export const isBool = ({ type, isArray }: Pick<Definition,'type'|'isArray'>) => type === 'boolean' && !isArray
+export const isBool = ({ typeBase, isArray }: ValidationExpanded) => typeBase === 'boolean' && !isArray
 
 /** Filter an array of objects, keeping objects where the given property is an array. */
 export const propertyIsChild = <O, P extends keyof O>(arrayOfObjects: O[], property: P) =>
@@ -202,19 +203,17 @@ export function sanitizeSchemaData
 
 /** Convert primary key definition to regular definition */
 export const stripPrimaryDef = <Schema extends SchemaBase, DBSchema extends SchemaBase>
-  ({ db, isPrimary, isOptional, ...definition }: CommonDefinition<Schema,DBSchema>) => ({
+  ({ db, isOptional, ...definition }: CommonDefinition<Schema,DBSchema>) => ({
     ...definition,
     db: db ? db.replace(' PRIMARY KEY', ' NOT NULL') as SQLTypeFull : false as false,
   })
 
 
 /** Convert model type to SQL type */
-export function dbFromType<D extends Definition>
-  ({ type, isOptional, isPrimary }: Pick<D,'type'|'isOptional'|'isPrimary'>): SQLTypeFull
-{
+export function dbFromType({ typeBase, isOptional }: ValidationExpanded, isPrimary = false): SQLTypeFull {
   let dbType: SQLType, dbSuffix: SQLSuffix | '' = ''
   
-  switch (type) {
+  switch (typeBase) {
     case 'float':
       dbType = sqlTypes.Float
       break
@@ -236,10 +235,8 @@ export function dbFromType<D extends Definition>
 
 
 /** Convert Model type to HTML input type */
-export function htmlFromType<D extends Definition>
-  ({ type, isArray }: Pick<D,'type'|'isArray'>): HTMLType
-{
-  switch (isArray ? 'array' : type) {
+export function htmlFromType({ typeBase, isArray }: ValidationExpanded): HTMLType {
+  switch (isArray ? 'array' : typeBase) {
     case 'boolean':   return htmlTypes.checkbox
     case 'date':      return htmlTypes.date
     case 'datetime':  return htmlTypes.datetime
@@ -251,13 +248,11 @@ export function htmlFromType<D extends Definition>
 
 
 /** Convert data from storage type to expected type */
-export function getAdapterFromType<S extends SchemaBase, D extends SchemaBase>
-  ({ type, isArray, isBitmap }: Pick<Definition<S,D>, 'type'|'isArray'|'isBitmap'>)
-{
-  let adapter: ((val: any) => any) | undefined;
-  if (isBitmap) return undefined
+export function getAdapterFromType({ typeBase, isArray }: ValidationExpanded, isBitmap = false) {
+  let adapter: Adapter<any,any> | undefined;
+  if (isBitmap) return false
 
-  switch (type) {
+  switch (typeBase) {
     case 'object':
       adapter = (text) => typeof text === 'string' ? JSON.parse(text)    : text
       break
@@ -273,25 +268,23 @@ export function getAdapterFromType<S extends SchemaBase, D extends SchemaBase>
   if (isArray) {
     const entryGet = adapter
     adapter = entryGet ? 
-      (text) => typeof text === 'string' && text ? text.split(CONCAT_DELIM).map(entryGet) :
-        Array.isArray(text) ? text.map(entryGet) : []
+      (text, data) => typeof text === 'string' && text ? text.split(CONCAT_DELIM).map((v) => entryGet(v, data)) :
+        Array.isArray(text) ? text.map((v) => entryGet(v, data)) : []
       : 
       (text) => typeof text === 'string' && text ? text.split(CONCAT_DELIM) :
         Array.isArray(text) ? text : []
   }
 
-  return adapter as Definition<S,D>[typeof adapterTypes.get]
+  return adapter || false
 }
 
 
 /** Convert data from user input to storage type */
-export function setAdapterFromType<S extends SchemaBase, D extends SchemaBase>
-  ({ type, isArray, isBitmap }: Pick<Definition<S,D>, 'type'|'isArray'|'isBitmap'>)
-{
-  let adapter: ((val: any) => any) | undefined;
-  if (isBitmap) return undefined
+export function setAdapterFromType({ typeBase, isArray }: ValidationExpanded, isBitmap = false) {
+  let adapter: Adapter<any,any> | undefined;
+  if (isBitmap) return false
 
-  switch (type) {
+  switch (typeBase) {
     case 'int':
       adapter = (text) => typeof text === 'string' ? parseInt(text)   : text
       break
@@ -315,22 +308,19 @@ export function setAdapterFromType<S extends SchemaBase, D extends SchemaBase>
   if (isArray) {
     const entrySet = adapter
     adapter = entrySet ?
-      (arr) => 
-        typeof arr === 'string' ? toArray(arr)?.map(entrySet) :
-        Array.isArray(arr) ? arr.map(entrySet) : null
+      (arr, data) => 
+        typeof arr === 'string' ? toArray(arr)?.map((v) => entrySet(v, data)) :
+        Array.isArray(arr) ? arr.map((v) => entrySet(v, data)) : null
       :
       (arr) =>
         typeof arr === 'string' ? toArray(arr) :
         Array.isArray(arr) ? arr : null
   }
 
-  return adapter as Definition<S,D>[typeof adapterTypes.set]
+  return adapter || false
 }
 
 
 // TYPE HELPERS
-
-type Sanitized<T extends SchemaBase, Schema extends SchemaBase, DBSchema extends SchemaBase> =
-  Pick<T, (keyof Schema | WhereLogic | WhereNot | keyof SanitModel<Schema, DBSchema>['children']) & keyof T>
 
 type SanitModel<Schema extends SchemaBase, DBSchema extends SchemaBase> = Partial<Pick<ModelBase<Schema, DBSchema>,'schema'|'children'>>

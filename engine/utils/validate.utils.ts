@@ -1,5 +1,5 @@
 import type { Schema } from 'express-validator'
-import type { Limits, BaseType, ValidationType, ValidationTypeFull } from '../types/validate.d'
+import type { Limits, ValidationExpanded, ValidationBasic, ValidationBase } from '../types/validate.d'
 import type { FormDefinition } from '../types/gui.d'
 import { baseTypes } from '../types/validate'
 import RegEx from '../libs/regex'
@@ -10,27 +10,29 @@ import { mapObject, splitUnenclosed } from './common.utils'
 
 // Initialize Parsers
 const typeStrRegex = RegEx(/^([^[?*]+)(\?|\*|\[\])?(\?|\*|\[\])?(\?|\*|\[\])?$/)
-const isBaseType = (str?: string): str is BaseType => !!str && Object.values<string>(baseTypes).includes(str)
+const isBaseType = (str?: string): str is ValidationBase => !!str && Object.values<string>(baseTypes).includes(str)
 
 /** Decode validation types to { type, hasSpaces (*), isArray ([]), isOptional (?) }. 
  * overwrite = true will overwrite exisiting type options */
-export function parseTypeStr<O extends ValidationTypeFull>(options: O, overwrite = false) {
-  if (!options.typeStr) return options
-  
-  const match = options.typeStr.toLowerCase().match(typeStrRegex)
-  if (!match) throw new Error(`Unable to parse typeString: ${options.typeStr}`)
+export function expandTypeStr({ type, limits }: ValidationBasic): ValidationExpanded {  
+  const match = type.toLowerCase().match(typeStrRegex)
+
+  if (!match) throw new Error(`Unable to parse typeString: ${type}`)
+  if (!isBaseType(match[1])) throw new Error(`TypeString "${type}" is not one of: ${Object.values(baseTypes).join(', ')}`)
 
   const opts = match.slice(2,5)
-  if ((overwrite || !options.type) && isBaseType(match[1])) options.type = match[1]
-  if (overwrite || !options.isOptional) options.isOptional = opts.includes('?')
-  if (overwrite || !options.isArray)    options.isArray    = opts.includes('[]')
-  if (overwrite || !options.hasSpaces)  options.hasSpaces  = opts.includes('*')
-  return options
+  return {
+    typeBase: match[1],
+    limits,
+    isOptional : opts.includes('?'),
+    isArray    : opts.includes('[]'),
+    hasSpaces  : opts.includes('*'),
+  }
 }
 
-/** Convert ValidationType back to typeStr */
-export const toTypeString = ({ type, isOptional, isArray, hasSpaces }: ValidationType) =>
-  `${type}${hasSpaces ? '*' : ''}${isArray ? '[]' : ''}${isOptional ? '?' : ''}`
+/** Convert ValidationType back to ValidationBasic.type */
+export const toTypeString = ({ typeBase, isOptional, isArray, hasSpaces }: ValidationExpanded) =>
+  `${typeBase}${hasSpaces ? '*' : ''}${isArray ? '[]' : ''}${isOptional ? '?' : ''}`
 
 
 // *** HTML Form validation *** \\
@@ -43,15 +45,15 @@ function generateLimits(strArray: string[]): Limits | undefined {
 }
 
 
-const htmlToValid = ({ type, limits }: FormDefinition['html']) => ({
-  type: type === 'number' ? 'int' : 'string',
+const htmlToValid = ({ type, limits }: FormDefinition['html']): ValidationExpanded => ({
+  typeBase: type === 'number' ? 'int' : 'string',
   limits: !limits && Array.isArray(type) ? generateLimits(type) : limits
 })
 
 
 /** Get validation & limits from html object { key, type, limits } */
 export const formSettingsToValidate = <S extends Record<string, FormDefinition>>(settings: S) =>
-  mapObject(settings, ({ html }) => htmlToValid(html)) as Record<keyof S, ValidationTypeFull>
+  mapObject(settings, ({ html }) => htmlToValid(html)) as Record<keyof S, ValidationExpanded>
 
 
   

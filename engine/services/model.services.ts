@@ -1,11 +1,12 @@
 import type Model from '../models/Model'
-import type { AdapterType, Definition, DefinitionSchema, SchemaBase, ArrayDefinitions, CommonDefinition, AdapterData, AdapterDataValue } from '../types/Model.d'
+import type { AdapterType, Definition, DefinitionSchema, SchemaBase, ArrayDefinitions, CommonDefinition, AdapterData, AdapterDataValue, DefinitionNormal } from '../types/Model.d'
 import type { UpdateData, UpdateValue, WhereData } from '../types/db.d'
+import type { ValidationBasic } from '../types/validate.d'
 import { childLabel, adapterTypes } from '../types/Model'
 import { updateFunctions, whereLogic, whereNot } from '../types/db'
 import { hasDupes, isIn } from '../utils/common.utils'
 import { dbFromType, htmlFromType, getAdapterFromType, setAdapterFromType, stripPrimaryDef, sanitizeSchemaData } from '../utils/model.utils'
-import { parseTypeStr } from '../utils/validate.utils'
+import { expandTypeStr } from '../utils/validate.utils'
 import { getOpType } from '../utils/db.utils'
 import { defaultPrimary, defaultPrimaryType, SQL_ID } from '../config/models.cfg'
 
@@ -27,22 +28,23 @@ export function projectedValue<T>(currentValue: T, update: UpdateValue<T>): T {
 
 export function adaptSchemaEntry
   <Schema extends SchemaBase, DBSchema extends SchemaBase, K extends keyof (Schema & DBSchema) & string>
-  (settings: Definition<Schema, DBSchema, K>)
+  ({ isPrimary, ...definition }: Definition<Schema, DBSchema, K>): DefinitionNormal<Schema, DBSchema, K>
 {
-  if (!settings.type && settings.typeStr) parseTypeStr(settings)
+  if (!definition.typeStr && !isPrimary) throw new Error(`Definition is missing typeStr (or isPrimary != true): ${JSON.stringify(definition)}`)
 
-  if (!settings.type && settings.isPrimary) settings = { ...settings, ...defaultPrimaryType }
+  const defType = !definition.typeStr ? defaultPrimaryType : expandTypeStr(definition as ValidationBasic)
 
-  if (settings.db == null && !settings.isArray)     settings.db                = dbFromType(settings)
-  if (!settings.isPrimary && settings.html == null) settings.html              = htmlFromType(settings)
-  if (settings[adapterTypes.get] == null)           settings[adapterTypes.get] = getAdapterFromType(settings)
-  if (settings[adapterTypes.set] == null)           settings[adapterTypes.set] = setAdapterFromType(settings)
-  delete settings.isPrimary
+  let normalized = { ...definition, ...defType } as DefinitionNormal<Schema, DBSchema, K>
 
-  if (settings.isHTML && (settings.type !== 'string' || !settings.hasSpaces))
-    throw new Error(`Schema cannot have non-string* HTML. Type: ${settings.typeStr || settings.type}`)
+  if (normalized.db == null)                 normalized.db                = !defType.isArray && dbFromType(defType, isPrimary)
+  if (normalized.html == null)               normalized.html              = !isPrimary && htmlFromType(defType)
+  if (normalized[adapterTypes.get] == null)  normalized[adapterTypes.get] = getAdapterFromType(defType, definition.isBitmap)
+  if (normalized[adapterTypes.set] == null)  normalized[adapterTypes.set] = setAdapterFromType(defType, definition.isBitmap)
 
-  return settings
+  if (normalized.isHTML && (normalized.type !== 'string' || !normalized.hasSpaces))
+    throw new Error(`Schema cannot have non-string* HTML. Type: ${definition.typeStr || normalized.type}`)
+
+  return normalized
 }
 
 
@@ -141,12 +143,12 @@ export function extractChildren<S extends SchemaBase, D extends SchemaBase>(sche
           [childLabel.foreignId]: stripPrimaryDef(idDefinition),
 
           [childLabel.index]: adaptSchemaEntry({
-            typeStr: 'int',
+            type: 'int',
             limits: def.limits && (def.limits.elem || def.limits.array) ? def.limits.array : def.limits,
           }),
 
           [childLabel.value]: adaptSchemaEntry({
-            typeStr: (def.typeStr || def.type).replace('[]','') as NonNullable<Definition['typeStr']>,
+            type: (def.typeStr || def.type).replace('[]','') as NonNullable<Definition['typeStr']>,
             limits: def.limits && (def.limits.elem || def.limits.array) ? def.limits.elem : undefined,
             isHTML: def.isHTML,
           }),

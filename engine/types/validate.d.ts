@@ -1,55 +1,64 @@
-import type { baseTypes, typeSuffixes, requestFields } from "./validate"
-import type { OneOrMore } from "./global.d"
+import type { baseTypes, typeSuffixes, requestFields, stringTypes, dateTypes, numTypes } from "./validate"
 
-/** Validation type of form: type*[]? (All suffixes are optional)
- *   - type = string, uuid, b64[url], hex, date, datetime, boolean, int, float, object, any
- *   - [] = array of type
- *   - ? = column is optional
- *   - \* = (Only allowed w/ type = string) allows symbols/spaces in string */
-export type ValidationString =  `${
-    BaseType | `${typeof baseTypes.string}${typeof typeSuffixes.hasSpaces}` /* string* */
+/** Structure of Type value string */
+type ValidationType = `${
+    ValidationBase |
+    `${typeof baseTypes.string}${typeof typeSuffixes.hasSpaces}` /* string* */
 }${
-    "" | typeof typeSuffixes.isArray /* [] */ | typeof typeSuffixes.isOptional /* ? */
+    ""                             /*       No suffix     */ |
+    typeof typeSuffixes.isArray    /*    Array suffix: [] */ |
+    typeof typeSuffixes.isOptional /* Optional suffix: ?  */
 }`
 
+/** Convert ValidationBases to Types */
+type BaseType<S extends ValidationType> = 
+    BaseOfValidation<S> extends StringType     ? string :
+    BaseOfValidation<S> extends NumType        ? number :
+    BaseOfValidation<S> extends DateType       ? Date :
+    BaseOfValidation<S> extends 'object'       ? Record<string,any> :
+    BaseOfValidation<S> extends 'boolean'      ? boolean :
+    BaseOfValidation<S> extends ValidationBase ? any :
+        never
 
-export type ValidationType = {
-    /** Base type (No *[]? suffixes)
-     *   - Defintion MUST include a type or a typeStr
-     *   - default: parsed from typeStr */
-    type?:        BaseType,
-    
+/** Basic Validation -- Expected to be entered by user */
+export type ValidationBasic = {
+    /** Validation type of form: type*[]? (All suffixes are optional)
+     *   - type = string, uuid, b64[url], hex, date, datetime, boolean, int, float, object, any
+     *   - [] = array of type
+     *   - ?  = column is optional (Arrays cannot be optional)
+     *   - *  = (Only allowed w/ type = string) allows symbols/spaces in string */
+    type: ValidationType
+
     /** Limit object
      *   - { min?, max? } | { array: { min?, max? }, elem: { min?, max? } }
      *   - undefined = default limits; false = no limits
      *   - Sets limits on numbers, string length or array size */
-    limits?:      LimitsFalsable,
+    limits?: LimitsFalsable,
+}
 
-    /** Value can be undefined ('?' suffix)
-     *   - default: parsed from typeStr */
+/** Expanded Validation -- Used within Validation methods */
+export type ValidationExpanded = Pick<ValidationBasic, 'limits'> & {
+    /** Base type = string, uuid, b64[url], hex, date, datetime, boolean, int, float, object, any
+     *   - Parsed from typeStr */
+    typeBase:     ValidationBase,
+
+    /** Value can be undefined
+     *   - Parsed from typeStr as '?' suffix */
     isOptional?:  boolean,
 
-    /** If column is an array of <type> ('[]' suffix)
+    /** If column is an array of <type>
      *   - This will auto-create and link a related table for this column
-     *      unless "db" property is present
-     *   - default: parsed from typeStr */
+     *      unless "db" property is defined
+     *   - Parsed from typeStr as '[]' suffix */
     isArray?:     boolean,
 
-    /** If a string column will allow spaces & special characters ('*' suffix)
-     *   - default: parsed from typeStr */
+    /** If a string column will allow spaces & special characters
+     *   - Parsed from typeStr as '*' suffix */
     hasSpaces?:   boolean,
 }
 
-export type ValidationTypeFull = OneOrMore<Partial<ValidationType> & {
-    /** Validation type of form: type*[]? (All suffixes are optional)
-    *   - type = string, uuid, b64[url], hex, date, datetime, boolean, int, float, object, any
-    *   - [] = array of type
-    *   - ? = column is optional
-    *   - \* = (Only allowed w/ type = string) allows symbols/spaces in string */
-    typeStr?: ValidationString
-}, 'type'|'typeStr'>
-
-export type ValidationOptions = ValidationTypeFull & { key: string, isIn: RequestField[]}
+/** Additional Validation Options appended to Basic Validation */
+export type ValidationOptions = ValidationBasic & { key: string, isIn: RequestField[] }
 
 type ModelBase = { schema: Record<string,any> }
 export type KeyArr<Model extends ModelBase> = Array<keyof Model['schema']> 
@@ -69,12 +78,40 @@ export type ModelValidationOptions<Model extends ModelBase> = {
     additional?: readonly ValidationOptions[],
 }
 
-export type BaseType = typeof baseTypes[keyof typeof baseTypes]
-export type TypeSuffix = typeof typeSuffixes[keyof typeof typeSuffixes]
-export type RequestField = typeof requestFields[keyof typeof requestFields]
+export type ValidationBase = typeof baseTypes[keyof typeof baseTypes]
+export type TypeSuffix     = typeof typeSuffixes[keyof typeof typeSuffixes]
+export type RequestField   = typeof requestFields[keyof typeof requestFields]
 
 type Limit = { min?: number, max?: number }
 export type Limits = Limit & { elem?: Limit, array?: Limit }
 export type LimitsFalsable = (Limit & { elem?: Limit | false, array?: Limit | false }) | false
 
-export type TypeDef = BaseType | "array"
+export type TypeDef = ValidationBase | "array"
+
+/** Extract Type from ValidationType string */
+export type ExtractType<S extends ValidationType> =
+    (IsArray<S> extends true    ? Array<BaseType<S>> : BaseType<S>) |
+    (IsOptional<S> extends true ? null : never)
+
+
+
+// ValidationType DECODERS
+
+type StringType = typeof stringTypes[keyof typeof stringTypes]
+type DateType   = typeof dateTypes[keyof typeof dateTypes]
+type NumType    = typeof numTypes[keyof typeof numTypes]
+
+/** Extract ValidationBase string from ValidationType */
+type BaseOfValidation<S extends ValidationType> =
+    S extends `${infer T}${TypeSuffix | ''}${TypeSuffix | ''}${TypeSuffix | ''}` ?
+        T extends ValidationBase ? T : never : never
+
+/** Extract isArray value from ValidationType */
+type IsArray<S extends ValidationType> =
+    S extends `${ValidationBase}${string}${typeof typeSuffixes.isArray}${string}` ?
+        true : false
+
+/** Extract isOptional value from ValidationType */
+type IsOptional<S extends ValidationType> =
+    S extends `${ValidationBase}${string}${typeof typeSuffixes.isOptional}${string}` ?
+        true : false
