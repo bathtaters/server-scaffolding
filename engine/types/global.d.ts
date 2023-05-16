@@ -1,5 +1,11 @@
 // -- TYPESCRIPT HELPERS -- \\
 
+/** Flatten type definitions for Intellisense tooltips (Works well with Generic types) */
+export type Flatten<T> = T extends any ? { [K in keyof T as T[K] extends never ? never : K] : T[K] } : never
+
+/** Returns union of Type and Promise of Type */
+export type Awaitable<T> = Promise<T> | T
+
 /** Object of a single type value (Inverse of Record<>) */
 export type ObjectOf<T, K extends string | number | symbol = string | number | symbol> = { [P in K]: T }
 
