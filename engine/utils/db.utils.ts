@@ -171,18 +171,21 @@ export const selectSQL = (
 
 
 export const insertSQL = <T>(
-  tableName: string, dataArray: T[], keys: (keyof T)[],
+  tableName: string, dataArray: T[], keys: string[],
   ifExists: IfExistsBehavior = 'default'
-): [string, any[]] => [
+): [string, any[]] => {
+  const dataKeys = keys.filter((k) => k in dataArray) as (keyof T)[]
+  return [
 
-  `INSERT${ifExistsBehavior[ifExists]} INTO ${tableName}(${
-      keys.join(',')
-    }) VALUES ${
-      dataArray.map(() => `(${keys.map(() => '?').join(',')})`).join(',')
-  }`,
+    `INSERT${ifExistsBehavior[ifExists]} INTO ${tableName}(${
+        keys.join(',')
+      }) VALUES ${
+        dataArray.map(() => `(${dataKeys.map(() => '?').join(',')})`).join(',')
+    }`,
 
-  dataArray.flatMap((data) => keys.map((key) => data[key]))
-]
+    dataArray.flatMap((data) => dataKeys.map((key) => data[key]))
+  ]
+}
 
 
 export const updateSQL = <K extends string>(
