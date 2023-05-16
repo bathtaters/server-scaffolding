@@ -1,8 +1,9 @@
 import type { Schema } from 'express-validator'
-import type { Limits, ValidationExpanded, ValidationBasic, ValidationBase } from '../types/validate.d'
+import type { Limits, ValidationExpanded, ValidationBasic, ValidationBase, ValidationType } from '../types/validate.d'
 import type { FormDefinition } from '../types/gui.d'
 import { baseTypes } from '../types/validate'
 import RegEx from '../libs/regex'
+import { isDate } from '../libs/date'
 import { boolOptions } from '../config/validate.cfg'
 import { mapObject, splitUnenclosed } from './common.utils'
 
@@ -32,7 +33,7 @@ export function expandTypeStr({ type, limits }: ValidationBasic): ValidationExpa
 
 /** Convert ValidationType back to ValidationBasic.type */
 export const toTypeString = ({ typeBase, isOptional, isArray, hasSpaces }: ValidationExpanded) =>
-  `${typeBase}${hasSpaces ? '*' : ''}${isArray ? '[]' : ''}${isOptional ? '?' : ''}`
+  `${typeBase}${hasSpaces ? '*' : ''}${isArray ? '[]' : ''}${isOptional ? '?' : ''}` as ValidationType
 
 
 // *** HTML Form validation *** \\
@@ -56,7 +57,19 @@ export const formSettingsToValidate = <S extends Record<string, FormDefinition>>
   mapObject(settings, ({ html }) => htmlToValid(html)) as Record<keyof S, ValidationExpanded>
 
 
-  
+
+
+// *** Date validation *** \\
+
+export function parseDate(date: any) {
+  if (typeof date === 'number') return date
+  if (!date)        return null
+  if (isDate(date)) return date.getTime()
+  if (!isNaN(date)) return +date
+  /* Fallback */    return new Date(date).getTime()
+}
+
+
 
 // *** Boolean validation *** \\
   
