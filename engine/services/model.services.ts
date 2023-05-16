@@ -1,17 +1,19 @@
 import type Model from '../models/Model'
-import type { AdapterType, Definition, DefinitionSchema, SchemaBase, ArrayDefinitions, CommonDefinition, AdapterData, AdapterDataValue, DefinitionNormal } from '../types/Model.d'
+import type {
+  Definition, DefinitionSchema, DefinitionNormal, DefinitionSchemaNormal, ChildDefinitions, 
+  AdapterType, AdapterData, AdapterIn, AdapterOut, SkipChildren, DefType, PrimaryIDOf, AdapterDefinition, AdapterDefinitionLoose, 
+} from '../types/Model.d'
 import type { UpdateData, UpdateValue, WhereData } from '../types/db.d'
-import type { ValidationBasic } from '../types/validate.d'
-import { childLabel, adapterTypes } from '../types/Model'
+import { childLabel, adapterTypes, childIndexType } from '../types/Model'
 import { updateFunctions, whereLogic, whereNot } from '../types/db'
 import { hasDupes, isIn } from '../utils/common.utils'
-import { dbFromType, htmlFromType, getAdapterFromType, setAdapterFromType, stripPrimaryDef, sanitizeSchemaData } from '../utils/model.utils'
-import { expandTypeStr } from '../utils/validate.utils'
+import { dbFromType, htmlFromType, stripPrimaryDef, sanitizeSchemaData, getDefaultAdapter, definitionToValid } from '../utils/model.utils'
+import { expandTypeStr, toTypeString } from '../utils/validate.utils'
 import { getOpType } from '../utils/db.utils'
-import { defaultPrimary, defaultPrimaryType, SQL_ID } from '../config/models.cfg'
+import { defaultPrimaryKey, defaultPrimaryType, SQL_ID } from '../config/models.cfg'
 
 
-// @ts-ignore -- Ignore all 'no implicit any' errors in this function -- TODO fix typings so these go away
+// TODO -- fix typings and remove 'as any'
 const projectionFunctions = updateFunctions as any
 export function projectedValue<T>(currentValue: T, update: UpdateValue<T>): T {
   if (typeof update !== 'object' || !update) return update
@@ -26,113 +28,87 @@ export function projectedValue<T>(currentValue: T, update: UpdateValue<T>): T {
 }
 
 
-export function adaptSchemaEntry
-  <Schema extends SchemaBase, DBSchema extends SchemaBase, K extends keyof (Schema & DBSchema) & string>
-  ({ isPrimary, ...definition }: Definition<Schema, DBSchema, K>): DefinitionNormal<Schema, DBSchema, K>
-{
-  if (!definition.typeStr && !isPrimary) throw new Error(`Definition is missing typeStr (or isPrimary != true): ${JSON.stringify(definition)}`)
+/** Extract PrimaryID key from DefinitionSchema (Appending default value if missing) */
+export function getPrimaryId<Def extends DefinitionSchema>(schema: Def, title = 'model', isChild = false) {
 
-  const defType = !definition.typeStr ? defaultPrimaryType : expandTypeStr(definition as ValidationBasic)
-
-  let normalized = { ...definition, ...defType } as DefinitionNormal<Schema, DBSchema, K>
-
-  if (normalized.db == null)                 normalized.db                = !defType.isArray && dbFromType(defType, isPrimary)
-  if (normalized.html == null)               normalized.html              = !isPrimary && htmlFromType(defType)
-  if (normalized[adapterTypes.get] == null)  normalized[adapterTypes.get] = getAdapterFromType(defType, definition.isBitmap)
-  if (normalized[adapterTypes.set] == null)  normalized[adapterTypes.set] = setAdapterFromType(defType, definition.isBitmap)
-
-  if (normalized.isHTML && (normalized.type !== 'string' || !normalized.hasSpaces))
-    throw new Error(`Schema cannot have non-string* HTML. Type: ${definition.typeStr || normalized.type}`)
-
-  return normalized
-}
-
-
-export function getPrimaryIdAndAdaptSchema
-  <Schema extends SchemaBase, DBSchema extends SchemaBase = Schema>
-  (schema: DefinitionSchema<Schema,DBSchema>, title = 'model', isArray = false)
-{
-  let primaryId: (keyof (Schema & DBSchema) & string) | undefined
+  let primaryId: keyof Def | undefined
   
-  let key = primaryId
-  for (key in schema) {
-    if (schema[key].isPrimary) {
-      if (primaryId) throw new Error(`${title} has more than one primary ID: ${String(primaryId)}, ${key}`)
-      if (schema[key].isArray) throw new Error(`Primary ID cannot be array type: ${title}.${key}`)
-      primaryId = key
-    }
-
-    schema[key] = adaptSchemaEntry<Schema, DBSchema, typeof key>(schema[key])
+  for (const key in schema) {
+    if (!schema[key].isPrimary) continue
+    if (primaryId) throw new Error(`${title} has more than one primary ID: ${String(primaryId)}, ${key}`)
+    primaryId = key
   }
 
   if (!primaryId) {
-    primaryId = isArray ? SQL_ID : defaultPrimary
-    schema[primaryId] = { ...defaultPrimaryType, ...(schema[primaryId] || {}), isPrimary: true }
-    delete schema[primaryId].db
-
-    schema[primaryId] = adaptSchemaEntry<Schema, DBSchema, typeof primaryId>(schema[primaryId])
+    primaryId = isChild ? SQL_ID : defaultPrimaryKey
+    schema[primaryId] = { type: defaultPrimaryType, ...(schema[primaryId] || {}), isPrimary: true }
   }
 
   if (!Object.values(schema).filter(({ db }) => db).length)
-    throw new Error(`DB schema for ${title} was unable to be created or has no entries.`)
+    throw new Error(`Schema for ${title} has no database entries.`)
 
   if (hasDupes(Object.keys(schema).map((k) => typeof k === 'string' ? k.toLowerCase() : k)))
-    throw new Error(`Definitions for ${title} contain duplicate key names: ${Object.keys(schema).join(', ')}`)
+    throw new Error(`Schema for ${title} contain duplicate property names: ${Object.keys(schema).join(', ')}`)
 
-  return primaryId
+  return primaryId as PrimaryIDOf<Def>
 }
 
 
-export async function runAdapters<S extends SchemaBase, D extends SchemaBase>
-  (adapterType: typeof adapterTypes.set, data: S, model: RAModel<S,D>):
-  Promise<D>;
-export async function runAdapters<S extends SchemaBase, D extends SchemaBase>
-  (adapterType: typeof adapterTypes.get, data: D, model: RAModel<S,D>):
-  Promise<S>;
-export async function runAdapters<S extends SchemaBase, D extends SchemaBase>
-  (adapterType: typeof adapterTypes.set, data: Partial<S>, model: RAModel<S,D>):
-  Promise<Partial<D>>;
-export async function runAdapters<S extends SchemaBase, D extends SchemaBase>
-  (adapterType: typeof adapterTypes.get, data: Partial<D>, model: RAModel<S,D>):
-  Promise<Partial<S>>;
-export async function runAdapters<S extends SchemaBase, D extends SchemaBase>
-  (adapterType: typeof adapterTypes.set, data: WhereData<S>, model: RAModel<S,D>):
-  Promise<WhereData<D>>;
-export async function runAdapters<S extends SchemaBase, D extends SchemaBase>
-  (adapterType: typeof adapterTypes.set, data: UpdateData<S>, model: RAModel<S,D>):
-  Promise<UpdateData<D>>;
-export async function runAdapters<S extends SchemaBase, D extends SchemaBase>
-  (adapterType: AdapterType, data: AdapterData<S & D>, model: RAModel<S,D>):
-  Promise<AdapterData<D & S>>;
-export async function runAdapters<S extends SchemaBase, D extends SchemaBase = S>
-  (adapterType: AdapterType, data: AdapterData<S & D>, model: RAModel<S,D>) {
-  let result: any = {}
+/** Convert DefinitionSchema (from Model constructor) to DefinitionSchemaNormal (for Model.schema) */
+export const adaptSchema = <Def extends DefinitionSchema>(schema: Def) => 
+  Object.entries(schema).reduce(
+    (result, [key, entry]) => ({ ...result, [key]: adaptSchemaEntry(entry) }),
+    {} as DefinitionSchemaNormal<Def>
+  )
 
-  await Promise.all(Object.entries<AdapterDataValue<S & D>>(data).map(async ([key,val]) => {
+/** Normalize a single Property's Definition */
+export function adaptSchemaEntry<S extends DefType>(def: Definition<S>): DefinitionNormal<S> {
 
-    if (isIn(key, whereLogic) || key === whereNot) return Array.isArray(val) ?
-      Promise.all(val.map((d) => runAdapters(adapterType, d, model))) :
-      runAdapters(adapterType, val ?? {}, model)
+  const expanded = expandTypeStr(definitionToValid(def))
 
-    if (!isIn(key, model.schema) || (adapterType === adapterTypes.get && model.hidden.includes(key))) return;
-    
-    const adapter = model.schema[key][adapterType]
-    if (typeof adapter !== 'function') return result[key] = val
+  const res = {
+    ...def,
+    ...expanded,
+    db:   def.db   ?? (!expanded.isArray &&   dbFromType(expanded, def.isPrimary)),
+    html: def.html ?? (!def.isPrimary    && htmlFromType(expanded)),
+  }
+  
+  // Error checking
+  if (res.isHTML && (expanded.typeBase !== 'string' || !expanded.hasSpaces))
+    throw new Error(`SCHEMA ERROR - isHTML expects "string*" type: "${def.type || toTypeString(expanded)}"`)
 
-    const opKey = getOpType(val)
-    const opVal: (S & D)[keyof (S & D)] = opKey ? (val as any)[opKey] : val
-    
-    const adapterResult = await adapter(opVal, result)
-    result[key] = opKey ? { [opKey]: adapterResult ?? opVal } : adapterResult ?? opVal
-  }))
+  if (res.isPrimary && (expanded.isArray || expanded.isOptional || !res.db))
+    throw new Error(`SCHEMA ERROR - Primary ID must be serializable & in DB: ${res.db ? `"${def.type || toTypeString(expanded)}"` : 'db = false'}`)
+  
+  return res
+}
 
-  return adapterType === adapterTypes.set ? sanitizeSchemaData(result, model) : result
+/** Replace non-false Missing Adapters with Default Adapters */
+export function buildAdapters<D extends DefinitionSchema, N extends DefinitionSchemaNormal<D>>
+(adapters: Partial<AdapterDefinition<D>>, definition: N)
+{
+
+  Object.values(adapterTypes).forEach((adapterKey) => {
+    // Add missing adapter objects, point to current adapter
+    const adapterPtr = (adapters[adapterKey]
+      ? adapters[adapterKey]
+      : adapters[adapterKey] = {}
+    ) as AdapterDefinitionLoose<D>[AdapterType] // Force loose typing to avoid TS errors
+
+    // Fill in undefined adapters with defaults
+    for (const key in definition) {
+      if (adapterPtr[key] == null)
+        adapterPtr[key] = getDefaultAdapter(adapterKey, definition[key])
+    }
+  })
+
+  return adapters as AdapterDefinition<D>
 }
 
 
-
-export function extractChildren<S extends SchemaBase, D extends SchemaBase>(schema: DefinitionSchema<S,D>, idDefinition: CommonDefinition<S,D>) {
-  return Object.entries(schema).reduce<ArrayDefinitions<S & D>>(
+/** Extract child definitions from parent DefinitionSchema */
+export function extractChildren<D extends DefinitionSchema, N extends DefinitionSchemaNormal<D>>(schema: N, idDefinition: N[keyof N]) {
+  return Object.entries(schema).reduce<ChildDefinitions<D>>(
     (arrayTables, [arrayName, def]) => {
       if (!def.isArray || def.db) return arrayTables
 
@@ -143,12 +119,12 @@ export function extractChildren<S extends SchemaBase, D extends SchemaBase>(sche
           [childLabel.foreignId]: stripPrimaryDef(idDefinition),
 
           [childLabel.index]: adaptSchemaEntry({
-            type: 'int',
+            type: childIndexType,
             limits: def.limits && (def.limits.elem || def.limits.array) ? def.limits.array : def.limits,
           }),
 
           [childLabel.value]: adaptSchemaEntry({
-            type: (def.typeStr || def.type).replace('[]','') as NonNullable<Definition['typeStr']>,
+            type: toTypeString({ ...def, isArray: false }),
             limits: def.limits && (def.limits.elem || def.limits.array) ? def.limits.elem : undefined,
             isHTML: def.isHTML,
           }),
@@ -162,4 +138,68 @@ export function extractChildren<S extends SchemaBase, D extends SchemaBase>(sche
 
 
 
-type RAModel<S extends SchemaBase, D extends SchemaBase> = Pick<Model<S,D>, 'schema'|'hidden'|'children'>
+/** Run adapters on full data */
+export async function runAdapters<D extends DefinitionSchema, A extends AdapterType>
+  (adapterType: A, data: AdapterIn<D,A>, model: AModel<D>):
+  Promise<AdapterOut<D,A>>;
+
+/** Run adapters on childless data */
+export async function runAdapters<D extends DefinitionSchema, A extends AdapterType>
+  (adapterType: A, data: SkipChildren<AdapterIn<D,A>>, model: AModel<D>):
+  Promise<SkipChildren<AdapterOut<D,A>>>;
+
+/** Run adapters on where data */
+export async function runAdapters<D extends DefinitionSchema, A extends AdapterType>
+  (adapterType: A, data: WhereData<AdapterIn<D,A>>, model: AModel<D>):
+  Promise<WhereData<AdapterOut<D,A>>>;
+
+/** Run adapters on update data */
+export async function runAdapters<D extends DefinitionSchema, A extends AdapterType>
+  (adapterType: A, data: UpdateData<AdapterIn<D,A>>, model: AModel<D>):
+  Promise<UpdateData<AdapterOut<D,A>>>;
+
+/** Run adapters on partial data */
+export async function runAdapters<D extends DefinitionSchema, A extends AdapterType>
+  (adapterType: A, data: Partial<AdapterIn<D,A>>, model: AModel<D>):
+  Promise<Partial<AdapterOut<D,A>>>;
+
+/** Run adapters on any data */
+export async function runAdapters<D extends DefinitionSchema, A extends AdapterType>
+  (adapterType: A, data: AdapterData<AdapterIn<D,A>>, model: AModel<D>):
+  Promise<AdapterData<AdapterOut<D,A>>>;
+
+export async function runAdapters<D extends DefinitionSchema, A extends AdapterType>
+  (adapterType: A, data: AdapterData<AdapterIn<D,A>>, model: AModel<D>) {
+
+  let result: any = {}
+  const adapters = model.adapters[adapterType]
+
+  await Promise.all(Object.entries(data).map(async ([key,val]) => {
+  
+    // Key contains Where logic
+    if (isIn(key, whereLogic) || key === whereNot) return Array.isArray(val) ?
+      Promise.all(val.map((d) => runAdapters(adapterType, d, model))) :
+      runAdapters(adapterType, val ?? {}, model)
+
+    // IF Key should not be in result
+    if (adapterType === adapterTypes.get && model.hidden.includes(key)) return;
+    
+    // IF Key has no adapter
+    const adapter = adapters[key as keyof typeof adapters]
+    if (typeof adapter !== 'function') return result[key] = val
+
+    // IF Value contains an Update/Where operation
+    const opKey = getOpType(val)
+    const opVal = opKey ? val[opKey] : val
+    
+    // Run adapter & copy to result
+    const adapterResult = await adapter(opVal, result)
+    result[key] = opKey ? { [opKey]: adapterResult ?? opVal } : adapterResult ?? opVal
+  }))
+
+  // Sanitize toDB since keys are used directly in SQL commands
+  return adapterType === adapterTypes.set ? sanitizeSchemaData(result, model) : result
+}
+
+
+type AModel<Def extends DefinitionSchema> = Pick<Model<Def>, 'schema'|'hidden'|'children'|'adapters'>

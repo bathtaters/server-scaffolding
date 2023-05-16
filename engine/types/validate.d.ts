@@ -11,13 +11,14 @@ type ValidationType = `${
 }`
 
 /** Convert ValidationBases to Types */
-type BaseType<S extends ValidationType> = 
-    BaseOfValidation<S> extends StringType     ? string :
-    BaseOfValidation<S> extends NumType        ? number :
-    BaseOfValidation<S> extends DateType       ? Date :
-    BaseOfValidation<S> extends 'object'       ? Record<string,any> :
-    BaseOfValidation<S> extends 'boolean'      ? boolean :
-    BaseOfValidation<S> extends ValidationBase ? any :
+type TypeOfValid<S extends ValidationBase | undefined> = 
+    S extends never          ? any :
+    S extends StringType     ? string :
+    S extends NumType        ? number :
+    S extends DateType       ? Date :
+    S extends 'object'       ? Record<string,any> :
+    S extends 'boolean'      ? boolean :
+    S extends ValidationBase ? any :
         never
 
 /** Basic Validation -- Expected to be entered by user */
@@ -60,12 +61,12 @@ export type ValidationExpanded = Pick<ValidationBasic, 'limits'> & {
 /** Additional Validation Options appended to Basic Validation */
 export type ValidationOptions = ValidationBasic & { key: string, isIn: RequestField[] }
 
-type ModelBase = { schema: Record<string,any> }
-export type KeyArr<Model extends ModelBase> = Array<keyof Model['schema']> 
-export type KeyObj<Model extends ModelBase> = { [inputKey: string]: keyof Model['schema'] }
-export type SchemaKeys<Model extends ModelBase> = KeyArr<Model> | KeyObj<Model> | 'all'
+type GenericModel = { schema: Record<string,any> }
+export type KeyArr<Model extends GenericModel> = Array<keyof Model['schema']> 
+export type KeyObj<Model extends GenericModel> = { [inputKey: string]: keyof Model['schema'] }
+export type SchemaKeys<Model extends GenericModel> = KeyArr<Model> | KeyObj<Model> | 'all'
 
-export type ModelValidationOptions<Model extends ModelBase> = {
+export type ModelValidationOptions<Model extends GenericModel> = {
     /** Keys in params: [...keyList] OR { inputKey: modelKey, ... } OR 'all' (= All keys in types) */
     params?: SchemaKeys<Model>,
     /** Make all body/query keys optional (params are unaffected) [default: true] */
@@ -89,8 +90,9 @@ export type LimitsFalsable = (Limit & { elem?: Limit | false, array?: Limit | fa
 export type TypeDef = ValidationBase | "array"
 
 /** Extract Type from ValidationType string */
-export type ExtractType<S extends ValidationType> =
-    (IsArray<S> extends true    ? Array<BaseType<S>> : BaseType<S>) |
+export type ExtractType<S extends ValidationType | undefined> =
+    S extends undefined ? never :
+    (IsArray<S> extends true    ? Array<TypeOfValid<BaseOfValid<S>>> : TypeOfValid<BaseOfValid<S>>) |
     (IsOptional<S> extends true ? null : never)
 
 
@@ -102,16 +104,16 @@ type DateType   = typeof dateTypes[keyof typeof dateTypes]
 type NumType    = typeof numTypes[keyof typeof numTypes]
 
 /** Extract ValidationBase string from ValidationType */
-type BaseOfValidation<S extends ValidationType> =
+export type BaseOfValid<S extends ValidationType | undefined> =
     S extends `${infer T}${TypeSuffix | ''}${TypeSuffix | ''}${TypeSuffix | ''}` ?
         T extends ValidationBase ? T : never : never
 
 /** Extract isArray value from ValidationType */
-type IsArray<S extends ValidationType> =
+export type IsArray<S extends ValidationType | undefined> =
     S extends `${ValidationBase}${string}${typeof typeSuffixes.isArray}${string}` ?
         true : false
 
 /** Extract isOptional value from ValidationType */
-type IsOptional<S extends ValidationType> =
+export type IsOptional<S extends ValidationType | undefined> =
     S extends `${ValidationBase}${string}${typeof typeSuffixes.isOptional}${string}` ?
         true : false

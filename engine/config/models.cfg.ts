@@ -1,8 +1,6 @@
-import type { ValidationBasic, ValidationExpanded } from "../types/validate.d"
-
 export const
-  defaultPrimary = 'id',
-  defaultPrimaryType: ValidationBasic & ValidationExpanded = { type: 'int', typeBase: 'int', isOptional: false, isArray: false },
+  defaultPrimaryKey = 'id',
+  defaultPrimaryType /*: ValidationBase */ = 'int',
   SQL_ID = 'rowid',
 
   ifExistsBehavior = {

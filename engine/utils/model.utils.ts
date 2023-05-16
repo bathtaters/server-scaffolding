@@ -1,27 +1,37 @@
+import type {
+  SchemaGeneric, DefType, DefinitionNormal, DefinitionSchema, DBSchemaOf, DBSchemaKeys, 
+  DefaultAdapters, DefaultArrayAdapters, AdapterType, ForeignKeyRef,
+} from '../types/Model.d'
 import type Model from '../models/Model'
-import type { ModelBase } from '../models/Model'
-import type { Adapter, CommonDefinition, Definition, DefinitionSchema, ForeignKeyRef, SchemaBase } from '../types/Model.d'
-import type { IfExistsBehavior, SQLParams, SQLSuffix, SQLType, SQLTypeFull, WhereData, WhereLogic, WhereNot, WhereOps } from '../types/db.d'
-import type { ValidationExpanded } from '../types/validate.d'
+import type { GenericModel } from '../models/Model'
+import type { IfExistsBehavior, SQLParams, SQLSuffix, SQLType, SQLTypeFull, WhereData, WhereOps } from '../types/db.d'
+import type { ValidationBasic, ValidationExpanded } from '../types/validate.d'
 import type { HTMLType } from '../types/gui.d'
-import { childLabel } from '../types/Model'
 import { foreignKeyActions, sqlSuffixes, sqlTypes, whereLogic, whereNot, whereOp, whereOpPartial } from '../types/db'
-import { htmlTypes } from '../types/gui'
+import { adapterTypes, childLabel } from '../types/Model'
+import { htmlValidationDict } from '../types/gui'
 
 import RegEx from '../libs/regex'
-import { isDate } from '../libs/date'
 import { isIn } from './common.utils'
 import { insertSQL, deleteSQL } from './db.utils'
-import { parseBoolean, parseArray } from './validate.utils'
-import { CONCAT_DELIM, getChildName } from '../config/models.cfg'
+import { parseBoolean, parseArray, parseDate, toTypeString, expandTypeStr } from './validate.utils'
+import { CONCAT_DELIM, defaultPrimaryType, getChildName } from '../config/models.cfg'
 
 // Initialize Parsers
 const toBool = parseBoolean(true)
 const toArray = parseArray(true)
 
+/** Convert from Property Definition to Basic Validation */
+export const definitionToValid = (def: DefinitionSchema[string], forceOptional = false): ValidationBasic => {
+  if (!def.type && !def.isPrimary) throw new Error(`Definition is missing type: ${JSON.stringify(def)}`)
+
+  let val = { ...def, type: def.type || defaultPrimaryType }
+  if (forceOptional) val.type = toTypeString({ ...expandTypeStr(val), isOptional: true })
+  return val
+}
 
 /** Default entry for db.services.reset.refs */
-export const childTableRefs = ({ title, primaryId }: Pick<ModelBase,'title'|'primaryId'>): ForeignKeyRef => ({
+export const childTableRefs = ({ title, primaryId }: Pick<GenericModel,'title'|'primaryId'>): ForeignKeyRef => ({
   key: childLabel.foreignId,
   table: title,
   refKey: primaryId,
@@ -30,7 +40,7 @@ export const childTableRefs = ({ title, primaryId }: Pick<ModelBase,'title'|'pri
 })
 
 /** Split keys from data into Parent & Child lists */
-export const splitKeys = (data: any, childSchema: any) => {
+export const splitKeys = (data: Record<string,any>, childSchema: Record<string,any>) => {
   const children = Object.keys(childSchema).filter((key) => key in data)
   return {
     children,
@@ -44,10 +54,10 @@ export const splitKeys = (data: any, childSchema: any) => {
  *   - IfExists.overwrite will only overwrite individual child indicies
  *   - overwriteChild=true will clear the entire child object/array */
 export const childSQL = <T>(
-  tableName: string, childData: T[], childKeys: (keyof T)[],
-  primaryKey: keyof T | number, ifExists: IfExistsBehavior, overwriteChild = false
-) =>
-  childKeys.flatMap((key) => {
+  tableName: string, childData: T[], childKeys: string[],
+  primaryKey: string | number, ifExists: IfExistsBehavior, overwriteChild = false
+) => {
+  return childKeys.flatMap((key) => {
     const childTable = getChildName(tableName, key)
     let foreignIds: any[] = []
 
@@ -79,6 +89,7 @@ export const childSQL = <T>(
     )
     return overwriteSQL ? [overwriteSQL, addSQL] : [addSQL]
   })
+}
 
 
 const hasNot = RegEx(/^NOT\s/i)
@@ -91,9 +102,9 @@ function notParams<P extends SQLParams | SQLParams[number]>(params: P) {
 }
 
 const inequalities = Object.keys(whereOp).filter((op) => op !== whereOpPartial) as WhereOps[]
-export function getSqlParams<Schema extends SchemaBase, DBSchema extends SchemaBase>(
-  { title, schema, children }: Pick<Model<Schema, DBSchema>, 'title'|'schema'|'children'>,
-  matchData?: WhereData<DBSchema>,
+export function getSqlParams<Def extends DefinitionSchema>(
+  { title, schema, children }: Pick<Model<Def>, 'title'|'schema'|'children'>,
+  matchData?: WhereData<DBSchemaOf<Def>>,
 ): SQLParams {
 
   let params: SQLParams = []
@@ -172,19 +183,19 @@ export const toPartialMatch = <T extends object>(data?: T): WhereData<object> | 
 export const isBool = ({ typeBase, isArray }: ValidationExpanded) => typeBase === 'boolean' && !isArray
 
 /** Filter an array of objects, keeping objects where the given property is an array. */
-export const propertyIsChild = <O, P extends keyof O>(arrayOfObjects: O[], property: P) =>
+export const propertyIsChild = <O, P extends keyof any>(arrayOfObjects: O[], property: P) =>
   arrayOfObjects.filter(
-    (obj) => Array.isArray(obj[property])
+    (obj: any) => Array.isArray(obj[property])
   ) as (O & { [property in P]: any[] })[]
 
-export const isDbKey = <DBSchema extends SchemaBase, Schema extends SchemaBase>
-  (idKey: any, schema: DefinitionSchema<DBSchema,Schema>): idKey is keyof DBSchema & string =>
+export const isDbKey = <Def extends DefinitionSchema>
+  (idKey: any, schema: Def): idKey is DBSchemaKeys<Def> =>
     !idKey || Boolean(isIn(idKey, schema) && schema[idKey].db)
 
 
 export function sanitizeSchemaData
-  <Schema extends SchemaBase, DBSchema extends SchemaBase, T extends SchemaBase>
-  (data: T, { schema, children }: SanitModel<Schema, DBSchema> = {}): T
+  <Def extends DefinitionSchema, T extends SchemaGeneric>
+  (data: T, { schema, children }: SanitModel<Def> = {}): T
 {
   const validKeys = schema && Object.keys(schema)
     .filter((key) => schema[key].db)
@@ -202,8 +213,8 @@ export function sanitizeSchemaData
 
 
 /** Convert primary key definition to regular definition */
-export const stripPrimaryDef = <Schema extends SchemaBase, DBSchema extends SchemaBase>
-  ({ db, isOptional, ...definition }: CommonDefinition<Schema,DBSchema>) => ({
+export const stripPrimaryDef = <S extends DefType>
+  ({ db, isOptional, ...definition }: DefinitionNormal<S>) => ({
     ...definition,
     db: db ? db.replace(' PRIMARY KEY', ' NOT NULL') as SQLTypeFull : false as false,
   })
@@ -236,91 +247,81 @@ export function dbFromType({ typeBase, isOptional }: ValidationExpanded, isPrima
 
 /** Convert Model type to HTML input type */
 export function htmlFromType({ typeBase, isArray }: ValidationExpanded): HTMLType {
-  switch (isArray ? 'array' : typeBase) {
-    case 'boolean':   return htmlTypes.checkbox
-    case 'date':      return htmlTypes.date
-    case 'datetime':  return htmlTypes.datetime
-    case 'int':
-    case 'float':     return htmlTypes.number
-    default:          return htmlTypes.text
-  }
+  if (isArray) return htmlValidationDict.default
+  return htmlValidationDict[typeBase] ?? htmlValidationDict.default
 }
 
 
-/** Convert data from storage type to expected type */
-export function getAdapterFromType({ typeBase, isArray }: ValidationExpanded, isBitmap = false) {
-  let adapter: Adapter<any,any> | undefined;
+/** Get default AdapterType adapter based on Definition */
+export function getDefaultAdapter(adapterType: AdapterType, { typeBase, isArray, isBitmap }: DefinitionNormal) {
   if (isBitmap) return false
-
-  switch (typeBase) {
-    case 'object':
-      adapter = (text) => typeof text === 'string' ? JSON.parse(text)    : text
-      break
-    case 'date':
-    case 'datetime':
-      adapter = (num) => num && new Date(+num)
-      break
-    case 'boolean':
-      adapter = (int) => int == null ? null : +int !== 0
-      break
-  }
+  
+  let adapter = defaultAdapters[adapterType][typeBase]
 
   if (isArray) {
-    const entryGet = adapter
-    adapter = entryGet ? 
-      (text, data) => typeof text === 'string' && text ? text.split(CONCAT_DELIM).map((v) => entryGet(v, data)) :
-        Array.isArray(text) ? text.map((v) => entryGet(v, data)) : []
-      : 
-      (text) => typeof text === 'string' && text ? text.split(CONCAT_DELIM) :
-        Array.isArray(text) ? text : []
+    const entryAdapter = adapter
+    adapter = arrayAdapters[adapterType](entryAdapter)
   }
 
   return adapter || false
 }
 
 
-/** Convert data from user input to storage type */
-export function setAdapterFromType({ typeBase, isArray }: ValidationExpanded, isBitmap = false) {
-  let adapter: Adapter<any,any> | undefined;
-  if (isBitmap) return false
 
-  switch (typeBase) {
-    case 'int':
-      adapter = (text) => typeof text === 'string' ? parseInt(text)   : text
-      break
-    case 'float':
-      adapter = (text) => typeof text === 'string' ? parseFloat(text) : text
-      break
-    case 'object':
-      adapter = (obj)  => typeof obj  === 'object' && obj ? JSON.stringify(obj) : obj
-      break
-    case 'date':
-    case 'datetime':
-      adapter = (date) => typeof date === 'number' ? date :
-        !date ? null : isDate(date) ? date.getTime() : 
-          !isNaN(date) ? +date : new Date(date).getTime() // Fallback
-      break
-    case 'boolean':
-      adapter = (bool) => bool == null ? bool : +toBool(bool)
-      break
-  }
+// *** Adapter Library *** \\
 
-  if (isArray) {
-    const entrySet = adapter
-    adapter = entrySet ?
-      (arr, data) => 
-        typeof arr === 'string' ? toArray(arr)?.map((v) => entrySet(v, data)) :
-        Array.isArray(arr) ? arr.map((v) => entrySet(v, data)) : null
-      :
-      (arr) =>
-        typeof arr === 'string' ? toArray(arr) :
-        Array.isArray(arr) ? arr : null
-  }
+const defaultAdapters: DefaultAdapters = {
+  [adapterTypes.get]: {
+    object:   (text) => typeof text === 'string' ? JSON.parse(text) : text,
+    boolean:  (int)  => int == null ? null : +int !== 0,
+    datetime: (num)  => num && new Date(+num),
+    date:     (num)  => num && new Date(+num),
+  },
 
-  return adapter || false
+  [adapterTypes.set]: {
+    int:      (text) => typeof text === 'string' ? parseInt(text)   : text,
+    float:    (text) => typeof text === 'string' ? parseFloat(text) : text,
+    object:   (obj)  => typeof obj  === 'object' && obj ? JSON.stringify(obj) : obj,
+    boolean:  (bool) => bool == null ? bool : +toBool(bool),
+    datetime: parseDate,
+    date:     parseDate,
+  },
+}
+
+
+const arrayAdapters: DefaultArrayAdapters = {
+  [adapterTypes.get]: (entryAdapter) =>
+    entryAdapter ? (text, data) =>
+      typeof text === 'string' && text
+        ? text.split(CONCAT_DELIM).map((v) => entryAdapter(v, data))
+        : Array.isArray(text)
+          ? text.map((v) => entryAdapter(v, data))
+          : []
+
+    : (text) =>
+      typeof text === 'string' && text
+        ? text.split(CONCAT_DELIM)
+        : Array.isArray(text)
+          ? text
+          : [],
+
+  [adapterTypes.set]: (entryAdapter) =>
+    entryAdapter ? (arr, data) => 
+      typeof arr === 'string'
+        ? toArray(arr)?.map((v) => entryAdapter(v, data))
+        : Array.isArray(arr)
+          ? arr.map((v) => entryAdapter(v, data))
+          : null
+          
+    : (arr) =>
+      typeof arr === 'string'
+        ? toArray(arr)
+        : Array.isArray(arr)
+          ? arr
+          : null,
 }
 
 
 // TYPE HELPERS
 
-type SanitModel<Schema extends SchemaBase, DBSchema extends SchemaBase> = Partial<Pick<ModelBase<Schema, DBSchema>,'schema'|'children'>>
+type SanitModel<Def extends DefinitionSchema> = Partial<Pick<GenericModel<Def>,'schema'|'children'>>

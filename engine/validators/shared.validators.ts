@@ -1,13 +1,13 @@
 import type { RequestField, ValidationOptions, ModelValidationOptions, SchemaKeys, KeyArr, KeyObj } from '../types/validate.d'
 import type { Middleware } from '../types/express'
-import type { DefinitionSchema, SchemaBase } from '../types/Model.d'
-import type { ModelBase } from '../models/Model'
+import type { DefinitionSchema } from '../types/Model.d'
+import type { GenericModel } from '../models/Model'
 import { type Schema, checkSchema } from 'express-validator'
 import checkValidation from '../middleware/validate.middleware'
 import { generateSchema, appendToSchema } from '../services/validate.services'
-import { adaptSchemaEntry } from '../services/model.services'
 import { toArraySchema } from '../utils/validate.utils'
 import { filterDupes } from '../utils/common.utils'
+import { definitionToValid } from '../utils/model.utils'
 
 
 /** Convert express-validator Schema to Middleware  */
@@ -35,21 +35,23 @@ const getAllKeys = <M extends ModelValBase>
  * @param options.additional - Additional validation to append to model validation
  * @returns Validation Middleware
  */
-export const byObject = <S extends SchemaBase>(
-  schema: DefinitionSchema<S>,
+export const byObject = (
+  schema: DefinitionSchema,
   isIn: RequestField[] = ['body'],
   { forceOptional = false, additional = [] as ValidationOptions[] } = {}
-) => toMiddleware(
-  appendToSchema({},
-    Object.entries(schema).map(
-      ([key, val]) => ({
-        key,
-        isIn,
-        ...adaptSchemaEntry(forceOptional ? { ...val, isOptional: true } : val)
-      })
-    ).concat(additional)
+) =>
+  toMiddleware(
+    appendToSchema(
+      undefined,
+      Object.entries(schema).map<ValidationOptions>(
+        ([key, val]) => ({
+          ...definitionToValid(val, forceOptional),
+          key, isIn,
+        })
+      )
+      .concat(additional)
+    )
   )
-)
 
 
 
@@ -138,6 +140,6 @@ export function byModel<M extends ModelValBase>(
 
 // TYPE HELPERS
 
-export type ModelValBase = Pick<ModelBase,'schema'|'primaryId'>
+export type ModelValBase = Pick<GenericModel,'schema'|'primaryId'>
 type ModelValSchema<M extends ModelValBase> = Record<keyof M['schema'], Schema[string]>
 type KeyList<M extends ModelValBase> = Partial<Record<keyof M['schema'], RequestField[]>>

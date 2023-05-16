@@ -1,10 +1,12 @@
 import type { Database } from '@journeyapps/sqlcipher'
 import type { ForeignKeyRef } from '../types/Model.d'
+import type { CreateSchema } from '../types/db.d'
 import logger from '../libs/log'
 import { noDb, sqlError, sqlNotDB } from '../config/errors.engine'
 import { debugSQL } from '../config/models.cfg'
 
-// TO DO -- add to ./libs/db, make into class called SQLite extends DB
+// TODO -- add to ./libs/db, make into class called SQLite extends DB
+// TODO -- Simplify returning { lastID, changes } using 'this'
 
 type Params = { [key: string]: any } | any[]
 
@@ -88,7 +90,7 @@ export function getLastEntry<T = any>(db: Database | null, sql: string, params: 
 }
 
 
-export function reset<Tables extends string, Schema extends Record<string, string | false | undefined>>(
+export function reset<Tables extends string, Schema extends CreateSchema>(
   db: Database | null,
   tableSchema: { [table in Tables]: Schema },
   force = false,

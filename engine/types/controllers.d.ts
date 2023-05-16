@@ -1,5 +1,5 @@
 import type { ProfileActions } from './gui.d'
-import type { ModelBase } from '../models/Model'
+import type { GenericModel } from '../models/Model'
 
 export type ControllerCallback<T extends Record<string,any>> =
   (data: T, user?: Express.User, action?: ProfileActions) => Partial<Record<keyof T,any>> | undefined
@@ -17,6 +17,6 @@ export type FormOptions<T extends Record<string,any>> = {
     formatData?: ControllerCallback<T>
 }
 
-export type ModelGuiBase    = Pick<ModelBase, 'title'|'primaryId'|'url'|'schema'|'getPageData'|'find'|'isChildModel'>
-export type ModelFormBase   = Pick<ModelBase, 'primaryId'|'addAndReturn'|'update'|'remove'|'create'>
-export type ModelActionBase = Pick<ModelBase, 'schema'|'url'> & ModelFormBase
+export type ModelGuiBase    = Pick<GenericModel, 'title'|'primaryId'|'url'|'schema'|'getPageData'|'find'|'isChildModel'>
+export type ModelFormBase   = Pick<GenericModel, 'primaryId'|'addAndReturn'|'update'|'remove'|'create'>
+export type ModelActionBase = Pick<GenericModel, 'schema'|'url'> & ModelFormBase
