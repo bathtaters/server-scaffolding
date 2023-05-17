@@ -1,7 +1,9 @@
 import type {
-  SchemaOf, DBSchemaOf, HTMLSchemaOf, PrimaryIDOf, DBSchemaKeys, TypeOfID, IDOf, IDOption, 
-  DefinitionSchema, DefinitionSchemaNormal, ForeignKeyRef, ChildDefinitions, ChildKey,
-  SQLOptions, Page, FindResult, SelectResult, AdapterDefinition, Feedback, 
+  SchemaOf, AddSchemaOf, DBSchemaOf, HTMLSchemaOf, DefaultSchemaOf, DBSchemaKeys,
+  DefinitionSchema, DefinitionSchemaNormal, AdapterDefinition,
+  TypeOfID, IDOf, PrimaryIDOf, IDOption, SQLOptions,
+  Page, FindResult, SelectResult, Feedback,
+  ForeignKeyRef, ChildDefinitions, ChildKey,
 } from '../types/Model.d'
 import type { CreateSchema, IfExistsBehavior, UpdateData, WhereData } from '../types/db.d'
 import logger from '../libs/log'
@@ -27,9 +29,9 @@ export default class Model<Def extends DefinitionSchema> {
   private _primaryId:    PrimaryIDOf<Def>
   private _isChildModel: boolean
 
-  private   _defaults: Partial<SchemaOf<Def>> = {}
-  private   _hidden:   Array<keyof Def>       = []
-  protected _children: ChildDefinitions<Def>  = {}
+  private   _defaults: DefaultSchemaOf<Def>
+  private   _hidden:   Array<keyof Def>
+  protected _children: ChildDefinitions<Def>
 
   /** Promise that will resolve to TRUE once DB is connected and Model is created */
   readonly isInitialized: Promise<boolean>
@@ -58,7 +60,7 @@ export default class Model<Def extends DefinitionSchema> {
 
     // Set additional properties
     this._adapters = buildAdapters(adapters, this._schema)
-    this._defaults = mapToField(this._schema, 'default') as Partial<SchemaOf<Def>>
+    this._defaults = mapToField(this._schema, 'default') as any
     this._hidden   = Object.keys(this._schema).filter((key) => this._schema[key].dbOnly)
 
     this.isInitialized = (async () => {
@@ -222,7 +224,7 @@ export default class Model<Def extends DefinitionSchema> {
    * @param ifExists - How to handle non-unique entries (Default: default)
    * @returns Feedback object { success: true/false }
    */
-  async add(data: SchemaOf<Def>[], ifExists: IfExistsBehavior = 'default'): Promise<Feedback> {
+  async add(data: AddSchemaOf<Def>[], ifExists: IfExistsBehavior = 'default'): Promise<Feedback> {
     const success = await this._insert(data, ifExists, false)
     return ({ success })
   }
@@ -232,7 +234,7 @@ export default class Model<Def extends DefinitionSchema> {
    * @param ifExists - How to handle non-unique entries (Default: default)
    * @returns Record of last entry (After adding to DB)
    */
-  addAndReturn(data: SchemaOf<Def>[], ifExists: IfExistsBehavior = 'default'): Promise<DBSchemaOf<Def>> {
+  addAndReturn(data: AddSchemaOf<Def>[], ifExists: IfExistsBehavior = 'default'): Promise<DBSchemaOf<Def>> {
     return this._insert(data, ifExists, true)
   }
 
@@ -407,15 +409,15 @@ export default class Model<Def extends DefinitionSchema> {
 
   /** Execute INSERT command using DATA values, IFEXISTS behavior if matching record exists,
    * and returning last record if RETURNLAST is true (Otherwise it returns TRUE/FALSE if successful) */
-  private async _insert(data: SchemaOf<Def>[], ifExists: IfExistsBehavior, returnLast: false): Promise<boolean>;
-  private async _insert(data: SchemaOf<Def>[], ifExists: IfExistsBehavior, returnLast: true):  Promise<DBSchemaOf<Def>>;
-  private async _insert(data: SchemaOf<Def>[], ifExists: IfExistsBehavior, returnLast: boolean): Promise<DBSchemaOf<Def>|boolean>;
-  private async _insert(data: SchemaOf<Def>[], ifExists: IfExistsBehavior, returnLast: boolean): Promise<DBSchemaOf<Def>|boolean> {
+  private async _insert(data: AddSchemaOf<Def>[], ifExists: IfExistsBehavior, returnLast: false): Promise<boolean>;
+  private async _insert(data: AddSchemaOf<Def>[], ifExists: IfExistsBehavior, returnLast: true):  Promise<DBSchemaOf<Def>>;
+  private async _insert(data: AddSchemaOf<Def>[], ifExists: IfExistsBehavior, returnLast: boolean): Promise<DBSchemaOf<Def>|boolean>;
+  private async _insert(data: AddSchemaOf<Def>[], ifExists: IfExistsBehavior, returnLast: boolean): Promise<DBSchemaOf<Def>|boolean> {
     if (!data.length) throw noData('batch data')
 
     // Adapt/Sanitize data
     const dataArray: DBSchemaOf<Def>[] = await Promise.all(data.map(
-      (entry) => runAdapters(adapterTypes.set, { ...this.defaults, ...entry }, this)
+      (entry) => runAdapters(adapterTypes.set, this._applyDefaults(entry), this)
     ))
     
     const keys = splitKeys(dataArray[0], this.children)
@@ -535,6 +537,9 @@ export default class Model<Def extends DefinitionSchema> {
     const result = await adapter(val, data) 
     return result ?? data[key]
   }
+
+  /** Insert default properties in place of any undefined properties */
+  private _applyDefaults = (data: AddSchemaOf<Def>): SchemaOf<Def> => ({ ...this.defaults, ...data }) as any
   
 
   // Readonly Getters

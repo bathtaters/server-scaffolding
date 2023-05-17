@@ -6,13 +6,18 @@ import type { adapterTypes, childIndexType, childLabel } from './Model'
 import type { defaultPrimaryKey, defaultPrimaryType } from '../config/models.cfg'
 import type { htmlValidationDict } from './gui'
 
-// TODO -- Add a type "ModelName" that is the name of any model in allModels (Use with ModelAccess)
-// TODO -- Organize types into namespaces
-// TODO -- Derive schema types from Model.SchemaDefinition
-// TODO -- Add BitMap/BitMapObj(bitmap2d) type as option, remove 'isBitmap'
 // TODO -- Each definition has 'dbType' <-> 'baseType' <-> 'htmlType' w/ 4 adapters (toDb [set], fromDb [get], toGui, fromGui)
-// TODO -- Allow passing Generator function to Definition.default (SchemaInOf [optional defaults], SchemaOutOf [non-optional defaults])
+// TODO -- Definitions DERIVE FROM ADAPTERS
+
+// TODO -- Create an editable flag that will hide HTML types from Form (FormSchemaOf, ViewSchemaOf instead of HTMLSchemaOf)
+
 // TODO -- Convert dbOnly to 'isMasked', isBitmap to type "bitmap"
+// TODO -- Add BitMap/BitMapObj(bitmap2d) type as option, remove 'isBitmap'
+
+// TODO -- Allow passing Generator function to Definition.default 
+
+// TODO -- Organize types into namespaces
+// TODO -- Add a type "ModelName" that is the name of any model in allModels (Use with ModelAccess)
 
 
 /** Common properties shared by User & Backend Property Definitions */
@@ -260,6 +265,17 @@ export type SchemaOf<Def extends DefinitionSchema> = Flatten<
   (GetPrimaryID<Def> extends never ? { [defaultPrimaryKey]: ExtractType<typeof defaultPrimaryType> } : {})
 >
 
+/** Convert Definition Schema to Schema for Inserting New Entries  */
+export type AddSchemaOf<Def extends DefinitionSchema> = Flatten<
+  { -readonly [K in keyof Def as GetOptionalAdd<Def[K]> extends true ? never : K] : SBaseType<Def[K]> } &
+  { -readonly [K in keyof Def as GetOptionalAdd<Def[K]> extends true ? K : never]?: SBaseType<Def[K]> } &
+  (GetPrimaryID<Def> extends never ? { [defaultPrimaryKey]: ExtractType<typeof defaultPrimaryType> } : {})
+>
+
+/** Convert Definition Schema to Schema of Default Values */
+export type DefaultSchemaOf<Def extends DefinitionSchema> = 
+  { -readonly [K in keyof Def as HasDefault<Def[K]> extends true ? K : never]?: SBaseType<Def[K]> }
+
 /** Convert Definition Schema to DB Schema */
 export type DBSchemaOf<Def extends DefinitionSchema> = Flatten<
   { -readonly [K in keyof Def as GetOptionalDB<Def[K]> extends true ? never : K] : SDBType<Def[K]> } &
@@ -338,12 +354,15 @@ type GetDefType<D extends Definition> =
   D['type'] extends string ? D['type'] : typeof defaultPrimaryType
 
 /** True/False indicating if Base Type is Optional */
-type GetOptional<D extends Definition> =
-  IsOptional<D['type']> extends true
-    ? true
-    : D extends { default: ExtractType<GetDefType<D>> }
-        ? true
-        : false
+type HasDefault<D extends Definition> =
+  D extends { default: ExtractType<GetDefType<D>> }
+    ? true : false
+
+/** True/False indicating if Base Type is Optional */
+type GetOptional<D extends Definition> = IsOptional<D['type']> 
+
+/** True/False indicating if Base Type is Optional (Including types with defaults) */
+type GetOptionalAdd<D extends Definition> = GetOptional<D> extends true ? true : HasDefault<D>
 
 /** True/False indicating if DB Type is Optional */
 type GetOptionalDB<D extends Definition> =

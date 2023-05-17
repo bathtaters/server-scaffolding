@@ -1,5 +1,5 @@
 import type { UserDef, GetOptions, UpdateOptions, TimestampType, RoleType } from '../types/Users.d'
-import type { DBSchemaOf, IDOf, SchemaOf, TypeOfID } from '../types/Model.d'
+import type { AddSchemaOf, DBSchemaOf, IDOf, SchemaOf, TypeOfID } from '../types/Model.d'
 import type { IfExistsBehavior, UpdateData, WhereData } from '../types/db.d'
 import { Role, timestamps } from '../types/Users'
 import { adapterTypes } from '../types/Model'
@@ -44,12 +44,12 @@ class User extends Model<UserDef> {
     return users[0]
   }
   
-  async add(users: Omit<SchemaOf<UserDef>,'id'|'token'>[], ifExists: IfExistsBehavior = 'default') {
+  async add(users: Omit<AddSchemaOf<UserDef>,'id'|'token'>[], ifExists: IfExistsBehavior = 'default') {
     const userData = await this._addAdapter(users)
     return await super.add(userData, ifExists)
   }
 
-  async addAndReturn(users: Omit<SchemaOf<UserDef>,'id'|'token'>[], ifExists: IfExistsBehavior = 'default') {
+  async addAndReturn(users: Omit<AddSchemaOf<UserDef>,'id'|'token'>[], ifExists: IfExistsBehavior = 'default') {
     const userData = await this._addAdapter(users)
     return await super.addAndReturn(userData, ifExists)
   }
@@ -182,7 +182,7 @@ class User extends Model<UserDef> {
   }
 
 
-  private async _addAdapter(users: Omit<SchemaOf<UserDef>, 'id'|'token'>[]): Promise<SchemaOf<UserDef>[]> {
+  private async _addAdapter(users: Omit<AddSchemaOf<UserDef>, 'id'|'token'>[]): Promise<AddSchemaOf<UserDef>[]> {
     for (const user of users) {
       await this.throwInvalidUsername(user.username)
     }

@@ -1,5 +1,5 @@
 import type {} from '../middleware/auth.middleware' // Express.User type
-import type { AdapterDefinition, HTMLSchemaOf, SchemaOf } from '../types/Model.d'
+import type { AdapterDefinition, AddSchemaOf, HTMLSchemaOf, SchemaOf } from '../types/Model.d'
 import type { ProfileActions } from '../types/gui.d'
 import type { UserDef, AccessType, RoleType } from '../types/Users.d'
 import { ModelAccess, Role, NO_ACCESS } from '../types/Users'
@@ -33,7 +33,7 @@ export function initAdapters(definitions: AdapterDefinition<UserDef>) {
 }
 
 
-export const addAdapter = (data: Omit<SchemaOf<UserDef>, 'id'|'token'>) => ({
+export const addAdapter = (data: Omit<AddSchemaOf<UserDef>, 'id'|'token'>) => ({
   id: generateToken(),
   token: generateToken(),
   ...data,
