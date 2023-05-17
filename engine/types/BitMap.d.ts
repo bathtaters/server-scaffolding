@@ -18,7 +18,7 @@ export interface BitMapStatic<Flag extends string> {
     /** Test if string is a valid Flag */
     isIn(str: string): str is Flag;
     /** Construct from String representation (ignoreCharMap will interpret strings as full Flag names even if a charMap is present) */
-    fromString(str: string | string[], ignoreCharMap = false): BitMapBase<Flag>
+    fromString(str: string | string[], ignoreCharMap?: boolean): BitMapBase<Flag>
     /** Construct from JSON encoding */
     fromJSON(json: string): BitMapBase<Flag>
     /** Create a BitMap from a number, flag, flag array or another BitMap (copy) */
@@ -95,7 +95,7 @@ export type FlagType<BitMap extends BitMapBase<any> | BitMapStatic<any>> =
 
 /** Accepted input value for BitMap methods, from BitMap instance or Flags */
 export type BitMapValue<BitMap extends BitMapBase<any> | BitMapStatic<any> | string> =
-    BitMap | BitMap[] | number | undefined | (
+    BitMap | BitMap[] | number | undefined | null | (
         BitMap extends BitMapStatic<infer F extends string> ? F | F[] :
         BitMap extends BitMapBase<infer F extends string>   ? F | F[] :
             never)
