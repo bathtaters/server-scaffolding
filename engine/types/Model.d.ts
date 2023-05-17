@@ -289,7 +289,7 @@ export type DBSchemaOf<Def extends DefinitionSchema> = Flatten<
 /** Convert Definition Schema to HTML Schema */
 export type HTMLSchemaOf<Def extends DefinitionSchema> = Partial<
   { -readonly [K in keyof Def as Def[K]['html'] extends false ? never : K] : SHTMLType<Def[K]> | null }
-  & Partial<Record<string,any>>
+  & { _meta: any }
 >
 
 /** Convert Definition Schema to Base Schema Keys */

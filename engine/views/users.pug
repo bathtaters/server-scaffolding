@@ -37,5 +37,5 @@ block table
   each user in data
     tr.tableRow(data-key=idKey data-val=user[idKey])
       each val, key in tableFields
-        -var rowCls = key !== 'cors' ? '' : user.regExCors ? 'cors-regex' : user.arrayCors ? 'cors-array' : ''
+        -var rowCls = key !== 'cors' ? '' : user._meta.regExCors ? 'cors-regex' : user._meta.arrayCors ? 'cors-array' : ''
         td(data-label=val data-key=key class=rowCls)= user[key]

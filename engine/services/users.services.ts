@@ -55,6 +55,7 @@ export function guiAdapter(user: SchemaOf<UserDef> | SchemaOf<UserDef>[]): HTMLS
   if (Array.isArray(user)) return user.map((u) => guiAdapter(u))
 
   let output = uiToBaseHtml(user);
+  if (!output._meta) output._meta = {}
   try {
     if ('role'     in user) output.role     = user.role?.list.join(', ') ?? NO_ACCESS
     if ('access'   in user) output.access   = user.access?.toString() ?? ''
@@ -63,14 +64,14 @@ export function guiAdapter(user: SchemaOf<UserDef> | SchemaOf<UserDef>[]): HTMLS
     if ('apiTime'  in user) output.apiTime  = `${formatLong(user.apiTime) } [${user.apiCount  || 0}]`
     if ('failTime' in user) output.failTime = `${formatLong(user.failTime)} [${user.failCount || 0}]`
     if ('cors'     in user) {
-      output.regExCors = isRegEx(user.cors)
-      output.arrayCors = Array.isArray(user.cors)
-      output.cors      = displayCors(user.cors)
+      output.cors            = displayCors(user.cors)
+      output._meta.regExCors = isRegEx(user.cors)
+      output._meta.arrayCors = Array.isArray(user.cors)
     }
   } catch (err: any) {
     err.name = 'User.gui'
     logger.error(err)
-    output.hadError = true
+    output._meta.hadError = true
   }
 
   return output
