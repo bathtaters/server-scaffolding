@@ -11,6 +11,7 @@ import type { htmlValidationDict } from './gui'
 // TODO -- Derive schema types from Model.SchemaDefinition
 // TODO -- Add BitMap/BitMapObj(bitmap2d) type as option, remove 'isBitmap'
 // TODO -- Each definition has 'dbType' <-> 'baseType' <-> 'htmlType' w/ 4 adapters (toDb [set], fromDb [get], toGui, fromGui)
+// TODO -- Allow passing Generator function to Definition.default (SchemaInOf [optional defaults], SchemaOutOf [non-optional defaults])
 // TODO -- Convert dbOnly to 'isMasked', isBitmap to type "bitmap"
 
 
@@ -132,6 +133,9 @@ export type SQLOptions<Def extends DefinitionSchema> = {
   skipChildren?: boolean
 }
 
+/** ID Options: { idKey: ID Key from Definition } */
+export type IDOption<Def extends DefinitionSchema> = { idKey?: IDOf<Def> }
+
 /** Result of "Find" operation */
 export type FindResult<
   Def extends DefinitionSchema,
@@ -140,13 +144,10 @@ export type FindResult<
   Promise<Array<
     O['skipChildren'] extends true
       ? SkipChildren<
-        O['raw'] extends true
-          ? DBSchemaOf<Def>
-          : SchemaOf<Def>
+        O['raw'] extends true  ? DBSchemaOf<Def> : SchemaOf<Def>
       >
-      : O['raw'] extends true
-        ? DBSchemaOf<Def>
-        : SchemaOf<Def>
+      :
+        O['raw'] extends true  ? DBSchemaOf<Def> :  SchemaOf<Def>
   >>
 
 /** Result of "_Select" operation */
@@ -212,7 +213,7 @@ export type SkipChildren<S extends SchemaGeneric> = { [K in keyof S as S[K] exte
  * @returns Adapted value or nothing (Can update object directly)
  */
 export type Adapter<Key extends keyof SchemaIn, SchemaIn extends SchemaGeneric, SchemaOut extends SchemaGeneric> =
-  (value: SchemaIn[Key] | undefined, data: Partial<SchemaIn & SchemaOut>) => Awaitable<
+  (value: SchemaIn[Key] | undefined, data: Partial<SchemaIn | SchemaOut>) => Awaitable<
     (Key extends keyof SchemaOut ? SchemaOut[Key] : never) | undefined | void
   >
 
@@ -254,8 +255,8 @@ export type DefaultArrayAdapters = { [A in AdapterType]: (entryAdapter?: Adapter
 
 /** Convert Definition Schema to Base Schema */
 export type SchemaOf<Def extends DefinitionSchema> = Flatten<
-  { -readonly [K in keyof Def as IsOptional<Def[K]['type']> extends true ? never : K] : SBaseType<Def[K]> } &
-  { -readonly [K in keyof Def as IsOptional<Def[K]['type']> extends true ? K : never]?: SBaseType<Def[K]> } &
+  { -readonly [K in keyof Def as GetOptional<Def[K]> extends true ? never : K] : SBaseType<Def[K]> } &
+  { -readonly [K in keyof Def as GetOptional<Def[K]> extends true ? K : never]?: SBaseType<Def[K]> } &
   (GetPrimaryID<Def> extends never ? { [defaultPrimaryKey]: ExtractType<typeof defaultPrimaryType> } : {})
 >
 
@@ -266,9 +267,13 @@ export type DBSchemaOf<Def extends DefinitionSchema> = Flatten<
   (GetPrimaryID<Def> extends never ? { [defaultPrimaryKey]: ExtractType<typeof defaultPrimaryType> } : {})
 >
 
+// TODO -- Only add 'null' when property is optional
+// TODO -- Allow adding additional HTML Only Props (Partial<Record<>>)
+// TODO -- Create HTML Form & View types (+ viewOnly bool to definition)
 /** Convert Definition Schema to HTML Schema */
 export type HTMLSchemaOf<Def extends DefinitionSchema> = Partial<
-  { -readonly [K in keyof Def as Def[K]['html'] extends false ? never : K] : SHTMLType<Def[K]> }
+  { -readonly [K in keyof Def as Def[K]['html'] extends false ? never : K] : SHTMLType<Def[K]> | null }
+  & Partial<Record<string,any>>
 >
 
 /** Convert Definition Schema to Base Schema Keys */
@@ -289,6 +294,13 @@ export type PrimaryIDOf<Def extends DefinitionSchema> =
     ? typeof defaultPrimaryKey & string
     : GetPrimaryID<Def>
 
+/** Get type of 'id' input based off of 'idKey' for definition Schema */
+export type TypeOfID<Def extends DefinitionSchema, ID extends IDOf<Def> | undefined = undefined> =
+  SchemaOf<Def>[
+    ID extends IDOf<Def> ? ID :
+    PrimaryIDOf<Def> extends keyof SchemaOf<Def> ? PrimaryIDOf<Def> :
+      keyof SchemaOf<Def>
+  ]
 
 
 // Extract Type HELPERS
@@ -307,7 +319,9 @@ type SDBType<D extends Definition> =
       ? never
       : IsArray<D['type']> extends true
         ? never
-        : ExtractType<GetDefType<D>>
+        : Date extends ExtractType<GetDefType<D>>
+          ? Exclude<ExtractType<GetDefType<D>>, Date> | number
+          : ExtractType<GetDefType<D>>
 
 /** Extract HTML Type from Definition */
 type SHTMLType<D extends Definition> =
@@ -323,6 +337,14 @@ type SHTMLType<D extends Definition> =
 type GetDefType<D extends Definition> =
   D['type'] extends string ? D['type'] : typeof defaultPrimaryType
 
+/** True/False indicating if Base Type is Optional */
+type GetOptional<D extends Definition> =
+  IsOptional<D['type']> extends true
+    ? true
+    : D extends { default: ExtractType<GetDefType<D>> }
+        ? true
+        : false
+
 /** True/False indicating if DB Type is Optional */
 type GetOptionalDB<D extends Definition> =
   D['db'] extends string
@@ -337,5 +359,5 @@ type GetOptionalDB<D extends Definition> =
 
 /** Definition key where isPrimary = True */
 type GetPrimaryID<Def extends DefinitionSchema> = {
-  [K in keyof Def]: Def[K]['isPrimary'] extends true ? K : never
+  [K in keyof Def]: Def[K]['isPrimary'] extends true ? K : K extends typeof defaultPrimaryKey ? K : never
 }[keyof Def] & string

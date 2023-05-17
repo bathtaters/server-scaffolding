@@ -1,7 +1,7 @@
 import type {
-  Feedback, ForeignKeyRef, ChildDefinitions, DefinitionSchema,
-  SQLOptions, Page, FindResult, SelectResult, AdapterDefinition,
-  SchemaOf, PrimaryIDOf, ChildKey, DBSchemaKeys, DBSchemaOf, IDOf, HTMLSchemaOf, DefinitionSchemaNormal
+  SchemaOf, DBSchemaOf, HTMLSchemaOf, PrimaryIDOf, DBSchemaKeys, TypeOfID, IDOf, IDOption, 
+  DefinitionSchema, DefinitionSchemaNormal, ForeignKeyRef, ChildDefinitions, ChildKey,
+  SQLOptions, Page, FindResult, SelectResult, AdapterDefinition, Feedback, 
 } from '../types/Model.d'
 import type { CreateSchema, IfExistsBehavior, UpdateData, WhereData } from '../types/db.d'
 import logger from '../libs/log'
@@ -186,9 +186,9 @@ export default class Model<Def extends DefinitionSchema> {
    * @param options.raw          - Skip getAdapters, return raw DB values
    * @returns First record matching ID, or undefined if no match
    */
-  async get<ID extends IDOf<Def>, O extends SQLOptions<Def>>(
-    id: SchemaOf<Def>[ID],
-    { idKey, ...options }: { idKey?: ID } & O = {} as O
+  async get<O extends SQLOptions<Def> & IDOption<Def>>(
+    id: TypeOfID<Def, O['idKey']>,
+    { idKey, ...options } = {} as O
   ) {
     
     const [data] = await this.find({ [idKey || this.primaryId]: id }, options)
@@ -208,7 +208,7 @@ export default class Model<Def extends DefinitionSchema> {
    */
   async find<O extends SQLOptions<Def>>(
     where?: WhereData<SchemaOf<Def>>,
-    options: O = {} as O
+    options = {} as O
   ): FindResult<Def,O> {
     
     const result = await this._select(where, options)
@@ -251,10 +251,10 @@ export default class Model<Def extends DefinitionSchema> {
    *                         - return = New value for 'update' to OR void + mutates 'update' param
    * @returns Feedback object { success: true/false }
    */
-  async update<ID extends IDOf<Def>>(
-    id: SchemaOf<Def>[ID],
+  async update<O extends SQLOptions<Def> & IDOption<Def>>(
+    id: TypeOfID<Def, O['idKey']>,
     data: UpdateData<SchemaOf<Def>>,
-    { idKey, ...options }: { idKey?: ID } & SQLOptions<Def> = {}
+    { idKey, ...options } = {} as O
   ) {
     if (id == null) throw noID()
 
@@ -298,7 +298,7 @@ export default class Model<Def extends DefinitionSchema> {
    * @param idKey - (Default: Primary ID) Key of ID to remove
    * @returns Feedback object { success: true/false }
    */
-  async remove<ID extends IDOf<Def>>(id: SchemaOf<Def>[ID], idKey?: ID): Promise<Feedback> {
+  async remove<ID extends IDOf<Def> | undefined>(id: TypeOfID<Def, ID>, idKey?: ID): Promise<Feedback> {
     if (id == null) throw noID()
 
     const whereData = await runAdapters(
@@ -337,7 +337,7 @@ export default class Model<Def extends DefinitionSchema> {
    * @param idKey - (Default: Primary ID) Key of ID A & B values
    * @returns Feedback object { success: true/false }
    */
-  async swap<ID extends IDOf<Def>>(idA: DBSchemaOf<Def>[ID], idB: DBSchemaOf<Def>[ID], idKey?: ID): Promise<Feedback> {
+  async swap<ID extends IDOf<Def> | undefined>(idA: TypeOfID<Def,ID>, idB:TypeOfID<Def,ID>, idKey?: ID): Promise<Feedback> {
     if (idA == null || idA == null) throw noID()
 
     const count = await this._countRaw({ [idKey || this.primaryId]: idA })
@@ -508,17 +508,32 @@ export default class Model<Def extends DefinitionSchema> {
 
   /** Swap the ID values of one or two records using IDKEY (Or Primary ID if none given)
    * (Returns TRUE/FALSE if successful) */
-  private async _swap<ID extends IDOf<Def>>(idA: DBSchemaOf<Def>[ID], idB: DBSchemaOf<Def>[ID], idKey?: ID) {
-    if (!idA || !idB) throw noID()
+  private async _swap<ID extends IDOf<Def> | undefined>(idA: TypeOfID<Def,ID>, idB: TypeOfID<Def,ID>, idKey?: ID) {
+
+    const idAdb = await this._adaptProperty(idKey || this.primaryId, idA)
+    const idBdb = await this._adaptProperty(idKey || this.primaryId, idB)
+    
+    if (idAdb == null || idBdb == null) throw noID()
 
     await multiRun(getDb(), swapSQL(
       this.title,
       idKey || this.primaryId,
-      idA, idB,
+      idAdb, idBdb,
       this._tmpID,
       Object.keys(this.children))
     )
     return true
+  }
+
+  
+  /** Adapt ID from Base Schema to DB Schema */
+  private async _adaptProperty(key: keyof Def, val: SchemaOf<Def>[any]): Promise<DBSchemaOf<Def>[DBSchemaKeys<Def>]> {
+    const adapter = (this.adapters[adapterTypes.set] as any)[key]
+    if (typeof adapter !== 'function') return val as any
+
+    let data: any = { [key]: val }
+    const result = await adapter(val, data) 
+    return result ?? data[key]
   }
   
 
