@@ -1,5 +1,3 @@
-import type { ValidationBase } from "./validate.d"
-
 /** Enum of form actions { actionType: "Button Label" } */
 export const actions = {
     // GUI Action: GUI Button Label
@@ -50,7 +48,7 @@ export const htmlTypes = {
     // reset: "reset",
 } as const
 
-const htmlFromValidation: Partial<Record<ValidationBase, typeof htmlTypes[keyof typeof htmlTypes]>> = {
+const htmlFromValidation /*: Partial<Record<ValidationBase, typeof htmlTypes[keyof typeof htmlTypes]>> */ = {
     int:      htmlTypes.number,
     float:    htmlTypes.number,
     boolean:  htmlTypes.checkbox,
@@ -61,5 +59,6 @@ const htmlFromValidation: Partial<Record<ValidationBase, typeof htmlTypes[keyof 
 /** Convert validation type to HTML type { validationType: "htmlType", default: "htmlType" } */
 export const htmlValidationDict = {
     ...htmlFromValidation,
+    array:    htmlTypes.text,
     default:  htmlTypes.text,
 } as const
