@@ -54,37 +54,37 @@ export const definition /*: DefinitionSchema */ = {
     type: 'int?',
     default: 0,
     limits: { min: 0, max: rateLimiter.maxFails + 1 },
-    html: false,
+    isNotInForm: true,
   },
   failTime: {
     type: 'datetime?',
-    html: false,
+    isNotInForm: true,
   },
   guiCount: {
     type: 'int?',
     default: 0,
     limits:  { min: 0, max: Number.MAX_SAFE_INTEGER  },
-    html: false,
+    isNotInForm: true,
   },
   guiTime: {
     type: 'datetime?',
-    html: false,
+    isNotInForm: true,
   },
   apiCount: {
     type: 'int?',
     default: 0,
     limits:  { min: 0, max: Number.MAX_SAFE_INTEGER  },
-    html: false,
+    isNotInForm: true,
   },
   apiTime: {
     type: 'datetime?',
-    html: false,
+    isNotInForm: true,
   },
   locked: {
     type: 'boolean',
     default: false,
   },
-  salt:  { type: 'hex?', html: false, dbOnly: true },
+  salt:  { type: 'hex?', isNotInForm: true, dbOnly: true },
 } as const
 
 export const

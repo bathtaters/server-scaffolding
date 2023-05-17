@@ -1,5 +1,5 @@
 import type {} from '../middleware/auth.middleware' // Express.User type
-import type { AdapterDefinition, AddSchemaOf, HTMLSchemaOf, SchemaOf } from '../types/Model.d'
+import type { AdapterDefinition, SchemaOf, AddSchemaOf, ViewSchemaOf, FormSchemaOf } from '../types/Model.d'
 import type { ProfileActions } from '../types/gui.d'
 import type { UserDef, AccessType, RoleType } from '../types/Users.d'
 import { ModelAccess, Role, NO_ACCESS } from '../types/Users'
@@ -46,11 +46,16 @@ const uiToBaseHtml = ({
   guiCount, guiTime,
   apiCount, apiTime,
   ...user
-}: SchemaOf<UserDef>): HTMLSchemaOf<UserDef> => ({ ...user, access: '', locked: Boolean(locked).toString() })
+}: SchemaOf<UserDef>): ViewSchemaOf<UserDef> => ({
+  ...user,
+  access: '',
+  locked: Boolean(locked).toString()
+})
 
-export function guiAdapter(user: SchemaOf<UserDef>):   HTMLSchemaOf<UserDef>
-export function guiAdapter(user: SchemaOf<UserDef>[]): HTMLSchemaOf<UserDef>[]
-export function guiAdapter(user: SchemaOf<UserDef> | SchemaOf<UserDef>[]): HTMLSchemaOf<UserDef> | HTMLSchemaOf<UserDef>[] {
+
+export function guiAdapter(user: SchemaOf<UserDef>):   ViewSchemaOf<UserDef>
+export function guiAdapter(user: SchemaOf<UserDef>[]): ViewSchemaOf<UserDef>[]
+export function guiAdapter(user: SchemaOf<UserDef> | SchemaOf<UserDef>[]): ViewSchemaOf<UserDef> | ViewSchemaOf<UserDef>[] {
   if (!user) return []
   if (Array.isArray(user)) return user.map((u) => guiAdapter(u))
 
@@ -78,17 +83,17 @@ export function guiAdapter(user: SchemaOf<UserDef> | SchemaOf<UserDef>[]): HTMLS
 }
 
 
-export function adminFormAdapter({ access, role, ...formData }: HTMLSchemaOf<UserDef>, _?: Express.User, action?: ProfileActions) {
-  let adapted: Omit<HTMLSchemaOf<UserDef>, 'role'|'access'> & { role?: RoleType, access?: AccessType } = formData
+export function adminFormAdapter({ access, role, ...formData }: FormSchemaOf<UserDef>, _?: Express.User, action?: ProfileActions) {
+  let adapted: Omit<FormSchemaOf<UserDef>, 'role'|'access'> & { role?: RoleType, access?: AccessType } = formData
   
   if (role) adapted.role = Role.fromString(role)
   if (access) adapted.access = typeof access === 'string' ? new ModelAccess([access]) : new ModelAccess(access)
 
-  return confirmPassword(adapted as any, action) // TODO: Remove 'as any' once HTMLSchema type is improved
+  return confirmPassword(adapted, action)
 }
 
 
-export function userFormAdapter({ access, role, ...formData }: HTMLSchemaOf<UserDef>, user?: Express.User, action?: ProfileActions) {
+export function userFormAdapter({ access, role, ...formData }: FormSchemaOf<UserDef>, user?: Express.User, action?: ProfileActions) {
   if (user?.id !== formData.id && !Role.map.admin.intersects(user?.role)) throw modifyOther()
 
   return confirmPassword(formData, action)
@@ -96,7 +101,7 @@ export function userFormAdapter({ access, role, ...formData }: HTMLSchemaOf<User
 
 
 // HELPERS -- 
-function confirmPassword<D extends Pick<HTMLSchemaOf<UserDef>, 'confirm'|'password'>>(formData: D, action?: ProfileActions) {
+function confirmPassword<D extends Pick<FormSchemaOf<UserDef>, 'confirm'|'password'>>(formData: D, action?: ProfileActions) {
   if ((action === 'Add' || action === 'Update') && 'password' in formData) {
     if (!formData.confirm) throw noConfirm()
     if (formData.password !== formData.confirm) throw badConfirm()

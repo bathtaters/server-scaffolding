@@ -1,5 +1,5 @@
 import type { Awaitable, Flatten, OneOrMore } from './global.d'
-import type { ExtractHTMLType, HTMLType } from './gui.d'
+import type { ExtractHTMLType, HTMLType, ValidToHTML } from './gui.d'
 import type { BaseOfValid, ExtractType, IsArray, IsOptional, ValidationBase, ValidationBasic, ValidationExpanded } from './validate.d'
 import type { SQLTypeFull, ForeignKeyAction, UpdateData, WhereData, WhereDataValue, UpdateDataValue, ExtractDBType, DBIsOptional } from './db.d'
 import type { adapterTypes, childIndexType, childLabel } from './Model'
@@ -8,8 +8,6 @@ import type { htmlValidationDict } from './gui'
 
 // TODO -- Each definition has 'dbType' <-> 'baseType' <-> 'htmlType' w/ 4 adapters (toDb [set], fromDb [get], toGui, fromGui)
 // TODO -- Definitions DERIVE FROM ADAPTERS
-
-// TODO -- Create an editable flag that will hide HTML types from Form (FormSchemaOf, ViewSchemaOf instead of HTMLSchemaOf)
 
 // TODO -- Convert dbOnly to 'isMasked', isBitmap to type "bitmap"
 // TODO -- Add BitMap/BitMapObj(bitmap2d) type as option, remove 'isBitmap'
@@ -44,27 +42,32 @@ type DefinitionBase<T> = {
    *   - default: auto-generated based on type */
   db:         false | SQLTypeFull,
   
-  /** If property should be masked everywhere except for raw results
+  /** Mask property everywhere except for raw results
    *   - true = only accessible in toDB/fromDB adapters OR findRaw
    *            value is masked using [MASKED]
    *   - default: false */
   dbOnly?:    boolean,
 
+  /** Don't include property in generated forms
+   *  (Used when property is created/set by side-effects)
+   *   - default: false */
+  isNotInForm?: boolean,
+
   /** If property is a BitMap (Binary data stored as an integer)
    *   - default: false */
   isBitmap?:  boolean,
 
-  /** If property contents are HTML
+  /** Property contents are HTML
    *   - Type must be 'string*'
    *   - Contents will be interpretted as HTML instead of text in GUI
    *   - default: false */
   isHTML?:    T extends string ? boolean : false,
 
-  /** Set to true if column is primary key in database
+  /** Property is primary key for database
    *   - Type must be string or numeric type
    *   - When no type is provided,
    *     it will be set as auto-incrementing int */
-  isPrimary?: T extends string | number ? boolean : never,
+  isPrimary?: T extends string | number ? boolean : false,
 }
 
 /** Definition for a property of the Model */
@@ -171,7 +174,7 @@ export type SelectResult<
 export namespace Page {
   type Location = { page?: number, size?: number }
   type Options = { defaultSize?: number, startPage?: number, sizeList?: number[] }
-  type Data<Def extends DefinitionSchema> = { data: HTMLSchemaOf<Def>[], page: number, pageCount: number, size: number, sizes?: number[] }
+  type Data<Def extends DefinitionSchema> = { data: ViewSchemaOf<Def>[], page: number, pageCount: number, size: number, sizes?: number[] }
 }
 
 /** Object to generate Foreign Key Reference SQL */
@@ -284,22 +287,35 @@ export type DBSchemaOf<Def extends DefinitionSchema> = Flatten<
 >
 
 // TODO -- Only add 'null' when property is optional
-// TODO -- Allow adding additional HTML Only Props (Partial<Record<>>)
-// TODO -- Create HTML Form & View types (+ viewOnly bool to definition)
-/** Convert Definition Schema to HTML Schema */
-export type HTMLSchemaOf<Def extends DefinitionSchema> = Partial<
-  { -readonly [K in keyof Def as Def[K]['html'] extends false ? never : K] : SHTMLType<Def[K]> | null }
-  & { _meta: any }
->
+/** Convert Definition Schema to GUI View Schema (Allows passing additional data via the _meta prop) */
+export type ViewSchemaOf<Def extends DefinitionSchema> = Partial<{
+  -readonly [K in keyof Def as IsInView<Def[K]> extends true ? K : never]:
+    SHTMLType<Def[K]> | null
+} & { _meta: any }>
+
+/** Convert Definition Schema to GUI Form Schema */
+export type FormSchemaOf<Def extends DefinitionSchema> = Partial<{
+  -readonly [K in keyof Def as IsInForm<Def[K]> extends true ? K : never]:
+    SHTMLType<Def[K]> | null
+}>
 
 /** Convert Definition Schema to Base Schema Keys */
 export type SchemaKeys<Def extends DefinitionSchema> = keyof SchemaOf<Def> & string
 
+/** Convert Definition Schema to Keys of Schema for Inserting New Entries */
+export type AddSchemaKeys<Def extends DefinitionSchema> = keyof AddSchemaOf<Def> & string
+
+/** Convert Definition Schema to Keys of Default Values */
+export type DefaultSchemaKeys<Def extends DefinitionSchema> = keyof DefaultSchemaOf<Def> & string
+
 /** Convert Definition Schema to DB Schema Keys */
 export type DBSchemaKeys<Def extends DefinitionSchema> = keyof DBSchemaOf<Def> & string
 
-/** Convert Definition Schema to HTML Schema Keys */
-export type HTMLSchemaKeys<Def extends DefinitionSchema> = keyof HTMLSchemaOf<Def> & string
+/** Convert Definition Schema to GUI View Schema Keys */
+export type ViewSchemaKeys<Def extends DefinitionSchema> = keyof ViewSchemaOf<Def> & string
+
+/** Convert Definition Schema to GUI Form Schema Keys */
+export type FormSchemaKeys<Def extends DefinitionSchema> = keyof FormSchemaOf<Def> & string
 
 /** Get a valid ID from  */
 export type IDOf<Def extends DefinitionSchema> = keyof (SchemaOf<Def> | DBSchemaOf<Def>) & string
@@ -341,22 +357,34 @@ type SDBType<D extends Definition> =
 
 /** Extract HTML Type from Definition */
 type SHTMLType<D extends Definition> =
-  D['html'] extends string
+  D['html'] extends string | number
     ? ExtractHTMLType<D['html']>
     : D['html'] extends false
       ? never
-      : D['type'] extends keyof typeof htmlValidationDict
-        ? ExtractHTMLType<typeof htmlValidationDict[D['type']]>
-        : ExtractHTMLType<typeof htmlValidationDict['default']>
+      : IsArray<D['type']> extends true
+        ? ExtractHTMLType<ValidToHTML<'array'>>
+        : ExtractHTMLType<ValidToHTML<BaseOfValid<GetDefType<D>>>>
+
 
 /** TypeString from definition (or default TypeString if definition is empty) */
 type GetDefType<D extends Definition> =
   D['type'] extends string ? D['type'] : typeof defaultPrimaryType
 
-/** True/False indicating if Base Type is Optional */
+/** True/False indicating if definition has a Default value */
 type HasDefault<D extends Definition> =
   D extends { default: ExtractType<GetDefType<D>> }
     ? true : false
+
+/** True/False indicating if definition will be visible in GUI */
+type IsInView<D extends Definition> =
+  D['html'] extends false ? false : true
+
+/** True/False indicating if definition will be editable in GUI */
+type IsInForm<D extends Definition> =
+  IsInView<D> extends true
+    ? D['isNotInForm'] extends true
+      ? false : true
+    : false
 
 /** True/False indicating if Base Type is Optional */
 type GetOptional<D extends Definition> = IsOptional<D['type']> 

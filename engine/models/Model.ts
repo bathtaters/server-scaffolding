@@ -1,5 +1,5 @@
 import type {
-  SchemaOf, AddSchemaOf, DBSchemaOf, HTMLSchemaOf, DefaultSchemaOf, DBSchemaKeys,
+  SchemaOf, AddSchemaOf, DBSchemaOf, ViewSchemaOf, DefaultSchemaOf, DBSchemaKeys,
   DefinitionSchema, DefinitionSchemaNormal, AdapterDefinition,
   TypeOfID, IDOf, PrimaryIDOf, IDOption, SQLOptions,
   Page, FindResult, SelectResult, Feedback,
@@ -134,7 +134,7 @@ export default class Model<Def extends DefinitionSchema> {
     const sizes = pageCount > 1 || total > Math.min(...sizeList) ? appendAndSort(sizeList, size) : undefined
     
     // TODO -- Run trough HTML adapter
-    const data = await this.getPage(page, size) as any as HTMLSchemaOf<Def>[]
+    const data = await this.getPage(page, size) as any as ViewSchemaOf<Def>[]
   
     return { data, page, pageCount, size, sizes }
   }
