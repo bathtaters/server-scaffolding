@@ -1,6 +1,7 @@
 import type {} from '../middleware/auth.middleware' // Express.User type
+import type { AdapterDefinition, HTMLSchemaOf, SchemaOf } from '../types/Model.d'
 import type { ProfileActions } from '../types/gui.d'
-import type { AccessType, RoleType, UserDefinition, UsersHTML, UsersUI } from '../types/Users.d'
+import type { UserDef, AccessType, RoleType } from '../types/Users.d'
 import { ModelAccess, Role, NO_ACCESS } from '../types/Users'
 import { adapterTypes } from '../types/Model'
 import logger from '../libs/log'
@@ -9,21 +10,21 @@ import { decodeCors, encodeCors, displayCors, isRegEx } from '../utils/users.cor
 import { generateToken, encodePassword } from '../utils/auth.utils'
 import { modifyOther, noConfirm, badConfirm } from '../config/errors.engine'
 
-// TODO: Add default BitMap getters/setters
+// TODO: Remove 'as any's without causing issues
 
-export function initAdapters(definitions: UserDefinition) {
+export function initAdapters(definitions: AdapterDefinition<UserDef>) {
   // GET ADAPTERS
-  definitions.cors[adapterTypes.get] = decodeCors
-  definitions.role[adapterTypes.get] = (role) => new Role(role)
-  definitions.password[adapterTypes.get] = (password) => password ? 'YES' : undefined
-  definitions.access[adapterTypes.get] = (access) => access ? new ModelAccess(JSON.parse(access)) : undefined
+  definitions[adapterTypes.get].cors = (cors) => decodeCors(cors) as any
+  definitions[adapterTypes.get].role = (role) => new Role(role)
+  definitions[adapterTypes.get].password = (password) => password ? '[MASKED]' : undefined
+  definitions[adapterTypes.get].access = (access) => access ? new ModelAccess(JSON.parse(access)) as any : undefined
 
   // SET ADAPTERS
-  definitions.cors[adapterTypes.set] = encodeCors
-  definitions.role[adapterTypes.set] = (role) => role?.int
-  definitions.username[adapterTypes.set] = (username) => username?.toLowerCase()
-  definitions.access[adapterTypes.set] = (access) => access ? JSON.stringify(access) : undefined
-  definitions.password[adapterTypes.set] = async (password, data) => {
+  definitions[adapterTypes.set].cors = encodeCors
+  definitions[adapterTypes.set].role = (role) => role?.int
+  definitions[adapterTypes.set].username = (username) => username?.toLowerCase()
+  definitions[adapterTypes.set].access = (access) => access ? JSON.stringify(access) : undefined
+  definitions[adapterTypes.set].password = async (password, data) => {
     if (typeof password !== 'string' || !password) return
     const { pwkey, salt } = await encodePassword(password)
     data.salt = salt
@@ -32,7 +33,7 @@ export function initAdapters(definitions: UserDefinition) {
 }
 
 
-export const addAdapter = <D extends Partial<UsersUI>>(data: D) => ({
+export const addAdapter = (data: Omit<SchemaOf<UserDef>, 'id'|'token'>) => ({
   id: generateToken(),
   token: generateToken(),
   ...data,
@@ -45,11 +46,11 @@ const uiToBaseHtml = ({
   guiCount, guiTime,
   apiCount, apiTime,
   ...user
-}: UsersUI): UsersHTML => ({ ...user, access: '', locked: !!locked })
+}: SchemaOf<UserDef>): HTMLSchemaOf<UserDef> => ({ ...user, access: '', locked: Boolean(locked).toString() })
 
-export function guiAdapter(user: UsersUI): UsersHTML
-export function guiAdapter(user: UsersUI[]): UsersHTML[]
-export function guiAdapter(user: UsersUI | UsersUI[]): UsersHTML | UsersHTML[] {
+export function guiAdapter(user: SchemaOf<UserDef>):   HTMLSchemaOf<UserDef>
+export function guiAdapter(user: SchemaOf<UserDef>[]): HTMLSchemaOf<UserDef>[]
+export function guiAdapter(user: SchemaOf<UserDef> | SchemaOf<UserDef>[]): HTMLSchemaOf<UserDef> | HTMLSchemaOf<UserDef>[] {
   if (!user) return []
   if (Array.isArray(user)) return user.map((u) => guiAdapter(u))
 
@@ -57,7 +58,7 @@ export function guiAdapter(user: UsersUI | UsersUI[]): UsersHTML | UsersHTML[] {
   try {
     if ('role'     in user) output.role     = user.role?.list.join(', ') ?? NO_ACCESS
     if ('access'   in user) output.access   = user.access?.toString() ?? ''
-    if ('locked'   in user) output.locked   = Boolean(user.locked)
+    if ('locked'   in user) output.locked   = Boolean(user.locked).toString()
     if ('guiTime'  in user) output.guiTime  = `${formatLong(user.guiTime) } [${user.guiCount  || 0}]`
     if ('apiTime'  in user) output.apiTime  = `${formatLong(user.apiTime) } [${user.apiCount  || 0}]`
     if ('failTime' in user) output.failTime = `${formatLong(user.failTime)} [${user.failCount || 0}]`
@@ -76,17 +77,17 @@ export function guiAdapter(user: UsersUI | UsersUI[]): UsersHTML | UsersHTML[] {
 }
 
 
-export function adminFormAdapter({ access, role, ...formData }: UsersHTML, _?: Express.User, action?: ProfileActions) {
-  let adapted: Omit<UsersHTML, 'role'|'access'> & { role?: RoleType, access?: AccessType } = formData
+export function adminFormAdapter({ access, role, ...formData }: HTMLSchemaOf<UserDef>, _?: Express.User, action?: ProfileActions) {
+  let adapted: Omit<HTMLSchemaOf<UserDef>, 'role'|'access'> & { role?: RoleType, access?: AccessType } = formData
   
   if (role) adapted.role = Role.fromString(role)
   if (access) adapted.access = typeof access === 'string' ? new ModelAccess([access]) : new ModelAccess(access)
 
-  return confirmPassword(adapted, action)
+  return confirmPassword(adapted as any, action) // TODO: Remove 'as any' once HTMLSchema type is improved
 }
 
 
-export function userFormAdapter({ access, role, ...formData }: UsersHTML, user?: Express.User, action?: ProfileActions) {
+export function userFormAdapter({ access, role, ...formData }: HTMLSchemaOf<UserDef>, user?: Express.User, action?: ProfileActions) {
   if (user?.id !== formData.id && !Role.map.admin.intersects(user?.role)) throw modifyOther()
 
   return confirmPassword(formData, action)
@@ -94,7 +95,7 @@ export function userFormAdapter({ access, role, ...formData }: UsersHTML, user?:
 
 
 // HELPERS -- 
-function confirmPassword<D extends Pick<UsersHTML, 'confirm'|'password'>>(formData: D, action?: ProfileActions) {
+function confirmPassword<D extends Pick<HTMLSchemaOf<UserDef>, 'confirm'|'password'>>(formData: D, action?: ProfileActions) {
   if ((action === 'Add' || action === 'Update') && 'password' in formData) {
     if (!formData.confirm) throw noConfirm()
     if (formData.password !== formData.confirm) throw badConfirm()

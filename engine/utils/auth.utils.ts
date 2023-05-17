@@ -1,18 +1,19 @@
-import type { RoleType, UsersDB } from '../types/Users.d'
+import type { RoleType, UserDef } from '../types/Users.d'
+import type { DBSchemaOf } from '../types/Model.d'
 import hat from 'hat'
 import crypto from 'crypto'
 import { msAgo } from '../libs/date'
 import { encode, rateLimiter } from '../config/users.cfg'
 import { loginMessages as failureMsg } from '../config/errors.engine'
 
-export type PasswordCallback = (isMatch: boolean, userData: Partial<UsersDB>) => Promise<void> | void
+export type PasswordCallback = (isMatch: boolean, userData: Partial<DBSchemaOf<UserDef>>) => Promise<void> | void
 
 export const generateToken = () => hat()
 
-export const isLocked = ({ failCount }: Partial<Pick<UsersDB,'failCount'>>) =>
+export const isLocked = ({ failCount }: Partial<Pick<DBSchemaOf<UserDef>,'failCount'>>) =>
   (failCount || 0) + 1 >= rateLimiter.maxFails
 
-export const isPastWindow = ({ failTime, locked }: Partial<Pick<UsersDB,'failTime'|'locked'>>) =>
+export const isPastWindow = ({ failTime, locked }: Partial<Pick<DBSchemaOf<UserDef>,'failTime'|'locked'>>) =>
   failTime && (rateLimiter.autoUnlock || !locked) &&
     msAgo(failTime) > rateLimiter.failWindow
 
@@ -27,7 +28,7 @@ export const encodePassword = async (password: string) => {
   return { salt, pwkey: pwkey.toString('base64url') }
 }
 
-export async function testPassword(userData: Partial<UsersDB> | undefined, password: string, role?: RoleType, callback?: PasswordCallback) {
+export async function testPassword(userData: Partial<DBSchemaOf<UserDef>> | undefined, password: string, role?: RoleType, callback?: PasswordCallback) {
   if (!userData) return failureMsg.noUser
   if (userData.locked && !isPastWindow(userData)) return failureMsg.isLocked
   if (role && !role.intersects(userData.role)) return failureMsg.noRole

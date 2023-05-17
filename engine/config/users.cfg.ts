@@ -1,4 +1,3 @@
-import type { UsersUI, UserDefinition } from '../types/Users.d'
 import RegEx from '../libs/regex'
 import { ModelAccess, Role } from '../types/Users'
 import { urlCfg } from '../src.import'
@@ -8,6 +7,85 @@ const urls = urlCfg.gui.admin
 const passwordLimits = { min: 8, max: 128 }
 
 export const rateLimiter = { maxFails: 5, failWindow: 10 * 60 * 1000, autoUnlock: false } // !autoUnlock: manual unlock by admin
+
+export const definition /*: DefinitionSchema */ = {
+  id: {
+    type: 'hex',
+    limits: { min: 32, max: 32 },
+  },
+  username: {
+    type: 'string',
+    limits: { min: 2, max: 255 },
+  },
+  password: {
+    type: 'string?',
+    limits: passwordLimits,
+  },
+  confirm: {
+    type: 'string?',
+    limits: passwordLimits,
+    db: false,
+    dbOnly: true,
+  },
+  token: {
+    type: 'hex?',
+    limits: { min: 32, max: 32 },
+    db: 'TEXT NOT NULL',
+  },
+  role: {
+    type: 'string[]',
+    default: new Role('api', 'gui'),
+    limits: { elem: { max: 16 }, array: { max: Role.count } },
+    isBitmap: true,
+    db: 'INTEGER',
+  },
+  cors: {
+    type: 'string*',
+    default: '*',
+    limits: { min: 0, max: 2048 },
+  },
+  access: {
+    type: 'string[]',
+    default: new ModelAccess(undefined, ['read', 'write']).toArray(),
+    limits: { elem: { max: 64 }, array: { max: ModelAccess.keys.length * ModelAccess.values.length } },
+    db: 'TEXT',
+  },
+  failCount: {
+    type: 'int?',
+    default: 0,
+    limits: { min: 0, max: rateLimiter.maxFails + 1 },
+    html: false,
+  },
+  failTime: {
+    type: 'datetime?',
+    html: false,
+  },
+  guiCount: {
+    type: 'int?',
+    default: 0,
+    limits:  { min: 0, max: Number.MAX_SAFE_INTEGER  },
+    html: false,
+  },
+  guiTime: {
+    type: 'datetime?',
+    html: false,
+  },
+  apiCount: {
+    type: 'int?',
+    default: 0,
+    limits:  { min: 0, max: Number.MAX_SAFE_INTEGER  },
+    html: false,
+  },
+  apiTime: {
+    type: 'datetime?',
+    html: false,
+  },
+  locked: {
+    type: 'boolean',
+    default: false,
+  },
+  salt:  { type: 'hex?', html: false, dbOnly: true },
+} as const
 
 export const
 loginRoles    = new Role('gui', 'admin'),
@@ -19,14 +97,14 @@ saveLoginMs = 5 * 24 * 60 * 60 * 1000,
 
 apiToken = { header: 'Authorization', matchToken: RegEx(/^Bearer (.+)$/) },
 
-tableFields: Partial<Record<keyof UsersUI, string>> = {
+tableFields: Partial<Record<keyof typeof definition, string>> = {
   username: 'Username', role: 'Role', password: 'Password',
   token: 'API Token', cors: 'CORS Origin', access: 'Model Access', 
   guiTime: 'GUI Access', apiTime: 'API Access', failTime: 'Fails',
   locked: 'Locked',
 },
 
-tooltips: Partial<Record<keyof UsersUI, string>> = {
+tooltips: Partial<Record<keyof typeof definition, string>> = {
   password: `Must be at least ${passwordLimits.min} characters.`,
   confirm: 'Must match Password.',
   cors: 'Enter: * (all), true/false (all/none), comma-seperated urls, or RegExp(&quot;<regexp>&quot;).',
@@ -34,87 +112,7 @@ tooltips: Partial<Record<keyof UsersUI, string>> = {
   locked: 'Lock/Unlock entire user account'
 },
 
-definition: UserDefinition = {
-  id: {
-    typeStr: 'hex',
-    limits: { min: 32, max: 32 },
-  },
-  username: {
-    typeStr: 'string',
-    default: 'user',
-    limits: { min: 2, max: 255 },
-  },
-  password: {
-    typeStr: 'string?',
-    limits: passwordLimits,
-  },
-  confirm: {
-    typeStr: 'string?',
-    limits: passwordLimits,
-    db: false,
-    dbOnly: true,
-  },
-  token: {
-    typeStr: 'hex?',
-    limits: { min: 32, max: 32 },
-    db: 'TEXT NOT NULL',
-  },
-  role: {
-    typeStr: 'string[]',
-    default: new Role('api', 'gui'),
-    limits: { elem: { max: 16 }, array: { max: Role.count } },
-    isBitmap: true,
-    db: 'INTEGER',
-  },
-  cors: {
-    typeStr: 'string*',
-    default: '*',
-    limits: { min: 0, max: 2048 },
-  },
-  access: {
-    typeStr: 'string[]',
-    default: new ModelAccess(undefined, ['read', 'write']),
-    limits: { elem: { max: 64 }, array: { max: ModelAccess.keys.length * ModelAccess.values.length } },
-    db: 'TEXT',
-  },
-  failCount: {
-    typeStr: 'int?',
-    default: 0,
-    limits: { min: 0, max: rateLimiter.maxFails + 1 },
-    html: false,
-  },
-  failTime: {
-    typeStr: 'datetime?',
-    html: false,
-  },
-  guiCount: {
-    typeStr: 'int?',
-    default: 0,
-    limits:  { min: 0, max: Number.MAX_SAFE_INTEGER  },
-    html: false,
-  },
-  guiTime: {
-    typeStr: 'datetime?',
-    html: false,
-  },
-  apiCount: {
-    typeStr: 'int?',
-    default: 0,
-    limits:  { min: 0, max: Number.MAX_SAFE_INTEGER  },
-    html: false,
-  },
-  apiTime: {
-    typeStr: 'datetime?',
-    html: false,
-  },
-  locked: {
-    typeStr: 'boolean',
-    default: false,
-  },
-  salt:  { typeStr: 'hex?', html: false, dbOnly: true },
-} as const,
-
-searchableKeys: Array<keyof UsersUI> = ['username','token','role','cors','locked'], // 'access'
+searchableKeys: Array<keyof typeof definition> = ['username','token','role','cors','locked'], // 'access'
 illegalUsername = RegEx(/[^a-zA-Z0-9_-]/),
 
 // Paths that expect JSON responses (not HTML)

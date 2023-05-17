@@ -1,4 +1,5 @@
-import type { AccessBitMap, RoleType, UsersUI } from '../types/Users.d'
+import type { UserDef, AccessBitMap, RoleType } from '../types/Users.d'
+import type { SchemaOf } from '../types/Model.d'
 import type { Middleware } from '../types/express.d'
 import { anyAccess, timestamps } from '../types/Users'
 
@@ -35,7 +36,7 @@ export const checkAuth = (redirectURL: string, role: RoleType): Middleware =>
 export const checkModel = (redirectURL: string | null, modelName: string, accessType: ModelAccess = anyAccess): Middleware =>
   (req, res, next) => {
     const access = typeof accessType === 'function' ? accessType(req) : accessType
-    if (req.user?.access?.intersects(access, modelName)) return next()
+    if ((req.user?.access)?.intersects(access, modelName)) return next()
     redirectURL ? res.redirect(redirectURL) : next(noModelAccess(modelName, access?.toString()))
   }
     
@@ -60,6 +61,6 @@ type ModelAccess = AccessBitMap | ((req: Express.Request) => AccessBitMap)
 // Define User type for Express middleware
 declare global {
   namespace Express {
-    interface User extends UsersUI {}
+    interface User extends SchemaOf<UserDef> {}
   }
 }

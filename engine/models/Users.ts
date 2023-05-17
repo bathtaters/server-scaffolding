@@ -1,5 +1,5 @@
-import type { UsersDB, UsersUI, GetOptions, UpdateOptions, TimestampType, RoleType } from '../types/Users.d'
-import type { SQLOptions } from '../types/Model.d'
+import type { UserDef, GetOptions, UpdateOptions, TimestampType, RoleType } from '../types/Users.d'
+import type { DBSchemaOf, IDOf, SchemaOf, TypeOfID } from '../types/Model.d'
 import type { IfExistsBehavior, UpdateData, WhereData } from '../types/db.d'
 import { Role, timestamps } from '../types/Users'
 import { adapterTypes } from '../types/Model'
@@ -17,16 +17,16 @@ import { definition, rateLimiter, passwordRoles, illegalUsername } from '../conf
 import { badUsername, noData, usernameMessages, deleteAdmin, noID, noEntry } from '../config/errors.engine'
 
 
-class User extends Model<UsersUI, UsersDB> {
+class User extends Model<UserDef> {
 
   constructor() { 
     super('_users', definition)
-    initAdapters(this.schema)
+    initAdapters(this.adapters)
   }
 
 
-  async get<ID extends User['primaryId'], O extends GetOptions<ID>>(
-    id: UsersUI[ID], { timestamp, ignoreCounter, ...options }: O = {} as O
+  async get<O extends GetOptions>(
+    id: TypeOfID<UserDef, O['idKey']>, { timestamp, ignoreCounter, ...options } = {} as O
   ) {
 
     const user = await super.get(id, options)
@@ -34,27 +34,29 @@ class User extends Model<UsersUI, UsersDB> {
     return user
   }
 
-  private async _getRaw<ID extends User['primaryId']>
-  (id: UsersUI[ID], { timestamp, ignoreCounter, idKey, ...options }: GetOptions = {}): Promise<Partial<UsersDB> | undefined> {
+  private async _getRaw<O extends GetOptions>
+  (id: TypeOfID<UserDef, O['idKey']>, { timestamp, ignoreCounter, idKey, ...options } = {} as O)
+  {
+    const users = await super.find({ [idKey || this.primaryId]: id }, { ...options, raw: true, skipChildren: true })
+    if (users.length < 1) return undefined
 
-    const [user] = await super.find({ [idKey || this.primaryId]: id }, { ...options, raw: true, skipChildren: true })
-
-    if (user) await this._updateTimestamp(user, timestamp, ignoreCounter)
-    return user
+    await this._updateTimestamp(users[0], timestamp, ignoreCounter)
+    return users[0]
   }
-
-  async add(users: Omit<UsersUI,'id'|'token'>[], ifExists: IfExistsBehavior = 'default') {
+  
+  async add(users: Omit<SchemaOf<UserDef>,'id'|'token'>[], ifExists: IfExistsBehavior = 'default') {
     const userData = await this._addAdapter(users)
     return await super.add(userData, ifExists)
   }
 
-  async addAndReturn(users: Omit<UsersUI,'id'|'token'>[], ifExists: IfExistsBehavior = 'default') {
+  async addAndReturn(users: Omit<SchemaOf<UserDef>,'id'|'token'>[], ifExists: IfExistsBehavior = 'default') {
     const userData = await this._addAdapter(users)
     return await super.addAndReturn(userData, ifExists)
   }
 
-  private async _updateOVR<ID extends User['primaryId']>
-  (id: UsersUI[ID], data: UpdateData<UsersUI>, options: SQLOptions<UsersDB> & { idKey?: ID } = {}) {
+  private async _updateOVR<O extends GetOptions>
+  (id: TypeOfID<UserDef, O['idKey']>, data: UpdateData<SchemaOf<UserDef>>, options = {} as O)
+  {
     const oldOnChange = options.onChange
     if (!oldOnChange) options.onChange = this._updateCb.bind(this)
 
@@ -65,23 +67,23 @@ class User extends Model<UsersUI, UsersDB> {
 
     return super.update(id, data, options)
   }
-  override update: Model<UsersUI,UsersDB>['update'] = this._updateOVR.bind(this)
+  override update: Model<UserDef>['update'] = this._updateOVR.bind(this)
 
   
-  async _removeOVR<ID extends User['primaryId']>(id: UsersUI[ID], idKey?: ID) {
+  async _removeOVR<ID extends IDOf<UserDef> | undefined>(id: TypeOfID<UserDef,ID>, idKey?: ID) {
     await this.throwLastAdmins({ [idKey || this.primaryId]: id })
     return super.remove(id, idKey)
   }
-  override remove: Model<UsersUI,UsersDB>['remove'] = this._removeOVR.bind(this)
+  override remove: Model<UserDef>['remove'] = this._removeOVR.bind(this)
 
 
-  regenToken(id: UsersDB['id']) {
+  regenToken(id: DBSchemaOf<UserDef>['id']) {
     return super.update(id, { token: generateToken() })
   }
 
-  async checkPassword(username: UsersUI['username'], password: string, role: RoleType) {
+  async checkPassword(username: SchemaOf<UserDef>['username'], password: string, role: RoleType) {
     if (!isPm2 && !(await this.count())) {
-      const data = await this.addAndReturn([{ username, password, role }])
+      const data = await this.addAndReturn([{ username, password, role: role.list }])
       logger.info(`Created initial user: ${data.username}`)
       return runAdapters(adapterTypes.get, data, this)
     }
@@ -91,7 +93,7 @@ class User extends Model<UsersUI, UsersDB> {
     return 'fail' in result ? result : runAdapters(adapterTypes.get, result, this)
   }
 
-  async checkToken(token: UsersUI['token'], role: RoleType) {
+  async checkToken(token: SchemaOf<UserDef>['token'], role: RoleType) {
     const user = await this._getRaw(token, { idKey: 'token', timestamp: timestamps.api })
     return !user ? 'NO_USER' :
       user.locked && !isPastWindow(user) ? 'USER_LOCKED' :
@@ -99,7 +101,7 @@ class User extends Model<UsersUI, UsersDB> {
         runAdapters(adapterTypes.get, user, this)
   }
 
-  async areLastAdmins(where: WhereData<UsersUI>) {
+  async areLastAdmins(where: WhereData<SchemaOf<UserDef>>) {
     const whereData = await runAdapters(adapterTypes.set, where, this)
     const params = getSqlParams(this, whereData)
 
@@ -114,12 +116,12 @@ class User extends Model<UsersUI, UsersDB> {
     return !admins.filter(({ remains }) => remains).length
   }
 
-  async throwLastAdmins(where: WhereData<UsersUI>) {
+  async throwLastAdmins(where: WhereData<SchemaOf<UserDef>>) {
     const isLast = await this.areLastAdmins(where)
     if (isLast) throw deleteAdmin()
   }
 
-  async isInvalidUsername(username?: UsersDB['username'], ignoreId?: UsersDB['id']) {
+  async isInvalidUsername(username?: DBSchemaOf<UserDef>['username'], ignoreId?: DBSchemaOf<UserDef>['id']) {
     if (!username) return usernameMessages.missing
     if (illegalUsername.test(username)) return usernameMessages.illegal
 
@@ -132,22 +134,27 @@ class User extends Model<UsersUI, UsersDB> {
     return nameExists && usernameMessages.exists
   }
 
-  async throwInvalidUsername(username?: UsersDB['username'], ignoreId?: UsersDB['id']) {
+  async throwInvalidUsername(username?: DBSchemaOf<UserDef>['username'], ignoreId?: DBSchemaOf<UserDef>['id']) {
     const errMsg = await this.isInvalidUsername(username, ignoreId)
     if (errMsg) throw badUsername(username, errMsg)
   }
 
-  async incFailCount(userData?: Partial<UsersDB>, { reset, idKey, counter, ...options }: UpdateOptions = {}) {
-    let user = userData
-    if (user && idKey) {
-      if (!(idKey in user)) throw noID()
-      user = await this._getRaw(user[idKey], { idKey })
+  async incFailCount(user?: Partial<DBSchemaOf<UserDef>>, { reset, idKey, counter, ...options }: UpdateOptions = {}) {
+    
+    // Passing value for idKey forces a DB lookup
+    if (idKey) {
+      const id = user?.[idKey]
+      if (!id) throw noID()
+      
+      user = await this._getRaw(id, { idKey })
+      if (!user) throw noEntry(id)
     }
 
-    if (!user) throw userData ? noEntry(userData[idKey || this.primaryId]) : noID()
+    else if (!user?.[this.primaryId]) throw noID()
+
     
-    let newData: UpdateData<UsersUI> =
-      reset              ? { failCount: 0, failTime: undefined,  locked: false } : // TODO: Test that UNDEFINED works like NULL here
+    let newData: UpdateData<SchemaOf<UserDef>> =
+      reset              ? { failCount: 0, failTime: null,       locked: false } :
       isPastWindow(user) ? { failCount: 1, failTime: new Date(), locked: false } : {
         failCount: { $inc: 1 },
         failTime: new Date(),
@@ -156,18 +163,18 @@ class User extends Model<UsersUI, UsersDB> {
     
     if (counter) newData[`${counter}Count`] = { $inc: 1 }
     
-    return super.update(user[this.primaryId], newData, options)
+    return super.update(user[this.primaryId] as TypeOfID<UserDef>, newData, options)
   }
 
 
 
   // OVERRIDE HELPERS \\
 
-  private async _updateTimestamp(userData: Partial<UsersUI | UsersDB>, timestamp?: TimestampType, ignoreCounter = false) {
+  private async _updateTimestamp(userData: Partial<SchemaOf<UserDef> | DBSchemaOf<UserDef>>, timestamp?: TimestampType, ignoreCounter = false) {
     if (!timestamp || !isIn(this.primaryId, userData) || !userData[this.primaryId])
       return false
 
-    let data: UpdateData<UsersUI> = { [`${timestamp}Time`]: now() }
+    let data: UpdateData<SchemaOf<UserDef>> = { [`${timestamp}Time`]: now() }
     if (!ignoreCounter) data[`${timestamp}Count`] = { $inc: 1 }
 
     const { success } = await super.update(userData[this.primaryId], data)
@@ -175,14 +182,14 @@ class User extends Model<UsersUI, UsersDB> {
   }
 
 
-  private async _addAdapter(users: Omit<UsersUI, 'id'|'token'>[]): Promise<UsersUI[]> {
+  private async _addAdapter(users: Omit<SchemaOf<UserDef>, 'id'|'token'>[]): Promise<SchemaOf<UserDef>[]> {
     for (const user of users) {
       await this.throwInvalidUsername(user.username)
     }
 
     const userData = users.map((user) => {
       const newUser = addAdapter(user)
-      if (passwordRoles.intersects(newUser.role) && !newUser.password)
+      if (passwordRoles.intersects(newUser.role as any) && !newUser.password) // TODO: Remove as any when get types from adapters is done
         throw noData('password for GUI access')
       return newUser
     })
@@ -195,32 +202,36 @@ class User extends Model<UsersUI, UsersDB> {
     return userData
   }
 
-  private async _updateCb(newData: UpdateData<UsersDB>, matchingData: UsersDB[])  {
-    const oldData = matchingData[0],    
-      newRole   = newData.role   != null ? projectedValue(oldData.role,   newData.role)   : oldData.role,
+  private async _updateCb(newData: UpdateData<DBSchemaOf<UserDef>>, matchingData: DBSchemaOf<UserDef>[])  {
+    const oldData = matchingData[0],
+      newRole   = newData.role != null ? projectedValue(oldData.role, newData.role as number) : oldData.role,
       newLocked = projectedValue(oldData.locked, newData.locked)
-
+    
     if (newRole !== oldData.role) {
+      // GUI Access requires password
       if (!oldData.password && !newData.password && passwordRoles.intersects(newRole))
         throw noData('password for GUI access')
 
+      // Must have at least 1 admin
       if (Role.map.admin.intersects(oldData.role) && !Role.map.admin.intersects(newRole))
         await this.throwLastAdmins({ id: { $in: matchingData.map(({ id }) => id) } })
     }
     
+    // Usernames must be unique
     if (newData.username)
       await this.throwInvalidUsername(projectedValue(oldData.username, newData.username), oldData.id)
 
+    // Set/Reset lock
     if (oldData.locked && !newLocked) {
       newData.failCount = 0
-      newData.failTime = undefined // TODO: Test that UNDEFINED works like NULL here
+      newData.failTime = null
     } else if (!oldData.locked && newLocked) {
       newData.failCount = rateLimiter.maxFails
       newData.failTime = now()
     }
   }
 
-  private async _passwordCb(isMatch: boolean, userData: Partial<UsersDB>) {
+  private async _passwordCb(isMatch: boolean, userData: Partial<DBSchemaOf<UserDef>>) {
     await this.incFailCount(userData, {
       reset:   isMatch,
       counter: isMatch ? 'gui' : undefined
