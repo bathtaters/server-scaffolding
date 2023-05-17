@@ -30,7 +30,7 @@ export default class Model<Def extends DefinitionSchema> {
   private _isChildModel: boolean
 
   private   _defaults: DefaultSchemaOf<Def>
-  private   _hidden:   Array<keyof Def>
+  private   _masked:   Array<keyof Def>
   protected _children: ChildDefinitions<Def>
 
   /** Promise that will resolve to TRUE once DB is connected and Model is created */
@@ -61,7 +61,7 @@ export default class Model<Def extends DefinitionSchema> {
     // Set additional properties
     this._adapters = buildAdapters(adapters, this._schema)
     this._defaults = mapToField(this._schema, 'default') as any
-    this._hidden   = Object.keys(this._schema).filter((key) => this._schema[key].dbOnly)
+    this._masked   = Object.keys(this._schema).filter((key) => this._schema[key].isMasked)
 
     this.isInitialized = (async () => {
       if (!getDb()) { await openDb() }
@@ -255,7 +255,7 @@ export default class Model<Def extends DefinitionSchema> {
    */
   async update<O extends SQLOptions<Def> & IDOption<Def>>(
     id: TypeOfID<Def, O['idKey']>,
-    data: UpdateData<SchemaOf<Def>>,
+    data: UpdateData<AddSchemaOf<Def>>,
     { idKey, ...options } = {} as O
   ) {
     if (id == null) throw noID()
@@ -287,7 +287,7 @@ export default class Model<Def extends DefinitionSchema> {
    *                         - return = New value for 'update' to OR void + mutates 'update' param
    * @returns Feedback object { success: true/false }
    */
-  async batchUpdate(where: WhereData<SchemaOf<Def>>, data: UpdateData<SchemaOf<Def>>, options: SQLOptions<Def> = {}): Promise<Feedback> {
+  async batchUpdate(where: WhereData<SchemaOf<Def>>, data: UpdateData<AddSchemaOf<Def>>, options: SQLOptions<Def> = {}): Promise<Feedback> {
     const whereData = await runAdapters(adapterTypes.set, where, this)
     const success = await this._update(data, whereData, options)
     return { success }
@@ -443,7 +443,7 @@ export default class Model<Def extends DefinitionSchema> {
 
   /** Execute UPDATE command using DATA values on records match WHERE values
    *  and calling ONCHANGE if provided (Returns TRUE/FALSE if successful) */
-  private async _update(data: UpdateData<SchemaOf<Def>>, whereData: WhereData<DBSchemaOf<Def>>, { onChange }: SQLOptions<Def>) {
+  private async _update(data: UpdateData<AddSchemaOf<Def>>, whereData: WhereData<DBSchemaOf<Def>>, { onChange }: SQLOptions<Def>) {
     
     // Adapt/Sanitize data
     if (!Object.keys(whereData).length) throw noID()
@@ -539,7 +539,9 @@ export default class Model<Def extends DefinitionSchema> {
   }
 
   /** Insert default properties in place of any undefined properties */
-  private _applyDefaults = (data: AddSchemaOf<Def>): SchemaOf<Def> => ({ ...this.defaults, ...data }) as any
+  private _applyDefaults(data: AddSchemaOf<Def>) {
+    return { ...this.defaults, ...data }
+  }
   
 
   // Readonly Getters
@@ -550,7 +552,7 @@ export default class Model<Def extends DefinitionSchema> {
   /** Boolean indicating if this model is not the parent model */
   get isChildModel() { return this._isChildModel }
   /** A list of Keys that only appear in the DB */
-  get hidden() { return this._hidden }
+  get masked() { return this._masked }
   /** An object containing the default values to be used when creating a record */
   get defaults() { return this._defaults }
   /** Definition schema */

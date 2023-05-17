@@ -20,12 +20,13 @@ export const definition /*: DefinitionSchema */ = {
   password: {
     type: 'string?',
     limits: passwordLimits,
+    isMasked: true,
   },
   confirm: {
     type: 'string?',
     limits: passwordLimits,
     db: false,
-    dbOnly: true,
+    isMasked: true,
   },
   token: {
     type: 'hex?',
@@ -84,7 +85,7 @@ export const definition /*: DefinitionSchema */ = {
     type: 'boolean',
     default: false,
   },
-  salt:  { type: 'hex?', isNotInForm: true, dbOnly: true },
+  salt:  { type: 'hex?', html: false, isMasked: true },
 } as const
 
 export const

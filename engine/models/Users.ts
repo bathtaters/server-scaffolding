@@ -55,7 +55,7 @@ class User extends Model<UserDef> {
   }
 
   private async _updateOVR<O extends GetOptions>
-  (id: TypeOfID<UserDef, O['idKey']>, data: UpdateData<SchemaOf<UserDef>>, options = {} as O)
+  (id: TypeOfID<UserDef, O['idKey']>, data: UpdateData<AddSchemaOf<UserDef>>, options = {} as O)
   {
     const oldOnChange = options.onChange
     if (!oldOnChange) options.onChange = this._updateCb.bind(this)
@@ -153,7 +153,7 @@ class User extends Model<UserDef> {
     else if (!user?.[this.primaryId]) throw noID()
 
     
-    let newData: UpdateData<SchemaOf<UserDef>> =
+    let newData: UpdateData<AddSchemaOf<UserDef>> =
       reset              ? { failCount: 0, failTime: null,       locked: false } :
       isPastWindow(user) ? { failCount: 1, failTime: new Date(), locked: false } : {
         failCount: { $inc: 1 },
@@ -170,11 +170,11 @@ class User extends Model<UserDef> {
 
   // OVERRIDE HELPERS \\
 
-  private async _updateTimestamp(userData: Partial<SchemaOf<UserDef> | DBSchemaOf<UserDef>>, timestamp?: TimestampType, ignoreCounter = false) {
+  private async _updateTimestamp(userData: Partial<AddSchemaOf<UserDef> | DBSchemaOf<UserDef>>, timestamp?: TimestampType, ignoreCounter = false) {
     if (!timestamp || !isIn(this.primaryId, userData) || !userData[this.primaryId])
       return false
 
-    let data: UpdateData<SchemaOf<UserDef>> = { [`${timestamp}Time`]: now() }
+    let data: UpdateData<AddSchemaOf<UserDef>> = { [`${timestamp}Time`]: now() }
     if (!ignoreCounter) data[`${timestamp}Count`] = { $inc: 1 }
 
     const { success } = await super.update(userData[this.primaryId], data)

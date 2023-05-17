@@ -10,6 +10,8 @@ export const
     skip: ' OR IGNORE',
     overwrite: ' OR REPLACE',
   },
+
+  MASK_STR = '[MASKED]',
   
   getChildName = (mainTable: string, arrayKey: string | number | symbol) => `[${mainTable}.${String(arrayKey)}]`,
   getChildPath = (arrayName: string) => arrayName.replace(/^\[|\]$/g,'').replace('.','/'),

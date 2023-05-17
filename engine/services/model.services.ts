@@ -1,7 +1,8 @@
 import type Model from '../models/Model'
 import type {
-  Definition, DefinitionSchema, DefinitionNormal, DefinitionSchemaNormal, ChildDefinitions, 
-  AdapterType, AdapterData, AdapterIn, AdapterOut, SkipChildren, DefType, PrimaryIDOf, AdapterDefinition, AdapterDefinitionLoose, 
+  Definition, DefinitionSchema, DefinitionNormal, DefinitionSchemaNormal,
+  AdapterType, AdapterData, AdapterIn, AdapterOut, AdapterDefinition, AdapterDefinitionLoose, 
+  ChildDefinitions, SkipChildren, DefType, PrimaryIDOf,
 } from '../types/Model.d'
 import type { UpdateData, UpdateValue, WhereData } from '../types/db.d'
 import { childLabel, adapterTypes, childIndexType } from '../types/Model'
@@ -10,7 +11,7 @@ import { hasDupes, isIn } from '../utils/common.utils'
 import { dbFromType, htmlFromType, stripPrimaryDef, sanitizeSchemaData, getDefaultAdapter, definitionToValid } from '../utils/model.utils'
 import { expandTypeStr, toTypeString } from '../utils/validate.utils'
 import { getOpType } from '../utils/db.utils'
-import { defaultPrimaryKey, defaultPrimaryType, SQL_ID } from '../config/models.cfg'
+import { defaultPrimaryKey, defaultPrimaryType, MASK_STR, SQL_ID } from '../config/models.cfg'
 
 
 // TODO -- fix typings and remove 'as any'
@@ -182,7 +183,8 @@ export async function runAdapters<D extends DefinitionSchema, A extends AdapterT
       runAdapters(adapterType, val ?? {}, model)
 
     // IF Key should not be in result
-    if (adapterType === adapterTypes.get && model.hidden.includes(key)) return;
+    if (adapterType === adapterTypes.get && model.masked.includes(key))
+      return result[key] = MASK_STR
     
     // IF Key has no adapter
     const adapter = adapters[key as keyof typeof adapters]
@@ -202,4 +204,4 @@ export async function runAdapters<D extends DefinitionSchema, A extends AdapterT
 }
 
 
-type AModel<Def extends DefinitionSchema> = Pick<Model<Def>, 'schema'|'hidden'|'children'|'adapters'>
+type AModel<Def extends DefinitionSchema> = Pick<Model<Def>, 'schema'|'masked'|'children'|'adapters'>

@@ -16,7 +16,6 @@ export function initAdapters(definitions: AdapterDefinition<UserDef>) {
   // GET ADAPTERS
   definitions[adapterTypes.get].cors = (cors) => decodeCors(cors) as any
   definitions[adapterTypes.get].role = (role) => new Role(role)
-  definitions[adapterTypes.get].password = (password) => password ? '[MASKED]' : undefined
   definitions[adapterTypes.get].access = (access) => access ? new ModelAccess(JSON.parse(access)) as any : undefined
 
   // SET ADAPTERS
