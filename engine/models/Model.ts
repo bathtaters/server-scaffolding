@@ -3,7 +3,8 @@ import type {
   DefinitionSchema, DefinitionSchemaNormal, AdapterDefinition,
   TypeOfID, IDOf, PrimaryIDOf, IDOption, SQLOptions,
   Page, FindResult, SelectResult, Feedback,
-  ForeignKeyRef, ChildDefinitions, ChildKey,
+  AdapterType, AdapterIn, AdapterOut, AdapterData,
+  ForeignKeyRef, ChildDefinitions, ChildKey, SkipChildren,
 } from '../types/Model.d'
 import type { CreateSchema, IfExistsBehavior, UpdateData, WhereData } from '../types/db.d'
 import logger from '../libs/log'
@@ -20,6 +21,11 @@ import { noID, noData, noEntry, noPrimary, noSize, badKey, multiAction, updatePr
 
 // TODO -- Create PageData object & move selectSQL call from this.getPage into this._select
 // TODO -- Create base onUpdate/onCreate callbacks that are called whenever an Update/Create call is made
+
+// TODO -- DOUBLE CHECK ADAPTERS W/ VALIDATORS + FORM DATA
+//       - Also add base form data (ie. action, csrf, etc) to FormGui type, make available in fromUiAdapter
+//       - combine w/ action/controller TODO  "Add type to 'pageData'..."
+
 
 /** Base Model Class, each instance represents a separate model */
 export default class Model<Def extends DefinitionSchema> {
@@ -95,7 +101,7 @@ export default class Model<Def extends DefinitionSchema> {
     if (orderKey != null && (typeof orderKey !== 'string' || (orderKey && !isIn(orderKey, this.schema))))
       throw badKey(orderKey, this.title)
     
-    let result = await all<DBSchemaOf<Def>>(getDb(), ...selectSQL(
+    const data = await all<DBSchemaOf<Def>>(getDb(), ...selectSQL(
       this.title,
       this.primaryId,
       [],
@@ -105,9 +111,8 @@ export default class Model<Def extends DefinitionSchema> {
       size,
       page - 1
     ))
-    result = result.map(caseInsensitiveObject)
 
-    return Promise.all(result.map((data) => runAdapters(adapterTypes.get, data, this)))
+    return this.adaptData(adapterTypes.fromDB, data)
   }
   
   /**
@@ -175,7 +180,7 @@ export default class Model<Def extends DefinitionSchema> {
    * @returns Count of matching records (or all records if 'where' is omitted)
    */
   async count(where?: WhereData<SchemaOf<Def>>): Promise<number> {
-    const whereData = where && await runAdapters(adapterTypes.set, where, this)
+    const whereData = where && await this.adaptData(adapterTypes.toDB, where)
     return this._countRaw(whereData)
   }
 
@@ -185,7 +190,7 @@ export default class Model<Def extends DefinitionSchema> {
    * @param options.idKey        - (Default: Primary ID) Key of ID to lookup
    * @param options.orderKey     - Order results by this key
    * @param options.skipChildren - Avoid joins, returned value will not include children
-   * @param options.raw          - Skip getAdapters, return raw DB values
+   * @param options.raw          - Skip fromDbAdapters, return raw DB values
    * @returns First record matching ID, or undefined if no match
    */
   async get<O extends SQLOptions<Def> & IDOption<Def>>(
@@ -205,7 +210,7 @@ export default class Model<Def extends DefinitionSchema> {
    * @param options - (Optional) Lookup options
    * @param options.orderKey     - Order results by this key
    * @param options.skipChildren - Avoid joins, returned value will not include children
-   * @param options.raw          - Skip getAdapters, return raw DB values
+   * @param options.raw          - Skip fromDbAdapters, return raw DB values
    * @returns Array of all records that satisfy parameters
    */
   async find<O extends SQLOptions<Def>>(
@@ -213,9 +218,8 @@ export default class Model<Def extends DefinitionSchema> {
     options = {} as O
   ): FindResult<Def,O> {
     
-    const result = await this._select(where, options)
-    return options.raw ? result as any :
-      Promise.all(result.map((data) => runAdapters(adapterTypes.get, data, this)))
+    const data = await this._select(where, options)
+    return options.raw ? data as any : this.adaptData(adapterTypes.fromDB, data)
   }
   
   
@@ -241,7 +245,7 @@ export default class Model<Def extends DefinitionSchema> {
 
   /** Update given data fields in record matching ID
    *    - Doesn't modify any keys not present in "data"
-   *    - Checks if ID exists before updating
+   *    - Confirms that ID matches exactly 1 entry before updating
    * @param id      - ID value to lookup
    * @param data    - Key/Value object to update matching record to
    * @param options - (Optional) Update options
@@ -260,14 +264,13 @@ export default class Model<Def extends DefinitionSchema> {
   ) {
     if (id == null) throw noID()
 
-    const whereData = await runAdapters(adapterTypes.set, { [idKey || this.primaryId]: id }, this)
+    const whereData = { [idKey || this.primaryId]: id }
 
-    const count = await this._countRaw(whereData)
+    const count = await this.count(whereData)
     if (!count) throw noEntry(id)
     if (count !== 1) throw multiAction('Updating',count)
 
-    const success = await this._update(data, whereData, options)
-    return { success }
+    return this.batchUpdate(whereData, data, options)
   }
 
 
@@ -288,14 +291,14 @@ export default class Model<Def extends DefinitionSchema> {
    * @returns Feedback object { success: true/false }
    */
   async batchUpdate(where: WhereData<SchemaOf<Def>>, data: UpdateData<AddSchemaOf<Def>>, options: SQLOptions<Def> = {}): Promise<Feedback> {
-    const whereData = await runAdapters(adapterTypes.set, where, this)
+    const whereData = await this.adaptData(adapterTypes.toDB, where)
     const success = await this._update(data, whereData, options)
     return { success }
   }
   
 
   /** Remove record(s) matching ID
-   *    - Checks if ID exists before removing
+   *    - Confirms that ID matches exactly 1 entry before removing
    * @param id    - ID value to remove
    * @param idKey - (Default: Primary ID) Key of ID to remove
    * @returns Feedback object { success: true/false }
@@ -303,18 +306,13 @@ export default class Model<Def extends DefinitionSchema> {
   async remove<ID extends IDOf<Def> | undefined>(id: TypeOfID<Def, ID>, idKey?: ID): Promise<Feedback> {
     if (id == null) throw noID()
 
-    const whereData = await runAdapters(
-      adapterTypes.set,
-      { [idKey || this.primaryId]: id },
-      this
-    )
+    const whereData = { [idKey || this.primaryId]: id }
 
-    const count = await this._countRaw(whereData)
+    const count = await this.count(whereData)
     if (!count) throw noEntry(id)
     if (count !== 1) throw multiAction('Deleting',count)
 
-    const success = await this._delete(whereData)
-    return { success }
+    return this.batchRemove(whereData)
   }
 
   /** Remove record(s) matching ID
@@ -326,7 +324,7 @@ export default class Model<Def extends DefinitionSchema> {
    * @returns Feedback object { success: true/false }
    */
   async batchRemove(where: WhereData<SchemaOf<Def>>): Promise<Feedback> {
-    const whereData = await runAdapters(adapterTypes.set, where, this)
+    const whereData = await this.adaptData(adapterTypes.toDB, where)
     const success = await this._delete(whereData)
     return { success }
   }
@@ -356,15 +354,14 @@ export default class Model<Def extends DefinitionSchema> {
    *  - Check sqlite3 API documentation under "all()" for more details
    * @param params - Array of parameters to safely insert into SQL command
    *  - Check sqlite3 API documentation under "all()" for more details
-   * @param raw - Skip getAdapters, return raw DB values
+   * @param raw - Skip fromDbAdapters, return raw DB values
    * @returns SQL response as an array of objects representing DB records
    *  - WARNING! Return type is unknown[], should be manually cast
    */
   async custom(sql: string, params?: { [key: string]: any } | any[], raw?: boolean): Promise<unknown[]> {
-    let result = await all(getDb(), sql, params)
-    result = result.map(caseInsensitiveObject)
-    if (raw) return result
-    return Promise.all(result.map((data) => runAdapters(adapterTypes.get, data, this)))
+    const result = await all(getDb(), sql, params)
+    return raw ? result.map(caseInsensitiveObject)
+      : this.adaptData(adapterTypes.fromDB, result) as Promise<unknown[]>
   }
 
 
@@ -401,7 +398,7 @@ export default class Model<Def extends DefinitionSchema> {
     let whereData: WhereData<DBSchemaOf<Def>> | undefined
 
     if (where)
-      whereData = await runAdapters(adapterTypes.set, where, this)
+      whereData = await this.adaptData(adapterTypes.toDB, where)
 
     return this._selectRaw(whereData, options)
   }
@@ -415,10 +412,8 @@ export default class Model<Def extends DefinitionSchema> {
   private async _insert(data: AddSchemaOf<Def>[], ifExists: IfExistsBehavior, returnLast: boolean): Promise<DBSchemaOf<Def>|boolean> {
     if (!data.length) throw noData('batch data')
 
-    // Adapt/Sanitize data
-    const dataArray: DBSchemaOf<Def>[] = await Promise.all(data.map(
-      (entry) => runAdapters(adapterTypes.set, this._applyDefaults(entry), this)
-    ))
+    // Apply defaults, then adapt data
+    const dataArray: DBSchemaOf<Def>[] = await this.adaptData(adapterTypes.toDB, data.map(this._applyDefaults))
     
     const keys = splitKeys(dataArray[0], this.children)
     if (!keys.parent.length && !keys.children.length) throw noData()
@@ -447,7 +442,7 @@ export default class Model<Def extends DefinitionSchema> {
     
     // Adapt/Sanitize data
     if (!Object.keys(whereData).length) throw noID()
-    let updateData = await runAdapters(adapterTypes.set, data, this)
+    let updateData = await this.adaptData(adapterTypes.toDB, data)
     if (!Object.keys(updateData).length) throw noData()
 
     // Find matching entries
@@ -559,6 +554,93 @@ export default class Model<Def extends DefinitionSchema> {
   get children() { return this._children }
   /** URL path for model */
   get url() { return this.isChildModel ? getChildPath(this.title) : this.title }
+
+
+
+  // Infinite adapter definitions
+
+  /** Run adapters on full data 
+   * @param data - Data to adapt
+   * @param adapterType - Member of adapterTypes enum
+   * @returns Adapted data
+   */
+  adaptData<A extends AdapterType>(adapterType: A, data: AdapterIn<Def,A>): Promise<AdapterOut<Def,A>>;
+  /** Run adapters on childless data 
+   * @param data - Data to adapt
+   * @param adapterType - Member of adapterTypes enum
+   * @returns Adapted data
+   */
+  adaptData<A extends AdapterType>(adapterType: A, data: SkipChildren<AdapterIn<Def,A>>): Promise<SkipChildren<AdapterOut<Def,A>>>;
+  /** Run adapters on where data 
+   * @param data - Data to adapt
+   * @param adapterType - Member of adapterTypes enum
+   * @returns Adapted data
+   */
+  adaptData<A extends AdapterType>(adapterType: A, data: WhereData<AdapterIn<Def,A>>): Promise<WhereData<AdapterOut<Def,A>>>;
+  /** Run adapters on update data 
+   * @param data - Data to adapt
+   * @param adapterType - Member of adapterTypes enum
+   * @returns Adapted data
+   */
+  adaptData<A extends AdapterType>(adapterType: A, data: UpdateData<AdapterIn<Def,A>>): Promise<UpdateData<AdapterOut<Def,A>>>;
+  /** Run adapters on partial data 
+   * @param data - Data to adapt
+   * @param adapterType - Member of adapterTypes enum
+   * @returns Adapted data
+   */
+  adaptData<A extends AdapterType>(adapterType: A, data: Partial<AdapterIn<Def,A>>): Promise<Partial<AdapterOut<Def,A>>>;
+  /** Run adapters on any data 
+   * @param data - Data to adapt
+   * @param adapterType - Member of adapterTypes enum
+   * @returns Adapted data
+   */
+  adaptData<A extends AdapterType>(adapterType: A, data: AdapterData<AdapterIn<Def,A>>): Promise<AdapterData<AdapterOut<Def,A>>>;
+
+  /** Run adapters on full data array 
+   * @param dataArray - Array of Data to adapt
+   * @param adapterType - Member of adapterTypes enum
+   * @returns Adapted data array
+   */
+  adaptData<A extends AdapterType>(adapterType: A, dataArray: AdapterIn<Def,A>[]): Promise<AdapterOut<Def,A>[]>;
+  /** Run adapters on childless data array 
+   * @param dataArray - Array of Data to adapt
+   * @param adapterType - Member of adapterTypes enum
+   * @returns Adapted data array
+   */
+  adaptData<A extends AdapterType>(adapterType: A, dataArray: SkipChildren<AdapterIn<Def,A>>[]): Promise<SkipChildren<AdapterOut<Def,A>>[]>;
+  /** Run adapters on where data array 
+   * @param dataArray - Array of Data to adapt
+   * @param adapterType - Member of adapterTypes enum
+   * @returns Adapted data array
+   */
+  adaptData<A extends AdapterType>(adapterType: A, dataArray: WhereData<AdapterIn<Def,A>>[]): Promise<WhereData<AdapterOut<Def,A>>[]>;
+  /** Run adapters on update data array 
+   * @param dataArray - Array of Data to adapt
+   * @param adapterType - Member of adapterTypes enum
+   * @returns Adapted data array
+   */
+  adaptData<A extends AdapterType>(adapterType: A, dataArray: UpdateData<AdapterIn<Def,A>>[]): Promise<UpdateData<AdapterOut<Def,A>>[]>;
+  /** Run adapters on partial data array 
+   * @param dataArray - Array of Data to adapt
+   * @param adapterType - Member of adapterTypes enum
+   * @returns Adapted data array
+   */
+  adaptData<A extends AdapterType>(adapterType: A, dataArray: Partial<AdapterIn<Def,A>>[]): Promise<Partial<AdapterOut<Def,A>>[]>;
+  /** Run adapters on any data array 
+   * @param dataArray - Array of Data to adapt
+   * @param adapterType - Member of adapterTypes enum
+   * @returns Adapted data array
+   */
+  adaptData<A extends AdapterType>(adapterType: A, dataArray: AdapterData<AdapterIn<Def,A>>[]): Promise<AdapterData<AdapterOut<Def,A>>[]>;
+
+  adaptData<A extends AdapterType>
+    (adapterType: A, data: AdapterData<AdapterIn<Def,A>> | AdapterData<AdapterIn<Def,A>>[]):
+    Promise<AdapterData<AdapterOut<Def,A>>> | Promise<AdapterData<AdapterOut<Def,A>>[]>
+  {
+    if (!Array.isArray(data)) return runAdapters(adapterType, data, this)
+
+    return Promise.all(data.map((entry) => this.adaptData(adapterType, entry)))
+  }
 }
 
 export type GenericModel<Def extends DefinitionSchema = DefinitionSchema> =

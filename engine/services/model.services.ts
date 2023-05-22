@@ -2,12 +2,13 @@ import type Model from '../models/Model'
 import type {
   Definition, DefinitionSchema, DefinitionNormal, DefinitionSchemaNormal,
   AdapterType, AdapterData, AdapterIn, AdapterOut, AdapterDefinition, AdapterDefinitionLoose, 
-  ChildDefinitions, SkipChildren, DefType, PrimaryIDOf,
+  ChildDefinitions, DefType, PrimaryIDOf,
 } from '../types/Model.d'
-import type { UpdateData, UpdateValue, WhereData } from '../types/db.d'
+import type { UpdateValue } from '../types/db.d'
 import { childLabel, adapterTypes, childIndexType } from '../types/Model'
 import { updateFunctions, whereLogic, whereNot } from '../types/db'
-import { hasDupes, isIn } from '../utils/common.utils'
+import logger from '../libs/log'
+import { caseInsensitiveObject, getVal, hasDupes, isIn } from '../utils/common.utils'
 import { dbFromType, htmlFromType, stripPrimaryDef, sanitizeSchemaData, getDefaultAdapter, definitionToValid } from '../utils/model.utils'
 import { expandTypeStr, toTypeString } from '../utils/validate.utils'
 import { getOpType } from '../utils/db.utils'
@@ -138,51 +139,28 @@ export function extractChildren<D extends DefinitionSchema, N extends Definition
 
 
 
-/** Run adapters on full data */
+/** Run selected adapters on schema data */
 export async function runAdapters<D extends DefinitionSchema, A extends AdapterType>
-  (adapterType: A, data: AdapterIn<D,A>, model: AModel<D>):
-  Promise<AdapterOut<D,A>>;
-
-/** Run adapters on childless data */
-export async function runAdapters<D extends DefinitionSchema, A extends AdapterType>
-  (adapterType: A, data: SkipChildren<AdapterIn<D,A>>, model: AModel<D>):
-  Promise<SkipChildren<AdapterOut<D,A>>>;
-
-/** Run adapters on where data */
-export async function runAdapters<D extends DefinitionSchema, A extends AdapterType>
-  (adapterType: A, data: WhereData<AdapterIn<D,A>>, model: AModel<D>):
-  Promise<WhereData<AdapterOut<D,A>>>;
-
-/** Run adapters on update data */
-export async function runAdapters<D extends DefinitionSchema, A extends AdapterType>
-  (adapterType: A, data: UpdateData<AdapterIn<D,A>>, model: AModel<D>):
-  Promise<UpdateData<AdapterOut<D,A>>>;
-
-/** Run adapters on partial data */
-export async function runAdapters<D extends DefinitionSchema, A extends AdapterType>
-  (adapterType: A, data: Partial<AdapterIn<D,A>>, model: AModel<D>):
-  Promise<Partial<AdapterOut<D,A>>>;
-
-/** Run adapters on any data */
-export async function runAdapters<D extends DefinitionSchema, A extends AdapterType>
-  (adapterType: A, data: AdapterData<AdapterIn<D,A>>, model: AModel<D>):
-  Promise<AdapterData<AdapterOut<D,A>>>;
-
-export async function runAdapters<D extends DefinitionSchema, A extends AdapterType>
-  (adapterType: A, data: AdapterData<AdapterIn<D,A>>, model: AModel<D>) {
+  (adapterType: A, data: AdapterData<AdapterIn<D,A>>, model: AModel<D>): Promise<AdapterData<AdapterOut<D,A>>> {
 
   let result: any = {}
-  const adapters = model.adapters[adapterType]
+
+  if (adapterType === adapterTypes.fromDB) {
+    // Fix for case-insensitive databases -- TODO: Integrate this into the loop below
+    data   = caseInsensitiveObject(data)
+    result = caseInsensitiveObject(result)
+  }
 
   await Promise.all(Object.entries(data).map(async ([key,val]) => {
   
     // Key contains Where logic
-    if (isIn(key, whereLogic) || key === whereNot) return Array.isArray(val) ?
-      Promise.all(val.map((d) => runAdapters(adapterType, d, model))) :
-      runAdapters(adapterType, val ?? {}, model)
+    if (isIn(key, whereLogic) || key === whereNot)
+      return Array.isArray(val) ?
+        Promise.all(val.map((d) => runAdapters(adapterType, d, model))) :
+        runAdapters(adapterType, val ?? {}, model)
 
     // IF Key should not be in result
-    if (adapterType === adapterTypes.get && model.masked.includes(key))
+    if (adapterType === adapterTypes.fromDB && model.masked.includes(key))
       return result[key] = MASK_STR
     
     // IF Key has no adapter
@@ -194,12 +172,19 @@ export async function runAdapters<D extends DefinitionSchema, A extends AdapterT
     const opVal = opKey ? val[opKey] : val
     
     // Run adapter & copy to result
-    const adapterResult = await adapter(opVal, result)
-    result[key] = opKey ? { [opKey]: adapterResult ?? opVal } : adapterResult ?? opVal
+    try {
+      const adapterResult = await adapter(opVal, result)
+      result[key] = opKey ? { [opKey]: adapterResult ?? opVal } : adapterResult ?? opVal
+    
+    // Catch any adapter errors - log errors & prevent crash on invalid values
+    } catch (err: any) {
+      err.name = `${key}.${adapterType}`
+      logger.error(err)
+    }
   }))
 
   // Sanitize toDB since keys are used directly in SQL commands
-  return adapterType === adapterTypes.set ? sanitizeSchemaData(result, model) : result
+  return adapterType === adapterTypes.toDB ? sanitizeSchemaData(result, model) : result
 }
 
 

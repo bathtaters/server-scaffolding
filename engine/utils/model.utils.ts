@@ -12,7 +12,8 @@ import { adapterTypes, childLabel } from '../types/Model'
 import { htmlValidationDict } from '../types/gui'
 
 import RegEx from '../libs/regex'
-import { isIn } from './common.utils'
+import { formatDateLong, formatLong } from '../libs/date'
+import { getVal, isIn } from './common.utils'
 import { insertSQL, deleteSQL } from './db.utils'
 import { parseBoolean, parseArray, parseDate, toTypeString, expandTypeStr } from './validate.utils'
 import { CONCAT_DELIM, defaultPrimaryType, getChildName } from '../config/models.cfg'
@@ -270,55 +271,82 @@ export function getDefaultAdapter(adapterType: AdapterType, { typeBase, isArray,
 
 // *** Adapter Library *** \\
 
+const stringAdapter = (val: any) => val == null ? val : String(val)
+
 const defaultAdapters: DefaultAdapters = {
-  [adapterTypes.get]: {
+  [adapterTypes.fromDB]: {
     object:   (text) => typeof text === 'string' ? JSON.parse(text) : text,
     boolean:  (int)  => int == null ? null : +int !== 0,
     datetime: (num)  => num && new Date(+num),
     date:     (num)  => num && new Date(+num),
   },
 
-  [adapterTypes.set]: {
-    int:      (text) => typeof text === 'string' ? parseInt(text)   : text,
-    float:    (text) => typeof text === 'string' ? parseFloat(text) : text,
+  [adapterTypes.toDB]: {
     object:   (obj)  => typeof obj  === 'object' && obj ? JSON.stringify(obj) : obj,
     boolean:  (bool) => bool == null ? bool : +toBool(bool),
     datetime: parseDate,
     date:     parseDate,
   },
+
+  [adapterTypes.fromUI]: {
+    // Handled by validators
+  },
+
+  [adapterTypes.toUI]: {
+    int:      stringAdapter,
+    float:    stringAdapter,
+    object:   (obj) => typeof obj  === 'object' && obj ? JSON.stringify(obj) : obj,
+    boolean:  stringAdapter,
+    datetime: formatLong,
+    date:     formatDateLong,
+  },
 }
 
 
 const arrayAdapters: DefaultArrayAdapters = {
-  [adapterTypes.get]: (entryAdapter) =>
+  [adapterTypes.fromDB]: (entryAdapter) =>
     entryAdapter ? (text, data) =>
       typeof text === 'string' && text
         ? text.split(CONCAT_DELIM).map((v) => entryAdapter(v, data))
-        : Array.isArray(text)
-          ? text.map((v) => entryAdapter(v, data))
-          : []
+        : []
 
     : (text) =>
       typeof text === 'string' && text
-        ? text.split(CONCAT_DELIM)
-        : Array.isArray(text)
-          ? text
-          : [],
+        ? text.split(CONCAT_DELIM) : [],
 
-  [adapterTypes.set]: (entryAdapter) =>
-    entryAdapter ? (arr, data) => 
-      typeof arr === 'string'
-        ? toArray(arr)?.map((v) => entryAdapter(v, data))
-        : Array.isArray(arr)
-          ? arr.map((v) => entryAdapter(v, data))
-          : null
-          
+
+  [adapterTypes.toDB]: (entryAdapter) =>
+    entryAdapter ? (arr, data) =>
+      Array.isArray(arr)
+        ? arr.map((v) => entryAdapter(v, data))
+        : null
+
     : (arr) =>
-      typeof arr === 'string'
-        ? toArray(arr)
-        : Array.isArray(arr)
-          ? arr
-          : null,
+      Array.isArray(arr) ? arr : null,
+
+
+  [adapterTypes.fromUI]: (entryAdapter) =>
+    entryAdapter ? (text, data) =>
+      typeof text === 'string' && text
+        ? toArray(text)?.map((v) => entryAdapter(v, data))
+        : Array.isArray(text)
+          ? text.map((v) => entryAdapter(v, data))
+          : undefined
+
+    : (text) =>
+      typeof text === 'string' && text
+        ? toArray(text)
+        : Array.isArray(text) ? text : undefined,
+
+
+  [adapterTypes.toUI]: (entryAdapter) =>
+    entryAdapter ? (arr, data) =>
+      Array.isArray(arr)
+        ? arr.map((v) => entryAdapter(v, data)).join(', ')
+        : undefined
+
+    : (arr) =>
+      Array.isArray(arr) ? arr.join(', ') : undefined,
 }
 
 

@@ -125,7 +125,7 @@ export type SQLOptions<Def extends DefinitionSchema> = {
   orderKey?: DBSchemaKeys<Def>,
   /** (update only) Called with newData & oldData before updating DB */
   onChange?: ChangeCallback<Def>,
-  /** (getter only) Skip getAdapters, returning raw DB values */
+  /** (getter only) Skip fromDbAdapters, returning raw DB values */
   raw?: boolean,
   /** (getter only) Skip DB Joins, returned value will not include children from related tables */
   skipChildren?: boolean
@@ -223,14 +223,18 @@ export type AdapterType = typeof adapterTypes[keyof typeof adapterTypes]
 export type AdapterData<S extends SchemaGeneric> = S | Partial<S> | WhereData<S> | UpdateData<S>
 
 /** Extract Adapter SchemaIn for given AdapterType from Definition */
-export type AdapterIn<Def extends DefinitionSchema, A extends AdapterType = AdapterType> =
-  (A extends typeof adapterTypes['get'] ?  DBSchemaOf<Def> : never) |
-  (A extends typeof adapterTypes['set'] ? AddSchemaOf<Def> : never)
+export type AdapterIn<Def extends DefinitionSchema, A extends AdapterType> =
+  (A extends typeof adapterTypes['fromDB'] ?   DBSchemaOf<Def> : never) |
+  (A extends typeof adapterTypes['toDB']   ?  AddSchemaOf<Def> : never) |
+  (A extends typeof adapterTypes['fromUI'] ? FormSchemaOf<Def> : never) |
+  (A extends typeof adapterTypes['toUI']   ?     SchemaOf<Def> : never)
 
 /** Extract Adapter SchemaOut for given AdapterType from Definition */
-export type AdapterOut<Def extends DefinitionSchema, A extends AdapterType = AdapterType> =
-  (A extends typeof adapterTypes['get'] ?   SchemaOf<Def> : never) |
-  (A extends typeof adapterTypes['set'] ? DBSchemaOf<Def> : never)
+export type AdapterOut<Def extends DefinitionSchema, A extends AdapterType> =
+  (A extends typeof adapterTypes['fromDB'] ?     SchemaOf<Def> : never) |
+  (A extends typeof adapterTypes['toDB']   ?   DBSchemaOf<Def> : never) |
+  (A extends typeof adapterTypes['fromUI'] ?     SchemaOf<Def> : never) |
+  (A extends typeof adapterTypes['toUI']   ? ViewSchemaOf<Def> : never)
 
 
 /** Extract the value of an Adapter's SchemaIn object for given AdapterType from Definition */
@@ -338,9 +342,9 @@ type SDBType<D extends Definition> =
     ? ExtractDBType<D['db']>
     : D['db'] extends false
       ? never
-        : Date extends ExtractType<GetDefType<D>>
-          ? Exclude<ExtractType<GetDefType<D>>, Date> | number
-          : ExtractType<GetDefType<D>>
+      : Date extends ExtractType<GetDefType<D>>
+        ? Exclude<ExtractType<GetDefType<D>>, Date> | number
+        : ExtractType<GetDefType<D>>
 
 /** Extract HTML Type from Definition */
 type SHTMLType<D extends Definition> =
