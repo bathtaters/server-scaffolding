@@ -13,7 +13,7 @@ import { openDb, getDb } from '../libs/db'
 import { all, get, run, reset, getLastEntry, multiRun } from '../services/db.services'
 import { adaptSchema, getPrimaryId, runAdapters, extractChildren, buildAdapters  } from '../services/model.services'
 import { checkInjection, appendAndSort, insertSQL, selectSQL, countSQL, updateSQL, deleteSQL, swapSQL } from '../utils/db.utils'
-import { caseInsensitiveObject, mapToField, isIn } from '../utils/common.utils'
+import { caseInsensitiveObject, mapToField, isIn, getVal } from '../utils/common.utils'
 import { sanitizeSchemaData, childTableRefs, getSqlParams, childSQL, splitKeys } from '../utils/model.utils'
 import { getChildName, getChildPath } from '../config/models.cfg'
 import { noID, noData, noEntry, noPrimary, noSize, badKey, multiAction, updatePrimary } from '../config/errors.engine'
@@ -529,13 +529,9 @@ export default class Model<Def extends DefinitionSchema> {
 
   
   /** Adapt ID from Base Schema to DB Schema */
-  private async _adaptProperty(key: keyof Def, val: SchemaOf<Def>[any]): Promise<DBSchemaOf<Def>[DBSchemaKeys<Def>]> {
-    const adapter = (this.adapters[adapterTypes.set] as any)[key]
-    if (typeof adapter !== 'function') return val as any
-
-    let data: any = { [key]: val }
-    const result = await adapter(val, data) 
-    return result ?? data[key]
+  private async _adaptProperty(key: keyof Def, val: SchemaOf<Def>[any]): Promise<DBSchemaOf<Def>[any]> {
+    const result = await this.adaptData(adapterTypes.toDB, { [key]: val })
+    return getVal(result, key) ?? val as any
   }
 
   /** Insert default properties in place of any undefined properties */

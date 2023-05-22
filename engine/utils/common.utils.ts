@@ -12,6 +12,9 @@ const firstRegex = RegEx(/^\w/), hyphenRegex = RegEx(/-(\w)/g)
 /** Type guard for 'in' statement */
 export const isIn = <T extends object>(key: any, object: T): key is keyof T => key in object
 
+/** Type guard for object key accessor */
+export const getVal = <T extends object>(object: T, key: keyof any): T[keyof T] | undefined => (object as any)[key]
+
 /** Filter out duplicate values from array */
 export const filterDupes = <T = any>(arr: T[]) => 
 arr.filter((val, idx) => !arr.slice(0,idx).includes(val))

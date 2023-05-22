@@ -187,7 +187,7 @@ export async function runAdapters<D extends DefinitionSchema, A extends AdapterT
       return result[key] = MASK_STR
     
     // IF Key has no adapter
-    const adapter = adapters[key as keyof typeof adapters]
+    const adapter = getVal(model.adapters[adapterType], key)
     if (typeof adapter !== 'function') return result[key] = val
 
     // IF Value contains an Update/Where operation

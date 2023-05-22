@@ -248,7 +248,7 @@ export function dbFromType({ typeBase, isOptional }: ValidationExpanded, isPrima
 /** Convert Model type to HTML input type */
 export function htmlFromType({ typeBase, isArray }: ValidationExpanded): HTMLType {
   if (isArray) return htmlValidationDict.default
-  return htmlValidationDict[typeBase] ?? htmlValidationDict.default
+  return getVal(htmlValidationDict, typeBase) ?? htmlValidationDict.default
 }
 
 
