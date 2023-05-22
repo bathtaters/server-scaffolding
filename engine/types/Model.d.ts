@@ -49,17 +49,7 @@ type DefinitionBase<T> = {
   /** Don't include property in generated forms
    *  (Used when property is created/set by side-effects)
    *   - default: false */
-  isNotInForm?: boolean,
-
-  /** If property is a BitMap (Binary data stored as an integer)
-   *   - default: false */
-  isBitmap?:  boolean,
-
-  /** Property contents are HTML
-   *   - Type must be 'string*'
-   *   - Contents will be interpretted as HTML instead of text in GUI
-   *   - default: false */
-  isHTML?:    T extends string ? boolean : false,
+  skipForm?: boolean,
 
   /** Property is primary key for database
    *   - Type must be string or numeric type
@@ -382,7 +372,7 @@ type IsInView<D extends Definition> =
 /** True/False indicating if definition will be editable in GUI */
 type IsInForm<D extends Definition> =
   IsInView<D> extends true
-    ? D['isNotInForm'] extends true
+    ? D['skipForm'] extends true
       ? false : true
     : false
 

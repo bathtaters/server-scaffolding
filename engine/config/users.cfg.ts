@@ -55,31 +55,31 @@ export const definition /*: DefinitionSchema */ = {
     type: 'int?',
     default: 0,
     limits: { min: 0, max: rateLimiter.maxFails + 1 },
-    isNotInForm: true,
+    skipForm: true,
   },
   failTime: {
     type: 'datetime?',
-    isNotInForm: true,
+    skipForm: true,
   },
   guiCount: {
     type: 'int?',
     default: 0,
     limits:  { min: 0, max: Number.MAX_SAFE_INTEGER  },
-    isNotInForm: true,
+    skipForm: true,
   },
   guiTime: {
     type: 'datetime?',
-    isNotInForm: true,
+    skipForm: true,
   },
   apiCount: {
     type: 'int?',
     default: 0,
     limits:  { min: 0, max: Number.MAX_SAFE_INTEGER  },
-    isNotInForm: true,
+    skipForm: true,
   },
   apiTime: {
     type: 'datetime?',
-    isNotInForm: true,
+    skipForm: true,
   },
   locked: {
     type: 'boolean',
