@@ -6,9 +6,10 @@ import type { adapterTypes, childIndexType, childLabel } from './Model'
 import type { MASK_STR, defaultPrimaryKey, defaultPrimaryType } from '../config/models.cfg'
 
 // TODO -- Each definition has 'dbType' <-> 'baseType' <-> 'htmlType' w/ 4 adapters (toDb [set], fromDb [get], toGui, fromGui)
-// TODO -- Definitions DERIVE FROM ADAPTERS
+// TODO -- Improve HTML typing
 
 // TODO -- Add BitMap/BitMapObj(bitmap2d) type as option, remove 'isBitmap'
+// TODO -- Same as above for 'isHTML'
 
 // TODO -- Allow passing Generator function to Definition.default 
 
@@ -19,12 +20,22 @@ import type { MASK_STR, defaultPrimaryKey, defaultPrimaryType } from '../config/
 /** Common properties shared by User & Backend Property Definitions */
 type DefinitionBase<T> = {
 
+  /** If property is a BitMap (Binary data stored as an integer)
+   *   - default: false */
+  isBitmap?: boolean,
+
+  /** Property contents are HTML
+   *   - Type must be 'string*'
+   *   - Contents will be interpretted as HTML instead of text in GUI
+   *   - default: false */
+  isHTML?: string extends T ? boolean : false,
+
   /** Default value
    *   - Default value to use if nothing provided on creation
    *   - This value should be the type used in backend services
    *   - default for Primary Key: auto-generated unique ID
    *   - default: NULL (Must be provided if property is not optional or primaryKey) */
-  default?:  NonNullable<T>,
+  default?: NonNullable<T>,
   
   /** Determines HTML Form type of property
    *   - string = <input> w/ this as 'type' attribute 
@@ -32,19 +43,19 @@ type DefinitionBase<T> = {
    *   - number = <textarea> w/ this as 'rows' attribute
    *   - false = property is omitted from GUI
    *   - default: auto-generated based on type */
-  html:       false | number | HTMLType,
+  html: false | number | HTMLType,
 
   /** Data type for property in database
    *   - string = type line in Create Table
    *   - false = hide column from database (Only for UI validation)
    *   - default: auto-generated based on type */
-  db:         false | SQLTypeFull,
+  db: false | SQLTypeFull,
   
   /** Mask property everywhere except for raw results
    *   - true = only accessible in toDB/fromDB adapters OR findRaw
    *            value is masked using [MASKED]
    *   - default: false */
-  isMasked?:    boolean,
+  isMasked?: boolean,
 
   /** Don't include property in generated forms
    *  (Used when property is created/set by side-effects)
@@ -55,7 +66,7 @@ type DefinitionBase<T> = {
    *   - Type must be string or numeric type
    *   - When no type is provided,
    *     it will be set as auto-incrementing int */
-  isPrimary?: T extends string | number ? boolean : false,
+  isPrimary?: NonNullable<T> extends string | number ? boolean : false,
 }
 
 /** Definition for a property of the Model */
@@ -78,22 +89,13 @@ export type DefinitionSchemaNormal<Def extends DefinitionSchema = DefinitionSche
 
 /** Options to override default type adapters */
 export type AdapterDefinition<Def extends DefinitionSchema> = {
-  /** Transform function for each property as it is retrieved from the Database */
-  [adapterTypes.get]: {
-    /** Transform function used when this property is retrieved from the database
-     *   - function = (Value stored in Database, Entire row as an object) => Value used in Backend
+  /** Transform functions for each property */
+  [A in AdapterType]: {
+    /** Transform function for adapterType of thisProperty
+     *   - function = (Incoming Value, Current State of Object) => Transformed Value
      *   - false = force no transform
-     *   - default: auto-generated based on type */
-    [K in keyof DBSchemaOf<Def> & string]?: Adapter<K, DBSchemaOf<Def>, SchemaOf<Def>> | false
-  },
-
-  /** Transform function for each property as it is stored in the Database */
-  [adapterTypes.set]: {
-    /** Transform function used when this property is stored in the database
-     *   - function = (Value used in Backend, Entire row as an object) => Value stored in Database
-     *   - false = force no transform
-     *   - default: auto-generated based on type */
-    [K in keyof SchemaOf<Def> & string]?: Adapter<K, SchemaOf<Def>, DBSchemaOf<Def>> | false
+     *   - default: auto-generated based on property type */
+    [K in keyof AdapterIn<Def,A> & string]?: Adapter<K, AdapterIn<Def,A>, AdapterOut<Def,A>> | false
   }
 }
 
@@ -336,8 +338,6 @@ type SDBType<D extends Definition> =
     ? ExtractDBType<D['db']>
     : D['db'] extends false
       ? never
-      : IsArray<D['type']> extends true
-        ? never
         : Date extends ExtractType<GetDefType<D>>
           ? Exclude<ExtractType<GetDefType<D>>, Date> | number
           : ExtractType<GetDefType<D>>
