@@ -14,8 +14,7 @@ import { getOpType } from '../utils/db.utils'
 import { defaultPrimaryKey, defaultPrimaryType, MASK_STR, SQL_ID } from '../config/models.cfg'
 
 
-// TODO -- fix typings and remove 'as any'
-const projectionFunctions = updateFunctions as any
+const projectionFunctions = updateFunctions as any // valueType/funcType unable to easily index udpateFunctinos
 export function projectedValue<T>(currentValue: T, update: UpdateValue<T>): T {
   if (typeof update !== 'object' || !update) return update
 
@@ -108,7 +107,7 @@ export function buildAdapters<D extends DefinitionSchema, N extends DefinitionSc
 
 
 /** Extract child definitions from parent DefinitionSchema */
-export function extractChildren<D extends DefinitionSchema, N extends DefinitionSchemaNormal<D>>(schema: N, idDefinition: N[keyof N]) {
+export function extractChildren<D extends DefinitionSchema, N extends DefinitionSchemaNormal<D>>(schema: N, primaryId: keyof N) {
   return Object.entries(schema).reduce<ChildDefinitions<D>>(
     (arrayTables, [arrayName, def]) => {
       if (!def.isArray || def.db) return arrayTables
@@ -117,7 +116,7 @@ export function extractChildren<D extends DefinitionSchema, N extends Definition
         ...arrayTables,
 
         [arrayName]: {
-          [childLabel.foreignId]: stripPrimaryDef(idDefinition),
+          [childLabel.foreignId]: stripPrimaryDef(schema[primaryId]),
 
           [childLabel.index]: adaptSchemaEntry({
             type: childIndexType,

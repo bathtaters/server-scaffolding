@@ -56,7 +56,7 @@ export default class Model<Def extends DefinitionSchema> {
     // Set main schema -- Checking keys for injection
     this._primaryId = getPrimaryId(schemaDefinition, this._title, this._isChildModel)
     this._schema    = checkInjection(adaptSchema(schemaDefinition), this._title)
-    this._children  = extractChildren(this._schema, this._schema[this._primaryId])
+    this._children  = extractChildren(this._schema, this._primaryId)
 
     // Set additional properties
     this._adapters = buildAdapters(adapters, this._schema)
