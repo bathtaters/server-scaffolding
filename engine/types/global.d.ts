@@ -9,6 +9,25 @@ export type Awaitable<T> = Promise<T> | T
 /** Object of a single type value (Inverse of Record<>) */
 export type ObjectOf<T, K extends string | number | symbol = string | number | symbol> = { [P in K]: T }
 
+/** Extract only optional values from T */
+export type PickOptional<T extends object> = { [K in keyof T as undefined extends T[K] ? K : never]?: T[K] }
+  
+/** Extract non-optional values from T */
+export type PickRequired<T extends object> = { [K in keyof T as undefined extends T[K] ? never : K]: T[K] }
+
+/** Merge two objects, creating a union of any overlapping properties */
+export type Merge<A extends object, B extends object> = Flatten<{
+  [K in RequiredKeys<A, B>]-?: 
+    (K extends keyof A ? A[K] : never) |
+    (K extends keyof B ? B[K] : never)
+  } & {
+    [K in OptionalKeys<A, B>]+?: 
+      (K extends keyof A ? A[K] : never) |
+      (K extends keyof B ? B[K] : never)
+  }>
+
+type OptionalKeys<A extends object, B extends object> = keyof PickOptional<A> | keyof PickOptional<B>
+type RequiredKeys<A extends object, B extends object> = Exclude<keyof A, OptionalKeys<A,B>> | Exclude<keyof B, OptionalKeys<A,B>>
 
 /** Object of nested objects <T>, OK = outermost key type, IK = inner object <T> key type */
 export type NestedObject<InnerObject extends Record<keyof any, any>, OuterKey extends keyof any> = Record<OuterKey, InnerObject>

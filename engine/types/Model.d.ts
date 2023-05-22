@@ -1,4 +1,4 @@
-import type { Awaitable, Flatten, OneOrMore } from './global.d'
+import type { Awaitable, Flatten, Merge, OneOrMore } from './global.d'
 import type { ExtractHTMLType, HTMLType, ValidToHTML } from './gui.d'
 import type { BaseOfValid, ExtractType, IsArray, IsOptional, ValidationBase, ValidationBasic, ValidationExpanded } from './validate.d'
 import type { SQLTypeFull, ForeignKeyAction, UpdateData, WhereData, ExtractDBType, DBIsOptional } from './db.d'
@@ -211,7 +211,7 @@ export type SkipChildren<S extends SchemaGeneric> = { [K in keyof S as S[K] exte
  * @returns Adapted value or nothing (Can update object directly)
  */
 export type Adapter<Key extends keyof SchemaIn, SchemaIn extends SchemaGeneric, SchemaOut extends SchemaGeneric> =
-  (value: SchemaIn[Key] | undefined, data: Partial<SchemaIn | SchemaOut>) => Awaitable<
+  (value: SchemaIn[Key] | undefined, data: Partial<Merge<SchemaIn, SchemaOut>>) => Awaitable<
     (Key extends keyof SchemaOut ? SchemaOut[Key] : never) | undefined | void
   >
 
