@@ -352,4 +352,4 @@ const arrayAdapters: DefaultArrayAdapters = {
 
 // TYPE HELPERS
 
-type SanitModel<Def extends DefinitionSchema> = Partial<Pick<GenericModel<Def>,'schema'|'children'>>
+type SanitModel<Def extends DefinitionSchema> = Partial<Pick<Model<Def>,'schema'|'children'>>

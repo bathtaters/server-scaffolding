@@ -1,6 +1,6 @@
 import type {
   SchemaOf, AddSchemaOf, DBSchemaOf, ViewSchemaOf, DefaultSchemaOf, DBSchemaKeys,
-  DefinitionSchema, DefinitionSchemaNormal, AdapterDefinition,
+  DefinitionSchema, DefinitionSchemaNormal, AdapterDefinition, GenericDefinitionSchema,
   TypeOfID, IDOf, PrimaryIDOf, IDOption, SQLOptions,
   Page, FindResult, SelectResult, Feedback,
   AdapterType, AdapterIn, AdapterOut, AdapterData,
@@ -643,5 +643,4 @@ export default class Model<Def extends DefinitionSchema> {
   }
 }
 
-export type GenericModel<Def extends DefinitionSchema = DefinitionSchema> =
-  Omit<InstanceType<typeof Model<Def>>, 'primaryId'> & { primaryId: keyof Def }
+export type GenericModel = Model<GenericDefinitionSchema>

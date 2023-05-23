@@ -87,6 +87,10 @@ export type DefinitionSchemaNormal<Def extends DefinitionSchema = DefinitionSche
   [K in keyof Def & string]: DefinitionNormal<GetDefType<Def[K]>>
 }
 
+/** Definition Schema to force a generic Model Definition  */
+export type GenericDefinitionSchema = Record<string, ValidationBasic>
+  & { [id: string]: ValidationBasic & { isPrimary: true } } // Forces 'primaryID' type to be string
+
 /** Options to override default type adapters */
 export type AdapterDefinition<Def extends DefinitionSchema> = {
   /** Transform functions for each property */
