@@ -46,15 +46,15 @@ function generateLimits(strArray: string[]): Limits | undefined {
 }
 
 
-const htmlToValid = ({ type, limits }: FormDefinition['html']): ValidationExpanded => ({
-  typeBase: type === 'number' ? 'int' : 'string',
+const htmlToValid = ({ type, limits }: FormDefinition['html']): ValidationBasic => ({
+  type: type === 'number' ? 'int' : 'string',
   limits: !limits && Array.isArray(type) ? generateLimits(type) : limits
 })
 
 
 /** Get validation & limits from html object { key, type, limits } */
 export const formSettingsToValidate = <S extends Record<string, FormDefinition>>(settings: S) =>
-  mapObject(settings, ({ html }) => htmlToValid(html)) as Record<keyof S, ValidationExpanded>
+  mapObject(settings, ({ html }) => htmlToValid(html))
 
 
 
