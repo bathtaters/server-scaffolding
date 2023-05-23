@@ -1,33 +1,51 @@
 import type {} from '../middleware/auth.middleware' // Express.User type
-import type { AdapterDefinition, SchemaOf, AddSchemaOf, ViewSchemaOf, FormSchemaOf } from '../types/Model.d'
-import type { ProfileActions } from '../types/gui.d'
-import type { UserDef, AccessType, RoleType } from '../types/Users.d'
+import type { AdapterDefinition, AddSchemaOf, FormSchemaOf } from '../types/Model.d'
+import type { UserDef } from '../types/Users.d'
 import { ModelAccess, Role, NO_ACCESS } from '../types/Users'
 import { adapterTypes } from '../types/Model'
-import logger from '../libs/log'
 import { formatLong } from '../libs/date'
 import { decodeCors, encodeCors, displayCors, isRegEx } from '../utils/users.cors'
 import { generateToken, encodePassword } from '../utils/auth.utils'
 import { modifyOther, noConfirm, badConfirm } from '../config/errors.engine'
 
-// TODO: Remove 'as any's without causing issues
-
 export function initAdapters(definitions: AdapterDefinition<UserDef>) {
-  // GET ADAPTERS
-  definitions[adapterTypes.get].cors = (cors) => decodeCors(cors) as any
-  definitions[adapterTypes.get].role = (role) => new Role(role)
-  definitions[adapterTypes.get].access = (access) => access ? new ModelAccess(JSON.parse(access)) as any : undefined
+  // FROM DB ADAPTERS
+  definitions[adapterTypes.fromDB].cors = (cors) => decodeCors(cors)
+  definitions[adapterTypes.fromDB].role = (role) => new Role(role)
+  definitions[adapterTypes.fromDB].access = (access) => access ? new ModelAccess(JSON.parse(access)) : undefined
 
-  // SET ADAPTERS
-  definitions[adapterTypes.set].cors = encodeCors
-  definitions[adapterTypes.set].role = (role) => role?.int
-  definitions[adapterTypes.set].username = (username) => username?.toLowerCase()
-  definitions[adapterTypes.set].access = (access) => access ? JSON.stringify(access) : undefined
-  definitions[adapterTypes.set].password = async (password, data) => {
+  // TO DB ADAPTERS
+  definitions[adapterTypes.toDB].cors = encodeCors
+  definitions[adapterTypes.toDB].role = (role) => role?.int
+  definitions[adapterTypes.toDB].username = (username) => username?.toLowerCase()
+  definitions[adapterTypes.toDB].access = (access) => access ? JSON.stringify(access) : undefined
+  definitions[adapterTypes.toDB].password = async (password, data) => {
     if (typeof password !== 'string' || !password) return
     const { pwkey, salt } = await encodePassword(password)
     data.salt = salt
     return pwkey
+  }
+
+  // FROM GUI ADAPTERS
+  definitions[adapterTypes.fromUI].role   = (role)   => role   != null ? Role.fromString(role)   : undefined
+  definitions[adapterTypes.fromUI].access = (access) => access != null ? new ModelAccess(access) : undefined
+  definitions[adapterTypes.fromUI].password = (password, data) => {
+    if ((data._action === 'Add' || data._action === 'Update')) {
+      if (!data.confirm) throw noConfirm()
+      if (password !== data.confirm) throw badConfirm()
+    }
+  }
+
+  // TO GUI ADAPTERS
+  definitions[adapterTypes.toUI].role     = (role)   => role?.list.join(', ') ?? NO_ACCESS
+  definitions[adapterTypes.toUI].access   = (access) => access?.toString() ?? ''
+  definitions[adapterTypes.toUI].guiTime  = (time, user) => `${formatLong(time)} [${user.guiCount  || 0}]`
+  definitions[adapterTypes.toUI].apiTime  = (time, user) => `${formatLong(time)} [${user.apiCount  || 0}]`
+  definitions[adapterTypes.toUI].failTime = (time, user) => `${formatLong(time)} [${user.failCount || 0}]`
+  definitions[adapterTypes.toUI].cors     = (cors, user) => {
+    user._meta.regExCors = isRegEx(cors)
+    user._meta.arrayCors = Array.isArray(cors)
+    return displayCors(cors)
   }
 }
 
@@ -38,74 +56,7 @@ export const addAdapter = (data: Omit<AddSchemaOf<UserDef>, 'id'|'token'>) => ({
   ...data,
 })
 
-
-const uiToBaseHtml = ({
-  cors, role, access, locked,
-  failCount, failTime,
-  guiCount, guiTime,
-  apiCount, apiTime,
-  ...user
-}: SchemaOf<UserDef>): ViewSchemaOf<UserDef> => ({
-  ...user,
-  access: '',
-  locked: Boolean(locked).toString()
-})
-
-
-export function guiAdapter(user: SchemaOf<UserDef>):   ViewSchemaOf<UserDef>
-export function guiAdapter(user: SchemaOf<UserDef>[]): ViewSchemaOf<UserDef>[]
-export function guiAdapter(user: SchemaOf<UserDef> | SchemaOf<UserDef>[]): ViewSchemaOf<UserDef> | ViewSchemaOf<UserDef>[] {
-  if (!user) return []
-  if (Array.isArray(user)) return user.map((u) => guiAdapter(u))
-
-  let output = uiToBaseHtml(user);
-  if (!output._meta) output._meta = {}
-  try {
-    if ('role'     in user) output.role     = user.role?.list.join(', ') ?? NO_ACCESS
-    if ('access'   in user) output.access   = user.access?.toString() ?? ''
-    if ('locked'   in user) output.locked   = Boolean(user.locked).toString()
-    if ('guiTime'  in user) output.guiTime  = `${formatLong(user.guiTime) } [${user.guiCount  || 0}]`
-    if ('apiTime'  in user) output.apiTime  = `${formatLong(user.apiTime) } [${user.apiCount  || 0}]`
-    if ('failTime' in user) output.failTime = `${formatLong(user.failTime)} [${user.failCount || 0}]`
-    if ('cors'     in user) {
-      output.cors            = displayCors(user.cors)
-      output._meta.regExCors = isRegEx(user.cors)
-      output._meta.arrayCors = Array.isArray(user.cors)
-    }
-  } catch (err: any) {
-    err.name = 'User.gui'
-    logger.error(err)
-    output._meta.hadError = true
-  }
-
-  return output
-}
-
-
-export function adminFormAdapter({ access, role, ...formData }: FormSchemaOf<UserDef>, _?: Express.User, action?: ProfileActions) {
-  let adapted: Omit<FormSchemaOf<UserDef>, 'role'|'access'> & { role?: RoleType, access?: AccessType } = formData
-  
-  if (role) adapted.role = Role.fromString(role)
-  if (access) adapted.access = typeof access === 'string' ? new ModelAccess([access]) : new ModelAccess(access)
-
-  return confirmPassword(adapted, action)
-}
-
-
-export function userFormAdapter({ access, role, ...formData }: FormSchemaOf<UserDef>, user?: Express.User, action?: ProfileActions) {
-  if (user?.id !== formData.id && !Role.map.admin.intersects(user?.role)) throw modifyOther()
-
-  return confirmPassword(formData, action)
-}
-
-
-// HELPERS -- 
-function confirmPassword<D extends Pick<FormSchemaOf<UserDef>, 'confirm'|'password'>>(formData: D, action?: ProfileActions) {
-  if ((action === 'Add' || action === 'Update') && 'password' in formData) {
-    if (!formData.confirm) throw noConfirm()
-    if (formData.password !== formData.confirm) throw badConfirm()
-  }
-
-  delete formData.confirm
-  return formData
+/** Safeguard non-admins from editing other user profiles */
+export function userFormCheck({ id }: FormSchemaOf<UserDef>, { user }: Express.Request) {
+  if (user?.id !== id && !Role.map.admin.intersects(user?.role)) throw modifyOther()
 }

@@ -12,11 +12,6 @@ export type GuiOptions<T extends Record<string,any>> = {
     formatParams?: ControllerCallback<T>,
 }
 
-export type FormOptions<T extends Record<string,any>> = {
-    redirectURL?: string,
-    formatData?: ControllerCallback<T>
-}
-
-export type ModelGuiBase    = Pick<GenericModel, 'title'|'primaryId'|'url'|'schema'|'getPageData'|'find'|'isChildModel'>
+export type ModelGuiBase    = Pick<GenericModel, 'title'|'primaryId'|'url'|'schema'|'getPageData'|'find'|'isChildModel'|'adaptData'>
 export type ModelFormBase   = Pick<GenericModel, 'primaryId'|'addAndReturn'|'update'|'remove'|'create'>
-export type ModelActionBase = Pick<GenericModel, 'schema'|'url'> & ModelFormBase
+export type ModelActionBase = Pick<GenericModel, 'schema'|'url'|'adaptData'> & ModelFormBase

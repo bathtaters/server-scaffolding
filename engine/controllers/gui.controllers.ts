@@ -1,12 +1,12 @@
 import type { Middleware } from '../types/express.d'
 import type { GuiOptions, ModelGuiBase } from '../types/controllers.d'
 import { Role, anyAccess } from '../types/Users'
+import { adapterTypes } from '../types/Model'
 import { actions } from '../types/gui'
 
 import { matchedData } from 'express-validator'
 import Users from '../models/Users'
-import { guiAdapter } from '../services/users.services'
-import { getTableFields, varName, formatGuiData } from '../utils/gui.utils'
+import { getTableFields, varName } from '../utils/gui.utils'
 import { toPartialMatch } from '../utils/model.utils'
 import { labelsByAccess, actionURLs } from '../utils/form.utils'
 import { tableFields, tooltips, profileActions } from '../config/users.cfg'
@@ -34,8 +34,6 @@ export function modelDb<M extends ModelGuiBase>(Model: M, {
   view = 'dbModel',
   partialMatch = true,
   overrideDbParams = {},
-  formatData = formatGuiData,
-  formatParams = (p) => p,
 }: GuiOptions<any> = {}): Record<'model'|'find', Middleware> {
 
   const staticDbParams = {
@@ -57,7 +55,7 @@ export function modelDb<M extends ModelGuiBase>(Model: M, {
         return res.render(view, {
           ...staticDbParams,
           ...pageData,
-          data: formatData(data, req.user),
+          data: Model.adaptData(adapterTypes.toUI, data),
           buttons: labelsByAccess(access),
           user: req.user?.username,
           isAdmin:  Role.map.admin.intersects(req.user?.role),
@@ -70,14 +68,14 @@ export function modelDb<M extends ModelGuiBase>(Model: M, {
 
     find: async (req, res, next) => {
       try {
-        const searchData = formatParams(matchedData(req), req.user, actions.find)
+        const searchData = Model.adaptData(adapterTypes.fromUI, matchedData(req))
         const data = await Model.find(partialMatch ? toPartialMatch(searchData) : searchData)
 
         const access = req.user?.access?.get(Model.title)
 
         return res.render(view, {
           ...staticDbParams,
-          data: formatData(data, req.user),
+          data: Model.adaptData(adapterTypes.toUI, data),
           searchData,
           buttons: labelsByAccess(access),
           user: req.user?.username,
@@ -110,7 +108,7 @@ export const userProfile: Middleware = (req, res, next) =>
     res.render('profile', {
       ...staticUserParams,
       user: req.user.username,
-      userData: guiAdapter(req.user),
+      userData: Users.adaptData(adapterTypes.toUI, req.user),
       isAdmin: Role.map.admin.intersects(req.user.role),
       csrfToken: req.csrfToken?.(),
     })

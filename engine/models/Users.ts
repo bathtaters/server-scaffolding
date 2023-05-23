@@ -7,7 +7,7 @@ import Model from './Model'
 import logger from '../libs/log'
 import { now } from '../libs/date'
 import { addAdapter, initAdapters } from '../services/users.services'
-import { projectedValue, runAdapters } from '../services/model.services'
+import { projectedValue } from '../services/model.services'
 import { generateToken, testPassword, isLocked, isPastWindow } from '../utils/auth.utils'
 import { whereClause, whereValues } from '../utils/db.utils'
 import { getSqlParams } from '../utils/model.utils'
@@ -85,12 +85,12 @@ class User extends Model<UserDef> {
     if (!isPm2 && !(await this.count())) {
       const data = await this.addAndReturn([{ username, password, role: role.list }])
       logger.info(`Created initial user: ${data.username}`)
-      return runAdapters(adapterTypes.get, data, this)
+      return this.adaptData(adapterTypes.fromDB, data)
     }
 
     const data = await super.find({ username: username.toLowerCase() }, { raw: true, skipChildren: true })
     const result = await testPassword(data[0], password, role, this._passwordCb.bind(this))
-    return 'fail' in result ? result : runAdapters(adapterTypes.get, result, this)
+    return 'fail' in result ? result : this.adaptData(adapterTypes.fromDB, result)
   }
 
   async checkToken(token: SchemaOf<UserDef>['token'], role: RoleType) {
@@ -98,11 +98,11 @@ class User extends Model<UserDef> {
     return !user ? 'NO_USER' :
       user.locked && !isPastWindow(user) ? 'USER_LOCKED' :
       !role.intersects(user.role) ? 'NO_ACCESS' :
-        runAdapters(adapterTypes.get, user, this)
+        this.adaptData(adapterTypes.fromDB, user)
   }
 
   async areLastAdmins(where: WhereData<SchemaOf<UserDef>>) {
-    const whereData = await runAdapters(adapterTypes.set, where, this)
+    const whereData = await this.adaptData(adapterTypes.toDB, where)
     const params = getSqlParams(this, whereData)
 
     const admins = await this.custom(

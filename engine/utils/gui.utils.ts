@@ -24,24 +24,6 @@ export const getTableFields = <T extends Record<string,any>>(schema: T, idKey: s
 }
 
 
-/** Default 'formatData' callback for GUI */
-export function formatGuiData(data?: any) {
-  if (Array.isArray(data)) return data.map((row) => mapObject(row, toGuiString))
-  if (data && typeof data === 'object') return mapObject(data, toGuiString)
-}
-
-const toGuiString = (val: any): string => {
-  if (typeof val === 'string') return val
-
-  if (Array.isArray(val)) return val.map(toGuiString).join(', ')
-
-  if (!val || typeof val.toLocaleString !== 'function') return String(val)
-  
-  const str = val.toLocaleString()
-  return str === '[object Object]' ? JSON.stringify(val) : str
-}
-
-
 export function mask <T = any>(value: T): Recur<T, string> {
   // Recursively mask
   if (Array.isArray(value))

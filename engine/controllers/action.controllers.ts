@@ -1,12 +1,13 @@
-import type { ModelActionBase, FormOptions } from '../types/controllers.d'
+import type { ModelActionBase } from '../types/controllers.d'
 import type { Middleware, Request } from '../types/express.d'
 import type { ProfileActions } from '../types/gui.d'
+import { adapterTypes } from '../types/Model'
 import { actions } from '../types/gui'
 import { Role } from '../types/Users'
 
 import { matchedData } from 'express-validator'
 import Users from '../models/Users'
-import { adminFormAdapter, userFormAdapter } from '../services/users.services'
+import { userFormCheck } from '../services/users.services'
 import modelActions from '../services/form.services'
 import settingsActions from '../services/settings.form'
 import { login as authLogin, logout as authLogout } from '../middleware/auth.middleware'
@@ -28,15 +29,9 @@ export const regenToken: Middleware = (req,res,next) =>
     .then((r: any) => res.send(r))
     .catch(next)
 
-export const adminForm = form(Users, {
-  formatData: adminFormAdapter,
-  redirectURL: `${urlCfg.gui.admin.prefix}${urlCfg.gui.admin.user}`,
-})
+export const adminForm = form(Users, `${urlCfg.gui.admin.prefix}${urlCfg.gui.admin.user}`)
 
-export const userForm = form(Users, {
-  formatData: userFormAdapter,
-  redirectURL: `${urlCfg.gui.basic.prefix}${urlCfg.gui.basic.user}`,
-})
+export const userForm =  form(Users, `${urlCfg.gui.basic.prefix}${urlCfg.gui.basic.user}`, userFormCheck)
 
 
 
@@ -52,9 +47,7 @@ const restartParams = (req: Request) => ({
 })
 
 
-export function form<D extends Record<string,any>, M extends ModelActionBase>
-  (Model: M, { redirectURL, formatData }: FormOptions<D> = {})
-{
+export function form(Model: ModelActionBase, redirectURL?: string, errorCheck?: (data: any, req: Express.Request) => any) {
 
   const formActions = modelActions(Model)
 
@@ -63,21 +56,21 @@ export function form<D extends Record<string,any>, M extends ModelActionBase>
     {} as Record<string,any>
   )
   
-  // TODO -- Add type to 'matchedData'? -- formData should be type D
+  // TODO -- Add type to 'matchedData'?
   return (action: ProfileActions): Middleware => (req,res,next) => {
-    let { _action, _pageData, _searchMode, _csrf, ...formData } = filterFormData(
-      matchedData(req),
-      action === actions.find ? {} : boolBase
-    )
+    let formData = filterFormData(matchedData(req), action === actions.find ? {} : boolBase)
+
+    errorCheck?.(formData, req)
     
+    let pageData = ''
     try {
-      formData = formatData?.(formData as any, req.user, action) ?? formData
-      _pageData = toQueryString(_pageData)
+      formData = Model.adaptData(adapterTypes.fromUI, formData as any)
+      pageData = toQueryString(formData._pageData)
     }
     catch (err) { return next(err) }
 
     return formActions[action](formData)
-      .then((url) => res.redirect(`${redirectURL || defaultRedirect(Model.url)}${url || _pageData || ''}`))
+      .then((url) => res.redirect(`${redirectURL || defaultRedirect(Model.url)}${url || pageData}`))
       .catch(next)
   }
 }
