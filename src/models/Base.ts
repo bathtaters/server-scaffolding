@@ -1,19 +1,18 @@
-import type { Base } from './Base.d'
 import Model from '../../engine/models/Model'
 
 /* --- Simple Model --- */
-export default new Model<Base>('base', {
+export default new Model('base', {
   // Layout of Database object
   id: {
     // .id is automatically added as int primary key
-    typeStr: "int",
+    type: "int",
     isPrimary: true,
   },
   data: {
     //  Values: string|uuid|b64(url)|hex|date|datetime|boolean|int|float|object|any
     //  Suffix: [] = array of, ? = optional
     //  string* = allow symbols/spaces
-    typeStr: "string*",
+    type: "string*",
 
     // Standard Num/Char limits
     limits: { min: 0, max: 1000 },
@@ -24,14 +23,14 @@ export default new Model<Base>('base', {
   },
   demoArray: {
     // Array type
-    typeStr: "string[]",
+    type: "string[]",
 
     // Array size / Element num/char limits
     limits: { array: { max: 5 }, elem: { max: 100 } },
   },
 })
 
-
+// TODO -- Test that this works w/ new Types
 /* --- Advanced Model --- *\
 import { Feedback } from '../../engine/models/Model.d'
 
@@ -41,7 +40,7 @@ class BaseModel extends Model<Base> {
   constructor() {
     super('base', {
       data: {
-        typeStr: "string*",
+        type: "string*",
         limits: { min: 0, max: 1000 },
         default: "DEFAULT VALUE",
       },
