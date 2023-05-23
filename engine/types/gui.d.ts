@@ -1,11 +1,24 @@
-import type { htmlTypes, actions, htmlValidationDict } from './gui'
-import type { Definition } from './Model.d'
+import type { htmlTypes, actions, htmlValidationDict, formData, paginationData } from './gui'
+import type { Definition, SchemaOf } from './Model.d'
 
 export type HTMLType = typeof htmlTypes[keyof typeof htmlTypes]
 
 // TODO -- Convert this to FormAction + Remove PLURAL
 export type ProfileActionKeys = keyof typeof actions
 export type ProfileActions = typeof actions[keyof typeof actions]
+
+export type PaginationData<Schema extends object = any> =
+    Omit<SchemaOf<typeof paginationData>,'id'|'orderKey'> & {
+        orderKey?: keyof Schema | null
+    }
+
+export type RawFormData = Omit<SchemaOf<typeof formData>,'id'>
+
+export type FormData<Schema extends object = any> =
+    Omit<RawFormData, '_action'|'_pageData'> & {
+        _action?:   ProfileActions | null,
+        _pageData?: PaginationData<Schema>,
+    }
 
 export type FormDefinition = {
     default?: string,

@@ -1,5 +1,5 @@
 import type { Awaitable, Flatten, Merge, OneOrMore } from './global.d'
-import type { ExtractHTMLType, HTMLType, ValidToHTML } from './gui.d'
+import type { ExtractHTMLType, FormData, HTMLType, ValidToHTML } from './gui.d'
 import type { BaseOfValid, ExtractType, IsArray, IsOptional, ValidationBase, ValidationBasic, ValidationExpanded } from './validate.d'
 import type { SQLTypeFull, ForeignKeyAction, UpdateData, WhereData, ExtractDBType, DBIsOptional } from './db.d'
 import type { adapterTypes, childIndexType, childLabel } from './Model'
@@ -292,7 +292,7 @@ export type ViewSchemaOf<Def extends DefinitionSchema> = Partial<{
 export type FormSchemaOf<Def extends DefinitionSchema> = Partial<{
   -readonly [K in keyof Def as IsInForm<Def[K]> extends true ? K : never]:
     SHTMLType<Def[K]> | null
-}>
+} & FormData<DBSchemaOf<Def>>>
 
 /** Convert Definition Schema to Base Schema Keys */
 export type SchemaKeys<Def extends DefinitionSchema> = keyof SchemaOf<Def> & string

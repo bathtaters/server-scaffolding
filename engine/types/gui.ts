@@ -8,6 +8,30 @@ export const actions = {
     clear: 'Reset',
 } as const
 
+/** Meta fields in Form */
+export const formData = {
+    /** Button clicked */
+    _action:     { type: 'string',   limits: { max: 16 } },
+    /** CSRF Token */
+    _csrf:       { type: 'string?',  limits: { max: 64 } },
+    /** Page Data Object (See paginationData) */
+    _pageData:   { type: 'object?',  limits: { max: 32 } },
+    /** Is searchMode enabled */
+    _searchMode: { type: 'boolean?' },
+} as const
+  
+/** Additional fields for GUI pagination */
+export const paginationData = {
+    /** Page number */
+    page: { type: 'int?',    limits: { min: 1 } },
+    /** Size of page */
+    size: { type: 'int?',    limits: { min: 1 } },
+    /** Key to sort by */
+    sort: { type: 'string?'  },
+    /** Sort data ascending? */
+    asc:  { type: 'boolean?' },
+} as const
+
 /** Enum of HTML Input Types (These are passed to form.mixins.pug) */
 export const htmlTypes = {
     /* Special Inputs */

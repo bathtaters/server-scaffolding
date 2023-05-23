@@ -1,23 +1,14 @@
 import type { ModelValidationOptions, SchemaKeys, ValidationOptions } from '../types/validate.d'
 import type { ProfileActions } from '../types/gui.d'
-import { actions } from '../types/gui'
+import { actions, formData, paginationData } from '../types/gui'
 import Users from '../models/Users'
 import { type ModelValBase, byModel, byObject } from './shared.validators'
 
 export { swap, all } from './api.validators'
 
 /** Non-Schema fields in GUI Form */
-export const formAdditional: ValidationOptions[] = [
-  { key: '_action',     typeStr: 'string',   isIn: ['body'], limits: { max: 16 } },
-  { key: '_pageData',   typeStr: 'object?',  isIn: ['body'], limits: { max: 32 } },
-  { key: '_searchMode', typeStr: 'boolean?', isIn: ['body'], },
-]
-
-/** Additional fields for GUI pagination */
-export const pageAdditional = {
-  page: { typeStr: 'int?', limits: { min: 1 } },
-  size: { typeStr: 'int?', limits: { min: 1 } },
-} as const
+export const formAdditional: ValidationOptions[] = Object.entries(formData)
+  .map(([ key, data ]) => ({ ...data, key, isIn: ['body'] }))
 
 /** Additional fields for User Profile GUI */
 export const profileFields = {
@@ -30,7 +21,7 @@ export const profileFields = {
 
 
 // --- Static Validation --- \\
-export const page =  byObject(pageAdditional, ['query'])
+export const page =  byObject(paginationData, ['query'])
 export const token = byModel(Users, [Users.primaryId], { optionalBody: false })
 
 // --- Validation Generators --- \\
@@ -61,6 +52,6 @@ function actionOptions<M extends ModelValBase>(
     case actions.update: return [fields,             { additional: formAdditional }]
     case actions.delete: return [[primaryId],        { additional: formAdditional }]
     case actions.clear:  return [[],                 { additional: formAdditional }]
+    default: return [[], {}]
   }
-  return [[], {}]
 }

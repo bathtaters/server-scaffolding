@@ -4,7 +4,7 @@ import type {
   TypeOfID, IDOf, PrimaryIDOf, IDOption, SQLOptions,
   Page, FindResult, SelectResult, Feedback,
   AdapterType, AdapterIn, AdapterOut, AdapterData,
-  ForeignKeyRef, ChildDefinitions, ChildKey, SkipChildren,
+  ForeignKeyRef, ChildDefinitions, ChildKey, SkipChildren, 
 } from '../types/Model.d'
 import type { CreateSchema, IfExistsBehavior, UpdateData, WhereData } from '../types/db.d'
 import logger from '../libs/log'
@@ -91,23 +91,23 @@ export default class Model<Def extends DefinitionSchema> {
   /** Get paginated data
    * @param page - Page number (1-indexed)
    * @param size - Page size (Must be at least 1)
-   * @param reverseSort - (Optional) If true, order data descending
-   * @param orderKey - (Optional) Column to order data by
+   * @param asc - (Optional) If true, order data descending
+   * @param sort - (Optional) Column to order data by
    * @returns Page of data as an array
    */
-  async getPage(page: number, size: number, reverseSort?: boolean, orderKey?: DBSchemaKeys<Def>): Promise<SchemaOf<Def>[]> {
+  async getPage(page: number, size: number, asc?: boolean, sort?: DBSchemaKeys<Def>): Promise<SchemaOf<Def>[]> {
     if (size < 1 || page < 1) return Promise.reject(noSize())
 
-    if (orderKey != null && (typeof orderKey !== 'string' || (orderKey && !isIn(orderKey, this.schema))))
-      throw badKey(orderKey, this.title)
+    if (sort != null && (typeof sort !== 'string' || (sort && !isIn(sort, this.schema))))
+      throw badKey(sort, this.title)
     
     const data = await all<DBSchemaOf<Def>>(getDb(), ...selectSQL(
       this.title,
       this.primaryId,
       [],
       Object.keys(this.children),
-      orderKey,
-      reverseSort,
+      sort,
+      asc,
       size,
       page - 1
     ))
