@@ -1,7 +1,7 @@
 import type { baseTypes, typeSuffixes, requestFields, stringTypes, dateTypes, numTypes } from "./validate"
 
 /** Structure of Type value string */
-type ValidationType = `${
+export type ValidationType = `${
     ValidationBase |
     `${typeof baseTypes.string}${typeof typeSuffixes.hasSpaces}` /* string* */
 }${

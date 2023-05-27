@@ -9,7 +9,6 @@ import type { MASK_STR, defaultPrimaryKey, defaultPrimaryType } from '../config/
 // TODO -- Improve HTML typing
 
 // TODO -- Add BitMap/BitMapObj(bitmap2d) type as option, remove 'isBitmap'
-// TODO -- Same as above for 'isHTML'
 
 // TODO -- Allow passing Generator function to Definition.default 
 
@@ -23,12 +22,6 @@ type DefinitionBase<T> = {
   /** If property is a BitMap (Binary data stored as an integer)
    *   - default: false */
   isBitmap?: boolean,
-
-  /** Property contents are HTML
-   *   - Type must be 'string*'
-   *   - Contents will be interpretted as HTML instead of text in GUI
-   *   - default: false */
-  isHTML?: string extends T ? boolean : false,
 
   /** Default value
    *   - Default value to use if nothing provided on creation

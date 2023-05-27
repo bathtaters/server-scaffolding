@@ -75,9 +75,6 @@ export function adaptSchemaEntry<S extends DefType>(def: Definition<S>): Definit
   }
   
   // Error checking
-  if (res.isHTML && (expanded.typeBase !== 'string' || !expanded.hasSpaces))
-    throw new Error(`SCHEMA ERROR - isHTML expects "string*" type: "${def.type || toTypeString(expanded)}"`)
-
   if (res.isPrimary && (expanded.isArray || expanded.isOptional || !res.db))
     throw new Error(`SCHEMA ERROR - Primary ID must be serializable & in DB: ${res.db ? `"${def.type || toTypeString(expanded)}"` : 'db = false'}`)
   
@@ -127,7 +124,6 @@ export function extractChildren<D extends DefinitionSchema, N extends Definition
           [childLabel.value]: adaptSchemaEntry({
             type: toTypeString({ ...def, isArray: false }),
             limits: def.limits && (def.limits.elem || def.limits.array) ? def.limits.elem : undefined,
-            isHTML: def.isHTML,
           }),
         }
       }

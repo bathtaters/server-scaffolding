@@ -4,6 +4,7 @@ export const stringTypes = {
     b64:      "b64",
     b64url:   "b64url",
     hex:      "hex",
+    html:     "html",
 } as const
 
 export const numTypes = {

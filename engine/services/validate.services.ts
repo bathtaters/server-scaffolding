@@ -100,9 +100,12 @@ export function toValidationSchema(
 
   // Set type-specific validators/sanitizers
   switch (typeBase) {
+    case 'html':
+      hasSpaces = true
+      ptr.isString = { errorMessage }
     case 'b64': 
     case 'b64url':
-      ptr.isBase64 = { options: { urlSafe: typeBase === 'b64url' }, errorMessage }
+      if (typeBase !== 'html') ptr.isBase64 = { options: { urlSafe: typeBase === 'b64url' }, errorMessage }
       // pass to string
     case 'uuid':
     case 'hex':
