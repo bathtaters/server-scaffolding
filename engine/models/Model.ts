@@ -23,8 +23,6 @@ import { noID, noData, noEntry, noPrimary, noSize, badKey, multiAction, updatePr
 // TODO -- Create base onUpdate/onCreate callbacks that are called whenever an Update/Create call is made
 
 // TODO -- DOUBLE CHECK ADAPTERS W/ VALIDATORS + FORM DATA
-//       - Also add base form data (ie. action, csrf, etc) to FormGui type, make available in fromUiAdapter
-//       - combine w/ action/controller TODO  "Add type to 'pageData'..."
 
 
 /** Base Model Class, each instance represents a separate model */
@@ -138,8 +136,8 @@ export default class Model<Def extends DefinitionSchema> {
     const page = Math.max(1, Math.min(location.page || startPage, pageCount))
     const sizes = pageCount > 1 || total > Math.min(...sizeList) ? appendAndSort(sizeList, size) : undefined
     
-    // TODO -- Run trough HTML adapter
-    const data = await this.getPage(page, size) as any as ViewSchemaOf<Def>[]
+    const rawData = await this.getPage(page, size)
+    const data = await this.adaptData(adapterTypes.toUI, rawData)
   
     return { data, page, pageCount, size, sizes }
   }
