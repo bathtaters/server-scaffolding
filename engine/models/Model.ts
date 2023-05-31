@@ -411,7 +411,8 @@ export default class Model<Def extends DefinitionSchema> {
     if (!data.length) throw noData('batch data')
 
     // Apply defaults, then adapt data
-    const dataArray: DBSchemaOf<Def>[] = await this.adaptData(adapterTypes.toDB, data.map(this._applyDefaults))
+    const fullData = data.map<DefaultSchemaOf<Def> & AddSchemaOf<Def>>(this._applyDefaults.bind(this))
+    const dataArray: DBSchemaOf<Def>[] = await this.adaptData(adapterTypes.toDB, fullData)
     
     const keys = splitKeys(dataArray[0], this.children)
     if (!keys.parent.length && !keys.children.length) throw noData()

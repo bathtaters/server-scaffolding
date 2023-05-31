@@ -305,9 +305,9 @@ const defaultAdapters: DefaultAdapters = {
 
 const arrayAdapters: DefaultArrayAdapters = {
   [adapterTypes.fromDB]: (entryAdapter) =>
-    entryAdapter ? (text, data) =>
+    entryAdapter ? (text, inData, outData) =>
       typeof text === 'string' && text
-        ? text.split(CONCAT_DELIM).map((v) => entryAdapter(v, data))
+        ? text.split(CONCAT_DELIM).map((v) => entryAdapter(v, inData, outData))
         : []
 
     : (text) =>
@@ -316,9 +316,9 @@ const arrayAdapters: DefaultArrayAdapters = {
 
 
   [adapterTypes.toDB]: (entryAdapter) =>
-    entryAdapter ? (arr, data) =>
+    entryAdapter ? (arr, inData, outData) =>
       Array.isArray(arr)
-        ? arr.map((v) => entryAdapter(v, data))
+        ? arr.map((v) => entryAdapter(v, inData, outData))
         : null
 
     : (arr) =>
@@ -326,11 +326,11 @@ const arrayAdapters: DefaultArrayAdapters = {
 
 
   [adapterTypes.fromUI]: (entryAdapter) =>
-    entryAdapter ? (text, data) =>
+    entryAdapter ? (text, inData, outData) =>
       typeof text === 'string' && text
-        ? toArray(text)?.map((v) => entryAdapter(v, data))
+        ? toArray(text)?.map((v) => entryAdapter(v, inData, outData))
         : Array.isArray(text)
-          ? text.map((v) => entryAdapter(v, data))
+          ? text.map((v) => entryAdapter(v, inData, outData))
           : undefined
 
     : (text) =>
@@ -340,9 +340,9 @@ const arrayAdapters: DefaultArrayAdapters = {
 
 
   [adapterTypes.toUI]: (entryAdapter) =>
-    entryAdapter ? (arr, data) =>
+    entryAdapter ? (arr, inData, outData) =>
       Array.isArray(arr)
-        ? arr.map((v) => entryAdapter(v, data)).join(', ')
+        ? arr.map((v) => entryAdapter(v, inData, outData)).join(', ')
         : undefined
 
     : (arr) =>

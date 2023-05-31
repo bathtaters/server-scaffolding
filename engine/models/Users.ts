@@ -189,7 +189,7 @@ class User extends Model<UserDef> {
 
     const userData = users.map((user) => {
       const newUser = addAdapter(user)
-      if (passwordRoles.intersects(newUser.role as any) && !newUser.password) // TODO: Remove as any when get types from adapters is done
+      if (passwordRoles.intersects(newUser.role) && !newUser.password)
         throw noData('password for GUI access')
       return newUser
     })

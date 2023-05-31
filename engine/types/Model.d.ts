@@ -204,11 +204,15 @@ export type SkipChildren<S extends SchemaGeneric> = { [K in keyof S as S[K] exte
 /**
  * Callback that takes in a single piece of data and returns a modified version of that data
  * @param value - Value to adapt from input
- * @param data - Full object containing value (Data will be in the middle of being adapted)
+ * @param outData - In progress output object (Can be directly updated)
+ * @param inData - Full input object
  * @returns Adapted value or nothing (Can update object directly)
  */
 export type Adapter<Key extends keyof SchemaIn, SchemaIn extends SchemaGeneric, SchemaOut extends SchemaGeneric> =
-  (value: SchemaIn[Key] | undefined, data: Partial<Merge<SchemaIn, SchemaOut>>) => Awaitable<
+  ( value: SchemaIn[Key] | undefined,
+    inData: { [K in keyof SchemaIn]?: WhereValue<SchemaIn[K]> | UpdateValue<SchemaIn[K]> },
+    outData: PartialExcept<Merge<SchemaIn, SchemaOut>, typeof viewMetaKey>,
+  ) => Awaitable<
     (Key extends keyof SchemaOut ? SchemaOut[Key] : never) | undefined | void
   >
 

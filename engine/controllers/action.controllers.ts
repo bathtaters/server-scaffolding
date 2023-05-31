@@ -57,14 +57,14 @@ export function form(Model: ModelActionBase, redirectURL?: string, errorCheck?: 
   )
   
   // TODO -- Add type to 'matchedData'?
-  return (action: ProfileActions): Middleware => (req,res,next) => {
+  return (action: ProfileActions): Middleware => async (req,res,next) => {
     let formData = filterFormData(matchedData(req), action === actions.find ? {} : boolBase)
 
     errorCheck?.(formData, req)
     
     let pageData = ''
     try {
-      formData = Model.adaptData(adapterTypes.fromUI, formData as any)
+      formData = await Model.adaptData(adapterTypes.fromUI, formData as any)
       pageData = toQueryString(formData._pageData)
     }
     catch (err) { return next(err) }

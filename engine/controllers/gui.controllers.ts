@@ -48,41 +48,44 @@ export function modelDb<M extends ModelGuiBase>(Model: M, {
   }
 
   return {
-    model: (req, res, next) => Model.getPageData(matchedData(req), guiCfg.pageOptions)
-      .then(({ data, ...pageData}) => {
+    async model(req, res, next) {
+      try {
+        const pageData = await Model.getPageData(matchedData(req), guiCfg.pageOptions)
+
         const access = req.user?.access?.get(Model.title)
 
         return res.render(view, {
           ...staticDbParams,
           ...pageData,
-          data: Model.adaptData(adapterTypes.toUI, data),
-          buttons: labelsByAccess(access),
-          user: req.user?.username,
-          isAdmin:  Role.map.admin.intersects(req.user?.role),
+          buttons:   labelsByAccess(access),
+          user:      req.user?.username,
+          isAdmin:   Role.map.admin.intersects(req.user?.role),
           csrfToken: req.csrfToken?.(),
-          canRead: access?.intersects('read'),
-          canWrite: access?.intersects('write'),
+          canRead:   access?.intersects('read'),
+          canWrite:  access?.intersects('write'),
         })
-      })
-      .catch(next),
+      }
+      catch (err) { next(err) }
+    },
 
-    find: async (req, res, next) => {
+    async find(req, res, next) {
       try {
-        const searchData = Model.adaptData(adapterTypes.fromUI, matchedData(req))
+        const searchData = await Model.adaptData(adapterTypes.fromUI, matchedData(req))
         const data = await Model.find(partialMatch ? toPartialMatch(searchData) : searchData)
+        const uiData = await Model.adaptData(adapterTypes.toUI, data)
 
         const access = req.user?.access?.get(Model.title)
 
         return res.render(view, {
           ...staticDbParams,
-          data: Model.adaptData(adapterTypes.toUI, data),
           searchData,
-          buttons: labelsByAccess(access),
-          user: req.user?.username,
-          isAdmin: Role.map.admin.intersects(req.user?.role),
+          data:      uiData,
+          buttons:   labelsByAccess(access),
+          user:      req.user?.username,
+          isAdmin:   Role.map.admin.intersects(req.user?.role),
           csrfToken: req.csrfToken?.(),
-          canRead: access?.intersects('read'),
-          canWrite: access?.intersects('write'),
+          canRead:   access?.intersects('read'),
+          canWrite:  access?.intersects('write'),
         })
       } catch (err) { next(err) }
     },
@@ -101,14 +104,16 @@ const staticUserParams = {
   submitURLs: actionURLs(`${urls.prefix}${urls.user}${urls.form}/`),
 }
 
-export const userProfile: Middleware = (req, res, next) =>
-  !req.user ?
-    next(noData('user'))
-    :
-    res.render('profile', {
-      ...staticUserParams,
-      user: req.user.username,
-      userData: Users.adaptData(adapterTypes.toUI, req.user),
-      isAdmin: Role.map.admin.intersects(req.user.role),
-      csrfToken: req.csrfToken?.(),
-    })
+export const userProfile: Middleware = async (req, res, next) => {
+  if (!req.user) return next(noData('user'))
+
+  const userData = await Users.adaptData(adapterTypes.toUI, req.user)
+  
+  return res.render('profile', {
+    ...staticUserParams,
+    userData,
+    user: req.user.username,
+    isAdmin: Role.map.admin.intersects(req.user.role),
+    csrfToken: req.csrfToken?.(),
+  })
+}
