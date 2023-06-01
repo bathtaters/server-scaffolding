@@ -11,7 +11,6 @@ import type { MASK_STR, defaultPrimaryKey, defaultPrimaryType } from '../config/
 // TODO -- Allow passing Generator function to Definition.default 
 
 // TODO -- Organize types into namespaces
-// TODO -- Add a type "ModelName" that is the name of any model in allModels (Use with ModelAccess)
 
 /** Response types to expect from API */
 export namespace ApiResponse {
@@ -297,11 +296,10 @@ export type DBSchemaOf<Def extends DefinitionSchema> = Flatten<
   (GetPrimaryID<Def> extends never ? { [defaultPrimaryKey]: ExtractType<typeof defaultPrimaryType> } : {})
 >
 
-// TODO -- Only add 'null' when property is optional
 /** Convert Definition Schema to GUI View Schema (Allows passing additional data via the viewMetaKey) */
 export type ViewSchemaOf<Def extends DefinitionSchema> = {
   -readonly [K in keyof Def as IsInView<Def[K]> extends true ? K : never]:
-    SHTMLType<Def[K]> | null
+    SHTMLType<Def[K]> | (undefined extends SHTMLType<Def[K]> ? null : never)
 } & { [viewMetaKey]: Record<string,any> }
 
 /** Convert Definition Schema to GUI Form Schema */
