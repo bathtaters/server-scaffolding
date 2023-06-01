@@ -32,7 +32,7 @@ export abstract class BitMapBase<Flag extends string> {
     constructor(...values: BitMapValue<BitMapBase<Flag>>[])
 
     /** Integer representation of BitMap */
-    abstract int: number
+    abstract value: number
     /** Binary representation of BitMap */
     abstract bin: string
     /** Hexadecimal representation of BitMap */
@@ -49,15 +49,20 @@ export abstract class BitMapBase<Flag extends string> {
     /** Sets the BitMap to the specified value.
      *  (No value will reset it to empty AKA 0)
      * @returns Self */
-    abstract set(...values: BitMapValue<BitMapBase<Flag>>[]): BitMapBase<Flag>
+    abstract set(...values: BitMapValue<BitMapBase<Flag>>[]): this
+
+    /** Sets the BitMap to the parsed value.
+     *  (No value will reset it to empty AKA 0)
+     * @returns Self */
+    abstract parse(value: any): this
 
     /** Appends the specified value(s) to the BitMap.
      * @returns Self */
-    abstract add(...values: BitMapValue<BitMapBase<Flag>>[]): BitMapBase<Flag>
+    abstract add(...values: BitMapValue<BitMapBase<Flag>>[]): this
 
     /** Removes the specified value(s) from the BitMap.
      * @returns Self */
-    abstract remove(...values: BitMapValue<BitMapBase<Flag>>[]): BitMapBase<Flag>
+    abstract remove(...values: BitMapValue<BitMapBase<Flag>>[]): this
 
     /** @returns A boolean indicating whether this BitMap is a subset of the value. */
     abstract isSubset(...values: BitMapValue<BitMapBase<Flag>>[]): boolean 
@@ -79,6 +84,9 @@ export abstract class BitMapBase<Flag extends string> {
 
     /** @returns Value as a number for JSON encoding */
     abstract toJSON(): number
+
+    /** @returns Base numeric value of BitMap */
+    abstract valueOf(): number
 }
 
 

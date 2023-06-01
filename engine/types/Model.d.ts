@@ -1,14 +1,12 @@
-import type { Awaitable, Flatten, Merge, OneOrMore } from './global.d'
+import type { Awaitable, Flatten, Merge, Not, OneOrMore, PartialExcept } from './global.d'
 import type { ExtractHTMLType, FormData, HTMLType, ValidToHTML } from './gui.d'
-import type { BaseOfValid, ExtractType, IsArray, IsOptional, ValidationBase, ValidationBasic, ValidationExpanded } from './validate.d'
-import type { SQLTypeFull, ForeignKeyAction, UpdateData, WhereData, ExtractDBType, DBIsOptional } from './db.d'
-import type { adapterTypes, childIndexType, childLabel } from './Model'
+import type { BaseOfValid, ExtractType, IsArray, IsOptional, ValidationBase, ValidationBasic, ValidationExpanded, ValidationType } from './validate.d'
+import type { SQLTypeFull, ForeignKeyAction, UpdateData, WhereData, ExtractDBType, DBIsOptional, WhereValue, UpdateValue } from './db.d'
+import type { ExtendedType, adapterTypes, childIndexType, childLabel, viewMetaKey } from './Model'
+import type { typeSuffixes } from './validate'
 import type { MASK_STR, defaultPrimaryKey, defaultPrimaryType } from '../config/models.cfg'
 
-// TODO -- Each definition has 'dbType' <-> 'baseType' <-> 'htmlType' w/ 4 adapters (toDb [set], fromDb [get], toGui, fromGui)
-// TODO -- Improve HTML typing
-
-// TODO -- Add BitMap/BitMapObj(bitmap2d) type as option, remove 'isBitmap'
+// TODO -- Improve HTML typing (Create 'multi-input' type (AKA only takes specific values))
 
 // TODO -- Allow passing Generator function to Definition.default 
 
@@ -28,10 +26,6 @@ export namespace ApiResponse {
 /** Common properties shared by User & Backend Property Definitions */
 type DefinitionBase<T> = {
 
-  /** If property is a BitMap (Binary data stored as an integer)
-   *   - default: false */
-  isBitmap?: boolean,
-
   /** Default value
    *   - Default value to use if nothing provided on creation
    *   - This value should be the type used in backend services
@@ -43,7 +37,7 @@ type DefinitionBase<T> = {
    *   - string = <input> w/ this as 'type' attribute 
    *      (Or <option>/<select> if this = "option")
    *   - number = <textarea> w/ this as 'rows' attribute
-   *   - false = property is omitted from GUI
+   *   - false = property is omitted from UI
    *   - default: auto-generated based on type */
   html: false | number | HTMLType,
 
@@ -54,7 +48,7 @@ type DefinitionBase<T> = {
   db: false | SQLTypeFull,
   
   /** Mask property everywhere except for raw results
-   *   - true = only accessible in toDB/fromDB adapters OR findRaw
+   *   - true = only accessible in fromDB adapter OR findRaw
    *            value is masked using [MASKED]
    *   - default: false */
   isMasked?: boolean,
@@ -71,27 +65,35 @@ type DefinitionBase<T> = {
   isPrimary?: NonNullable<T> extends string | number ? boolean : false,
 }
 
-/** Definition for a property of the Model */
-export type Definition<S extends DefType = DefType> = OneOrMore<
-  { type: S, limits?: ValidationBasic['limits'] }
-    & Partial<DefinitionBase<ExtractType<S>>>,
+/** Class that constructs ExtendedType */
+export type ExtendedClass<Raw extends string | number> = new() => ExtendedType<Raw>
+
+/** Definition for a property of the Model
+ *   - Type is Validation type OR ExtendType class
+ *   - NOTE: Setting adapters will override the class adapters
+ *   - default: None */
+export type Definition<T extends DefType = DefType> = OneOrMore<
+  { type: T, limits?: ValidationBasic['limits'] }
+    & Partial<DefinitionBase<T extends ValidationType ? ExtractType<T> : T>>,
   'type'|'isPrimary'
 >
 
 /** Normalized definition for a property of the Model */
-export type DefinitionNormal<S extends DefType = DefType> = ValidationExpanded & DefinitionBase<ExtractType<S>>
+export type DefinitionNormal<T extends DefType = DefType> = 
+  Partial<ValidationExpanded & { typeExtended?: ExtendedClass<any> }>
+  & DefinitionBase<T extends ValidationType ? ExtractType<T> : T>
 
 /** Generic Model Schema as { key: Definition } */
 export type DefinitionSchema = Record<string, Definition>
 
 /** Model Schema normalized for storage in model */
 export type DefinitionSchemaNormal<Def extends DefinitionSchema = DefinitionSchema> = {
-  [K in keyof Def & string]: DefinitionNormal<GetDefType<Def[K]>>
+  [K in keyof Def & string]: DefinitionNormal<GetType<Def[K]['type']>>
 }
 
 /** Definition Schema to force a generic Model Definition  */
-export type GenericDefinitionSchema = Record<string, ValidationBasic>
-  & { [id: string]: ValidationBasic & { isPrimary: true } } // Forces 'primaryID' type to be string
+export type GenericDefinitionSchema = DefinitionSchema
+  & { [id: string]: DefinitionSchema & { isPrimary: true } } // Forces 'primaryID' type to be string
 
 /** Options to override default type adapters */
 export type AdapterDefinition<Def extends DefinitionSchema> = {
@@ -112,7 +114,7 @@ export type AdapterDefinitionLoose<Def extends DefinitionSchema = DefinitionSche
 
 
 /** Generic Type for Definition.type */
-export type DefType = ValidationBasic['type']
+export type DefType = ValidationType | ExtendedClass<any>
 
 /** Generic Type for the result of [DB|HTML]SchemaOf<> */
 export type SchemaGeneric = Record<string, any>
@@ -148,10 +150,11 @@ export type FindResult<
   Promise<Array<
     O['skipChildren'] extends true
       ? SkipChildren<
-        O['raw'] extends true  ? DBSchemaOf<Def> : SchemaOf<Def>
+        O['raw'] extends true  ? DBSchemaOf<Def> : SchemaOf<Def,true>,
+        Def
       >
       :
-        O['raw'] extends true  ? DBSchemaOf<Def> :  SchemaOf<Def>
+        O['raw'] extends true  ? DBSchemaOf<Def> :  SchemaOf<Def,true>
   >>
 
 /** Result of "_Select" operation */
@@ -161,7 +164,7 @@ export type SelectResult<
 > =
   Promise<Array<
     O['skipChildren'] extends true
-      ? SkipChildren<DBSchemaOf<Def>>
+      ? SkipChildren<DBSchemaOf<Def>,Def>
       : DBSchemaOf<Def>
   >>
 
@@ -188,16 +191,18 @@ export interface ForeignKeyRef {
 }
 
 /** Object of { ChildProperties: TypeStrings } */
-type ChildTypes<Def extends DefinitionSchema, ChildKey extends keyof Def> = {
-  [childLabel.foreignId]: GetDefType<Def[PrimaryIDOf<Def>]>,
-  [childLabel.index]:     typeof childIndexType,
-  [childLabel.value]:     BaseOfValid<GetDefType<Def[ChildKey]>>
-}
+type ChildTypes<Def extends DefinitionSchema, ChildKey extends keyof Def> = 
+  Def[ChildKey]['type'] extends ExtendedClass<any> ? never : {
+    [childLabel.foreignId]: DefTypeStr<Def[PrimaryIDOf<Def>]>,
+    [childLabel.index]:     typeof childIndexType,
+    [childLabel.value]:     BaseOfValid<DefTypeStr<Def[ChildKey]>>
+  }
 
 /** Extract definitions of child models */
 export type ChildDefinitions<Def extends DefinitionSchema> = Partial<{
   [Arr in ChildKey<Def>]: {
-    [K in keyof ChildTypes<Def,Arr>]: Definition<ChildTypes<Def,Arr>[K]>
+    [K in keyof ChildTypes<Def,Arr>]:
+      ChildTypes<Def,Arr>[K] extends ValidationType ? Definition<ChildTypes<Def,Arr>[K]> : never
   }
 }>
 
@@ -205,9 +210,14 @@ export type ChildDefinitions<Def extends DefinitionSchema> = Partial<{
 export type CreateTableRefs = { [childName: string]: ForeignKeyRef }
 
 /** Extract Child Keys */
-export type ChildKey<Def extends DefinitionSchema> = keyof OnlyChildren<SchemaOf<Def>> & string
-export type OnlyChildren<S extends SchemaGeneric> = { [K in keyof S as S[K] extends any[] ? K : never]: S[K] }
-export type SkipChildren<S extends SchemaGeneric> = { [K in keyof S as S[K] extends any[] ? never : K]: S[K] }
+export type ChildKey<Def extends DefinitionSchema> = {
+  [K in keyof Def]:
+    Def[K]['db'] extends SQLTypeFull ? never : 
+    Def[K]['type'] extends `${string}${typeof typeSuffixes.isArray}` ? K :
+      never
+}[keyof Def]
+export type SkipChildren<S extends SchemaGeneric, D extends DefinitionSchema> = Omit<S, ChildKey<D>>
+export type OnlyChildren<S extends SchemaGeneric, D extends DefinitionSchema> = Omit<S, keyof SkipChildren<S,D>>
 
 
 /**
@@ -234,17 +244,17 @@ export type AdapterData<S extends SchemaGeneric> = S | Partial<S> | WhereData<S>
 
 /** Extract Adapter SchemaIn for given AdapterType from Definition */
 export type AdapterIn<Def extends DefinitionSchema, A extends AdapterType> =
-  (A extends typeof adapterTypes['fromDB'] ?   DBSchemaOf<Def> : never) |
-  (A extends typeof adapterTypes['toDB']   ?  AddSchemaOf<Def> : never) |
-  (A extends typeof adapterTypes['fromUI'] ? FormSchemaOf<Def> : never) |
-  (A extends typeof adapterTypes['toUI']   ?     SchemaOf<Def> : never)
+  (A extends typeof adapterTypes['fromDB'] ?    DBSchemaOf<Def> : never) |
+  (A extends typeof adapterTypes['toDB']   ?   AddSchemaOf<Def> : never) |
+  (A extends typeof adapterTypes['fromUI'] ?  FormSchemaOf<Def> : never) |
+  (A extends typeof adapterTypes['toUI']   ? SchemaOf<Def,true> : never)
 
 /** Extract Adapter SchemaOut for given AdapterType from Definition */
 export type AdapterOut<Def extends DefinitionSchema, A extends AdapterType> =
-  (A extends typeof adapterTypes['fromDB'] ?     SchemaOf<Def> : never) |
-  (A extends typeof adapterTypes['toDB']   ?   DBSchemaOf<Def> : never) |
-  (A extends typeof adapterTypes['fromUI'] ?     SchemaOf<Def> : never) |
-  (A extends typeof adapterTypes['toUI']   ? ViewSchemaOf<Def> : never)
+  (A extends typeof adapterTypes['fromDB'] ?  SchemaOf<Def,true> : never) |
+  (A extends typeof adapterTypes['toDB']   ?     DBSchemaOf<Def> : never) |
+  (A extends typeof adapterTypes['fromUI'] ? SchemaOf<Def,false> : never) |
+  (A extends typeof adapterTypes['toUI']   ?   ViewSchemaOf<Def> : never)
 
 
 /** Extract the value of an Adapter's SchemaIn object for given AdapterType from Definition */
@@ -263,9 +273,9 @@ export type DefaultArrayAdapters = { [A in AdapterType]: (entryAdapter?: Adapter
 // Extract Types from Definitions
 
 /** Convert Definition Schema to Base Schema */
-export type SchemaOf<Def extends DefinitionSchema> = Flatten<
-  { -readonly [K in keyof Def as GetOptional<Def[K]> extends true ? never : K] : SBaseType<Def[K],true> } &
-  { -readonly [K in keyof Def as GetOptional<Def[K]> extends true ? K : never]?: SBaseType<Def[K],true> } &
+export type SchemaOf<Def extends DefinitionSchema, Masked extends boolean = true> = Flatten<
+  { -readonly [K in keyof Def as GetOptional<Def[K]> extends true ? never : K] : SBaseType<Def[K],Masked> } &
+  { -readonly [K in keyof Def as GetOptional<Def[K]> extends true ? K : never]?: SBaseType<Def[K],Masked> } &
   (GetPrimaryID<Def> extends never ? { [defaultPrimaryKey]: ExtractType<typeof defaultPrimaryType> } : {})
 >
 
@@ -278,12 +288,12 @@ export type AddSchemaOf<Def extends DefinitionSchema> = Flatten<
 
 /** Convert Definition Schema to Schema of Default Values */
 export type DefaultSchemaOf<Def extends DefinitionSchema> = 
-  { -readonly [K in keyof Def as HasDefault<Def[K]> extends true ? K : never]?: SBaseType<Def[K]> }
+  { -readonly [K in keyof Def as HasDefault<Def[K]> extends true ? K : never]?: SBaseType<Def[K],false> }
 
 /** Convert Definition Schema to DB Schema */
 export type DBSchemaOf<Def extends DefinitionSchema> = Flatten<
-  { -readonly [K in keyof Def as GetOptionalDB<Def[K]> extends true ? never : K] : SDBType<Def[K]> } &
-  { -readonly [K in keyof Def as GetOptionalDB<Def[K]> extends true ? K : never]?: SDBType<Def[K]> } &
+  { -readonly [K in keyof Def as GetOptionalDB<Def[K]> extends false ? K : never]-?: SDBType<Def[K]> } &
+  { -readonly [K in keyof Def as GetOptionalDB<Def[K]> extends true  ? K : never]+?: SDBType<Def[K]> } &
   (GetPrimaryID<Def> extends never ? { [defaultPrimaryKey]: ExtractType<typeof defaultPrimaryType> } : {})
 >
 
@@ -301,7 +311,7 @@ export type FormSchemaOf<Def extends DefinitionSchema> = Partial<{
 } & FormData<DBSchemaOf<Def>>>
 
 /** Convert Definition Schema to Base Schema Keys */
-export type SchemaKeys<Def extends DefinitionSchema> = keyof SchemaOf<Def> & string
+export type SchemaKeys<Def extends DefinitionSchema> = keyof SchemaOf<Def,boolean> & string
 
 /** Convert Definition Schema to Keys of Schema for Inserting New Entries */
 export type AddSchemaKeys<Def extends DefinitionSchema> = keyof AddSchemaOf<Def> & string
@@ -319,7 +329,7 @@ export type ViewSchemaKeys<Def extends DefinitionSchema> = keyof ViewSchemaOf<De
 export type FormSchemaKeys<Def extends DefinitionSchema> = keyof FormSchemaOf<Def> & string
 
 /** Get a valid ID from  */
-export type IDOf<Def extends DefinitionSchema> = keyof (SchemaOf<Def> | DBSchemaOf<Def>) & string
+export type IDOf<Def extends DefinitionSchema> = keyof (SchemaOf<Def,boolean> | DBSchemaOf<Def>) & string
 
 /** Get name of PrimaryID from Definition Schema */
 export type PrimaryIDOf<Def extends DefinitionSchema> =
@@ -329,10 +339,10 @@ export type PrimaryIDOf<Def extends DefinitionSchema> =
 
 /** Get type of 'id' input based off of 'idKey' for definition Schema */
 export type TypeOfID<Def extends DefinitionSchema, ID extends IDOf<Def> | undefined = undefined> =
-  SchemaOf<Def>[
+  SchemaOf<Def,false>[
     ID extends IDOf<Def> ? ID :
-    PrimaryIDOf<Def> extends keyof SchemaOf<Def> ? PrimaryIDOf<Def> :
-      keyof SchemaOf<Def>
+    PrimaryIDOf<Def> extends keyof SchemaOf<Def,false> ? PrimaryIDOf<Def> :
+      keyof SchemaOf<Def,false>
   ]
 
 
@@ -340,11 +350,10 @@ export type TypeOfID<Def extends DefinitionSchema, ID extends IDOf<Def> | undefi
 
 /** Extract Base Type from Definition */
 type SBaseType<D extends Definition, Masked extends boolean = true> =
-  D['isMasked'] extends true
-    ? Masked extends true
-      ? typeof MASK_STR
-      : ExtractType<GetDefType<D>>
-    : ExtractType<GetDefType<D>>
+  Masked | D['isMasked'] extends true
+    ? typeof MASK_STR
+    : GetType<D['type']>
+
 
 /** Extract DB Type from Definition */
 type SDBType<D extends Definition> =
@@ -352,9 +361,12 @@ type SDBType<D extends Definition> =
     ? ExtractDBType<D['db']>
     : D['db'] extends false
       ? never
-      : Date extends ExtractType<GetDefType<D>>
-        ? Exclude<ExtractType<GetDefType<D>>, Date> | number
-        : ExtractType<GetDefType<D>>
+      : D['type'] extends ExtendedClass<infer R>
+        ? R
+        : Date extends GetType<D['type']>
+          ? Exclude<GetType<D['type']>, Date> | number
+          : GetType<D['type']>
+
 
 /** Extract HTML Type from Definition */
 type SHTMLType<D extends Definition> =
@@ -362,18 +374,30 @@ type SHTMLType<D extends Definition> =
     ? ExtractHTMLType<D['html']>
     : D['html'] extends false
       ? never
-      : IsArray<D['type']> extends true
-        ? ExtractHTMLType<ValidToHTML<'array'>>
-        : ExtractHTMLType<ValidToHTML<BaseOfValid<GetDefType<D>>>>
+      : D['type'] extends ValidationType
+        ? IsArray<D['type']> extends true
+          ? ExtractHTMLType<ValidToHTML<'array'>>
+          : ExtractHTMLType<ValidToHTML<BaseOfValid<DefTypeStr<D>>>>
+      : D['type'] extends ExtendedClass<any>
+        ? ReturnType<InstanceType<D['type']>['toString']>
+        : any
+
+
+/** Get Type from Definition.Type (string/Class) */
+type GetType<D extends DefType | undefined> =
+  DefType extends D
+    ? any
+    : D extends ExtendedClass<any>
+      ? InstanceType<D>
+      : ExtractType<DefTypeStr<D>>
 
 
 /** TypeString from definition (or default TypeString if definition is empty) */
-type GetDefType<D extends Definition> =
-  D['type'] extends string ? D['type'] : typeof defaultPrimaryType
+type DefTypeStr<S> = S extends ValidationType ? S : typeof defaultPrimaryType
 
 /** True/False indicating if definition has a Default value */
 type HasDefault<D extends Definition> =
-  D extends { default: ExtractType<GetDefType<D>> }
+  D extends { default: GetType<D['type']> }
     ? true : false
 
 /** True/False indicating if definition will be visible in GUI */
@@ -385,28 +409,25 @@ type IsInView<D extends Definition> =
 
 /** True/False indicating if definition will be editable in GUI */
 type IsInForm<D extends Definition> =
-  IsInView<D> extends true
-    ? D['skipForm'] extends true
-      ? false : true
-    : false
+  D['skipForm'] extends true
+    ? false
+    : D['html'] extends false ? false : true
 
 /** True/False indicating if Base Type is Optional */
-type GetOptional<D extends Definition> = IsOptional<D['type']> 
+type GetOptional<D extends Definition> = D['type'] extends ValidationType ? IsOptional<D['type']> : true
 
 /** True/False indicating if Base Type is Optional (Including types with defaults) */
 type GetOptionalAdd<D extends Definition> = GetOptional<D> extends true ? true : HasDefault<D>
 
-/** True/False indicating if DB Type is Optional */
+/** True/False indicating if DB Type is Optional (Never indicates Key should not be included at all) */
 type GetOptionalDB<D extends Definition> =
-  D['db'] extends string
-    ? DBIsOptional<D['db']> extends true
-      ? true
-      : false
-    : IsOptional<D['type']> extends true
-      ? D extends { default: ExtractType<GetDefType<D>> }
-        ? false
-        : true
-      : false
+  D['db'] extends false
+    ? never
+    : D['db'] extends string
+      ? DBIsOptional<D['db']>
+      : GetOptional<D> extends true
+        ? Not<HasDefault<D>>
+        : false
 
 /** Definition key where isPrimary = True */
 type GetPrimaryID<Def extends DefinitionSchema> = {

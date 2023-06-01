@@ -3,6 +3,7 @@ import type { BitMapObjBase, BitMapObjStatic, BitMapObjValue, BitMapObject } fro
 import RegEx from "./regex"
 import BitMapFactory from "./BitMap"
 import { isIn } from "../utils/common.utils"
+import { ExtendedType } from "../types/Model"
 
 export const KF_DELIM = '-', STR_DELIM = ', ', STR_SPLIT = ':', STR_WRAP = '[]'
 
@@ -26,7 +27,7 @@ export default function BitMapObjFactory<Key extends string, Flag extends string
 
 
   /** Represents an object of form { keyName: BitMap, ..., default: BitMap } */
-  class BitMapObj implements BitMapObjBase<Key, Flag, DefKey> {
+  class BitMapObj extends ExtendedType<string> implements BitMapObjBase<Key, Flag, DefKey> {
 
     //  **** STATIC **** \\
     private static readonly _bitmap = BitMapFactory<Flag>(flagList, undefined, characterMap)
@@ -53,7 +54,7 @@ export default function BitMapObjFactory<Key extends string, Flag extends string
     private static readonly _toObjStr = toObjStr
     
     /** Get mask for all values, except for the given value */
-    static mask(except: BitMapValue<BitMapBase<Flag>> = 0) { return BitMapObj._bitmap.mask & ~this.bitMap(except).int }
+    static mask(except: BitMapValue<BitMapBase<Flag>> = 0) { return BitMapObj._bitmap.mask & ~this.bitMap(except).value }
     
     /** Create a new related BitMap object */
     static bitMap(...values: BitMapValue<BitMapBase<Flag>>[]) { return new this._bitmap(...values) }
@@ -72,32 +73,39 @@ export default function BitMapObjFactory<Key extends string, Flag extends string
     //  **** INSTANCE **** \\
     private _object: BitMapObject<Key, Flag, DefKey>
 
-    /** Create a BitMapObject from an array of KeyFlags or an Object of numbers */
+    /** Create a BitMapObject from an Object of Bitmap values */
     constructor()
-    constructor(bitmapObjStr?: string, defaultValue?: BitMapValue<BitMapBase<Flag>>)
-    constructor(keyFlagArr?: string[], defaultValue?: BitMapValue<BitMapBase<Flag>>)
-    constructor(keyNumObj?: BitMapObjValue<Key, Flag, DefKey>, defaultValue?: BitMapValue<BitMapBase<Flag>>)
-    constructor(objOrArr?: BitMapObjValue<Key, Flag, DefKey> | string[] | string, defaultValue?: BitMapValue<BitMapBase<Flag>>) {
+    constructor(obj?: BitMapObjValue<Key, Flag, DefKey>, defaultValue?: BitMapValue<BitMapBase<Flag>>)
+    constructor(obj?: BitMapObjValue<Key, Flag, DefKey>, defaultValue?: BitMapValue<BitMapBase<Flag>>) {
+      super()
       this._object = BitMapObj._baseObj(defaultValue)
-
-      if (typeof objOrArr === 'string') this._updateString(objOrArr)
-      else if (Array.isArray(objOrArr)) this._updateArray(objOrArr)
-      else if (typeof objOrArr === 'object') this._updateObject(objOrArr)
+      if (obj) this._updateObject(obj)
     }
 
     get obj()    { return this._object     }
     get defKey() { return BitMapObj.defKey }
 
+    get value()  { return JSON.stringify(this._object) } // Format for DB
+    set value(json: string) { // Set from DB
+      if (json) this._updateObject(JSON.parse(json))
+      else this.reset()
+    }
+
 
     // Mutatable methods
 
     get(key: Key | DefKey): BitMapBase<Flag> {
-      return this.obj[key]?.int ? this.obj[key] : this.obj[this.defKey]
+      return this.obj[key]?.value ? this.obj[key] : this.obj[this.defKey]
     }
 
     reset(defaultValue?: BitMapValue<BitMapBase<Flag>>) {
       this._object = BitMapObj._baseObj(defaultValue)
       return this
+    }
+
+    setString(bitmapValueStr: string) {
+      this.reset()
+      return this._updateString(bitmapValueStr)
     }
 
     setArray(keyFlagArr: string[]) {
@@ -110,9 +118,17 @@ export default function BitMapObjFactory<Key extends string, Flag extends string
       return this._updateObject(bitmapValueObj)
     }
 
+    parse(value?: any) { // Parse HTML Form
+      if (typeof value === 'string')           value = stringToArray(value)
+
+      if (typeof value !== 'object' || !value) return this.reset()
+      else if (Array.isArray(value))           return this.setArray(value)
+      else                                     return this.setObject(value)
+    }
+
     addAll(value: BitMapValue<BitMapBase<Flag>>) {
       for (const key in this.obj) {
-        if (key === this.defKey || (isIn(key, this.obj) && this.obj[key].int))
+        if (key === this.defKey || (isIn(key, this.obj) && this.obj[key].value))
           this.obj[key as Key].add(value)
       }
       return this
@@ -120,7 +136,7 @@ export default function BitMapObjFactory<Key extends string, Flag extends string
 
     removeAll(value: BitMapValue<BitMapBase<Flag>>) {
       for (const key in this.obj) {
-        if (key === this.defKey || (isIn(key, this.obj) && this.obj[key].int))
+        if (key === this.defKey || (isIn(key, this.obj) && this.obj[key].value))
           this.obj[key as Key].remove(value)
       }
       return this
@@ -166,11 +182,11 @@ export default function BitMapObjFactory<Key extends string, Flag extends string
 
     // Export methods
 
-    toString() {
+    toString() { // Format for HTML
       if (!BitMapObj.charMap) throw new Error('BitMapObj.toString requires CharacterMap')
 
       return Object.entries<typeof this.obj[Key]>(this.obj)
-        .filter(([key, bits]) => bits.int || key === this.defKey)
+        .filter(([key, bits]) => bits.value || key === this.defKey)
         .map(BitMapObj._toObjStr).join(STR_DELIM)
     }
 
@@ -179,12 +195,10 @@ export default function BitMapObjFactory<Key extends string, Flag extends string
         .flatMap(([key, bitmap]) => bitmap.list.map((flag) => `${key}${KF_DELIM}${flag}`))
     }
 
-    toJSON() { return this.obj }
-
-
 
     //  **** PRIVATE HELPERS **** \\
 
+    /** NOTE: Recommended to run reset() first, this will not overwrite keys that don't exist. */
     private _updateString(bitmapObjStr: string) {
       const charMap = BitMapObj.charMap
       if (!charMap) throw new Error('BitMapObj(string) requires CharacterMap')
@@ -211,7 +225,7 @@ export default function BitMapObjFactory<Key extends string, Flag extends string
       return this
     }
     
-    
+    /** NOTE: Recommended to run reset() first, this will not overwrite keys that don't exist. */
     private _updateObject(bitmapValueObj: BitMapObjValue<Key, Flag, DefKey>) {
       for (const key in bitmapValueObj) {
         isIn(key, this.obj) && this.obj[key].set(bitmapValueObj[key])
@@ -288,3 +302,18 @@ const objStrRegex = (keys: readonly string[], charMap?: Record<any,string>) => R
   })${'\\'+STR_WRAP[1]}\s*$`
 )
 
+/** Convert a stringified JSON Object into an Object,
+ * otherwise treat string as the first entry in an array. */
+const stringToArray = (str: string) => {
+
+  try {
+    if (['[','{'].includes(str.charAt(0))) 
+      return JSON.parse(str)
+
+  } catch (e) {
+    // Passthrough Syntax Errors
+    if (!(e instanceof SyntaxError)) throw e
+  }
+
+  return str ? [str] : [] // Default: string is first entry in array
+}

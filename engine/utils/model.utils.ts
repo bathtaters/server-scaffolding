@@ -1,6 +1,6 @@
 import type {
   SchemaGeneric, DefType, DefinitionNormal, DefinitionSchema, DBSchemaOf, DBSchemaKeys, 
-  DefaultAdapters, DefaultArrayAdapters, AdapterType, ForeignKeyRef,
+  DefaultAdapters, DefaultArrayAdapters, AdapterType, ForeignKeyRef, ExtendedClass,
 } from '../types/Model.d'
 import type Model from '../models/Model'
 import type { GenericModel } from '../models/Model'
@@ -8,7 +8,7 @@ import type { IfExistsBehavior, SQLParams, SQLSuffix, SQLType, SQLTypeFull, Wher
 import type { ValidationBasic, ValidationExpanded } from '../types/validate.d'
 import type { HTMLType } from '../types/gui.d'
 import { foreignKeyActions, sqlSuffixes, sqlTypes, whereLogic, whereNot, whereOp, whereOpPartial } from '../types/db'
-import { adapterTypes, childLabel } from '../types/Model'
+import { adapterTypes, childLabel, extendedAdapters } from '../types/Model'
 import { htmlValidationDict } from '../types/gui'
 
 import RegEx from '../libs/regex'
@@ -24,6 +24,8 @@ const toArray = parseArray(true)
 
 /** Convert from Property Definition to Basic Validation */
 export const definitionToValid = (def: DefinitionSchema[string], forceOptional = false): ValidationBasic => {
+  if (typeof def.type === 'function') return { ...def, type: 'any' }
+  
   if (!def.type && !def.isPrimary) throw new Error(`Definition is missing type: ${JSON.stringify(def)}`)
 
   let val = { ...def, type: def.type || defaultPrimaryType }
@@ -147,18 +149,17 @@ export function getSqlParams<Def extends DefinitionSchema>(
           idx ? '' : `${title}.${key} IN (${val.map(() => '?').join(',')})`,
           entry
         ]))
-        
-      if (schema[key].isBitmap && val != null) {
-        const num = +val
-        params.push([`${title}.${key} ${num ? '& ? ==' : '=='} ?`, +val])
-        return num && params.push(['',+val])
-      }
   
       if (isBool(schema[key]))
         return params.push([`${title}.${key} == ?`, +toBool(val)])
   
       if (typeof val === 'string')
         return params.push([`${title}.${key} LIKE ?`, `%${val}%`])
+
+      if (typeof val === 'number') {
+        params.push([`${title}.${key} ${val ? '& ? ==' : '=='} ?`, val])
+        return val && params.push(['',val])
+      }
     }
     
 
@@ -181,7 +182,7 @@ export const toPartialMatch = <T extends object>(data?: T): WhereData<object> | 
 
 
 
-export const isBool = ({ typeBase, isArray }: ValidationExpanded) => typeBase === 'boolean' && !isArray
+export const isBool = ({ typeBase, isArray }: DefinitionNormal) => typeBase === 'boolean' && !isArray
 
 /** Filter an array of objects, keeping objects where the given property is an array. */
 export const propertyIsChild = <O, P extends keyof any>(arrayOfObjects: O[], property: P) =>
@@ -254,10 +255,10 @@ export function htmlFromType({ typeBase, isArray }: ValidationExpanded): HTMLTyp
 
 
 /** Get default AdapterType adapter based on Definition */
-export function getDefaultAdapter(adapterType: AdapterType, { typeBase, isArray, isBitmap }: DefinitionNormal) {
-  if (isBitmap) return false
+export function getDefaultAdapter(adapterType: AdapterType, { typeBase, typeExtended, isArray }: DefinitionNormal) {
+  if (typeof typeExtended === 'function') return getExtendedAdapter(typeExtended, adapterType)
   
-  let adapter = defaultAdapters[adapterType][typeBase]
+  let adapter = defaultAdapters[adapterType][typeBase ?? 'any']
 
   if (isArray) {
     const entryAdapter = adapter
@@ -300,6 +301,14 @@ const defaultAdapters: DefaultAdapters = {
     datetime: formatLong,
     date:     formatDateLong,
   },
+}
+
+
+function getExtendedAdapter(Type: ExtendedClass<any>, adapterType: AdapterType) {
+  if (adapterType === 'toDbAdapter' || adapterType === 'toUiAdapter')
+    return (value: InstanceType<typeof Type>) => value[extendedAdapters[adapterType]]()
+
+  return (value: any) => new Type()[extendedAdapters[adapterType]](value)
 }
 
 

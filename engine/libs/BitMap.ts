@@ -1,4 +1,5 @@
 import type { BitMapBase, BitMapStatic, BitMapValue, CharMap } from "../types/BitMap.d"
+import { ExtendedType } from "../types/Model"
 import { mapObject } from "../utils/common.utils"
 
 const MAX_LENGTH = 32, STR_DELIM = '/'
@@ -11,29 +12,29 @@ export default function BitMapFactory<Flag extends string>(flagList: readonly Fl
         throw new Error(`BitMap characterMap must contain single-character values only: ${JSON.stringify(characterMap)}`)
 
     /** Represents a set of on/off flags mapped to binary positions */
-    class BitMap implements BitMapBase<Flag> {
+    class BitMap extends ExtendedType<number> implements BitMapBase<Flag> {
         //  **** STATIC **** \\
         private static readonly _flags  = [ ...flagList ] as const
         private static readonly _mask   = (1 << this._flags.length) - 1
         private static readonly _char   = characterMap
         private static readonly _intmap = toIntMap(this._flags)
         private static readonly _empty  = emptyFlag
-        private static          _map?: BitMapStatic<Flag>['map']
+        private static          _map?: Record<Flag, BitMap>
 
         /** Main Flag to Int map */
-        static get map():       BitMapStatic<Flag>['map']     { return this._map ?? (this._map = toMap(this._intmap, this)) }
+        static get map():       Readonly<Record<Flag, BitMap>>  { return this._map ?? (this._map = toMap(this._intmap, this)) }
         /** List of Flags (Excluding emptyFlag) */
-        static get flags():     BitMapStatic<Flag>['flags']   { return this._flags }
+        static get flags():     BitMapStatic<Flag>['flags']     { return this._flags }
         /** List of empty flag only (or empty list if no empty flag) */
         static get emptyList(): BitMapStatic<Flag>['emptyList'] { return this._empty ? [this._empty] : [] }
         /** Integer mask to exclude non-BitMap bits */
-        static get mask():      BitMapStatic<Flag>['mask']    { return this._mask  }
+        static get mask():      BitMapStatic<Flag>['mask']      { return this._mask  }
         /** Map of Flags to single-character representations */
-        static get charMap():   BitMapStatic<Flag>['charMap'] { return this._char  }
+        static get charMap():   BitMapStatic<Flag>['charMap']   { return this._char  }
         /** Total number of flags in BitMap */
-        static get count():     BitMapStatic<Flag>['count']   { return this.flags.length }
+        static get count():     BitMapStatic<Flag>['count']     { return this.flags.length }
         /** Total number of flags in BitMap */
-        static get byteLen():   BitMapStatic<Flag>['byteLen'] { return Math.ceil(this.count / 8) }
+        static get byteLen():   BitMapStatic<Flag>['byteLen']   { return Math.ceil(this.count / 8) }
         
         /** Test if string is a valid Flag */
         static isIn(str: string): str is Flag { return str in this._intmap }
@@ -51,71 +52,79 @@ export default function BitMapFactory<Flag extends string>(flagList: readonly Fl
         //  **** INSTANCE **** \\
         private _value = 0
         
-        constructor(...values: BitMapValue<BitMapBase<Flag>>[]) { this.set(...values) }
+        constructor()
+        constructor(...values: BitMapValue<BitMapBase<Flag>>[])
+        constructor(...values: BitMapValue<BitMapBase<Flag>>[]) { super(); this.set(...values) }
 
-        set int(value) { this._value = value & BitMap.mask }
-        get int()      { return this._value }
+        set value(value) { this._value = value & BitMap.mask }
+        get value()      { return this._value }
 
-        set bin(value) { this.int = parseInt(value, 2) }
-        get bin()      { return this.int.toString(2).padStart(BitMap.count, '0') }
+        set bin(value) { this.value = parseInt(value, 2) }
+        get bin()      { return this.value.toString(2).padStart(BitMap.count, '0') }
 
-        set hex(value) { this.int = parseInt(value, 16) }
-        get hex()      { return `0x${this.int.toString(16).padStart(BitMap.byteLen, '0')}` }
+        set hex(value) { this.value = parseInt(value, 16) }
+        get hex()      { return `0x${this.value.toString(16).padStart(BitMap.byteLen, '0')}` }
 
         set chars(value) { if (BitMap.charMap && value) this.list = BitMap._fromChars(value) }
         get chars()      { return BitMap.charMap && this._toChars() }
 
-        set list(array) { this.int = BitMap._toInt(array) }
+        set list(array) { this.value = BitMap._toInt(array) }
         get list()      {
-            if (!this.int) return BitMap.emptyList
+            if (!this.value) return BitMap.emptyList
             return BitMap.flags.filter((flag: Flag) => this.intersects(BitMap._intmap[flag]))
         }
 
-        set inverse(array) { this.int = ~BitMap._toInt(array) }
+        set inverse(array) { this.value = ~BitMap._toInt(array) }
         get inverse()      {
             const flags = BitMap.flags.filter((flag: Flag) => !this.intersects(BitMap._intmap[flag]))
             return flags.length ? flags : BitMap.emptyList
         }
 
-        get count() { return this.int ? this.list.length : 0 }
+        get count() { return this.value ? this.list.length : 0 }
 
-        toJSON()   { return this.int }
         toString() { return this.chars ?? this.list.join(STR_DELIM)}
 
         set(...values: BitMapValue<BitMapBase<Flag>>[]) {
-            this.int = BitMap._toInt(values)
+            this.value = BitMap._toInt(values)
+            return this
+        }
+
+        parse(value: any) {
+            this.value = typeof value === 'string' ?
+                BitMap.fromString(value).value :
+                BitMap._toInt(value)
             return this
         }
 
         add(...values: BitMapValue<BitMapBase<Flag>>[]) {
-            this.int |= BitMap._toInt(values)
+            this.value |= BitMap._toInt(values)
             return this
         }
 
         remove(...values: BitMapValue<BitMapBase<Flag>>[]) {
-            this.int &= ~BitMap._toInt(values)
+            this.value &= ~BitMap._toInt(values)
             return this
         }
 
         isSubset(...values: BitMapValue<BitMapBase<Flag>>[]) {
-            return this.int ? (this.int & BitMap._toInt(values)) === this.int : false
+            return this.value ? (this.value & BitMap._toInt(values)) === this.value : false
         }
 
         isSuperset(...values: BitMapValue<BitMapBase<Flag>>[]) {
             const int = BitMap._toInt(values)
-            return int ? (this.int & int) === int : false
+            return int ? (this.value & int) === int : false
         }
 
         intersects(...values: BitMapValue<BitMapBase<Flag>>[]) {
-            return Boolean(this.int & BitMap._toInt(values))
+            return Boolean(this.value & BitMap._toInt(values))
         }
 
         isExclusive(...values: BitMapValue<BitMapBase<Flag>>[]) {
-            return this.int ? !(this.int & BitMap._toInt(values)) : !!BitMap._toInt(values)
+            return this.value ? !(this.value & BitMap._toInt(values)) : !!BitMap._toInt(values)
         }
 
         equals(...values: BitMapValue<BitMapBase<Flag>>[]) {
-            return this.int === BitMap._toInt(values)
+            return this.value === BitMap._toInt(values)
         }
 
 
@@ -123,12 +132,13 @@ export default function BitMapFactory<Flag extends string>(flagList: readonly Fl
         //  **** PRIVATE HELPERS **** \\
 
         /** Convert any BitMapValue to a Number */
-        private static _toInt(value?: BitMapValue<BitMapBase<Flag>> | BitMapValue<BitMapBase<Flag>>[]): number {
+        private static _toInt(value?: any): number {
             if (!value)                    return 0
             if (typeof value === 'number') return value & this.mask
-            if (typeof value === 'string') return BitMap._intmap[value] ?? 0
-            if (!Array.isArray(value))     return value.int ?? 0
-            return (value as any[])
+            if (typeof value === 'string') return BitMap._intmap[value as Flag] ?? 0
+            if (typeof value !== 'object') return 0
+            if (!Array.isArray(value))     return value.value ?? 0
+            return value
                 .reduce((int, flag) => int | this._toInt(flag), 0)
         }
 

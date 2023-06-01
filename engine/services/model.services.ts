@@ -5,7 +5,8 @@ import type {
   ChildDefinitions, DefType, PrimaryIDOf,
 } from '../types/Model.d'
 import type { UpdateValue } from '../types/db.d'
-import { childLabel, adapterTypes, childIndexType } from '../types/Model'
+import type { ValidationExpanded } from '../types/validate.d'
+import { childLabel, adapterTypes, childIndexType, extendedTypeDefaults, viewMetaKey } from '../types/Model'
 import { updateFunctions, whereLogic, whereNot } from '../types/db'
 import logger from '../libs/log'
 import { caseInsensitiveObject, getVal, hasDupes, isIn } from '../utils/common.utils'
@@ -57,7 +58,15 @@ export const adaptSchema = <Def extends DefinitionSchema>(schema: Def) =>
   )
 
 /** Normalize a single Property's Definition */
-export function adaptSchemaEntry<S extends DefType>(def: Definition<S>): DefinitionNormal<S> {
+
+export function adaptSchemaEntry<T extends DefType>(def: Definition<T>): DefinitionNormal<T> {
+
+  if (typeof def.type === 'function') return {
+    ...extendedTypeDefaults,
+    ...def,
+    typeBase: undefined,
+    typeExtended: def.type,
+  }
 
   const expanded = expandTypeStr(definitionToValid(def))
 
@@ -102,7 +111,7 @@ export function buildAdapters<D extends DefinitionSchema, N extends DefinitionSc
 export function extractChildren<D extends DefinitionSchema, N extends DefinitionSchemaNormal<D>>(schema: N, primaryId: keyof N) {
   return Object.entries(schema).reduce<ChildDefinitions<D>>(
     (arrayTables, [arrayName, def]) => {
-      if (!def.isArray || def.db) return arrayTables
+      if (!def.typeBase || !def.isArray || def.db) return arrayTables
 
       return {
         ...arrayTables,
@@ -116,7 +125,7 @@ export function extractChildren<D extends DefinitionSchema, N extends Definition
           }),
 
           [childLabel.value]: adaptSchemaEntry({
-            type: toTypeString({ ...def, isArray: false }),
+            type: toTypeString({ ...def, isArray: false } as ValidationExpanded),
             limits: def.limits && (def.limits.elem || def.limits.array) ? def.limits.elem : undefined,
           }),
         }

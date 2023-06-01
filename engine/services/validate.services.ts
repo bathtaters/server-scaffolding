@@ -14,7 +14,7 @@ const IGNORE_OPTIONAL: readonly RequestField[] = [requestFields.params] as const
  * disableMin = discard limit minimums (ie. for searching w/ partial matches) */
 export const generateSchema = (
   name: string,
-  options: ValidationExpanded,
+  options: Partial<ValidationExpanded>,
   isIn: RequestField[] = [requestFields.params],
   partial = false,
   disableMin = false,
@@ -46,7 +46,7 @@ export function appendToSchema(schema: Schema = {}, additional: readonly Validat
  *  instead use generateSchema or appendToSchema. */
 export function toValidationSchema(
   key: string,
-  { typeBase, isOptional, isArray, hasSpaces, limits }: ValidationExpanded,
+  { typeBase = 'any', isOptional, isArray, hasSpaces, limits }: Partial<ValidationExpanded>,
   isIn: RequestField[], 
   partial = false,
   disableMin = false

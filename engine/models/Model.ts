@@ -1,5 +1,5 @@
 import type {
-  SchemaOf, AddSchemaOf, DBSchemaOf, ViewSchemaOf, DefaultSchemaOf, DBSchemaKeys,
+  SchemaOf, AddSchemaOf, DBSchemaOf, DefaultSchemaOf, DBSchemaKeys,
   DefinitionSchema, DefinitionSchemaNormal, AdapterDefinition, GenericDefinitionSchema,
   TypeOfID, IDOf, PrimaryIDOf, IDOption, SQLOptions,
   Page, FindResult, SelectResult, Feedback,
@@ -12,12 +12,16 @@ import { childLabel, adapterTypes } from '../types/Model'
 import { ifExistsBehaviors } from '../types/db'
 import { openDb, getDb } from '../libs/db'
 import { all, get, run, reset, getLastEntry, multiRun } from '../services/db.services'
-import { adaptSchema, getPrimaryId, runAdapters, extractChildren, buildAdapters  } from '../services/model.services'
-import { checkInjection, appendAndSort, insertSQL, selectSQL, countSQL, updateSQL, deleteSQL, swapSQL } from '../utils/db.utils'
+import { adaptSchema, getPrimaryId, runAdapters, extractChildren, buildAdapters, errorCheckModel  } from '../services/model.services'
+import { appendAndSort, insertSQL, selectSQL, countSQL, updateSQL, deleteSQL, swapSQL } from '../utils/db.utils'
 import { caseInsensitiveObject, mapToField, isIn, getVal } from '../utils/common.utils'
 import { sanitizeSchemaData, childTableRefs, getSqlParams, childSQL, splitKeys } from '../utils/model.utils'
 import { getChildName, getChildPath } from '../config/models.cfg'
 import { noID, noData, noEntry, noPrimary, noSize, badKey, multiAction, updatePrimary } from '../config/errors.engine'
+
+// TODO -- Fix Change User Password / Test All User Actions, Profile Actions, Logs, Settings, Etc
+
+// TODO -- Auto-derive Definition.db of ExtendType based on return type of valueOf() (string or int)
 
 // TODO -- Create PageData object & move selectSQL call from this.getPage into this._select
 // TODO -- Create base onUpdate/onCreate callbacks that are called whenever an Update/Create call is made
@@ -179,7 +183,7 @@ export default class Model<Def extends DefinitionSchema> {
    *              - WhereOps are: $gt(e), $lt(e), $eq, $in (Partial match)
    * @returns Count of matching records (or all records if 'where' is omitted)
    */
-  async count(where?: WhereData<SchemaOf<Def>>): Promise<number> {
+  async count(where?: WhereData<SchemaOf<Def,false>>): Promise<number> {
     const whereData = where && await this.adaptData(adapterTypes.toDB, where)
     return this._countRaw(whereData)
   }
@@ -214,7 +218,7 @@ export default class Model<Def extends DefinitionSchema> {
    * @returns Array of all records that satisfy parameters
    */
   async find<O extends SQLOptions<Def>>(
-    where?: WhereData<SchemaOf<Def>>,
+    where?: WhereData<SchemaOf<Def,false>>,
     options = {} as O
   ): FindResult<Def,O> {
     
@@ -238,7 +242,7 @@ export default class Model<Def extends DefinitionSchema> {
    * @param ifExists - How to handle non-unique entries (Default: default)
    * @returns Record of last entry (After adding to DB)
    */
-  addAndReturn(data: AddSchemaOf<Def>[], ifExists: IfExistsBehavior = 'default'): Promise<DBSchemaOf<Def>> {
+  addAndReturn(data: AddSchemaOf<Def>[], ifExists: IfExistsBehavior = 'default') {
     return this._insert(data, ifExists, true)
   }
 
@@ -290,7 +294,7 @@ export default class Model<Def extends DefinitionSchema> {
    *                         - return = New value for 'update' to OR void + mutates 'update' param
    * @returns Feedback object { success: true/false }
    */
-  async batchUpdate(where: WhereData<SchemaOf<Def>>, data: UpdateData<AddSchemaOf<Def>>, options: SQLOptions<Def> = {}): Promise<Feedback> {
+  async batchUpdate(where: WhereData<SchemaOf<Def,false>>, data: UpdateData<AddSchemaOf<Def>>, options: SQLOptions<Def> = {}): Promise<Feedback> {
     const whereData = await this.adaptData(adapterTypes.toDB, where)
     const success = await this._update(data, whereData, options)
     return { success }
@@ -323,7 +327,7 @@ export default class Model<Def extends DefinitionSchema> {
    *              - WhereLogic is { $and/$or: [ ...WhereData ] }, { $not: WhereData }
    * @returns Feedback object { success: true/false }
    */
-  async batchRemove(where: WhereData<SchemaOf<Def>>): Promise<Feedback> {
+  async batchRemove(where: WhereData<SchemaOf<Def,false>>): Promise<Feedback> {
     const whereData = await this.adaptData(adapterTypes.toDB, where)
     const success = await this._delete(whereData)
     return { success }
@@ -393,7 +397,7 @@ export default class Model<Def extends DefinitionSchema> {
 
 
   /** Run SELECT query using WHERE data & SQL Options (WHERE is PRE-ADAPTER SCHEMA) */
-  private async _select<O extends SQLOptions<Def>>(where: WhereData<SchemaOf<Def>> | undefined, options: O) {
+  private async _select<O extends SQLOptions<Def>>(where: WhereData<SchemaOf<Def,false>> | undefined, options: O) {
     
     let whereData: WhereData<DBSchemaOf<Def>> | undefined
 
@@ -406,10 +410,10 @@ export default class Model<Def extends DefinitionSchema> {
 
   /** Execute INSERT command using DATA values, IFEXISTS behavior if matching record exists,
    * and returning last record if RETURNLAST is true (Otherwise it returns TRUE/FALSE if successful) */
-  private async _insert(data: AddSchemaOf<Def>[], ifExists: IfExistsBehavior, returnLast: false): Promise<boolean>;
-  private async _insert(data: AddSchemaOf<Def>[], ifExists: IfExistsBehavior, returnLast: true):  Promise<DBSchemaOf<Def>>;
-  private async _insert(data: AddSchemaOf<Def>[], ifExists: IfExistsBehavior, returnLast: boolean): Promise<DBSchemaOf<Def>|boolean>;
-  private async _insert(data: AddSchemaOf<Def>[], ifExists: IfExistsBehavior, returnLast: boolean): Promise<DBSchemaOf<Def>|boolean> {
+  private async _insert(data: AddSchemaOf<Def>[], ifExists: IfExistsBehavior, returnLast: false):   Promise<boolean>;
+  private async _insert(data: AddSchemaOf<Def>[], ifExists: IfExistsBehavior, returnLast: true):    Promise<SkipChildren<DBSchemaOf<Def>,Def>>;
+  private async _insert(data: AddSchemaOf<Def>[], ifExists: IfExistsBehavior, returnLast: boolean): Promise<SkipChildren<DBSchemaOf<Def>,Def>|boolean>;
+  private async _insert(data: AddSchemaOf<Def>[], ifExists: IfExistsBehavior, returnLast: boolean): Promise<SkipChildren<DBSchemaOf<Def>,Def>|boolean> {
     if (!data.length) throw noData('batch data')
 
     // Apply defaults, then adapt data
@@ -525,7 +529,7 @@ export default class Model<Def extends DefinitionSchema> {
 
   
   /** Adapt ID from Base Schema to DB Schema */
-  private async _adaptProperty(key: keyof Def, val: SchemaOf<Def>[any]): Promise<DBSchemaOf<Def>[any]> {
+  private async _adaptProperty(key: keyof Def, val: SchemaOf<Def,false>[any]): Promise<DBSchemaOf<Def>[any]> {
     const result = await this.adaptData(adapterTypes.toDB, { [key]: val })
     return getVal(result, key) ?? val as any
   }
