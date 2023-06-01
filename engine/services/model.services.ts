@@ -139,13 +139,7 @@ export function extractChildren<D extends DefinitionSchema, N extends Definition
 export async function runAdapters<D extends DefinitionSchema, A extends AdapterType>
   (adapterType: A, data: AdapterData<AdapterIn<D,A>>, model: AModel<D>): Promise<AdapterData<AdapterOut<D,A>>> {
 
-  let result: any = {}
-
-  if (adapterType === adapterTypes.fromDB) {
-    // Fix for case-insensitive databases -- TODO: Integrate this into the loop below
-    data   = caseInsensitiveObject(data)
-    result = caseInsensitiveObject(result)
-  }
+  let result: any = adapterType === adapterTypes.toUI ? { [viewMetaKey]: {} } : {}
 
   await Promise.all(Object.entries(data).map(async ([key,val]) => {
   
@@ -157,7 +151,7 @@ export async function runAdapters<D extends DefinitionSchema, A extends AdapterT
 
     // IF Key should not be in result
     if (adapterType === adapterTypes.fromDB && model.masked.includes(key))
-      return result[key] = MASK_STR
+      return result[key] = val ? MASK_STR : val
     
     // IF Key has no adapter
     const adapter = getVal(model.adapters[adapterType], key)
@@ -169,7 +163,7 @@ export async function runAdapters<D extends DefinitionSchema, A extends AdapterT
     
     // Run adapter & copy to result
     try {
-      const adapterResult = await adapter(opVal, result)
+      const adapterResult = await adapter(opVal, data, result)
       result[key] = opKey ? { [opKey]: adapterResult ?? opVal } : adapterResult ?? opVal
     
     // Catch any adapter errors - log errors & prevent crash on invalid values
@@ -180,7 +174,9 @@ export async function runAdapters<D extends DefinitionSchema, A extends AdapterT
   }))
 
   // Sanitize toDB since keys are used directly in SQL commands
-  return adapterType === adapterTypes.toDB ? sanitizeSchemaData(result, model) : result
+  return adapterType === adapterTypes.toDB ? sanitizeSchemaData(result, model) :
+    adapterType === adapterTypes.fromDB ? caseInsensitiveObject(result) : // Fix for case-insensitive databases -- TODO: Integrate this into the loop above
+      result
 }
 
 
