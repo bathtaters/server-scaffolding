@@ -3,9 +3,7 @@ import type { Definition, SchemaOf } from './Model.d'
 
 export type HTMLType = typeof htmlTypes[keyof typeof htmlTypes]
 
-// TODO -- Convert this to FormAction + Remove PLURAL
-export type ProfileActionKeys = keyof typeof actions
-export type ProfileActions = typeof actions[keyof typeof actions]
+export type FormAction = typeof actions[keyof typeof actions]
 
 export type PaginationData<Schema extends object = any> =
     Omit<SchemaOf<typeof paginationData>,'id'|'orderKey'> & {
@@ -16,7 +14,7 @@ export type RawFormData = Omit<SchemaOf<typeof formData>,'id'>
 
 export type FormData<Schema extends object = any> =
     Omit<RawFormData, typeof metaField['button' | 'page']> & {
-        [metaField.button]?: ProfileActions | null,
+        [metaField.button]?: FormAction | null,
         [metaField.page]?:   PaginationData<Schema>,
     }
 
@@ -32,7 +30,7 @@ export type FormDefinition = {
 }
 
 type ActionFunction = (formData: Record<string,any>) => Promise<string | void>
-export type ActionObject = { [action in ProfileActions]: ActionFunction }
+export type ActionObject = { [action in FormAction]: ActionFunction }
 
 /** Convert Validation Base type to HTML type */
 export type ValidToHTML<T extends keyof typeof htmlValidationDict | string> = T extends keyof typeof htmlValidationDict

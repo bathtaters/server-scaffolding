@@ -1,5 +1,5 @@
 import type { AccessBitMap } from '../types/Users.d'
-import type { ProfileActions } from '../types/gui.d'
+import type { FormAction } from '../types/gui.d'
 import { ModelAccess } from '../types/Users'
 import { actions } from '../types/gui'
 import { parseBoolean } from '../utils/validate.utils'
@@ -9,7 +9,7 @@ const parseBool = parseBoolean(true)
 
 
 /** Get an access type based on profile action */
-export const actionAccess = (action: ProfileActions) =>
+export const actionAccess = (action: FormAction) =>
   action === actions.find ? ModelAccess.map.read : ModelAccess.map.write
 
 /** Get list of button labels based on access */
@@ -18,7 +18,7 @@ export const labelsByAccess = (access?: AccessBitMap) => !access ? [] :
 
 
 /** Get links to post from base URL */
-export const actionURLs = <List extends ProfileActions = ProfileActions>(baseURL: string, actionList?: List[]) =>
+export const actionURLs = <List extends FormAction = FormAction>(baseURL: string, actionList?: List[]) =>
   (actionList || Object.values(actions)).reduce(
     (urls, action) => Object.assign(urls, { [action]: baseURL + action.toLowerCase() })
   , {} as Record<List, string>)

@@ -1,8 +1,8 @@
-import type { ProfileActions } from './gui.d'
+import type { FormAction } from './gui.d'
 import type { GenericModel } from '../models/Model'
 
 export type ControllerCallback<T extends Record<string,any>> =
-  (data: T, user?: Express.User, action?: ProfileActions) => Partial<Record<keyof T,any>> | undefined
+  (data: T, user?: Express.User, action?: FormAction) => Partial<Record<keyof T,any>> | undefined
 
 export type GuiOptions<T extends Record<string,any>> = {
     view?: string,

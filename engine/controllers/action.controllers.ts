@@ -1,6 +1,6 @@
 import type { ModelActionBase } from '../types/controllers.d'
 import type { Middleware, Request } from '../types/express.d'
-import type { ProfileActions } from '../types/gui.d'
+import type { FormAction } from '../types/gui.d'
 import { adapterTypes } from '../types/Model'
 import { actions, metaField } from '../types/gui'
 import { Role } from '../types/Users'
@@ -57,7 +57,7 @@ export function form(Model: ModelActionBase, redirectURL?: string, errorCheck?: 
   )
   
   // TODO -- Add type to 'matchedData'?
-  return (action: ProfileActions): Middleware => async (req,res,next) => {
+  return (action: FormAction): Middleware => async (req,res,next) => {
     let formData = filterFormData(matchedData(req), action === actions.find ? {} : boolBase)
 
     errorCheck?.(formData, req)

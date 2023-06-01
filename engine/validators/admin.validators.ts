@@ -1,4 +1,4 @@
-import type { ProfileActions } from '../types/gui.d'
+import type { FormAction } from '../types/gui.d'
 import type { KeyObj } from '../types/validate.d'
 import type { DefinitionSchema } from '../types/Model.d'
 import Users from '../models/Users'
@@ -14,7 +14,7 @@ export { page, token } from './gui.validators'
 export const logs = byObject({ filename: { type: 'string*' } }, ['params'])
 export const settings = byObject(formSettingsToValidate(settingsDefinition), ['body'], { additional: formAdditional })
 export const find = guiFind(Users, searchableKeys)
-export const user = (action: ProfileActions) => form(Users, action, formFields, searchableKeys)
+export const user = (action: FormAction) => form(Users, action, formFields, searchableKeys)
 
 
 

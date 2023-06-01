@@ -1,5 +1,5 @@
 import type { ModelValidationOptions, SchemaKeys, ValidationOptions } from '../types/validate.d'
-import type { ProfileActions } from '../types/gui.d'
+import type { FormAction } from '../types/gui.d'
 import { actions, formData, paginationData } from '../types/gui'
 import Users from '../models/Users'
 import { type ModelValBase, byModel, byObject } from './shared.validators'
@@ -25,14 +25,14 @@ export const page =  byObject(paginationData, ['query'])
 export const token = byModel(Users, [Users.primaryId], { optionalBody: false })
 
 // --- Validation Generators --- \\
-export const profile = (action: ProfileActions) =>
+export const profile = (action: FormAction) =>
   byModel(Users, ...actionOptions(Users, action, profileFields))
 
 export const find = <M extends ModelValBase>(Model: M, formFields: SchemaKeys<M> = 'all') =>
   byModel(Model, formFields, { allowPartials: true, asQueryStr: true })
 
 export const form = <M extends ModelValBase>
-  (Model: M, action: ProfileActions, formFields: SchemaKeys<M> = 'all', findFields?: SchemaKeys<M>) =>
+  (Model: M, action: FormAction, formFields: SchemaKeys<M> = 'all', findFields?: SchemaKeys<M>) =>
     byModel(Model, ...actionOptions(Model, action, formFields, findFields))
 
 
@@ -42,7 +42,7 @@ export const form = <M extends ModelValBase>
 /** Get validation options from Model + Form Action */
 function actionOptions<M extends ModelValBase>(
   { primaryId }: M,
-  action: ProfileActions,
+  action: FormAction,
   fields: SchemaKeys<M>,
   findFields?: SchemaKeys<M>): [SchemaKeys<M>, ModelValidationOptions<M>]
 {
