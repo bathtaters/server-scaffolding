@@ -575,7 +575,13 @@ export default class Model<Def extends DefinitionSchema> {
    * @param adapterType - Member of adapterTypes enum
    * @returns Adapted data
    */
-  adaptData<A extends AdapterType>(adapterType: A, data: SkipChildren<AdapterIn<Def,A>>): Promise<SkipChildren<AdapterOut<Def,A>>>;
+  adaptData<A extends AdapterType>(adapterType: A, data: SkipChildren<AdapterIn<Def,A>,Def>): Promise<SkipChildren<AdapterOut<Def,A>,Def>>;
+  /** Run adapters on partial data 
+   * @param data - Data to adapt
+   * @param adapterType - Member of adapterTypes enum
+   * @returns Adapted data
+   */
+  adaptData<A extends AdapterType>(adapterType: A, data: Partial<AdapterIn<Def,A>>): Promise<Partial<AdapterOut<Def,A>>>;
   /** Run adapters on where data 
    * @param data - Data to adapt
    * @param adapterType - Member of adapterTypes enum
@@ -588,12 +594,6 @@ export default class Model<Def extends DefinitionSchema> {
    * @returns Adapted data
    */
   adaptData<A extends AdapterType>(adapterType: A, data: UpdateData<AdapterIn<Def,A>>): Promise<UpdateData<AdapterOut<Def,A>>>;
-  /** Run adapters on partial data 
-   * @param data - Data to adapt
-   * @param adapterType - Member of adapterTypes enum
-   * @returns Adapted data
-   */
-  adaptData<A extends AdapterType>(adapterType: A, data: Partial<AdapterIn<Def,A>>): Promise<Partial<AdapterOut<Def,A>>>;
   /** Run adapters on any data 
    * @param data - Data to adapt
    * @param adapterType - Member of adapterTypes enum
@@ -612,7 +612,13 @@ export default class Model<Def extends DefinitionSchema> {
    * @param adapterType - Member of adapterTypes enum
    * @returns Adapted data array
    */
-  adaptData<A extends AdapterType>(adapterType: A, dataArray: SkipChildren<AdapterIn<Def,A>>[]): Promise<SkipChildren<AdapterOut<Def,A>>[]>;
+  adaptData<A extends AdapterType>(adapterType: A, dataArray: SkipChildren<AdapterIn<Def,A>,Def>[]): Promise<SkipChildren<AdapterOut<Def,A>,Def>[]>;
+  /** Run adapters on partial data array 
+   * @param dataArray - Array of Data to adapt
+   * @param adapterType - Member of adapterTypes enum
+   * @returns Adapted data array
+   */
+  adaptData<A extends AdapterType>(adapterType: A, dataArray: Partial<AdapterIn<Def,A>>[]): Promise<Partial<AdapterOut<Def,A>>[]>;
   /** Run adapters on where data array 
    * @param dataArray - Array of Data to adapt
    * @param adapterType - Member of adapterTypes enum
@@ -625,12 +631,6 @@ export default class Model<Def extends DefinitionSchema> {
    * @returns Adapted data array
    */
   adaptData<A extends AdapterType>(adapterType: A, dataArray: UpdateData<AdapterIn<Def,A>>[]): Promise<UpdateData<AdapterOut<Def,A>>[]>;
-  /** Run adapters on partial data array 
-   * @param dataArray - Array of Data to adapt
-   * @param adapterType - Member of adapterTypes enum
-   * @returns Adapted data array
-   */
-  adaptData<A extends AdapterType>(adapterType: A, dataArray: Partial<AdapterIn<Def,A>>[]): Promise<Partial<AdapterOut<Def,A>>[]>;
   /** Run adapters on any data array 
    * @param dataArray - Array of Data to adapt
    * @param adapterType - Member of adapterTypes enum
