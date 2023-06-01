@@ -1,4 +1,5 @@
 import Model from '../../engine/models/Model'
+import BitMapFactory from '../../engine/libs/BitMap'
 
 /* --- Simple Model --- */
 export default new Model('base', {
@@ -20,6 +21,10 @@ export default new Model('base', {
 
     // Default value (used when adding entry if no value provided)
     default: "DEFAULT VALUE",
+  },
+  extended: {
+    // Use an extended type class (BitMap type is provided, or make your own)
+    type: BitMapFactory(['a','b','c']),
   },
   demoArray: {
     // Array type
