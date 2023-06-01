@@ -195,4 +195,4 @@ export async function runAdapters<D extends DefinitionSchema, A extends AdapterT
 }
 
 
-type AModel<Def extends DefinitionSchema> = Pick<Model<Def>, 'schema'|'masked'|'children'|'adapters'>
+type AModel<Def extends DefinitionSchema> = Pick<Model<Def,string>, 'schema'|'masked'|'children'|'adapters'>

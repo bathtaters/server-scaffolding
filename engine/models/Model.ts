@@ -30,8 +30,8 @@ import { noID, noData, noEntry, noPrimary, noSize, badKey, multiAction, updatePr
 
 
 /** Base Model Class, each instance represents a separate model */
-export default class Model<Def extends DefinitionSchema> {
-  private _title:        string
+export default class Model<Def extends DefinitionSchema, Title extends string> {
+  private _title:        Title
   private _schema:       DefinitionSchemaNormal<Def>
   private _adapters:     AdapterDefinition<Def>
   private _primaryId:    PrimaryIDOf<Def>
@@ -52,11 +52,11 @@ export default class Model<Def extends DefinitionSchema> {
    *                         - See 'Definition' Type for additional documentation)
    * @param adapters         - (Optional) Override default adapters { adapterType: { schemaKey: adapterFunction } }
    *                         - Adapter Types: to/from DB, to/from GUI (HTML Form) */
-  constructor(title: string, schemaDefinition: Def, adapters?: Partial<AdapterDefinition<Def>>)
+  constructor(title: Title, schemaDefinition: Def, adapters?: Partial<AdapterDefinition<Def>>)
   /**  Don't use if you don't know what you're doing, this overload is for the engine to create sub-tables */
-  constructor(title: string, schemaDefinition: Def, adapters?: Partial<AdapterDefinition<Def>>, isChildModel?: boolean)
+  constructor(title: Title, schemaDefinition: Def, adapters?: Partial<AdapterDefinition<Def>>, isChildModel?: boolean)
 
-  constructor(title: string, schemaDefinition: Def, adapters: Partial<AdapterDefinition<Def>> = {}, isChildModel = false) {
+  constructor(title: Title, schemaDefinition: Def, adapters: Partial<AdapterDefinition<Def>> = {}, isChildModel = false) {
     // Set basic properties
     this._title        = title
     this._isChildModel = isChildModel
@@ -85,9 +85,9 @@ export default class Model<Def extends DefinitionSchema> {
    * @param childName - Name of child model in schema
    * @returns Model instance of the child
    */
-  getChildModel(childName: ChildKey<Def>) {
+  getChildModel<N extends ChildKey<Def> & string>(childName: N) {
     const schema = this.children[childName]
-    if (!schema) return undefined
+    if (!schema) throw new Error(`ChildModel doesn't exist for ${String(childName)} on ${this.title}.`)
     return new Model(getChildName(this.title, childName), schema, undefined, true)
   }
 
@@ -648,4 +648,4 @@ export default class Model<Def extends DefinitionSchema> {
   }
 }
 
-export type GenericModel = Model<GenericDefinitionSchema>
+export type GenericModel = Model<GenericDefinitionSchema, string>

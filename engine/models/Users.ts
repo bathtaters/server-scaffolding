@@ -16,10 +16,11 @@ import { isPm2 } from '../config/meta'
 import { definition, rateLimiter, passwordRoles, illegalUsername } from '../config/users.cfg'
 import { badUsername, noData, usernameMessages, deleteAdmin, noID, noEntry } from '../config/errors.engine'
 
+const title = '_users'
 
-class User extends Model<UserDef> {
+class User extends Model<UserDef, typeof title> {
 
-  constructor() { super('_users', definition, userAdapters) }
+  constructor() { super(title, definition, userAdapters) }
 
   override async get<O extends GetOptions>(
     id: TypeOfID<UserDef, O['idKey']>, { timestamp, ignoreCounter, ...options } = {} as O
@@ -63,14 +64,14 @@ class User extends Model<UserDef> {
 
     return super.update(id, data, options)
   }
-  override update: Model<UserDef>['update'] = this._updateOVR.bind(this)
+  override update: Model<UserDef, typeof title>['update'] = this._updateOVR.bind(this)
 
   
   private async _removeOVR<ID extends IDOf<UserDef> | undefined>(id: TypeOfID<UserDef,ID>, idKey?: ID) {
     await this.throwLastAdmins({ [idKey || this.primaryId]: id })
     return super.remove(id, idKey)
   }
-  override remove: Model<UserDef>['remove'] = this._removeOVR.bind(this)
+  override remove: Model<UserDef, typeof title>['remove'] = this._removeOVR.bind(this)
 
 
   regenToken(id: DBSchemaOf<UserDef>['id']) {

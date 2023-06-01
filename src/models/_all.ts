@@ -1,14 +1,15 @@
 import type { GenericModel } from '../../engine/models/Model'
-
 import Base from './Base'
-// import Test from '../../engine/testing/Test.model'
+// import Test from '../../engine/testing/Test.model' // TODO: Migrate tests
 
-// Add models here to connect to engine API/UI
-// TODO: Create a generic 'Model' type that works, add 'Test' back in
-const allModels: GenericModel[] = [
-    // @ts-ignore
+/** List of models connected to engine API/UI */
+const allModels /*: GenericModel[] */ = [
     Base,
-    // Base.getChildModel('demoArray') as any, // add child model to GUI/API
-]
+    Base.getChildModel('demoArray'), // add child model to GUI/API
+] as const
 
-export default allModels
+// @ts-ignore -- TODO: Create a generic 'Model' type that works, add 'Test' back in
+export default allModels as GenericModel[]
+
+/** Name of any Model connected to GUI/API */
+export type ModelTitle = typeof allModels[number]['title']

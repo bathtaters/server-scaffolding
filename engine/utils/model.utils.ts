@@ -106,7 +106,7 @@ function notParams<P extends SQLParams | SQLParams[number]>(params: P) {
 
 const inequalities = Object.keys(whereOp).filter((op) => op !== whereOpPartial) as WhereOps[]
 export function getSqlParams<Def extends DefinitionSchema>(
-  { title, schema, children }: Pick<Model<Def>, 'title'|'schema'|'children'>,
+  { title, schema, children }: Pick<Model<Def,string>, 'title'|'schema'|'children'>,
   matchData?: WhereData<DBSchemaOf<Def>>,
 ): SQLParams {
 
@@ -361,4 +361,4 @@ const arrayAdapters: DefaultArrayAdapters = {
 
 // TYPE HELPERS
 
-type SanitModel<Def extends DefinitionSchema> = Partial<Pick<Model<Def>,'schema'|'children'>>
+type SanitModel<Def extends DefinitionSchema> = Partial<Pick<Model<Def,string>,'schema'|'children'>>

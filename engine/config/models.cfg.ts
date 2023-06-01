@@ -13,8 +13,8 @@ export const
 
   MASK_STR = '[MASKED]',
   
-  getChildName = (mainTable: string, arrayKey: string | number | symbol) => `[${mainTable}.${String(arrayKey)}]`,
-  getChildPath = (arrayName: string) => arrayName.replace(/^\[|\]$/g,'').replace('.','/'),
+  getChildName = <P extends string, C extends string>(parentName: P, childKey: C): `[${P}.${C}]` => `[${parentName}.${childKey}]`,
+  getChildPath = (childName: string) => childName.replace(/^\[|\]$/g,'').replace('.','/'),
   CONCAT_DELIM = '~|~',
 
   debugSQL = false
