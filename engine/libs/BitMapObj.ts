@@ -2,7 +2,7 @@ import type { BitMapBase, BitMapValue } from "../types/BitMap.d"
 import type { BitMapObjBase, BitMapObjStatic, BitMapObjValue, BitMapObject } from "../types/BitMapObj.d"
 import RegEx from "./regex"
 import BitMapFactory from "./BitMap"
-import { isIn } from "../utils/common.utils"
+import { escapeRegEx, isIn } from "../utils/common.utils"
 import { ExtendedType } from "../types/Model"
 
 export const KF_DELIM = '-', STR_DELIM = ', ', STR_SPLIT = ':', STR_WRAP = '[]'
@@ -50,7 +50,7 @@ export default function BitMapObjFactory<Key extends string, Flag extends string
     static get count():   BitMapObjStatic<Key, Flag, DefKey>['count']   { return this.keys.length     }
 
     private static readonly _keyFlagRegex = keyFlagRegex(this.allKeys, this.values)
-    private static readonly _objStrRegex = objStrRegex(this.allKeys, this.charMap)
+    private static readonly _objStrRegex  =  objStrRegex(this.allKeys, this.charMap)
     private static readonly _toObjStr = toObjStr
     
     /** Get mask for all values, except for the given value */
@@ -292,18 +292,20 @@ const toObjStr = ([key, bits]: [string, { chars?: string }]) =>
 
 /** Match "(Key)-(Flag)" */
 const keyFlagRegex = (keys: readonly string[], flags: readonly string[]) =>
-  RegEx(`^\s*(${keys.join('|')})${KF_DELIM}(${flags.join('|')})\s*$`)
+  RegEx(`^\s*(${
+    keys.map(escapeRegEx).join('|')
+  })${escapeRegEx(KF_DELIM)}(${
+    flags.map(escapeRegEx).join('|')
+  })\s*$`)
 
 /** Match "(Key): [(FlagChars)]" */
 const objStrRegex = (keys: readonly string[], charMap?: Record<any,string>) => RegEx(
   String.raw`^\s*(${
-    keys.join('|')
-  })${
-  STR_SPLIT}\s${
-  '\\'+STR_WRAP[0]}(${
+    keys.map(escapeRegEx).join('|')
+  })${escapeRegEx(STR_SPLIT)}\s${escapeRegEx(STR_WRAP[0])}(${
     Object.values(charMap ?? {})
-      .map((c) => `${c}?`).join()
-  })${'\\'+STR_WRAP[1]}\s*$`
+      .map((c) => `${escapeRegEx(c)}?`).join()
+  })${escapeRegEx(STR_WRAP[1])}\s*$`
 )
 
 /** Convert a stringified JSON Object into an Object,
@@ -311,7 +313,7 @@ const objStrRegex = (keys: readonly string[], charMap?: Record<any,string>) => R
 const stringToArray = (str: string) => {
 
   try {
-    if (['[','{'].includes(str.charAt(0))) 
+    if (isWrappedJSON.test(str)) 
       return JSON.parse(str)
 
   } catch (e) {
@@ -321,3 +323,4 @@ const stringToArray = (str: string) => {
 
   return str ? [str] : [] // Default: string is first entry in array
 }
+const isWrappedJSON = RegEx(/^[[{].*[\]}]$/)
