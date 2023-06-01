@@ -15,6 +15,9 @@ export const isIn = <T extends object>(key: any, object: T): key is keyof T => k
 /** Type guard for object key accessor */
 export const getVal = <T extends object>(object: T, key: keyof any): T[keyof T] | undefined => (object as any)[key]
 
+/** Return number of 'def' value/0 if it is not a number */
+export const toNumber = (val: any, def = 0) => typeof val === 'number' ? val : def
+
 /** Filter out duplicate values from array */
 export const filterDupes = <T = any>(arr: T[]) => 
 arr.filter((val, idx) => !arr.slice(0,idx).includes(val))
