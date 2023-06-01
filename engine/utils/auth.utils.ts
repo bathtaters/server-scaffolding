@@ -28,7 +28,9 @@ export const encodePassword = async (password: string) => {
   return { salt, pwkey: pwkey.toString('base64url') }
 }
 
-export async function testPassword(userData: Partial<DBSchemaOf<UserDef>> | undefined, password: string, role?: RoleType, callback?: PasswordCallback) {
+export async function testPassword<D extends Partial<DBSchemaOf<UserDef>>>
+(userData: D | undefined, password: string, role?: RoleType, callback?: PasswordCallback)
+{
   if (!userData) return failureMsg.noUser
   if (userData.locked && !isPastWindow(userData)) return failureMsg.isLocked
   if (role && !role.intersects(userData.role)) return failureMsg.noRole

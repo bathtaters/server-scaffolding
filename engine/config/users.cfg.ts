@@ -34,10 +34,9 @@ export const definition /*: DefinitionSchema */ = {
     db: 'TEXT NOT NULL',
   },
   role: {
-    type: 'string[]',
+    type: Role,
     default: new Role('api', 'gui'),
     limits: { elem: { max: 16 }, array: { max: Role.count } },
-    isBitmap: true,
     db: 'INTEGER',
   },
   cors: {
@@ -46,8 +45,8 @@ export const definition /*: DefinitionSchema */ = {
     limits: { min: 0, max: 2048 },
   },
   access: {
-    type: 'string[]',
-    default: new ModelAccess(undefined, ['read', 'write']).toArray(),
+    type: ModelAccess,
+    default: new ModelAccess(undefined, ['read', 'write']),
     limits: { elem: { max: 64 }, array: { max: ModelAccess.keys.length * ModelAccess.values.length } },
     db: 'TEXT',
   },

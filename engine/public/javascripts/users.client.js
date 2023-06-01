@@ -62,10 +62,10 @@ $( 'tr.tableRow' ).on('click', function() {
     }
 
     $( 'input.'+key+'Checks' ).prop('checked', false);
-    var checks = $(this).text().split(', ')
     
     // Grouped checkboxes
     if (key !== 'access') {
+      var checks = $(this).text().split('/')
       checks.forEach(function(roleType) {
         $( 'input.'+key+'Checks#'+roleType ).prop('checked', true);
       });
@@ -73,6 +73,7 @@ $( 'tr.tableRow' ).on('click', function() {
     }
 
     // Table checkboxes
+    var checks = $(this).text().split(', ')
     var i = checks.length, tableRegex = /^\s*([^\s:]+):\s*\[([^\]]+)\]\s*$/;
     while (i-- > 0) {
       var check = checks[i].match(tableRegex);

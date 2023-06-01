@@ -1,5 +1,5 @@
 import type { UserDef, GetOptions, UpdateOptions, TimestampType, RoleType } from '../types/Users.d'
-import type { AddSchemaOf, DBSchemaOf, IDOf, SchemaOf, TypeOfID } from '../types/Model.d'
+import type { AddSchemaOf, DBSchemaOf, IDOf, PrimaryIDOf, SchemaOf, TypeOfID } from '../types/Model.d'
 import type { IfExistsBehavior, UpdateData, WhereData } from '../types/db.d'
 import { Role, timestamps } from '../types/Users'
 import { adapterTypes } from '../types/Model'
@@ -83,7 +83,7 @@ class User extends Model<UserDef> {
 
   async checkPassword(username: SchemaOf<UserDef>['username'], password: string, role: RoleType) {
     if (!isPm2 && !(await this.count())) {
-      const data = await this.addAndReturn([{ username, password, role: role.list }])
+      const data = await this.addAndReturn([{ username, password, role }])
       logger.info(`Created initial user: ${data.username}`)
       return this.adaptData(adapterTypes.fromDB, data)
     }
@@ -109,7 +109,7 @@ class User extends Model<UserDef> {
       `SELECT CASE ${
         whereClause(params, 'WHEN') || 'WHEN TRUE'} THEN 0 ELSE 1 END as remains FROM ${
         this.title} WHERE role & ?`,
-      [...whereValues(params), Role.map.admin.int],
+      [...whereValues(params), Role.map.admin.value],
       true,
     ) as { remains: number }[]
     
@@ -170,7 +170,11 @@ class User extends Model<UserDef> {
 
   // OVERRIDE HELPERS \\
 
-  private async _updateTimestamp(userData: Partial<AddSchemaOf<UserDef> | DBSchemaOf<UserDef>>, timestamp?: TimestampType, ignoreCounter = false) {
+  private async _updateTimestamp(
+    userData: Pick<SchemaOf<UserDef,false> | DBSchemaOf<UserDef>, PrimaryIDOf<UserDef>>,
+    timestamp?: TimestampType,
+    ignoreCounter = false
+  ) {
     if (!timestamp || !isIn(this.primaryId, userData) || !userData[this.primaryId])
       return false
 
@@ -202,9 +206,9 @@ class User extends Model<UserDef> {
     return userData
   }
 
-  private async _updateCb(newData: UpdateData<DBSchemaOf<UserDef>>, matchingData: DBSchemaOf<UserDef>[])  {
+  private async _updateCb(newData: UpdateData<DBSchemaOf<UserDef>>, matchingData: DBSchemaOf<UserDef>[]) {
     const oldData = matchingData[0],
-      newRole   = newData.role != null ? projectedValue(oldData.role, newData.role as number) : oldData.role,
+      newRole   = newData.role != null ? projectedValue<number | null | undefined>(oldData.role, newData.role) : oldData.role,
       newLocked = projectedValue(oldData.locked, newData.locked)
     
     if (newRole !== oldData.role) {

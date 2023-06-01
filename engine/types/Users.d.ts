@@ -1,14 +1,13 @@
 import type { Role, ModelAccess, timestamps } from "./Users"
 import type { IDOf, SQLOptions } from "./Model.d"
-import type { BitMapBase, FlagType } from "./BitMap"
-import type { BitMapObjBase, ExtractBitMap, ObjDefType, ObjFlagType, ObjKeyType } from "./BitMapObj.d"
+import type { ExtractBitMap } from "./BitMapObj.d"
 import type { definition } from "../config/users.cfg"
 
 export type UserDef = typeof definition
 
-export type RoleType     = BitMapBase<FlagType<typeof Role>>
-export type AccessType   = BitMapObjBase<ObjKeyType<typeof ModelAccess>, ObjFlagType<typeof ModelAccess>, ObjDefType<typeof ModelAccess>>
-export type AccessBitMap = ExtractBitMap<typeof ModelAccess>
+export type RoleType     = InstanceType<typeof Role>
+export type AccessType   = InstanceType<typeof ModelAccess>
+export type AccessBitMap = ExtractBitMap<AccessType>
 
 export type Cors = boolean | string[] | string | RegExp
 
