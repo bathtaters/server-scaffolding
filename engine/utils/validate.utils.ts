@@ -1,7 +1,7 @@
 import type { Schema } from 'express-validator'
 import type { Limits, ValidationExpanded, ValidationBasic, ValidationBase, ValidationType } from '../types/validate.d'
 import type { FormDefinition } from '../types/gui.d'
-import { baseTypes } from '../types/validate'
+import { baseTypes, typeSuffixes } from '../types/validate'
 import RegEx from '../libs/regex'
 import { isDate } from '../libs/date'
 import { boolOptions } from '../config/validate.cfg'
@@ -25,15 +25,19 @@ export function expandTypeStr({ type, limits }: ValidationBasic): ValidationExpa
   return {
     typeBase: match[1],
     limits,
-    isOptional : opts.includes('?'),
-    isArray    : opts.includes('[]'),
-    hasSpaces  : opts.includes('*'),
+    isOptional : opts.includes(typeSuffixes.isOptional),
+    isArray    : opts.includes(typeSuffixes.isArray),
+    hasSpaces  : opts.includes(typeSuffixes.hasSpaces),
   }
 }
 
 /** Convert ValidationType back to ValidationBasic.type */
 export const toTypeString = ({ typeBase, isOptional, isArray, hasSpaces }: ValidationExpanded) =>
-  `${typeBase}${hasSpaces ? '*' : ''}${isArray ? '[]' : ''}${isOptional ? '?' : ''}` as ValidationType
+  `${typeBase}${
+    hasSpaces  ? typeSuffixes.hasSpaces  : ''}${
+    isArray    ? typeSuffixes.isArray    : ''}${
+    isOptional ? typeSuffixes.isOptional : ''
+  }` as ValidationType
 
 
 // *** HTML Form validation *** \\
