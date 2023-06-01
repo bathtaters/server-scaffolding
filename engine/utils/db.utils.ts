@@ -1,12 +1,14 @@
 import type { AllOps, IfExistsBehavior, SQLParams, UpdateData, WhereLogic } from '../types/db.d'
+import { allOps, updateOps, whereLogic } from '../types/db'
 import { childLabel } from '../types/Model'
+import RegEx from '../libs/regex'
 import logger from '../libs/log'
 import { getChildName, CONCAT_DELIM, SQL_ID, ifExistsBehavior } from '../config/models.cfg'
 import { illegalKeyName, illegalKeys } from '../config/validate.cfg'
 import { sqlInjection } from '../config/errors.engine'
-import { allOps, updateOps, whereLogic } from '../types/db'
 import { isIn } from './common.utils'
 
+export const titleQuotes = RegEx(/^\[[^\]]+\]$/)
 
 export const checkInjection = <T = any>(val: T, tableName = ''): T => {
   if (!val) return val
@@ -20,7 +22,7 @@ export const checkInjection = <T = any>(val: T, tableName = ''): T => {
 }
 
 // Tests models.cfg values for SQL injection
-if (/['\s]/.test(CONCAT_DELIM)) throw sqlInjection(CONCAT_DELIM, false, 'models.cfg:CONCAT_DELIM')
+if (RegEx(/['\s]/).test(CONCAT_DELIM)) throw sqlInjection(CONCAT_DELIM, false, 'models.cfg:CONCAT_DELIM')
 checkInjection(Object.values(childLabel), 'models.cfg:childLabel')
 
 
