@@ -11,7 +11,7 @@ import logger from '../libs/log'
 import { caseInsensitiveObject, getVal, hasDupes, isIn } from '../utils/common.utils'
 import { dbFromType, htmlFromType, stripPrimaryDef, sanitizeSchemaData, getDefaultAdapter, definitionToValid } from '../utils/model.utils'
 import { expandTypeStr, toTypeString } from '../utils/validate.utils'
-import { getOpType } from '../utils/db.utils'
+import { checkInjection, getOpType } from '../utils/db.utils'
 import { defaultPrimaryKey, defaultPrimaryType, MASK_STR, SQL_ID } from '../config/models.cfg'
 
 
@@ -44,12 +44,6 @@ export function getPrimaryId<Def extends DefinitionSchema>(schema: Def, title = 
     primaryId = isChild ? SQL_ID : defaultPrimaryKey
     schema[primaryId] = { type: defaultPrimaryType, ...(schema[primaryId] || {}), isPrimary: true }
   }
-
-  if (!Object.values(schema).filter(({ db }) => db).length)
-    throw new Error(`Schema for ${title} has no database entries.`)
-
-  if (hasDupes(Object.keys(schema).map((k) => typeof k === 'string' ? k.toLowerCase() : k)))
-    throw new Error(`Schema for ${title} contain duplicate property names: ${Object.keys(schema).join(', ')}`)
 
   return primaryId as PrimaryIDOf<Def>
 }
@@ -131,6 +125,18 @@ export function extractChildren<D extends DefinitionSchema, N extends Definition
     
     {}
   )
+}
+
+/** Check formatted Model schema for errors */
+export function errorCheckModel(title: string, schema: DefinitionSchemaNormal) {
+  checkInjection(title)
+  checkInjection(schema, title)
+
+  if (hasDupes(Object.keys(schema).map((k) => typeof k === 'string' ? k.toLowerCase() : k)))
+    throw new Error(`Schema for ${title} contains duplicate property names: ${Object.keys(schema).join(', ')}`)
+  
+  if (!Object.values(schema).filter(({ db }) => db).length)
+    throw new Error(`Schema for ${title} has no database entries.`)
 }
 
 

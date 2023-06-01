@@ -54,18 +54,20 @@ export default class Model<Def extends DefinitionSchema> {
 
   constructor(title: string, schemaDefinition: Def, adapters: Partial<AdapterDefinition<Def>> = {}, isChildModel = false) {
     // Set basic properties
-    this._title        = checkInjection(title)
+    this._title        = title
     this._isChildModel = isChildModel
 
-    // Set main schema -- Checking keys for injection
+    // Set main schema (Checking keys for injection)
     this._primaryId = getPrimaryId(schemaDefinition, this._title, this._isChildModel)
-    this._schema    = checkInjection(adaptSchema(schemaDefinition), this._title)
+    this._schema    = adaptSchema(schemaDefinition)
     this._children  = extractChildren(this._schema, this._primaryId)
 
     // Set additional properties
     this._adapters = buildAdapters(adapters, this._schema)
     this._defaults = mapToField(this._schema, 'default') as any
     this._masked   = Object.keys(this._schema).filter((key) => this._schema[key].isMasked)
+
+    errorCheckModel(this._title, this._schema)
 
     this.isInitialized = (async () => {
       if (!getDb()) { await openDb() }
