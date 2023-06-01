@@ -68,7 +68,8 @@ fieldset > .row { align-items: flex-end; }
 }
 
 /* Color specialized CORs values */
-.cors-regex, .cors-array { color: lightskyblue; }
+.cors-regex { color: pink; }
+.cors-array { color: lightskyblue; }
 
 /* Additional generic styling */
 .top-right { position: absolute; top: 0; right: 0; }
