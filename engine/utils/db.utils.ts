@@ -170,11 +170,11 @@ export const selectSQL = (
 ]
 
 
-export const insertSQL = <T>(
+export const insertSQL = <T extends object>(
   tableName: string, dataArray: T[], keys: string[],
   ifExists: IfExistsBehavior = 'default'
 ): [string, any[]] => {
-  const dataKeys = keys.filter((k) => k in dataArray) as (keyof T)[]
+  const dataKeys = keys.filter((key) => dataArray.some((data) => key in data)) as (keyof T)[]
   return [
 
     `INSERT${ifExistsBehavior[ifExists]} INTO ${tableName}(${
@@ -183,7 +183,7 @@ export const insertSQL = <T>(
         dataArray.map(() => `(${dataKeys.map(() => '?').join(',')})`).join(',')
     }`,
 
-    dataArray.flatMap((data) => dataKeys.map((key) => data[key]))
+    dataArray.flatMap((data) => dataKeys.map((key) => data[key] ?? null))
   ]
 }
 
