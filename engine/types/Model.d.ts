@@ -15,6 +15,15 @@ import type { MASK_STR, defaultPrimaryKey, defaultPrimaryType } from '../config/
 // TODO -- Organize types into namespaces
 // TODO -- Add a type "ModelName" that is the name of any model in allModels (Use with ModelAccess)
 
+/** Response types to expect from API */
+export namespace ApiResponse {
+  type Create<Def extends DefinitionSchema = any> = SkipChildren<SchemaOf<Def>,Def>
+  type Read  <Def extends DefinitionSchema = any> = SchemaOf<Def> | SchemaOf<Def>[]
+  type Update<Def extends DefinitionSchema = any> = Feedback
+  type Delete<Def extends DefinitionSchema = any> = Feedback
+  type SwapID<Def extends DefinitionSchema = any> = Feedback
+}
+
 
 /** Common properties shared by User & Backend Property Definitions */
 type DefinitionBase<T> = {
