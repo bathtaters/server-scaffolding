@@ -288,11 +288,11 @@ export type DBSchemaOf<Def extends DefinitionSchema> = Flatten<
 >
 
 // TODO -- Only add 'null' when property is optional
-/** Convert Definition Schema to GUI View Schema (Allows passing additional data via the _meta prop) */
-export type ViewSchemaOf<Def extends DefinitionSchema> = Partial<{
+/** Convert Definition Schema to GUI View Schema (Allows passing additional data via the viewMetaKey) */
+export type ViewSchemaOf<Def extends DefinitionSchema> = {
   -readonly [K in keyof Def as IsInView<Def[K]> extends true ? K : never]:
     SHTMLType<Def[K]> | null
-} & { _meta: any }>
+} & { [viewMetaKey]: Record<string,any> }
 
 /** Convert Definition Schema to GUI Form Schema */
 export type FormSchemaOf<Def extends DefinitionSchema> = Partial<{
