@@ -8,6 +8,9 @@ export const capitalizeHyphenated = (str: string) =>
 
 const firstRegex = RegEx(/^\w/), hyphenRegex = RegEx(/-(\w)/g)
 
+/** Escape all RegEx special characters in a string */
+export const escapeRegEx = (str: string) => str.replace(escAllPattern, '\\$&')
+const escAllPattern = RegEx(/[.*+?^${}()|[\]\\]/, 'g')
 
 /** Type guard for 'in' statement */
 export const isIn = <T extends object>(key: any, object: T): key is keyof T => key in object
