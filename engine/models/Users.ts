@@ -6,7 +6,7 @@ import { adapterTypes } from '../types/Model'
 import Model from './Model'
 import logger from '../libs/log'
 import { now } from '../libs/date'
-import { addAdapter, initAdapters } from '../services/users.services'
+import { addAdapter, userAdapters } from '../services/users.services'
 import { projectedValue } from '../services/model.services'
 import { generateToken, testPassword, isLocked, isPastWindow } from '../utils/auth.utils'
 import { whereClause, whereValues } from '../utils/db.utils'
@@ -19,13 +19,9 @@ import { badUsername, noData, usernameMessages, deleteAdmin, noID, noEntry } fro
 
 class User extends Model<UserDef> {
 
-  constructor() { 
-    super('_users', definition)
-    initAdapters(this.adapters)
-  }
+  constructor() { super('_users', definition, userAdapters) }
 
-
-  async get<O extends GetOptions>(
+  override async get<O extends GetOptions>(
     id: TypeOfID<UserDef, O['idKey']>, { timestamp, ignoreCounter, ...options } = {} as O
   ) {
 
@@ -44,12 +40,12 @@ class User extends Model<UserDef> {
     return users[0]
   }
   
-  async add(users: Omit<AddSchemaOf<UserDef>,'id'|'token'>[], ifExists: IfExistsBehavior = 'default') {
+  override async add(users: Omit<AddSchemaOf<UserDef>,'id'|'token'>[], ifExists: IfExistsBehavior = 'default') {
     const userData = await this._addAdapter(users)
     return await super.add(userData, ifExists)
   }
 
-  async addAndReturn(users: Omit<AddSchemaOf<UserDef>,'id'|'token'>[], ifExists: IfExistsBehavior = 'default') {
+  override async addAndReturn(users: Omit<AddSchemaOf<UserDef>,'id'|'token'>[], ifExists: IfExistsBehavior = 'default') {
     const userData = await this._addAdapter(users)
     return await super.addAndReturn(userData, ifExists)
   }
@@ -70,7 +66,7 @@ class User extends Model<UserDef> {
   override update: Model<UserDef>['update'] = this._updateOVR.bind(this)
 
   
-  async _removeOVR<ID extends IDOf<UserDef> | undefined>(id: TypeOfID<UserDef,ID>, idKey?: ID) {
+  private async _removeOVR<ID extends IDOf<UserDef> | undefined>(id: TypeOfID<UserDef,ID>, idKey?: ID) {
     await this.throwLastAdmins({ [idKey || this.primaryId]: id })
     return super.remove(id, idKey)
   }
