@@ -1,6 +1,7 @@
 import RegEx from '../libs/regex'
 import { ModelAccess, Role } from '../types/Users'
 import { urlCfg } from '../src.import'
+import { CorsOrigin } from '../utils/users.cors'
 
 const urls = urlCfg.gui.admin
 
@@ -37,18 +38,19 @@ export const definition /*: DefinitionSchema */ = {
     type: Role,
     default: new Role('api', 'gui'),
     limits: { elem: { max: 16 }, array: { max: Role.count } },
-    db: 'INTEGER',
+    db: 'INTEGER NOT NULL',
   },
   cors: {
-    type: 'string*',
-    default: '*',
+    type: CorsOrigin,
+    default: new CorsOrigin(),
     limits: { min: 0, max: 2048 },
+    db: 'TEXT NOT NULL'
   },
   access: {
     type: ModelAccess,
     default: new ModelAccess(undefined, ['read', 'write']),
     limits: { elem: { max: 64 }, array: { max: ModelAccess.keys.length * ModelAccess.values.length } },
-    db: 'TEXT',
+    db: 'TEXT NOT NULL',
   },
   failCount: {
     type: 'int?',

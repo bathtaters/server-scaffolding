@@ -15,7 +15,7 @@ block content
     tbody
       tr
         each val, key in tableFields
-          -var rowCls = key !== 'cors' ? '' : userData[metaKey].regExCors ? 'cors-regex' : userData[metaKey].arrayCors ? 'cors-array' : ''
+          -var rowCls = key === 'cors' && userData[metaKey].corsType ? 'cors-' + userData[metaKey].corsType : ''
           if key !== 'token'
             td(data-label=val) #{key in userData ? userData[key] : ''}!{'&nbsp;'}
           else

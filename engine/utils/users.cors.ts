@@ -1,6 +1,7 @@
-import type { Cors } from '../types/Users.d'
+import type { Cors, CorsType } from '../types/Users.d'
 import RegEx, { RegExp } from '../libs/regex'
 import logger from '../libs/log'
+import { ExtendedType } from '../types/Model'
 
 // Allows: String (<url>, *), URL Array, RegExp (match URL), Boolean (true/1 = all, false/0 = none)
 // Stored as a STRING, retrieved as one of the above (for cors.origin)
@@ -10,7 +11,7 @@ const jsonRegex  = RegEx(/^\[.*\]$|^".*"$/)
 const regExRegex = RegEx(/^RegExp\(["'](.*)["']\)\s*$/)
 const commaRegex = RegEx(/\s*,\s*/)
 
-// CORS library
+// CORS library functions
 const regEx = {
   stringify: (re: RegExp)  => `RegExp("${re.toString().slice(1, -1)}")`,
   parse:     (str: string) => {
@@ -19,32 +20,84 @@ const regEx = {
     logger.warn(`Invalid RegExp ${str}`)
   },
   canString: (re: any):   re is RegExp => typeof re?.compile === 'function',
-  canParse:  (str: any): str is string => typeof str === 'string' && regExRegex.test(str),
-}
-
-export function decodeCors(cors?: string): Cors | undefined {
-  if (cors == null) return undefined
-  if (cors === 'true' || cors === 'false') return cors === 'true'
-  if (cors === '0' || cors === '1') return Boolean(+cors)
-  if (regEx.canParse(cors)) return regEx.parse(cors)
-  return typeof cors === 'string' && jsonRegex.test(cors) ? JSON.parse(cors) : cors
-}
-
-export function encodeCors(cors?: Cors | number): string | undefined {
-  if (cors == null) return undefined
-  if (Array.isArray(cors)) return JSON.stringify(cors)
-  if (regEx.canString(cors)) return regEx.stringify(cors)
-  if (typeof cors === 'number' || cors === '0' || cors === '1') cors = Boolean(+cors)
-  if (typeof cors === 'boolean') return String(cors)
-  if (typeof cors ==='string' && cors.includes(',')) return JSON.stringify(cors.split(commaRegex))
-  return cors as string
-}
-
-export function displayCors(cors?: Cors) {
-  if (cors == null) return undefined
-  if (Array.isArray(cors)) return cors.join(', ')
-  if (regEx.canString(cors)) return regEx.stringify(cors)
-  return String(cors)
+  canParse:  (str: any): str is `RegExp(${string})` => typeof str === 'string' && regExRegex.test(str),
 }
 
 export function isRegEx(re: any) { return re && regEx.canString(re)}
+
+
+/** ExtendedType for CORS Access-Control-Allow-Origin header value */
+export class CorsOrigin extends ExtendedType<string> {
+  /** Default value if no value is given upon creation */
+  static defaultValue: Cors = '*'
+
+  static getType(cors: Cors): CorsType {
+    if (typeof cors === 'string')  return 'string'
+    if (typeof cors === 'boolean') return 'boolean'
+    if (Array.isArray(cors))       return 'array'
+    if (isRegEx(cors))             return 'regex'
+
+    throw new Error(`Unexpected CORS type: "${typeof cors}" ${JSON.stringify(cors)}`)
+  }
+  
+  /** CORS Access-Control-Allow-Origin header value */
+  value: Cors     = CorsOrigin.defaultValue
+  /** Type of value (string, array, boolean, regex) */
+  type:  CorsType = 'string'
+
+  constructor()
+  constructor(cors: Cors)
+  constructor(cors?: Cors) { super(); this._update(cors) }
+
+  private _update(cors?: Cors, type?: CorsType) {
+    if (cors == null) return this
+
+    this.value = cors
+    this.type = type == null ? CorsOrigin.getType(this.value) : type
+    return this
+  }
+
+  set(cors: string)  { return this.parse(cors) }
+
+  parse(cors?: any) {
+    if (cors == null) return this // If no valid value, entry doesn't change
+
+    if (typeof cors === 'boolean')
+      return this._update(cors, 'boolean')
+
+    if (cors === 'true' || cors === 'false')
+      return this._update(cors === 'true', 'boolean')
+
+    if (cors === '0' || cors === '1')
+      return this._update(Boolean(+cors), 'boolean')
+
+    if (typeof cors !== 'string')
+      throw new Error(`Invalid CORS value <${typeof cors}>: ${JSON.stringify(cors)}`)
+
+    if (regEx.canParse(cors))
+      return this._update(regEx.parse(cors), 'regex')
+
+    if (jsonRegex.test(cors))
+      return this._update(JSON.parse(cors))
+
+    if (cors.includes(','))
+      return this._update(cors.split(',').map((c) => c.trim()), 'array')
+
+    return cors ? this._update(cors, 'string') : this
+  }
+
+  valueOf() {
+    if (this.type === 'array')   return JSON.stringify(this.value)
+    if (this.type === 'regex')   return regEx.stringify(this.value as RegExp)
+    if (this.type === 'boolean') return String(this.value)
+    return (this.value as string).includes(',')
+      ? JSON.stringify((this.value as string).split(commaRegex))
+      : this.value as string
+  }
+
+  toString() {
+    if (this.type === 'array') return (this.value as string[]).join(', ')
+    if (this.type === 'regex') return regEx.stringify(this.value as RegExp)
+    return String(this.value)
+  }
+}

@@ -5,7 +5,6 @@ import { Role } from '../types/Users'
 import { adapterTypes, viewMetaKey } from '../types/Model'
 import { metaField } from '../types/gui'
 import { formatLong } from '../libs/date'
-import { decodeCors, encodeCors, displayCors, isRegEx } from '../utils/users.cors'
 import { generateToken, encodePassword } from '../utils/auth.utils'
 import { modifyOther, noConfirm, badConfirm } from '../config/errors.engine'
 import { toNumber } from '../utils/common.utils'
@@ -13,12 +12,9 @@ import { toNumber } from '../utils/common.utils'
 
 export const userAdapters: AdapterDefinition<UserDef> = {
 
-  [adapterTypes.fromDB]: {
-    cors: (cors) => decodeCors(cors) as any,
-  },
+  [adapterTypes.fromDB]: {},
   
   [adapterTypes.toDB]: {
-    cors:     encodeCors,
     username: (username) => username?.toLowerCase(),
     password: async (password, _, data) => {
       if (typeof password !== 'string' || !password) return
@@ -42,9 +38,8 @@ export const userAdapters: AdapterDefinition<UserDef> = {
     apiTime:  (time, user) => `${formatLong(time)} [${toNumber(user.apiCount)}]`,
     failTime: (time, user) => `${formatLong(time)} [${toNumber(user.failCount)}]`,
     cors:     (cors, _, user) => {
-      user[viewMetaKey].regExCors = isRegEx(cors)
-      user[viewMetaKey].arrayCors = Array.isArray(cors)
-      return displayCors(cors)
+      user[viewMetaKey].corsType = cors?.type
+      return cors?.toString()
     },
   },
 }

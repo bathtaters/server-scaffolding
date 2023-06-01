@@ -20,7 +20,7 @@ const getCors: CorsOptionsDelegate<Request> = (req, next) =>
     next(null, {
       credentials: true,
       methods: ['GET','POST','PUT','DELETE'],
-      origin: req.user.cors,
+      origin: req.user.cors?.value,
     })
 
 export default function corsMiddleware(modelName?: string, accessType?: AccessBitMap) {

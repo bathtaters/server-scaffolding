@@ -9,7 +9,8 @@ export type RoleType     = InstanceType<typeof Role>
 export type AccessType   = InstanceType<typeof ModelAccess>
 export type AccessBitMap = ExtractBitMap<AccessType>
 
-export type Cors = boolean | string[] | string | RegExp
+export type Cors     =  boolean | string[] |  string  |  RegExp
+export type CorsType = 'boolean' | 'array' | 'string' | 'regex'
 
 export type TimestampType  = typeof timestamps[keyof typeof timestamps]
 type TimestampTimes<DateType = Date>  = { [T in TimestampType as `${T}Time`]+?: DateType }
