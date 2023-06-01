@@ -18,4 +18,6 @@ block body
       integrity=urls.jquery.integrity,
       crossorigin="anonymous"
     )
+    input#_formKeys.hidden(type="hidden" value=JSON.stringify(formKeys))
+    script(src="/javascripts/common.client.js")
     block scripts

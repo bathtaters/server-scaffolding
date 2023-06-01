@@ -134,13 +134,15 @@ $( 'input#confirm, input#password' ).on('input', function() {
 
 /* Regenerate API ID */
 $( '#_actionRegen' ).on('click', function() {
+  var CSRF = window.LOCALS.formKeys.csrf;
+
   var idElem = $( '#primary-key input' );
   var idVal = idElem.val();
   if (!idVal) return window.alert('Select a row to update...');
 
   var sendData = {};
   sendData[idElem.attr('id')] = idVal;
-  sendData['_csrf'] = $( '#_csrf' ).val();
+  sendData[CSRF] = $( '#'+CSRF ).val();
 
   $.ajax({
     type:    "POST",
@@ -163,6 +165,8 @@ $( '#_actionRegen' ).on('click', function() {
 
 /* Enable/Disable search restrictions */
 $(function() {
+  var SEARCH = window.LOCALS.formKeys.search;
+
   $( 'input[min]' ).each(function() {
     var min = $(this).attr('min');
     if (+min > 0) { $(this).attr('data-min', min); }
@@ -172,8 +176,13 @@ $(function() {
     if (+min > 0) { $(this).attr('data-minLength', min); }
   });
 
-  if ($( 'input#_searchMode' ).prop('checked')) { $.setSearch(true); }
-  if($( 'input#forceSearch' ).val()) { $.setSearch(true); }
+  if ($( 'input#'+SEARCH ).prop('checked')) { $.setSearch(true); }
+  if ($( 'input#forceSearch' ).val())       { $.setSearch(true); }
+
+  $( 'input#'+SEARCH ).on('input', function() {
+    if ($(this).prop('checked')) { $.setSearch(true); }
+    else { $.setSearch(false); }
+  });
 });
 
 $.setSearch = function(enable) {
@@ -187,11 +196,6 @@ $.setSearch = function(enable) {
   $( 'input[data-min]' ).each(function() { $(this).attr('min', !enable && $(this).attr('data-min')); });
   $( 'input[data-minLength]' ).each(function() { $(this).attr('minLength', !enable && $(this).attr('data-minLength')); });
 }
-
-$( 'input#_searchMode' ).on('input', function() {
-  if ($(this).prop('checked')) { $.setSearch(true); }
-  else { $.setSearch(false); }
-});
 
 
 /* Clear button logic */
@@ -216,8 +220,10 @@ $.resetInputs = function(clear) {
 }
 
 $( 'input#clearForm' ).on('click', function(ev) {
+  var SEARCH = window.LOCALS.formKeys.search;
+
   ev.preventDefault()
-  if ($( 'input#_searchMode' ).prop('checked')) {
+  if ($( 'input#'+SEARCH ).prop('checked')) {
     $.setSearch(true);
     $.resetInputs(true);
   } else {

@@ -3,6 +3,7 @@ import type { AdapterDefinition, AddSchemaOf, FormSchemaOf } from '../types/Mode
 import type { UserDef } from '../types/Users.d'
 import { Role } from '../types/Users'
 import { adapterTypes, viewMetaKey } from '../types/Model'
+import { metaField } from '../types/gui'
 import { formatLong } from '../libs/date'
 import { decodeCors, encodeCors, displayCors, isRegEx } from '../utils/users.cors'
 import { generateToken, encodePassword } from '../utils/auth.utils'
@@ -29,7 +30,7 @@ export const userAdapters: AdapterDefinition<UserDef> = {
   
   [adapterTypes.fromUI]: {
     password: (password, data) => {
-      if ((data._action === 'Add' || data._action === 'Update')) {
+      if ((data[metaField.button] === 'Add' || data[metaField.button] === 'Update')) {
         if (!data.confirm) throw noConfirm()
         if (password !== data.confirm) throw badConfirm()
       }

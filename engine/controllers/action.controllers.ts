@@ -2,7 +2,7 @@ import type { ModelActionBase } from '../types/controllers.d'
 import type { Middleware, Request } from '../types/express.d'
 import type { ProfileActions } from '../types/gui.d'
 import { adapterTypes } from '../types/Model'
-import { actions } from '../types/gui'
+import { actions, metaField } from '../types/gui'
 import { Role } from '../types/Users'
 
 import { matchedData } from 'express-validator'
@@ -65,7 +65,7 @@ export function form(Model: ModelActionBase, redirectURL?: string, errorCheck?: 
     let pageData = ''
     try {
       formData = await Model.adaptData(adapterTypes.fromUI, formData as any)
-      pageData = toQueryString(formData._pageData)
+      pageData = toQueryString(formData[metaField.page])
     }
     catch (err) { return next(err) }
 
@@ -77,7 +77,7 @@ export function form(Model: ModelActionBase, redirectURL?: string, errorCheck?: 
 
 
 export const settingsForm: Middleware = (req,res,next) => {
-  // TODO -- Add type to 'matchedData'?
+  // TODO -- Use GUI metaFields instead of '_action, _pageData' literal keys, update to use a 'settings' Model
   let { _action, _pageData, ...settings } = matchedData(req)
 
   if (!_action || !isIn(_action, settingsActions)) return next(badAction(_action))

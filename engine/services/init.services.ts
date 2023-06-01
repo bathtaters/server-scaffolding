@@ -9,6 +9,7 @@ import { useLocalCert, closeEvents, errorEvents } from '../config/server.cfg'
 import * as meta from '../config/meta'
 import { userServer, guiCfg, urlCfg, allModels } from '../src.import'
 import { viewMetaKey } from '../types/Model'
+import { metaField } from '../types/gui'
 
 
 let server: ServerInfo = {
@@ -25,11 +26,12 @@ export default async function initializeServer(app: Express) {
   process.env.NODE_ENV !== 'production' && addListeners(errorEvents, buildErrorHandler(app, server))
   
   // Globals
-  app.locals.appTitle = guiCfg.title
+  app.locals.appTitle   = guiCfg.title
   app.locals.footerData = guiCfg.footer
-  app.locals.varName = varName
-  app.locals.urls = urlCfg
-  app.locals.metaKey = viewMetaKey
+  app.locals.varName  = varName
+  app.locals.urls     = urlCfg
+  app.locals.metaKey  = viewMetaKey
+  app.locals.formKeys = metaField
 
   // Start services
   if (!getDb()) await openDb()

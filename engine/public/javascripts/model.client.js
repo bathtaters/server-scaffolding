@@ -45,6 +45,8 @@ $( 'tr.tableRow' ).on('click', function() {
 
 /* Enable/Disable search restrictions */
 $(function() {
+  var SEARCH = window.LOCALS.formKeys.search;
+
   $( 'input[readonly] ').each(function() {
     $(this).attr('data-locked', true);
   });
@@ -58,8 +60,13 @@ $(function() {
     if (+min > 0) { $(this).attr('data-minLength', min); }
   });
 
-  if($( 'input#_searchMode' ).prop('checked')) { $.setSearch(true); }
-  if($( 'input#forceSearch' ).val()) { $.setSearch(true); }
+  if ($( 'input#'+SEARCH ).prop('checked')) { $.setSearch(true); }
+  if ($( 'input#forceSearch' ).val())       { $.setSearch(true); }
+
+  $( 'input#'+SEARCH ).on('input', function() {
+    if ($(this).prop('checked')) { $.setSearch(true); }
+    else { $.setSearch(false); }
+  });
 });
 
 $.setSearch = function(enable) {
@@ -70,11 +77,6 @@ $.setSearch = function(enable) {
   $( 'input[data-min]' ).each(function() { $(this).attr('min', !enable && $(this).attr('data-min')); });
   $( 'input[data-minLength]' ).each(function() { $(this).attr('minLength', !enable && $(this).attr('data-minLength')); });
 }
-
-$( 'input#_searchMode' ).on('input', function() {
-  if ($(this).prop('checked')) { $.setSearch(true); }
-  else { $.setSearch(false); }
-});
 
 
 /* Clear button logic */
@@ -99,8 +101,10 @@ $.resetInputs = function(clear) {
 }
 
 $( 'input#clearForm' ).on('click', function(ev) {
+  var SEARCH = window.LOCALS.formKeys.search;
+
   ev.preventDefault()
-  if ($( 'input#_searchMode' ).prop('checked')) {
+  if ($( 'input#'+SEARCH ).prop('checked')) {
     $.setSearch(true);
     $.resetInputs(true);
   } else {
@@ -112,12 +116,14 @@ $( 'input#clearForm' ).on('click', function(ev) {
 
 /* Swap two IDs */
 $( '#_actionSwap' ).on('click', function() {
+  var CSRF = window.LOCALS.formKeys.csrf;
+  
   var sendData = { swap: $( 'input#swapId' ).val() };
   var idElem = $( '#primary-key input' );
   var idVal = idElem.val();
   if (!idVal || !sendData.swap) { return window.alert('Must enter Main ID & Swap IDs to swap.'); }
   sendData[idElem.attr('id')] = idVal;
-  sendData['_csrf'] = $( '#_csrf' ).val();
+  sendData[CSRF] = $( '#'+CSRF ).val();
 
   $.ajax({
     type:    "POST",

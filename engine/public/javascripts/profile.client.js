@@ -41,6 +41,7 @@ $( 'input#regenToken' ).on('click', function(ev) {
   if(!window.confirm('WARNING! This will block any API requests using your old token, are you sure you want to do this?')) {
     return ev.preventDefault();
   }
+  var CSRF = window.LOCALS.formKeys.csrf;
 
   var idElem = $( '#primary-key input' );
   var idVal = idElem.val();
@@ -48,7 +49,7 @@ $( 'input#regenToken' ).on('click', function(ev) {
 
   var sendData = {};
   sendData[idElem.attr('id')] = idVal;
-  sendData['_csrf'] = $( '#_csrf' ).val();
+  sendData[CSRF] = $( '#'+CSRF ).val();
 
   $.ajax({
     type:    "POST",

@@ -9,15 +9,23 @@ export const actions = {
 } as const
 
 /** Meta fields in Form */
+export const metaField = {
+    button: '_action',
+    csrf:   '_csrf', // NOTE: THIS MUST ALSO BE UPDATED IN model/profile/users CLIENT JS (update var 'CSRF') //
+    page:   '_pageData',
+    search: '_searchMode', // NOTE: THIS MUST ALSO BE UPDATED IN model/users CLIENT JS (update var 'IS_SEARCH') //
+} as const
+
+/** Meta fields in Form */
 export const formData = {
     /** Button clicked */
-    _action:     { type: 'string',   limits: { max: 16 } },
+    [metaField.button]: { type: 'string',   limits: { max: 16 } },
     /** CSRF Token */
-    _csrf:       { type: 'string?',  limits: { max: 64 } },
+    [metaField.csrf]:   { type: 'string?',  limits: { max: 64 } },
     /** Page Data Object (See paginationData) */
-    _pageData:   { type: 'object?',  limits: { max: 32 } },
+    [metaField.page]:   { type: 'object?',  limits: { max: 32 } },
     /** Is searchMode enabled */
-    _searchMode: { type: 'boolean?' },
+    [metaField.search]: { type: 'boolean?' },
 } as const
   
 /** Additional fields for GUI pagination */

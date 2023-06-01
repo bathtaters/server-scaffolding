@@ -28,7 +28,7 @@ block content
             button.toggle-password.small(type="button")
           
           if csrfToken
-            span: input.hidden(type="hidden" name="_csrf" id="_csrf" value=csrfToken)
+            span: input.hidden(type="hidden" name=formKeys.csrf id=formKeys.csrf value=csrfToken)
 
           .button-group
             input.primary(type="submit" value=(isUser ? "Login" : "Create"))

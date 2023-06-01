@@ -22,7 +22,7 @@ block content
             each entry, key in formCol
               +formInput(key, entry.html.type, entry.html.limits, settings[key], key, '', entry.tooltip, entry.html.readonly)
         if csrfToken
-          span: +formInput('_csrf', 'hidden', null, csrfToken)
+          span: +formInput(formKeys.csrf, 'hidden', null, csrfToken)
           
       .center
         br

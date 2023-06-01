@@ -27,12 +27,12 @@ block content
         input.small.button.button-group#clearForm(type="reset" value="Clear")
         if canRead && canWrite
           .small
-            +formInput('_searchMode', 'checkbox', null, searchData, 'Search', 'ignoreClear', 'Use Search rules')
+            +formInput(formKeys.search, 'checkbox', null, searchData, 'Search', 'ignoreClear', 'Use Search rules')
 
       block form
 
       if csrfToken
-        span: +formInput('_csrf', 'hidden', null, csrfToken)
+        span: +formInput(formKeys.csrf, 'hidden', null, csrfToken)
 
       +buttonRow(buttons, { Search: 'primary', Add: 'tertiary', Update: 'tertiary', Remove: 'secondary', Reset: 'secondary' }, submitURLs)
   
