@@ -58,8 +58,8 @@ class User extends Model<UserDef, typeof title> {
     if (!oldOnChange) options.onChange = this._updateCb.bind(this)
 
     else options.onChange = async (update, matching) => {
-      await oldOnChange(update, matching)
-      return this._updateCb.call(this, update, matching)
+      const res = await oldOnChange(update, matching)
+      return this._updateCb.call(this, res ?? update, matching)
     }
 
     return super.update(id, data, options)

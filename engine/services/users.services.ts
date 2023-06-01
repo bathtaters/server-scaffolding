@@ -20,7 +20,7 @@ export const userAdapters: AdapterDefinition<UserDef> = {
   [adapterTypes.toDB]: {
     cors:     encodeCors,
     username: (username) => username?.toLowerCase(),
-    password: async (password, data) => {
+    password: async (password, _, data) => {
       if (typeof password !== 'string' || !password) return
       const { pwkey, salt } = await encodePassword(password)
       data.salt = salt
