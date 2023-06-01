@@ -56,9 +56,6 @@ export abstract class BitMapObjBase<Key extends string, Flag extends string, Def
     /** Default key */
     abstract readonly defKey: DefKey
 
-    /** Stringified BitMapObject of form { Key: BitMapObj, ... default: BitMapObj } */
-    abstract value: string
-
     /** @returns the cooresponding BitMapObj for a Key OR the default BitMapObj if Key has no BitMapObj */
     abstract get(key: Key | DefKey): BitMapBase<Flag>
 
@@ -112,6 +109,12 @@ export abstract class BitMapObjBase<Key extends string, Flag extends string, Def
     abstract isExclusive(value?: BitMapValue<BitMapBase<Flag>>, key?: string): boolean
     /** @returns A boolean indicating whether the key/default exactly equals the value. */
     abstract equals(value?: BitMapValue<BitMapBase<Flag>>, key?: string): boolean
+
+    /** Set object from a JSON String */
+    abstract set(json: string): this
+
+    /** Get object as a JSON String */
+    abstract valueOf(): string
 
     /** Get object as a comma-seperated list of "Key: Flag1/Flag2" or use characterMap for Flags */
     abstract toString(): string

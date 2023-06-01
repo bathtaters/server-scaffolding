@@ -82,7 +82,9 @@ export default function BitMapFactory<Flag extends string>(flagList: readonly Fl
 
         get count() { return this.value ? this.list.length : 0 }
 
-        toString() { return this.chars ?? this.list.join(STR_DELIM)}
+        valueOf()  { return this.value }
+
+        toString() { return this.chars ?? this.list.join(STR_DELIM) }
 
         set(...values: BitMapValue<BitMapBase<Flag>>[]) {
             this.value = BitMap._toInt(values)

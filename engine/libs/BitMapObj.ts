@@ -85,12 +85,6 @@ export default function BitMapObjFactory<Key extends string, Flag extends string
     get obj()    { return this._object     }
     get defKey() { return BitMapObj.defKey }
 
-    get value()  { return JSON.stringify(this._object) } // Format for DB
-    set value(json: string) { // Set from DB
-      if (json) this._updateObject(JSON.parse(json))
-      else this.reset()
-    }
-
 
     // Mutatable methods
 
@@ -181,6 +175,16 @@ export default function BitMapObjFactory<Key extends string, Flag extends string
 
 
     // Export methods
+
+    set(json: string) { // Get from DB
+      if (json) this._updateObject(JSON.parse(json))
+      else this.reset()
+      return this
+    }
+
+    valueOf() { // Format for DB
+      return JSON.stringify(this._object)
+    }
 
     toString() { // Format for HTML
       if (!BitMapObj.charMap) throw new Error('BitMapObj.toString requires CharacterMap')

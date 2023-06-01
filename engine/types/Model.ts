@@ -3,20 +3,18 @@ import { htmlTypes } from "./gui"
 
 /** Custom Class to use over a builtin type */
 export abstract class ExtendedType<Raw extends string | number> {
-    /** Raw value: this should be set to a default value */
-    abstract value: Raw
     /** Create a new instance with the default value (Must allow 0 arguments) */
     constructor() {}
     /** Set from any value - Used in HTML Form getter (Throw error to reject form input) */
     abstract parse(value?: any): this
     /** Set to raw value - Used in DB Storage getter */
-    set(value: Raw) { this.value = value; return this }
+    abstract set(value: Raw): this
     /** Get raw value - Used in DB Storage */
-    valueOf()  { return this.value }
+    abstract valueOf(): Raw
     /** Get string value - Used in HTML View */
     toString() { return String(this.valueOf()) }
     /** Get value for JSON.stringify */
-    toJSON()   { return this.value }
+    toJSON()   { return this.valueOf() }
 }
 
 export const extendedTypeDefaults = { db: sqlTypes.Text, html: htmlTypes.text } as const

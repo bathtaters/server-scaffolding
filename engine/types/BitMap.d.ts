@@ -79,6 +79,9 @@ export abstract class BitMapBase<Flag extends string> {
     /** @returns A boolean indicating whether this BitMap exactly equals the value. */
     abstract equals(...values: BitMapValue<BitMapBase<Flag>>[]): boolean 
 
+    /** @returns Raw Value as a number */
+    abstract valueOf(): number
+
     /** @returns Slash-seperated Flags or Characters from CharacterMap */
     abstract toString(): string
 
