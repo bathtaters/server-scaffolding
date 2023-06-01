@@ -28,11 +28,11 @@ export const foreignKeyActions = {
 
 /** Key to Where operation for a partial match,
  *  using these type-dependant rules:
- *   - Bitmap: Is superset of (Or equals, if zero) value
+ *   - Array: Equals any value in the array
  *   - Boolean: Equals value after converting to boolean
  *   - String: Contains value as a substring
- *   - Number: (TODO) Is in range of value
-*/
+ *   - Number: Is superset of (Or equals, if zero) value
+ *   - Number Array: (TODO) Is in range of value */
 export const whereOpPartial = '$in'
 
 /** Special operations for Where data
@@ -57,8 +57,7 @@ export const whereOp = {
      *   - Boolean: Equals value after converting to boolean
      *   - String: Contains value as a substring
      *   - Number: Is superset of (Or equals, if zero) value
-     *   - Number Array: (TODO) Is in range of value
-     **/
+     *   - Number Array: (TODO) Is in range of value */
     [whereOpPartial]:  'PARTIAL_MATCH',
 } as const
 
