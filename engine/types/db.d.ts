@@ -23,7 +23,7 @@ export type WhereOps = keyof typeof whereOp
 export type WhereLogic = keyof typeof whereLogic
 export type WhereNot = typeof whereNot
 
-type WhereValue<T> = T | ExactlyOne<Record<WhereOps, T> | { [whereOpPartial]: T[] }>
+export type WhereValue<T> = T | ExactlyOne<Record<WhereOps, T> | { [whereOpPartial]: T[] }>
 export type WhereData<Schema extends Record<string,any>> =
     { [K in keyof Schema]+?: WhereValue<Schema[K]> } |
     OneOrNone<
@@ -41,7 +41,7 @@ export type UpdateOps<T = any> = {
 }[TypeOf<T> & keyof typeof updateOps]
 
 
-type UpdateValue<T> = T | ExactlyOne<Record<UpdateOps<T>, T>>
+export type UpdateValue<T> = T | ExactlyOne<Record<UpdateOps<T>, T>>
 export type UpdateData<Schema extends Record<string,any>> = { [K in keyof Schema]+?: UpdateValue<Schema[K]> }
 export type UpdateDataValue<Schema extends Record<string,any>> = UpdateValue<Schema[keyof Schema]>
 
