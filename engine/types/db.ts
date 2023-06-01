@@ -50,11 +50,14 @@ export const whereOp = {
     $lte: '<=',
     /** Equals */
     $eq:  '==',
+    /** Intersects with (Result of bitwise AND is non-zero) */
+    $int: '&',
     /** Partial match (Type dependant):
-     *   - Bitmap: Is superset of (Or equals, if zero) value
+     *   - Array: Equals any value in the array
      *   - Boolean: Equals value after converting to boolean
      *   - String: Contains value as a substring
-     *   - Number: (TODO) Is in range of value
+     *   - Number: Is superset of (Or equals, if zero) value
+     *   - Number Array: (TODO) Is in range of value
      **/
     [whereOpPartial]:  'PARTIAL_MATCH',
 } as const
