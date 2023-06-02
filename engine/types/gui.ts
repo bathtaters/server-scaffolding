@@ -22,22 +22,22 @@ export const formData = {
     [metaField.button]: { type: 'string',   limits: { max: 16 } },
     /** CSRF Token */
     [metaField.csrf]:   { type: 'string?',  limits: { max: 64 } },
-    /** Page Data Object (See paginationData) */
+    /** Page Select Object (See pageSelect) */
     [metaField.page]:   { type: 'object?',  limits: { max: 32 } },
     /** Is searchMode enabled */
     [metaField.search]: { type: 'boolean?' },
 } as const
   
 /** Additional fields for GUI pagination */
-export const paginationData = {
+export const pageSelect = {
     /** Page number */
     page: { type: 'int?',    limits: { min: 1 } },
     /** Size of page */
     size: { type: 'int?',    limits: { min: 1 } },
     /** Key to sort by */
     sort: { type: 'string?'  },
-    /** Sort data ascending? */
-    asc:  { type: 'boolean?' },
+    /** Sort data descending? */
+    desc: { type: 'boolean?' },
 } as const
 
 /** Enum of HTML Input Types (These are passed to form.mixins.pug) */

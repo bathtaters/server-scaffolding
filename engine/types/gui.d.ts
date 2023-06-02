@@ -1,4 +1,4 @@
-import type { htmlTypes, actions, htmlValidationDict, formData, paginationData, metaField } from './gui'
+import type { htmlTypes, actions, htmlValidationDict, formData, pageSelect, metaField } from './gui'
 import type { Definition, SchemaOf } from './Model.d'
 
 export type HTMLType = typeof htmlTypes[keyof typeof htmlTypes]
@@ -6,8 +6,8 @@ export type HTMLType = typeof htmlTypes[keyof typeof htmlTypes]
 export type FormAction = typeof actions[keyof typeof actions]
 
 export type PaginationData<Schema extends object = any> =
-    Omit<SchemaOf<typeof paginationData>,'id'|'orderKey'> & {
-        orderKey?: keyof Schema | null
+    Omit<SchemaOf<typeof pageSelect>,'id'|'sort'> & {
+        sort?: keyof Schema | null
     }
 
 export type RawFormData = Omit<SchemaOf<typeof formData>,'id'>

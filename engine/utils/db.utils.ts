@@ -148,7 +148,7 @@ export const countSQL = (tableName: string, whereParams: SQLParams): [string, an
 
 export const selectSQL = (
   tableName: string, primaryId: string, whereParams: SQLParams, arrayTables: string[] = [],
-  orderBy?: string, desc = false, limit = 0, page = 0,
+  orderBy?: string, desc = false, limit = 0, page = 1,
 ): [string, any[]] => [
   `${
     getArrayJoin(tableName, primaryId, arrayTables)
@@ -160,7 +160,7 @@ export const selectSQL = (
     limit ? ' LIMIT ? OFFSET ?' : ''
   }`,
 
-  [ ...whereValues(whereParams), ...(limit ? [limit, page * limit] : []) ]
+  [ ...whereValues(whereParams), ...(limit ? [limit, (page - 1) * limit] : []) ]
 ]
 
 

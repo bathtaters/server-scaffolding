@@ -126,10 +126,8 @@ export type ChangeCallback<Def extends DefinitionSchema> =
   (update: UpdateData<DBSchemaOf<Def>>, matching: DBSchemaOf<Def>[]) =>
     Awaitable<UpdateData<DBSchemaOf<Def>> | void>
 
-/** { orderKey?: keyof Schema, onChange?: ChangeCallback<Schema>, raw?: bool, skipChildren?: bool } */
+/** { onChange?: ChangeCallback<Schema>, raw?: bool, skipChildren?: bool } */
 export type SQLOptions<Def extends DefinitionSchema> = {
-  /** (getter only) Order results by this key */
-  orderKey?: DBSchemaKeys<Def>,
   /** (update only) Called with newData & oldData before updating DB */
   onChange?: ChangeCallback<Def>,
   /** (getter only) Skip fromDbAdapters, returning raw DB values */
@@ -170,9 +168,41 @@ export type SelectResult<
 
 /** PageData Types */
 export namespace Page {
-  type Location = { page?: number, size?: number }
-  type Options = { defaultSize?: number, startPage?: number, sizeList?: number[] }
-  type Data<Def extends DefinitionSchema> = { data: ViewSchemaOf<Def>[], page: number, pageCount: number, size: number, sizes?: number[] }
+  /** Model-wide Options for Page Data */
+  type Options = {
+    /** Page Size to default to when one isn't provided */
+    defaultSize?: number,
+    /** Page Number to default to when one isn't provided */
+    startPage?: number,
+    /** List of possible Page Sizes */
+    sizeList?: number[]
+  }
+
+  /** Page Options to Select Data */
+  type Select<Def extends DefinitionSchema> = {
+    /** Page Number: 1-indexed */
+    page: number,
+    /** Page Size: Must be at least 1 */
+    size: number,
+    /** Sort Key: (Optional) Column to order data by */
+    sort?: DBSchemaKeys<Def>
+    /** Descenending: (Optional) sort in descending(true)/ascending(false) order, default: false */
+    desc?: boolean,
+  }
+
+  /** Form of Page Data Return */
+  type Return<Def extends DefinitionSchema> = {
+    /** Data from page in DB, formatted for HTML Display */
+    data: ViewSchemaOf<Def>[],
+    /** Current page number */
+    page: number,
+    /** Total number of pages */
+    pageCount: number,
+    /** Current page size */
+    size: number,
+    /** All possible page sizes */
+    sizes?: number[]
+  }
 }
 
 /** Object to generate Foreign Key Reference SQL */

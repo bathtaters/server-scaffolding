@@ -1,9 +1,9 @@
 import type {
-  SchemaOf, AddSchemaOf, DBSchemaOf, DefaultSchemaOf, DBSchemaKeys,
+  SchemaOf, AddSchemaOf, DBSchemaOf, DefaultSchemaOf, 
   DefinitionSchema, DefinitionSchemaNormal, AdapterDefinition, GenericDefinitionSchema,
   TypeOfID, IDOf, PrimaryIDOf, IDOption, SQLOptions,
   Page, FindResult, SelectResult, Feedback,
-  AdapterType, AdapterIn, AdapterOut, AdapterData,
+  AdapterType, AdapterIn, AdapterOut, AdapterData, ModelListeners,
   ForeignKeyRef, ChildDefinitions, ChildKey, SkipChildren, 
 } from '../types/Model.d'
 import type { CreateSchema, IfExistsBehavior, UpdateData, WhereData } from '../types/db.d'
@@ -87,33 +87,6 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
     return new Model(getChildName(this.title, childName), schema, undefined, true)
   }
 
-
-  /** Get paginated data
-   * @param page - Page number (1-indexed)
-   * @param size - Page size (Must be at least 1)
-   * @param asc - (Optional) If true, order data descending
-   * @param sort - (Optional) Column to order data by
-   * @returns Page of data as an array
-   */
-  async getPage(page: number, size: number, asc?: boolean, sort?: DBSchemaKeys<Def>): Promise<SchemaOf<Def>[]> {
-    if (size < 1 || page < 1) return Promise.reject(noSize())
-
-    if (sort != null && (typeof sort !== 'string' || (sort && !isIn(sort, this.schema))))
-      throw badKey(sort, this.title)
-    
-    const data = await all<DBSchemaOf<Def>>(getDb(), ...selectSQL(
-      this.title,
-      this.primaryId,
-      [],
-      Object.keys(this.children),
-      sort,
-      asc,
-      size,
-      page - 1
-    ))
-
-    return this.adaptData(adapterTypes.fromDB, data)
-  }
   
   /**
    * Get paginated data, with pagination metadata
@@ -131,14 +104,14 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
    *    - size: Current page size
    *    - sizes: Available page sizes
    */
-  async getPageData(location: Page.Location, { defaultSize = 5, sizeList = [], startPage = 1 }: Page.Options = {}): Promise<Page.Data<Def>> {
+  async getPageData(location: Partial<Page.Select<Def>>, { defaultSize = 5, sizeList = [], startPage = 1 }: Page.Options = {}): Promise<Page.Return<Def>> {
     const total = await this.count()
     const size = location.size || defaultSize
     const pageCount = Math.ceil(total / size)
     const page = Math.max(1, Math.min(location.page || startPage, pageCount))
     const sizes = pageCount > 1 || total > Math.min(...sizeList) ? appendAndSort(sizeList, size) : undefined
     
-    const rawData = await this.getPage(page, size)
+    const rawData = await this.find(undefined, undefined, { ...location, page, size })
     const data = await this.adaptData(adapterTypes.toUI, rawData)
   
     return { data, page, pageCount, size, sizes }
@@ -188,7 +161,6 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
    * @param id      - ID value to lookup
    * @param options - (Optional) Lookup options
    * @param options.idKey        - (Default: Primary ID) Key of ID to lookup
-   * @param options.orderKey     - Order results by this key
    * @param options.skipChildren - Avoid joins, returned value will not include children
    * @param options.raw          - Skip fromDbAdapters, return raw DB values
    * @returns First record matching ID, or undefined if no match
@@ -208,17 +180,21 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
    *                - WhereOps are: $gt(e), $lt(e), $eq, $in (Partial match)
    *                -  WhereLogic is { $and/$or: [ ...WhereData ] }, { $not: WhereData }
    * @param options - (Optional) Lookup options
-   * @param options.orderKey     - Order results by this key
    * @param options.skipChildren - Avoid joins, returned value will not include children
    * @param options.raw          - Skip fromDbAdapters, return raw DB values
-   * @returns Array of all records that satisfy parameters
-   */
+   * @param page    - (Optional) Options to paginate results
+   * @param page.page            - Page number (1-indexed)
+   * @param page.size            - Page size (Must be at least 1)
+   * @param page.sort            - (Optional) Column to order data by
+   * @param page.desc            - (Optional) Sort in descending (true) or ascending (false) order (Default: Ascending)
+   * @returns Array of records matching whereData & options */
   async find<O extends SQLOptions<Def>>(
     where?: WhereData<SchemaOf<Def,false>>,
-    options = {} as O
+    options = {} as O,
+    page?: Page.Select<Def>,
   ): FindResult<Def,O> {
     
-    const data = await this._select(where, options)
+    const data = await this._select(where, options, page)
     return options.raw ? data as any : this.adaptData(adapterTypes.fromDB, data)
   }
   
@@ -378,29 +354,38 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
   }
 
   /** Run SELECT query using WHERE data & SQL Options (WHERE is RAW DB VALUES) */
-  private async _selectRaw<O extends SQLOptions<Def>>(where: WhereData<DBSchemaOf<Def>> | undefined, options: O): SelectResult<Def, O> {
-    
-    const result = await all(getDb(), ...selectSQL(
+  private async _selectRaw<O extends SQLOptions<Def>>(where: WhereData<DBSchemaOf<Def>> | undefined, options: O, page?: Page.Select<Def>): SelectResult<Def, O> {
+
+    if (page) {
+      if (page.size < 1 || page.page < 1) throw noSize()
+      if (page.sort && !isIn(page.sort, this.schema)) throw badKey(page.sort, this.title)
+    }
+
+    const sql = selectSQL(
       this.title,
       this.primaryId,
       getSqlParams(this, where),
-      options.skipChildren ? Object.keys(this.children) : [],
-      options.orderKey
-    ))
-
+      options.skipChildren ? [] : Object.keys(this.children),
+      page?.sort,
+      page?.desc,
+      page?.size,
+      page?.page,
+    )
+    
+    const result = await all(getDb(), ...sql)
     return result.map(caseInsensitiveObject)
   }
 
 
   /** Run SELECT query using WHERE data & SQL Options (WHERE is PRE-ADAPTER SCHEMA) */
-  private async _select<O extends SQLOptions<Def>>(where: WhereData<SchemaOf<Def,false>> | undefined, options: O) {
+  private async _select<O extends SQLOptions<Def>>(where: WhereData<SchemaOf<Def,false>> | undefined, options: O, page?: Page.Select<Def>) {
     
     let whereData: WhereData<DBSchemaOf<Def>> | undefined
 
     if (where)
       whereData = await this.adaptData(adapterTypes.toDB, where)
 
-    return this._selectRaw(whereData, options)
+    return this._selectRaw(whereData, options, page)
   }
 
 

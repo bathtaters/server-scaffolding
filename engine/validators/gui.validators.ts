@@ -1,6 +1,6 @@
 import type { ModelValidationOptions, SchemaKeys, ValidationOptions } from '../types/validate.d'
 import type { FormAction } from '../types/gui.d'
-import { actions, formData, paginationData } from '../types/gui'
+import { actions, formData, pageSelect } from '../types/gui'
 import Users from '../models/Users'
 import { type ModelValBase, byModel, byObject } from './shared.validators'
 
@@ -21,7 +21,7 @@ export const profileFields = {
 
 
 // --- Static Validation --- \\
-export const page =  byObject(paginationData, ['query'])
+export const page =  byObject(pageSelect, ['query'])
 export const token = byModel(Users, [Users.primaryId], { optionalBody: false })
 
 // --- Validation Generators --- \\
