@@ -10,7 +10,7 @@ import { childLabel, adapterTypes, childIndexType, extendedTypeDefaults, viewMet
 import { updateFunctions, whereLogic, whereNot } from '../types/db'
 import logger from '../libs/log'
 import { caseInsensitiveObject, getVal, hasDupes, isIn } from '../utils/common.utils'
-import { dbFromType, htmlFromType, stripPrimaryDef, sanitizeSchemaData, getDefaultAdapter, definitionToValid } from '../utils/model.utils'
+import { dbFromType, dbFromExtended, htmlFromType, stripPrimaryDef, sanitizeSchemaData, getDefaultAdapter, definitionToValid } from '../utils/model.utils'
 import { expandTypeStr, toTypeString } from '../utils/validate.utils'
 import { titleQuotes, checkInjection, getOpType } from '../utils/db.utils'
 import { defaultPrimaryKey, defaultPrimaryType, MASK_STR, SQL_ID } from '../config/models.cfg'
@@ -61,11 +61,16 @@ export const adaptSchema = <Def extends DefinitionSchema>(schema: Def) =>
 
 export function adaptSchemaEntry<T extends DefType>(def: Definition<T>): DefinitionNormal<T> {
 
-  if (typeof def.type === 'function') return {
-    ...extendedTypeDefaults,
-    ...def,
-    typeBase: undefined,
-    typeExtended: def.type,
+  if (typeof def.type === 'function') {
+    if (def.isPrimary) throw new Error(`SCHEMA ERROR -- Primary ID cannot be an ExtendedType (${def.type.name})`)
+
+    return {
+      ...extendedTypeDefaults,
+      ...def,
+      typeBase: undefined,
+      typeExtended: def.type,
+      db: def.db ?? dbFromExtended(def.type),
+    }
   }
 
   const expanded = expandTypeStr(definitionToValid(def))

@@ -359,8 +359,8 @@ type SDBType<D extends Definition> =
     ? ExtractDBType<D['db']>
     : D['db'] extends false
       ? never
-      : D['type'] extends ExtendedClass<infer R>
-        ? R
+      : D['type'] extends ExtendedClass<any>
+        ? GetValueType<D['type']>
         : Date extends GetType<D['type']>
           ? Exclude<GetType<D['type']>, Date> | number
           : GetType<D['type']>
@@ -388,6 +388,10 @@ type GetType<D extends DefType | undefined> =
     : D extends ExtendedClass<any>
       ? InstanceType<D>
       : ExtractType<DefTypeStr<D>>
+
+/** Get underlying value type from ExtendedClass */
+type GetValueType<C extends ExtendedClass<any>> =
+  ReturnType<InstanceType<C>['valueOf']>
 
 
 /** TypeString from definition (or default TypeString if definition is empty) */

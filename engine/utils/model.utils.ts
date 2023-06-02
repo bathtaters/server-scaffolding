@@ -8,7 +8,7 @@ import type { IfExistsBehavior, SQLParams, SQLSuffix, SQLType, SQLTypeFull, Wher
 import type { ValidationBasic, ValidationExpanded } from '../types/validate.d'
 import type { HTMLType } from '../types/gui.d'
 import { foreignKeyActions, sqlSuffixes, sqlTypes, whereLogic, whereNot, whereOp, whereOpPartial } from '../types/db'
-import { adapterTypes, childLabel, extendedAdapters } from '../types/Model'
+import { adapterTypes, childLabel, extendedAdapters, extendedTypeDefaults } from '../types/Model'
 import { htmlValidationDict } from '../types/gui'
 
 import RegEx from '../libs/regex'
@@ -244,6 +244,19 @@ export function dbFromType({ typeBase, isOptional }: ValidationExpanded, isPrima
   else if (!isOptional) dbSuffix = sqlSuffixes.required
 
   return `${dbType}${dbSuffix}`
+}
+
+/** Convert ExtendedClass to SQL type */
+export function dbFromExtended(extended: ExtendedClass<any>, isFloat = false): SQLTypeFull {
+  const value = new extended().valueOf()
+
+  const dbType: SQLType =
+    typeof value === 'string' ? 'TEXT' :
+    typeof value === 'number' ? (isFloat ? 'REAL' : 'INTEGER')
+      : extendedTypeDefaults.db
+    
+
+  return `${dbType}${sqlSuffixes.required}`
 }
 
 
