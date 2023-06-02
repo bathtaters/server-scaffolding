@@ -14,7 +14,7 @@ export const
   MASK_STR = '[MASKED]',
   
   getChildName = <P extends string, C extends string>(parentName: P, childKey: C): `[${P}.${C}]` => `[${parentName}.${childKey}]`,
-  getChildPath = (childName: string) => childName.replace(/^\[|\]$/g,'').replace('.','/'),
+  getChildPath = (childName: string) => childName.replace(/^\[|\]$/g,''),
   CONCAT_DELIM = '~|~',
 
   debugSQL = false
