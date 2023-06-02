@@ -1,6 +1,7 @@
 import type { Database } from '@journeyapps/sqlcipher'
 import type { ForeignKeyRef } from '../types/Model.d'
 import type { CreateSchema } from '../types/db.d'
+import { nullColumn } from '../types/db'
 import logger from '../libs/log'
 import { noDb, sqlError, sqlNotDB } from '../config/errors.engine'
 import { debugSQL } from '../config/models.cfg'
@@ -102,7 +103,7 @@ export function reset<Tables extends string, Schema extends CreateSchema>(
   for (const table in tableSchema) {
     if (force) drops.push(`DROP TABLE IF EXISTS ${table}`)
 
-    let cols: string[] = []
+    let cols: string[] = [`${nullColumn} INTEGER`]
 
     for (const col in tableSchema[table]) {
       if (tableSchema[table][col]) cols.push(`${col} ${tableSchema[table][col]}`)

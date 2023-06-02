@@ -1,5 +1,5 @@
 import type { AllOps, IfExistsBehavior, SQLParams, UpdateData, WhereLogic } from '../types/db.d'
-import { allOps, updateOps, whereLogic } from '../types/db'
+import { allOps, nullColumn, updateOps, whereLogic } from '../types/db'
 import { childLabel } from '../types/Model'
 import RegEx from '../libs/regex'
 import logger from '../libs/log'
@@ -169,15 +169,17 @@ export const insertSQL = <T extends object>(
   ifExists: IfExistsBehavior = 'default'
 ): [string, any[]] => {
   const dataKeys = keys.filter((key) => dataArray.some((data) => key in data)) as (keyof T)[]
-  return [
 
+  return [
     `INSERT${ifExistsBehavior[ifExists]} INTO ${tableName}(${
-        keys.join(',')
+        dataKeys.join(',') || nullColumn
       }) VALUES ${
-        dataArray.map(() => `(${dataKeys.map(() => '?').join(',')})`).join(',')
+        dataArray.map(() => `(${dataKeys.map(() => '?').join(',') || '?'})`).join(',')
     }`,
 
-    dataArray.flatMap((data) => dataKeys.map((key) => data[key] ?? null))
+    dataKeys.length
+      ? dataArray.flatMap((data) => dataKeys.map((key) => data[key] ?? null))
+      : dataArray.map(() => null)
   ]
 }
 

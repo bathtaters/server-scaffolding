@@ -110,6 +110,9 @@ export const allOps = [
     ...Object.values(updateOps).flatMap((op) => Object.keys(op)),
 ]
 
+/** Value to use to allow SQLite to insert null columns */
+export const nullColumn = '_nullInsertColumn'
+
 
 /** Enforces creation of a valid update function for each update op */
 type UpdateFunc<T extends Record<string,Record<string, any>>> = {

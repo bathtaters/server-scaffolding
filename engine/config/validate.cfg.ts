@@ -1,5 +1,6 @@
 import type { TypeDef, Limit } from '../types/validate.d'
-import { TypeOf } from '../types/global.d'
+import type { TypeOf } from '../types/global.d'
+import { nullColumn } from '../types/db'
 import RegEx from '../libs/regex'
 import { isIn } from '../utils/common.utils'
 
@@ -75,6 +76,7 @@ export const
   },
 
   illegalKeys = [
+    nullColumn,
     "ADD", "EXTERNAL", "PROCEDURE", "ALL", "FETCH", "PUBLIC", "ALTER", "FILE", "RAISERROR", "AND", "FILLFACTOR", "READ", "ANY", "FOR", "READTEXT", "AS", "FOREIGN",
     "RECONFIGURE", "ASC", "FREETEXT", "REFERENCES", "AUTHORIZATION", "FREETEXTTABLE", "REPLICATION", "BACKUP", "FROM", "RESTORE", "BEGIN", "FULL", "RESTRICT", "BETWEEN",
     "FUNCTION", "RETURN", "BREAK", "GOTO", "REVERT", "BROWSE", "GRANT", "REVOKE", "BULK", "GROUP", "RIGHT", "BY", "HAVING", "ROLLBACK", "CASCADE", "HOLDLOCK", "ROWCOUNT",
