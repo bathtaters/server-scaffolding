@@ -1,13 +1,17 @@
 mixin typedInp(key, inpType, limits, defaultValue, classes, readonly)
+  -var defIsFunc = typeof defaultValue === 'function'
+  -var def = defIsFunc ? defaultValue() : Array.isArray(defaultValue) ? defaultValue.join(', ') : defaultValue
+
   if Array.isArray(inpType)
     select(name=key id=key class=classes)
       each opt in inpType
-        option(value=opt selected=(opt === defaultValue))= opt
+        option(value=opt selected=(opt === def))= opt
   else if isNaN(inpType)
     input(
       name=key id=key class=classes readonly=(inpType === 'readonly' || readonly)
-      value=(inpType === 'checkbox' ? undefined : Array.isArray(defaultValue) ? defaultValue.join(', ') : defaultValue)
-      checked=(inpType === 'checkbox' ? defaultValue : undefined)
+      value=(inpType === 'checkbox' || defIsFunc ? undefined : def)
+      placeholder=(inpType === 'checkbox' || !defIsFunc ? undefined : def)
+      checked=(inpType === 'checkbox' ? !!def : undefined)
       type=(inpType === 'id' ? "number" : inpType === 'readonly' ? "text" : inpType)
       step=(inpType === 'number' ? "any" : inpType === 'id' ? "1" : undefined)
       pattern=(inpType === 'number' || inpType === 'id' ? "\\d+" : undefined)
@@ -20,21 +24,25 @@ mixin typedInp(key, inpType, limits, defaultValue, classes, readonly)
     if (inpType === 'password')
       button.toggle-password.small(type="button")
   else
-    textarea(name=key id=key class=classes rows=inpType)= defaultValue
+    textarea(name=key id=key class=classes rows=inpType placeholder=(defIsFunc ? def : undefined))= defIsFunc ? undefined : def
+
 
 mixin formInput(key, inpType, limits, defaultValue, label, classes, tooltip, readonly)
   if inpType === 'hidden'
     +typedInp(key, inpType, null, defaultValue, "hidden", readonly)
   else if inpType === 'checkbox'
     .input-group
-      +typedInp(key, inpType, limits, !!defaultValue, classes, readonly)
+      +typedInp(key, inpType, limits, defaultValue, classes, readonly)
       label(for=key aria-label=tooltip class=(tooltip ? 'tooltip' : ''))= label || varName(key)
   else
     .input-group.vertical
       label(for=key aria-label=tooltip class=(tooltip ? 'tooltip' : ''))= label || varName(key)
       +typedInp(key, inpType, limits, defaultValue, classes, readonly)
 
+
 mixin checkboxes(key, rows, label, columns, defaults)
+  - defaults = typeof defaults === 'function' ? defaults() : defaults
+
   fieldset.input-group.vertical(id=key+'Checks')
     legend= label || varName(key)
     if !columns

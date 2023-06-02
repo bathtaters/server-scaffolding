@@ -2,6 +2,7 @@ import RegEx from '../libs/regex'
 import { ModelAccess, Role } from '../types/Users'
 import { urlCfg } from '../src.import'
 import { CorsOrigin } from '../utils/users.cors'
+import { generateToken } from '../utils/auth.utils'
 
 const urls = urlCfg.gui.admin
 
@@ -12,6 +13,7 @@ export const rateLimiter = { maxFails: 5, failWindow: 10 * 60 * 1000, autoUnlock
 export const definition /*: DefinitionSchema */ = {
   id: {
     type: 'hex',
+    default: generateToken,
     limits: { min: 32, max: 32 },
   },
   username: {
@@ -31,21 +33,22 @@ export const definition /*: DefinitionSchema */ = {
   },
   token: {
     type: 'hex?',
+    default: generateToken,
     limits: { min: 32, max: 32 },
-    db: 'TEXT NOT NULL',
   },
   role: {
     type: Role,
-    default: new Role('api', 'gui'),
+    default: () => new Role('api', 'gui'),
     limits: { elem: { max: 16 }, array: { max: Role.count } },
   },
   cors: {
     type: CorsOrigin,
+    default: () => new CorsOrigin(),
     limits: { min: 0, max: 2048 },
   },
   access: {
     type: ModelAccess,
-    default: new ModelAccess(undefined, ['read', 'write']),
+    default: () => new ModelAccess(undefined, ['read', 'write']),
     limits: { elem: { max: 64 }, array: { max: ModelAccess.keys.length * ModelAccess.values.length } },
   },
   failCount: {

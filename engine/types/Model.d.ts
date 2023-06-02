@@ -30,7 +30,7 @@ type DefinitionBase<T> = {
    *   - This value should be the type used in backend services
    *   - default for Primary Key: auto-generated unique ID
    *   - default: NULL (Must be provided if property is not optional or primaryKey) */
-  default?: NonNullable<T>,
+  default?: DefaultType<T>,
   
   /** Determines HTML Form type of property
    *   - string = <input> w/ this as 'type' attribute 
@@ -112,7 +112,7 @@ export type AdapterDefinitionLoose<Def extends DefinitionSchema = DefinitionSche
 }
 
 /** Optional model-wide listener callbacks */
-type ModelListeners<Def extends DefinitionSchema> = {
+export type ModelListeners<Def extends DefinitionSchema> = {
   /** Called whenever an entry is added to the DB
    * @param dataArray - Array of records to be added
    * @returns Promise optionally containing updated data (Can instead mutate the exisiting object) */
@@ -130,6 +130,9 @@ type ModelListeners<Def extends DefinitionSchema> = {
    * @returns Promise optionally containing updated WhereData (Can instead mutate the exisiting object) */
   onDelete?: (dataArray: DBSchemaOf<Def>[], whereData: WhereData<DBSchemaOf<Def>>) => Awaitable<void | WhereData<DBSchemaOf<Def>>>,
 }
+
+/** Expected value of Default */
+export type DefaultType<T> = NonNullable<T> | (() => NonNullable<T>)
 
 /** Generic Type for Definition.type */
 export type DefType = ValidationType | ExtendedClass<any>
@@ -334,7 +337,7 @@ export type AddSchemaOf<Def extends DefinitionSchema> = Flatten<
 
 /** Convert Definition Schema to Schema of Default Values */
 export type DefaultSchemaOf<Def extends DefinitionSchema> = 
-  { -readonly [K in keyof Def as HasDefault<Def[K]> extends true ? K : never]?: SBaseType<Def[K],false> }
+  { -readonly [K in keyof Def as HasDefault<Def[K]> extends true ? K : never]?: DefaultType<SBaseType<Def[K],false>> }
 
 /** Convert Definition Schema to DB Schema */
 export type DBSchemaOf<Def extends DefinitionSchema> = Flatten<
@@ -399,7 +402,7 @@ type SBaseType<D extends Definition, Masked extends boolean = true> =
     ? typeof MASK_STR
     : D['isPrimary'] extends true
       ? GetType<DefTypeStr<D['type']>>
-    : GetType<D['type']>
+      : GetType<D['type']>
 
 
 /** Extract DB Type from Definition */

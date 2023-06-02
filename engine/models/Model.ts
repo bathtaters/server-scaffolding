@@ -19,9 +19,6 @@ import { sanitizeSchemaData, childTableRefs, getSqlParams, childSQL, splitKeys }
 import { getChildName, getChildPath } from '../config/models.cfg'
 import { noID, noData, noEntry, noPrimary, noSize, badKey, multiAction, updatePrimary } from '../config/errors.engine'
 
-// TODO -- ALLOW DEFAULT FUNCTIONS
-// TODO -- FIX CORS MISSING DEFAULT IF IT IS STILL AN ISSUE? / REMOVE as any FROM User Model
-
 
 /** Base Model Class, each instance represents a separate model */
 export default class Model<Def extends DefinitionSchema, Title extends string> {
@@ -389,8 +386,8 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
     if (!data.length) throw noData('batch data')
 
     // Apply defaults, then adapt data
-    const fullData = data.map<DefaultSchemaOf<Def> & AddSchemaOf<Def>>(this._applyDefaults.bind(this))
-    let dataArray: DBSchemaOf<Def>[] = await this.adaptData(adapterTypes.toDB, fullData)
+    const fullData = data.map(this._applyDefaults.bind(this))
+    let dataArray: DBSchemaOf<Def>[] = await this.adaptDataArray(adapterTypes.toDB, fullData)
     
     if (typeof this.listeners.onCreate === 'function') {
       const updated = await this.listeners.onCreate(dataArray)
@@ -521,8 +518,19 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
   }
 
   /** Insert default properties in place of any undefined properties */
-  private _applyDefaults(data: AddSchemaOf<Def>) {
-    return { ...this.defaults, ...data }
+  private _applyDefaults(data: AddSchemaOf<Def>): SchemaOf<Def,false> {
+    let applied: any = { ...data }
+
+    Object.entries(this.defaults).forEach(([key, defValue]) => {
+      if (applied[key] == null)
+        applied[key] = typeof defValue === 'function' ? defValue() : defValue
+    })
+
+    Object.entries(this.schema).forEach(([key, { typeExtended }]) => {
+      if (typeof typeExtended === 'function' && applied[key] == null)
+        applied[key] = new typeExtended()
+    })
+    return applied
   }
   
 
