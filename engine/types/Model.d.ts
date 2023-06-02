@@ -290,10 +290,10 @@ export type AdapterData<S extends SchemaGeneric> = S | Partial<S> | WhereData<S>
 
 /** Extract Adapter SchemaIn for given AdapterType from Definition */
 export type AdapterIn<Def extends DefinitionSchema, A extends AdapterType> =
-  (A extends typeof adapterTypes['fromDB'] ?    DBSchemaOf<Def> : never) |
-  (A extends typeof adapterTypes['toDB']   ?   AddSchemaOf<Def> : never) |
-  (A extends typeof adapterTypes['fromUI'] ?  FormSchemaOf<Def> : never) |
-  (A extends typeof adapterTypes['toUI']   ? SchemaOf<Def,true> : never)
+  (A extends typeof adapterTypes['fromDB'] ?     DBSchemaOf<Def> : never) |
+  (A extends typeof adapterTypes['toDB']   ? SchemaOf<Def,false> : never) |
+  (A extends typeof adapterTypes['fromUI'] ?   FormSchemaOf<Def> : never) |
+  (A extends typeof adapterTypes['toUI']   ?  SchemaOf<Def,true> : never)
 
 /** Extract Adapter SchemaOut for given AdapterType from Definition */
 export type AdapterOut<Def extends DefinitionSchema, A extends AdapterType> =
@@ -397,6 +397,8 @@ export type TypeOfID<Def extends DefinitionSchema, ID extends IDOf<Def> | undefi
 type SBaseType<D extends Definition, Masked extends boolean = true> =
   Masked | D['isMasked'] extends true
     ? typeof MASK_STR
+    : D['isPrimary'] extends true
+      ? GetType<DefTypeStr<D['type']>>
     : GetType<D['type']>
 
 

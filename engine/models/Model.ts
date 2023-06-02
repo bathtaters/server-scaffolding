@@ -112,7 +112,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
     const sizes = pageCount > 1 || total > Math.min(...sizeList) ? appendAndSort(sizeList, size) : undefined
     
     const rawData = await this.find(undefined, undefined, { ...location, page, size })
-    const data = await this.adaptData(adapterTypes.toUI, rawData)
+    const data = await this.adaptDataArray(adapterTypes.toUI, rawData)
   
     return { data, page, pageCount, size, sizes }
   }
@@ -195,7 +195,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
   ): FindResult<Def,O> {
     
     const data = await this._select(where, options, page)
-    return options.raw ? data as any : this.adaptData(adapterTypes.fromDB, data)
+    return options.raw ? data as any : this.adaptDataArray(adapterTypes.fromDB, data)
   }
   
   
@@ -230,7 +230,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
    */
   async update<O extends Record<string,any> & IDOption<Def>>(
     id: TypeOfID<Def, O['idKey']>,
-    data: UpdateData<AddSchemaOf<Def>>,
+    data: UpdateData<SchemaOf<Def,false>>,
     { idKey } = {} as O
   ) {
     if (id == null) throw noID()
@@ -257,7 +257,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
    *                - No options on Default Model
    * @returns Feedback object { success: true/false }
    */
-  async batchUpdate(where: WhereData<SchemaOf<Def,false>>, data: UpdateData<AddSchemaOf<Def>>, options?: Record<string,any>): Promise<Feedback> {
+  async batchUpdate(where: WhereData<SchemaOf<Def,false>>, data: UpdateData<SchemaOf<Def,false>>, options?: Record<string,any>): Promise<Feedback> {
     const whereData = await this.adaptData(adapterTypes.toDB, where)
     const success = await this._update(data, whereData)
     return { success }
@@ -328,7 +328,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
   async custom(sql: string, params?: { [key: string]: any } | any[], raw?: boolean): Promise<unknown[]> {
     const result = await all(getDb(), sql, params)
     return raw ? result.map(caseInsensitiveObject)
-      : this.adaptData(adapterTypes.fromDB, result) as Promise<unknown[]>
+      : this.adaptDataArray(adapterTypes.fromDB, result) as Promise<unknown[]>
   }
 
 
@@ -405,7 +405,10 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
     const missingPrimary = !keys.parent.includes(this.primaryId)
 
     // Update Base DB
-    const lastEntry = await (returnLast || missingPrimary ? getLastEntry(getDb(), ...params, this.title) : run(getDb(), ...params))
+    let lastEntry: any
+    if (!returnLast && !missingPrimary) lastEntry = await run(getDb(), ...params)
+    else lastEntry = await getLastEntry(getDb(), ...params, this.title)
+
     if (!keys.children.length) return !returnLast || lastEntry
     
     // Get rowId if primaryId wasn't provided
@@ -420,7 +423,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
 
   /** Execute UPDATE command using DATA values on records match WHERE values
    *  and calling ONCHANGE if provided (Returns TRUE/FALSE if successful) */
-  private async _update(data: UpdateData<AddSchemaOf<Def>>, whereData: WhereData<DBSchemaOf<Def>>) {
+  private async _update(data: UpdateData<SchemaOf<Def,false>>, whereData: WhereData<DBSchemaOf<Def>>) {
     
     // Adapt/Sanitize data
     if (!Object.keys(whereData).length) throw noID()
@@ -548,85 +551,84 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
   // Infinite adapter definitions
 
   /** Run adapters on full data 
-   * @param data - Data to adapt
    * @param adapterType - Member of adapterTypes enum
+   * @param data - Data to adapt
    * @returns Adapted data
    */
   adaptData<A extends AdapterType>(adapterType: A, data: AdapterIn<Def,A>): Promise<AdapterOut<Def,A>>;
   /** Run adapters on childless data 
-   * @param data - Data to adapt
    * @param adapterType - Member of adapterTypes enum
+   * @param data - Data to adapt
    * @returns Adapted data
    */
   adaptData<A extends AdapterType>(adapterType: A, data: SkipChildren<AdapterIn<Def,A>,Def>): Promise<SkipChildren<AdapterOut<Def,A>,Def>>;
   /** Run adapters on partial data 
-   * @param data - Data to adapt
    * @param adapterType - Member of adapterTypes enum
+   * @param data - Data to adapt
    * @returns Adapted data
    */
   adaptData<A extends AdapterType>(adapterType: A, data: Partial<AdapterIn<Def,A>>): Promise<Partial<AdapterOut<Def,A>>>;
   /** Run adapters on where data 
-   * @param data - Data to adapt
    * @param adapterType - Member of adapterTypes enum
+   * @param data - Data to adapt
    * @returns Adapted data
    */
   adaptData<A extends AdapterType>(adapterType: A, data: WhereData<AdapterIn<Def,A>>): Promise<WhereData<AdapterOut<Def,A>>>;
   /** Run adapters on update data 
-   * @param data - Data to adapt
    * @param adapterType - Member of adapterTypes enum
+   * @param data - Data to adapt
    * @returns Adapted data
    */
   adaptData<A extends AdapterType>(adapterType: A, data: UpdateData<AdapterIn<Def,A>>): Promise<UpdateData<AdapterOut<Def,A>>>;
   /** Run adapters on any data 
-   * @param data - Data to adapt
    * @param adapterType - Member of adapterTypes enum
+   * @param data - Data to adapt
    * @returns Adapted data
    */
   adaptData<A extends AdapterType>(adapterType: A, data: AdapterData<AdapterIn<Def,A>>): Promise<AdapterData<AdapterOut<Def,A>>>;
 
+  adaptData<A extends AdapterType>(adapterType: A, data: AdapterData<AdapterIn<Def,A>>): Promise<AdapterData<AdapterOut<Def,A>>> {
+    return runAdapters(adapterType, data, this)
+  }
+
   /** Run adapters on full data array 
-   * @param dataArray - Array of Data to adapt
    * @param adapterType - Member of adapterTypes enum
+   * @param dataArray - Array of Data to adapt
    * @returns Adapted data array
    */
-  adaptData<A extends AdapterType>(adapterType: A, dataArray: AdapterIn<Def,A>[]): Promise<AdapterOut<Def,A>[]>;
+  adaptDataArray<A extends AdapterType>(adapterType: A, dataArray: AdapterIn<Def,A>[]): Promise<AdapterOut<Def,A>[]>;
   /** Run adapters on childless data array 
-   * @param dataArray - Array of Data to adapt
    * @param adapterType - Member of adapterTypes enum
+   * @param dataArray - Array of Data to adapt
    * @returns Adapted data array
    */
-  adaptData<A extends AdapterType>(adapterType: A, dataArray: SkipChildren<AdapterIn<Def,A>,Def>[]): Promise<SkipChildren<AdapterOut<Def,A>,Def>[]>;
+  adaptDataArray<A extends AdapterType>(adapterType: A, dataArray: SkipChildren<AdapterIn<Def,A>,Def>[]): Promise<SkipChildren<AdapterOut<Def,A>,Def>[]>;
   /** Run adapters on partial data array 
-   * @param dataArray - Array of Data to adapt
    * @param adapterType - Member of adapterTypes enum
+   * @param dataArray - Array of Data to adapt
    * @returns Adapted data array
    */
-  adaptData<A extends AdapterType>(adapterType: A, dataArray: Partial<AdapterIn<Def,A>>[]): Promise<Partial<AdapterOut<Def,A>>[]>;
+  adaptDataArray<A extends AdapterType>(adapterType: A, dataArray: Partial<AdapterIn<Def,A>>[]): Promise<Partial<AdapterOut<Def,A>>[]>;
   /** Run adapters on where data array 
-   * @param dataArray - Array of Data to adapt
    * @param adapterType - Member of adapterTypes enum
+   * @param dataArray - Array of Data to adapt
    * @returns Adapted data array
    */
-  adaptData<A extends AdapterType>(adapterType: A, dataArray: WhereData<AdapterIn<Def,A>>[]): Promise<WhereData<AdapterOut<Def,A>>[]>;
+  adaptDataArray<A extends AdapterType>(adapterType: A, dataArray: WhereData<AdapterIn<Def,A>>[]): Promise<WhereData<AdapterOut<Def,A>>[]>;
   /** Run adapters on update data array 
-   * @param dataArray - Array of Data to adapt
    * @param adapterType - Member of adapterTypes enum
+   * @param dataArray - Array of Data to adapt
    * @returns Adapted data array
    */
-  adaptData<A extends AdapterType>(adapterType: A, dataArray: UpdateData<AdapterIn<Def,A>>[]): Promise<UpdateData<AdapterOut<Def,A>>[]>;
+  adaptDataArray<A extends AdapterType>(adapterType: A, dataArray: UpdateData<AdapterIn<Def,A>>[]): Promise<UpdateData<AdapterOut<Def,A>>[]>;
   /** Run adapters on any data array 
-   * @param dataArray - Array of Data to adapt
    * @param adapterType - Member of adapterTypes enum
+   * @param dataArray - Array of Data to adapt
    * @returns Adapted data array
    */
-  adaptData<A extends AdapterType>(adapterType: A, dataArray: AdapterData<AdapterIn<Def,A>>[]): Promise<AdapterData<AdapterOut<Def,A>>[]>;
+  adaptDataArray<A extends AdapterType>(adapterType: A, dataArray: AdapterData<AdapterIn<Def,A>>[]): Promise<AdapterData<AdapterOut<Def,A>>[]>;
 
-  adaptData<A extends AdapterType>
-    (adapterType: A, data: AdapterData<AdapterIn<Def,A>> | AdapterData<AdapterIn<Def,A>>[]):
-    Promise<AdapterData<AdapterOut<Def,A>>> | Promise<AdapterData<AdapterOut<Def,A>>[]>
-  {
-    if (!Array.isArray(data)) return runAdapters(adapterType, data, this)
-
+  adaptDataArray<A extends AdapterType>(adapterType: A, data: AdapterData<AdapterIn<Def,A>>[]): Promise<AdapterData<AdapterOut<Def,A>>[]> {
     return Promise.all(data.map((entry) => this.adaptData(adapterType, entry)))
   }
 }

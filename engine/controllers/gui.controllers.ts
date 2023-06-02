@@ -72,7 +72,7 @@ export function modelDb<M extends ModelGuiBase>(Model: M, {
       try {
         const searchData = await Model.adaptData(adapterTypes.fromUI, matchedData(req))
         const data = await Model.find(partialMatch ? toPartialMatch(searchData) : searchData)
-        const uiData = await Model.adaptData(adapterTypes.toUI, data)
+        const uiData = await Model.adaptDataArray(adapterTypes.toUI, data)
 
         const access = req.user?.access?.get(Model.title)
 
