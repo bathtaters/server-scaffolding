@@ -3,7 +3,7 @@ import type { ApiResponse } from '../types/Model.d'
 import type { Endware } from '../types/express.d'
 import { matchedData } from 'express-validator'
 import * as errors from '../config/errors.engine'
-import { getMatchingKey } from '../utils/common.utils'
+import { extractValue, getMatchingKey, getMatchingValue } from '../utils/common.utils'
 
 
 export const create = <M extends GenericModel>(Model: M): Endware<ApiResponse.Create> =>
@@ -19,7 +19,7 @@ export const create = <M extends GenericModel>(Model: M): Endware<ApiResponse.Cr
 
 export const read = <M extends GenericModel>(Model: M): Endware<ApiResponse.Read> =>
   async function read(req,res,next) {
-    const id = matchedData(req)[Model.primaryId]
+    const id = getMatchingValue(matchedData(req), Model.primaryId)
 
     const data = await (id != null ? Model.get(id) : Model.find()).catch(next)
 
@@ -30,10 +30,12 @@ export const read = <M extends GenericModel>(Model: M): Endware<ApiResponse.Read
 export const update = <M extends GenericModel>(Model: M): Endware<ApiResponse.Update> =>
   async function update(req,res,next) {
     const data = matchedData(req)
-    if (data[Model.primaryId] == null) return next(errors.noID())
+    const id = extractValue(data, Model.primaryId)
+
+    if (id == null) return next(errors.noID())
     if (!data || !Object.keys(data).length) return next(errors.noData())
 
-    return Model.update(data[Model.primaryId], data)
+    return Model.update(id, data)
       .then((fdbk) => res.send(fdbk))
       .catch(next)
   }
@@ -41,7 +43,7 @@ export const update = <M extends GenericModel>(Model: M): Endware<ApiResponse.Up
 
 export const remove = <M extends GenericModel>(Model: M): Endware<ApiResponse.Delete> =>
   async function remove(req,res,next) {
-    const id = matchedData(req)[Model.primaryId]
+    const id = getMatchingValue(matchedData(req), Model.primaryId)
     if (id == null) return next(errors.noID())
 
     return Model.remove(id)
