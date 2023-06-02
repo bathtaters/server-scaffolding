@@ -46,13 +46,17 @@ export function appendToSchema(schema: Schema = {}, additional: readonly Validat
  *  instead use generateSchema or appendToSchema. */
 export function toValidationSchema(
   key: string,
-  { typeBase = 'any', isOptional, isArray, hasSpaces, limits }: Partial<ValidationExpanded>,
+  { typeBase, isOptional, isArray, hasSpaces, limits }: Partial<ValidationExpanded>,
   isIn: RequestField[], 
   partial = false,
   disableMin = false
 ) {
   
   // Normalize input
+  if (typeBase == null) { // Handle missing typeBase
+    typeBase = 'any'
+    isOptional = true
+  }
   if (!isIn.length) throw new Error(errorMsgs.missingIn(key))
   if (partial && !isOptional) isOptional = true
   const type = toTypeString({ typeBase, isOptional, isArray, hasSpaces, limits })
