@@ -1,5 +1,5 @@
 import type {} from '../middleware/auth.middleware' // Express.User type
-import type { AdapterDefinition, AddSchemaOf, FormSchemaOf } from '../types/Model.d'
+import type { AdapterDefinition, DBSchemaOf, FormSchemaOf } from '../types/Model.d'
 import type { UserDef } from '../types/Users.d'
 import { Role } from '../types/Users'
 import { adapterTypes, viewMetaKey } from '../types/Model'
@@ -44,7 +44,7 @@ export const userAdapters: AdapterDefinition<UserDef> = {
   },
 }
 
-export const addAdapter = (data: Omit<AddSchemaOf<UserDef>, 'id'|'token'>) => ({
+export const addAdapter = (data: Omit<DBSchemaOf<UserDef>, 'id'|'token'>) => ({
   id: generateToken(),
   token: generateToken(),
   ...data,

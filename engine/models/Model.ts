@@ -19,10 +19,8 @@ import { sanitizeSchemaData, childTableRefs, getSqlParams, childSQL, splitKeys }
 import { getChildName, getChildPath } from '../config/models.cfg'
 import { noID, noData, noEntry, noPrimary, noSize, badKey, multiAction, updatePrimary } from '../config/errors.engine'
 
-// TODO -- Create PageData object & move selectSQL call from this.getPage into this._select
-// TODO -- Create base onUpdate/onCreate callbacks that are called whenever an Update/Create call is made
-
-// TODO -- DOUBLE CHECK ADAPTERS W/ VALIDATORS + FORM DATA
+// TODO -- ALLOW DEFAULT FUNCTIONS
+// TODO -- FIX CORS MISSING DEFAULT IF IT IS STILL AN ISSUE? / REMOVE as any FROM User Model
 
 
 /** Base Model Class, each instance represents a separate model */
@@ -32,6 +30,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
   private _adapters:     AdapterDefinition<Def>
   private _primaryId:    PrimaryIDOf<Def>
   private _isChildModel: boolean
+  listeners:             ModelListeners<Def>
 
   private   _defaults: DefaultSchemaOf<Def>
   private   _masked:   Array<keyof Def>
@@ -48,11 +47,11 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
    *                         - See 'Definition' Type for additional documentation)
    * @param adapters         - (Optional) Override default adapters { adapterType: { schemaKey: adapterFunction } }
    *                         - Adapter Types: to/from DB, to/from GUI (HTML Form) */
-  constructor(title: Title, schemaDefinition: Def, adapters?: Partial<AdapterDefinition<Def>>)
+  constructor(title: Title, schemaDefinition: Def, adapters?: Partial<AdapterDefinition<Def>>, listeners?: ModelListeners<Def>)
   /**  Don't use if you don't know what you're doing, this overload is for the engine to create sub-tables */
-  constructor(title: Title, schemaDefinition: Def, adapters?: Partial<AdapterDefinition<Def>>, isChildModel?: boolean)
+  constructor(title: Title, schemaDefinition: Def, adapters?: Partial<AdapterDefinition<Def>>, listeners?: ModelListeners<Def>, isChildModel?: boolean)
 
-  constructor(title: Title, schemaDefinition: Def, adapters: Partial<AdapterDefinition<Def>> = {}, isChildModel = false) {
+  constructor(title: Title, schemaDefinition: Def, adapters: Partial<AdapterDefinition<Def>> = {}, listeners: ModelListeners<Def> = {}, isChildModel = false) {
     // Set basic properties
     this._title        = title
     this._isChildModel = isChildModel
@@ -63,6 +62,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
     this._children  = extractChildren(this._schema, this._primaryId)
 
     // Set additional properties
+    this.listeners = listeners
     this._adapters = buildAdapters(adapters, this._schema)
     this._defaults = mapToField(this._schema, 'default') as any
     this._masked   = Object.keys(this._schema).filter((key) => this._schema[key].isMasked)
@@ -84,7 +84,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
   getChildModel<N extends ChildKey<Def> & string>(childName: N) {
     const schema = this.children[childName]
     if (!schema) throw new Error(`ChildModel doesn't exist for ${String(childName)} on ${this.title}.`)
-    return new Model(getChildName(this.title, childName), schema, undefined, true)
+    return new Model(getChildName(this.title, childName), schema, undefined, undefined, true)
   }
 
   
@@ -226,17 +226,12 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
    * @param data    - Key/Value object to update matching record to
    * @param options - (Optional) Update options
    * @param options.idKey    - (Default: Primary ID) Key of ID to lookup
-   * @param options.onChange - Function called immediately before records are updated (can be async)
-   *                         - (update, matching) => newValue | void
-   *                         - 'update' = Keys/Values to Update (Post-adapter)
-   *                         - 'matching' = Array of records that will be updated (pre-adapter/no joins))
-   *                         - return = New value for 'update' to OR void + mutates 'update' param
    * @returns Feedback object { success: true/false }
    */
-  async update<O extends SQLOptions<Def> & IDOption<Def>>(
+  async update<O extends Record<string,any> & IDOption<Def>>(
     id: TypeOfID<Def, O['idKey']>,
     data: UpdateData<AddSchemaOf<Def>>,
-    { idKey, ...options } = {} as O
+    { idKey } = {} as O
   ) {
     if (id == null) throw noID()
 
@@ -246,7 +241,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
     if (!count) throw noEntry(id)
     if (count !== 1) throw multiAction('Updating',count)
 
-    return this.batchUpdate(whereData, data, options)
+    return this.batchUpdate(whereData, data)
   }
 
 
@@ -259,16 +254,12 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
    *                - WhereLogic is { $and/$or: [ ...WhereData ] }, { $not: WhereData }
    * @param data    - Key/Value object to update matching record to
    * @param options - (Optional) Update options
-   * @param options.onChange - Function called immediately before records are updated (can be async)
-   *                         - (update, matching) => newValue | void
-   *                         - 'update' = Keys/Values to Update (Post-adapter)
-   *                         - 'matching' = Array of records that will be updated (pre-adapter/no joins))
-   *                         - return = New value for 'update' to OR void + mutates 'update' param
+   *                - No options on Default Model
    * @returns Feedback object { success: true/false }
    */
-  async batchUpdate(where: WhereData<SchemaOf<Def,false>>, data: UpdateData<AddSchemaOf<Def>>, options: SQLOptions<Def> = {}): Promise<Feedback> {
+  async batchUpdate(where: WhereData<SchemaOf<Def,false>>, data: UpdateData<AddSchemaOf<Def>>, options?: Record<string,any>): Promise<Feedback> {
     const whereData = await this.adaptData(adapterTypes.toDB, where)
-    const success = await this._update(data, whereData, options)
+    const success = await this._update(data, whereData)
     return { success }
   }
   
@@ -399,7 +390,12 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
 
     // Apply defaults, then adapt data
     const fullData = data.map<DefaultSchemaOf<Def> & AddSchemaOf<Def>>(this._applyDefaults.bind(this))
-    const dataArray: DBSchemaOf<Def>[] = await this.adaptData(adapterTypes.toDB, fullData)
+    let dataArray: DBSchemaOf<Def>[] = await this.adaptData(adapterTypes.toDB, fullData)
+    
+    if (typeof this.listeners.onCreate === 'function') {
+      const updated = await this.listeners.onCreate(dataArray)
+      if (updated) dataArray = updated
+    }
     
     const keys = splitKeys(dataArray[0], this.children)
     if (!keys.parent.length && !keys.children.length) throw noData()
@@ -424,7 +420,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
 
   /** Execute UPDATE command using DATA values on records match WHERE values
    *  and calling ONCHANGE if provided (Returns TRUE/FALSE if successful) */
-  private async _update(data: UpdateData<AddSchemaOf<Def>>, whereData: WhereData<DBSchemaOf<Def>>, { onChange }: SQLOptions<Def>) {
+  private async _update(data: UpdateData<AddSchemaOf<Def>>, whereData: WhereData<DBSchemaOf<Def>>) {
     
     // Adapt/Sanitize data
     if (!Object.keys(whereData).length) throw noID()
@@ -434,18 +430,18 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
     // Find matching entries
     let ids: DBSchemaOf<Def>[IDOf<Def>][] = [(whereData as any)[this.primaryId]] // simple method
 
-    if (ids[0] == null || onChange) { // complex method
+    if (ids[0] == null || this.listeners.onUpdate) { // complex method
 
-      const currentData = await this._selectRaw(whereData, { skipChildren: !!onChange })
+      const currentData = await this._selectRaw(whereData, { skipChildren: !!this.listeners.onUpdate })
 
       ids = currentData.filter((entry) => this.primaryId in entry).map((entry: any) => entry[this.primaryId])
       if (!ids.length) throw noEntry(JSON.stringify(whereData))
 
       if (ids.length > 1) logger.verbose(`ALERT! Updating ${ids.length} rows of table ${this.title} with one statement.`)
 
-      if (onChange) {
-        // Run onChange callback here to avoid re-fetching 'currentData'
-        const changed = await onChange(updateData, currentData)
+      if (typeof this.listeners.onUpdate === 'function') {
+        // Run onUpdate callback here to avoid re-fetching 'currentData'
+        const changed = await this.listeners.onUpdate(updateData, currentData)
         if (changed) updateData = changed
         updateData = sanitizeSchemaData(updateData, this)
       }
@@ -483,6 +479,12 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
    * (Returns TRUE/FALSE if successful) */
   private async _delete(whereData: WhereData<DBSchemaOf<Def>>) {
     if (!Object.keys(whereData).length) throw noID()
+
+    if (typeof this.listeners.onDelete === 'function') {
+      const data: DBSchemaOf<Def>[] = await this._selectRaw(whereData, {})
+      const updated = await this.listeners.onDelete(data, whereData)
+      if (updated) whereData = updated
+    }
     
     await run(getDb(), ...deleteSQL(this.title, getSqlParams(this, whereData)))
     return true

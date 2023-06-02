@@ -111,6 +111,25 @@ export type AdapterDefinitionLoose<Def extends DefinitionSchema = DefinitionSche
   [A in AdapterType]: { [K in keyof Def]?: Adapter<K, any, any> | false }
 }
 
+/** Optional model-wide listener callbacks */
+type ModelListeners<Def extends DefinitionSchema> = {
+  /** Called whenever an entry is added to the DB
+   * @param dataArray - Array of records to be added
+   * @returns Promise optionally containing updated data (Can instead mutate the exisiting object) */
+  onCreate?: (dataArray: DBSchemaOf<Def>[]) => Awaitable<void | DBSchemaOf<Def>[]>,
+
+  /** Called whenever an DB entry is updated
+   * @param updateData   - UpdateData to be applied to matching Database entries
+   * @param matchingData - Array of records in database to be updated
+   * @returns Promise optionally containing updated UpdateData (Can instead mutate the exisiting object) */
+  onUpdate?: (updateData: UpdateData<DBSchemaOf<Def>>, matchingData: DBSchemaOf<Def>[]) => Awaitable<void | UpdateData<DBSchemaOf<Def>>>,
+
+  /** Called whenever an DB entry is deleted
+   * @param dataArray - Array of records to be deleted
+   * @param whereData - WhereData of data to be deleted
+   * @returns Promise optionally containing updated WhereData (Can instead mutate the exisiting object) */
+  onDelete?: (dataArray: DBSchemaOf<Def>[], whereData: WhereData<DBSchemaOf<Def>>) => Awaitable<void | WhereData<DBSchemaOf<Def>>>,
+}
 
 /** Generic Type for Definition.type */
 export type DefType = ValidationType | ExtendedClass<any>
@@ -126,13 +145,11 @@ export type ChangeCallback<Def extends DefinitionSchema> =
   (update: UpdateData<DBSchemaOf<Def>>, matching: DBSchemaOf<Def>[]) =>
     Awaitable<UpdateData<DBSchemaOf<Def>> | void>
 
-/** { onChange?: ChangeCallback<Schema>, raw?: bool, skipChildren?: bool } */
+/** Options for DB getters: { raw?: bool, skipChildren?: bool } */
 export type SQLOptions<Def extends DefinitionSchema> = {
-  /** (update only) Called with newData & oldData before updating DB */
-  onChange?: ChangeCallback<Def>,
-  /** (getter only) Skip fromDbAdapters, returning raw DB values */
+  /** Skip fromDbAdapters, returning raw DB values */
   raw?: boolean,
-  /** (getter only) Skip DB Joins, returned value will not include children from related tables */
+  /** Skip DB Joins, returned value will not include children from related tables */
   skipChildren?: boolean
 }
 

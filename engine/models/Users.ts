@@ -20,12 +20,20 @@ const title = '_users'
 
 class User extends Model<UserDef, typeof title> {
 
-  constructor() { super(title, definition, userAdapters) }
+  constructor() {
+    super(title, definition, userAdapters)
+    this.listeners.onUpdate = this._updateCb.bind(this)
+    this.listeners.onDelete = this.throwLastAdmins.bind(this)
 
-  override async get<O extends GetOptions>(
-    id: TypeOfID<UserDef, O['idKey']>, { timestamp, ignoreCounter, ...options } = {} as O
-  ) {
+    this.listeners.onCreate = async (dataArray) => {
+      const updated = await this._addAdapter(dataArray)
+      return updated
+    }
+  }
 
+  override async get<O extends GetOptions>
+  (id: TypeOfID<UserDef, O['idKey']>, { timestamp, ignoreCounter, ...options } = {} as O)
+  {
     const user = await super.get(id, options)
     if (user) await this._updateTimestamp(user, timestamp, ignoreCounter)
     return user
@@ -41,46 +49,13 @@ class User extends Model<UserDef, typeof title> {
     return users[0]
   }
   
-  override async add(users: Omit<AddSchemaOf<UserDef>,'id'|'token'>[], ifExists: IfExistsBehavior = 'default') {
-    const userData = await this._addAdapter(users)
-    return await super.add(userData, ifExists)
-  }
-
-  override async addAndReturn(users: Omit<AddSchemaOf<UserDef>,'id'|'token'>[], ifExists: IfExistsBehavior = 'default') {
-    const userData = await this._addAdapter(users)
-    return await super.addAndReturn(userData, ifExists)
-  }
-
-  private async _updateOVR<O extends GetOptions>
-  (id: TypeOfID<UserDef, O['idKey']>, data: UpdateData<AddSchemaOf<UserDef>>, options = {} as O)
-  {
-    const oldOnChange = options.onChange
-    if (!oldOnChange) options.onChange = this._updateCb.bind(this)
-
-    else options.onChange = async (update, matching) => {
-      const res = await oldOnChange(update, matching)
-      return this._updateCb.call(this, res ?? update, matching)
-    }
-
-    return super.update(id, data, options)
-  }
-  override update: Model<UserDef, typeof title>['update'] = this._updateOVR.bind(this)
-
-  
-  private async _removeOVR<ID extends IDOf<UserDef> | undefined>(id: TypeOfID<UserDef,ID>, idKey?: ID) {
-    await this.throwLastAdmins({ [idKey || this.primaryId]: id })
-    return super.remove(id, idKey)
-  }
-  override remove: Model<UserDef, typeof title>['remove'] = this._removeOVR.bind(this)
-
-
   regenToken(id: DBSchemaOf<UserDef>['id']) {
     return super.update(id, { token: generateToken() })
   }
 
   async checkPassword(username: SchemaOf<UserDef>['username'], password: string, role: RoleType) {
     if (!isPm2 && !(await this.count())) {
-      const data = await this.addAndReturn([{ username, password, role }])
+      const data = await this.addAndReturn([{ username, password, role } as any]) // !!! REMOVE as any
       logger.info(`Created initial user: ${data.username}`)
       return this.adaptData(adapterTypes.fromDB, data)
     }
@@ -113,8 +88,10 @@ class User extends Model<UserDef, typeof title> {
     return !admins.filter(({ remains }) => remains).length
   }
 
-  async throwLastAdmins(where: WhereData<SchemaOf<UserDef>>) {
-    const isLast = await this.areLastAdmins(where)
+  async throwLastAdmins(dataArray: DBSchemaOf<UserDef>[]) {
+    const isLast = await this.areLastAdmins({
+      id: { $in: dataArray.map(({ id }) => id).filter(Boolean) }
+    })
     if (isLast) throw deleteAdmin()
   }
 
@@ -183,7 +160,7 @@ class User extends Model<UserDef, typeof title> {
   }
 
 
-  private async _addAdapter(users: Omit<AddSchemaOf<UserDef>, 'id'|'token'>[]): Promise<AddSchemaOf<UserDef>[]> {
+  private async _addAdapter(users: Omit<DBSchemaOf<UserDef>, 'id'|'token'>[]): Promise<DBSchemaOf<UserDef>[]> {
     for (const user of users) {
       await this.throwInvalidUsername(user.username)
     }
@@ -215,7 +192,7 @@ class User extends Model<UserDef, typeof title> {
 
       // Must have at least 1 admin
       if (Role.map.admin.intersects(oldData.role) && !Role.map.admin.intersects(newRole))
-        await this.throwLastAdmins({ id: { $in: matchingData.map(({ id }) => id) } })
+        await this.throwLastAdmins(matchingData)
     }
     
     // Usernames must be unique
