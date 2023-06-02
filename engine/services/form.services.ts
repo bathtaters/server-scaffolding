@@ -3,7 +3,7 @@ import { type ActionObject } from '../types/gui.d'
 import { actions } from '../types/gui'
 import { noData, noAdd, noID } from '../config/errors.engine'
 import { isDate } from '../libs/date'
-import { extractId } from '../utils/db.utils'
+import { extractValue } from '../utils/common.utils'
 
 import { urlCfg } from '../src.import'
 const searchURL = urlCfg.gui.basic.find
@@ -23,18 +23,18 @@ export default function modelActions<M extends ModelFormBase>(Model: M): ActionO
 
     // ADD
     [actions.create]: async (formData = {}) => {
-      const [_, data] = extractId(formData, Model.primaryId)
-      if (!data || !Object.keys(data).length) throw noData()
-      const result = await Model.addAndReturn([data])
+      extractValue(formData, Model.primaryId)
+      if (!formData || !Object.keys(formData).length) throw noData()
+      const result = await Model.addAndReturn([formData])
       if (!result) throw noAdd()
     },
 
     // UPDATE
     [actions.update]: async (formData = {}) => {
-      const [id, data] = extractId(formData, Model.primaryId)
+      const id = extractValue(formData, Model.primaryId)
       if (id == null) throw noID()
-      if (!data || !Object.keys(data).length) throw noData()
-      return Model.update(id, data).then(() => {})
+      if (!formData || !Object.keys(formData).length) throw noData()
+      return Model.update(id, formData).then(() => {})
     },
 
     // REMOVE

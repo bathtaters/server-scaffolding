@@ -26,14 +26,6 @@ if (RegEx(/['\s]/).test(CONCAT_DELIM)) throw sqlInjection(CONCAT_DELIM, false, '
 checkInjection(Object.values(childLabel), 'models.cfg:childLabel')
 
 
-export const extractId = <O extends Record<string|number,any>, ID extends keyof O>
-  (data: O, idKey: ID): [O[ID], Partial<O>] => {
-    const id = data[idKey]
-    delete data[idKey]
-    return [id, data]
-  }
-
-
 /** Determine which Operation (if any) is being used on the data */
 export const getOpType = <T>(data: T) => typeof data !== 'object' || !data ? undefined :
   allOps.find((key) => key in data) as AllOps

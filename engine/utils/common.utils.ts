@@ -203,11 +203,27 @@ export function throttle<Arg, Ret>(func: (args: Arg[]) => Ret, interval: number,
 
 
 /** Get object key case-insensitive */
-export const getMatchingKey = <O extends Record<string,any>>(object: O, propAnyCase: string) => {
-  if (propAnyCase in object) return propAnyCase as keyof O
+export const getMatchingKey = <O extends Record<string,any>>(object: O, keyAnyCase: string) => {
+  if (keyAnyCase in object) return keyAnyCase as keyof O
 
-  const lowerProp = propAnyCase.toLowerCase()
+  const lowerProp = keyAnyCase.toLowerCase()
   return Object.keys(object).find((p) => lowerProp === p.toLowerCase()) as keyof O | undefined
+}
+
+/** Get value of object key case-insensitive */
+export const getMatchingValue = <O extends Record<string,any>>(object: O, keyAnyCase: string) => {
+  const key = getMatchingKey(object, keyAnyCase)
+  return key && object[key]
+}
+
+/** Return value of object key case-insensitive, removing it from the object */
+export const extractValue = <O extends Record<string|number,any>>(object: O, keyAnyCase: string) => {
+  const key = getMatchingKey(object, keyAnyCase)
+  if (!key) return undefined
+
+  const value = object[key]
+  delete object[key]
+  return value
 }
 
 
