@@ -218,7 +218,7 @@ export function sanitizeSchemaData
 export const stripPrimaryDef = <S extends DefType>
   ({ db, isOptional, ...definition }: DefinitionNormal<S>) => ({
     ...definition,
-    db: db ? db.replace(' PRIMARY KEY', ' NOT NULL') as SQLTypeFull : false as false,
+    db: db ? db.replace(sqlSuffixes.primary, sqlSuffixes.required) as SQLTypeFull : false as false,
   })
 
 
