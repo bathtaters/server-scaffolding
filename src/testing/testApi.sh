@@ -2,7 +2,7 @@
 # Uses cURL
 
 # Use predefined vars, any blank vars will be asked for before each test
-test_protocol="https"     # http/https
+test_protocol=""          # http/https
 test_domain="localhost"   # Set IP/domain
 test_port=""              # Set PORT
 test_token=""             # Auth token
