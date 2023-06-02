@@ -27,7 +27,7 @@ runTests() {
   local res=$([[ "$test_access" == *"w"* ]] && echo "" || echo "\"error\":")
   callApi "Create entry" "POST" "" "{\"${test_key}\":\"${val1}\"}" "$res"
   
-  local id=$([[ "$test_res" != *"\"error\":"* ]] && getVal "$test_res" || echo "")
+  local id=$([[ "$test_res" != *"\"error\":"* ]] && getVal "$test_res" "$id_key" || echo "")
 
   # READ -- writeonly = fails
   res=$([[ "$test_access" == "r" ]] && echo "" || echo "\"error\":")
@@ -45,7 +45,7 @@ runTests() {
 
   # CREATE SWAP -- readonly = fails (NO id/entry)
   [[ "$test_access" == *"w"* ]] && callApi "Create swap entry" "POST" "" "{\"${test_key}\":\"${val1}\"}" "\"${id_key}\":"
-  local swap=$([[ "$test_res" != *"\"error\":"* ]] && getVal "$test_res" || echo "")
+  local swap=$([[ "$test_res" != *"\"error\":"* ]] && getVal "$test_res" "$id_key" || echo "")
 
   # SWAP -- readonly = fails
   [[ "$test_access" == *"w"* ]] && callApi "Swap entries" "POST" "swap" "{\"${id_key}\":\"${id}\",\"swap\":\"${swap}\"}" "$update_res"
@@ -69,7 +69,8 @@ runTests() {
 }
 
 
-
+# callApi(description, METHOD, ID Param?, Body?, ResultKey?)
+#   $test_res = API Response
 callApi() {
   local desc="$1"   # Description of test
   local req="$2"    # GET/POST/PUT/DELETE/etc
@@ -102,6 +103,7 @@ callApi() {
 
 
 
+# getUrl(): Build parameters (Ask user if they're missing)
 getUrl() {
 
   if [[ -z "${test_protocol}" ]]; then
@@ -152,9 +154,9 @@ getUrl() {
 }
 
 
-
+# getVal(JSON Object, Key): Value
 getVal() {
-  echo $1 | sed 's/.*":"*\([^,}"]*\)[,}"].*/\1/'
+  echo $1 | sed 's/.*"'"$2"'":"*\([^,}"]*\)[,}"].*/\1/'
 }
 
 
