@@ -1,7 +1,13 @@
 import { sqlTypes } from "./db"
 import { htmlTypes } from "./gui"
 
-/** Custom Class to use over a builtin type */
+/** Custom Class to use instead of a literal type string
+ *   - DB Type is auto-generated from valueOf return type (Number defaults to INTEGER)
+ *   - Retrieval from DB = new Type().set(dbValue: ReturnType<valueOf()>)
+ *   - Input from HTML Form = new Type().parse(formValue: string)
+ *   - Storage in DB = INSERT VALUE(this.valueOf())
+ *   - toString() - used for displaying in HTML, defaults to String(this.valueOf())
+ *   - toJSON() - used in JSON.stringify, defaults to this.valueOf() */
 export abstract class ExtendedType<Raw extends string | number> {
     /** Create a new instance with the default value (Must allow 0 arguments) */
     constructor() {}

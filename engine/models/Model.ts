@@ -19,10 +19,6 @@ import { sanitizeSchemaData, childTableRefs, getSqlParams, childSQL, splitKeys }
 import { getChildName, getChildPath } from '../config/models.cfg'
 import { noID, noData, noEntry, noPrimary, noSize, badKey, multiAction, updatePrimary } from '../config/errors.engine'
 
-// TODO -- Fix Change User Password / Test All User Actions, Profile Actions, Logs, Settings, Etc
-
-// TODO -- Auto-derive Definition.db of ExtendType based on return type of valueOf() (string or int)
-
 // TODO -- Create PageData object & move selectSQL call from this.getPage into this._select
 // TODO -- Create base onUpdate/onCreate callbacks that are called whenever an Update/Create call is made
 
@@ -171,7 +167,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
       indexes[table]  = [childLabel.foreignId, childLabel.index]
       refs[table]     = childTableRefs(this)
     })
-    
+
     await reset(getDb(), dbSchema, overwrite, indexes, refs)
     return { success: true }
   }
@@ -493,7 +489,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
       ifExistsBehaviors.abort,
       true,
     ))
-
+    
     return true
   }
 
