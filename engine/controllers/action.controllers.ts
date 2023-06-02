@@ -24,8 +24,8 @@ export const login = authLogin(urlCfg.landingPage.login, urlCfg.landingPage.logo
 
 export const logout = authLogout(urlCfg.landingPage.logout)
 
-export const regenToken: Middleware = (req,res,next) =>
-  Users.regenToken(matchedData(req)[Users.primaryId])
+export const tokenRegen: Middleware = (req,res,next) =>
+  Users.tokenRegen(matchedData(req)[Users.primaryId])
     .then((r: any) => res.send(r))
     .catch(next)
 

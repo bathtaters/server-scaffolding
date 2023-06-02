@@ -57,13 +57,16 @@ mixin checkboxes(key, rows, label, columns, defaults)
               checked=(defaults && defaults.obj && defaults.obj[row] && defaults.obj[row].intersects(col))
             )
 
-mixin buttonInput(key, inpType, button, limits, defaultValue, url, label, tooltip, buttonKey = formKeys.button, buttonType = 'button')
+
+mixin buttonInput(key, inpType, buttons, limits, defaultValue, url, label, tooltip, buttonKey = formKeys.button, buttonType = 'button')
   .input-group.vertical.button-input
     label(for=key aria-label=tooltip class=(tooltip ? 'tooltip' : ''))= label || varName(key)
     .button-group
       if (inpType)
         +typedInp(key, inpType, limits, defaultValue)
-      input.button(type=buttonType name=buttonKey id=buttonKey+button value=button formaction=url)
+      each button in buttons
+        input.button(type=buttonType name=buttonKey id=buttonKey+button value=button formaction=url)
+
 
 mixin buttonRow(buttons, classes = {}, urls = {}, key = formKeys.button, buttonType = 'submit')
   .button-group
@@ -75,9 +78,11 @@ mixin buttonRow(buttons, classes = {}, urls = {}, key = formKeys.button, buttonT
         formaction=(urls[action])
       )
 
+
 mixin pageData(page, size, id = formKeys.page, pageKey = 'page', sizeKey = 'size')
   if (page || size)
     +formInput(id, 'hidden', null, JSON.stringify({ [pageKey]: page || 1, [sizeKey]: size || null }))
+
 
 mixin pageNav(page, size, total, sizes, prev = '<', next = '>', pageKey = 'page', sizeKey = 'size')
   .row.center

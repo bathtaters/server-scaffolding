@@ -1,6 +1,6 @@
 import type { UserDef, GetOptions, UpdateOptions, TimestampType, RoleType } from '../types/Users.d'
-import type { AddSchemaOf, DBSchemaOf, IDOf, PrimaryIDOf, SchemaOf, TypeOfID } from '../types/Model.d'
-import type { IfExistsBehavior, UpdateData, WhereData } from '../types/db.d'
+import type { AddSchemaOf, DBSchemaOf, PrimaryIDOf, SchemaOf, TypeOfID } from '../types/Model.d'
+import type { UpdateData, WhereData } from '../types/db.d'
 import { Role, timestamps } from '../types/Users'
 import { adapterTypes } from '../types/Model'
 import Model from './Model'
@@ -49,7 +49,7 @@ class User extends Model<UserDef, typeof title> {
     return users[0]
   }
   
-  regenToken(id: DBSchemaOf<UserDef>['id']) {
+  tokenRegen(id: DBSchemaOf<UserDef>['id']) {
     return super.update(id, { token: generateToken() })
   }
 

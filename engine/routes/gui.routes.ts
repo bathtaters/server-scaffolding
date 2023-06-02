@@ -2,7 +2,7 @@ import { actions } from '../types/gui'
 import { ModelAccess, Role } from '../types/Users'
 import { Router } from 'express'
 import { dbHome, userProfile, modelDb } from '../controllers/gui.controllers'
-import { regenToken, userForm, form, swap } from '../controllers/action.controllers'
+import { tokenRegen, userForm, form, swap } from '../controllers/action.controllers'
 import * as validate from '../validators/gui.validators'
 import { checkAuth, checkModel } from '../middleware/auth.middleware'
 import { actionAccess } from '../utils/form.utils'
@@ -16,7 +16,7 @@ router.use(checkAuth(root.login, Role.map.gui))
 
 router.get( basic.home,                                    dbHome)
 router.get( basic.user,                                    userProfile)
-router.post(`${basic.user}${basic.token}`, validate.token, regenToken)
+router.post(`${basic.user}${basic.token}`, validate.token, tokenRegen)
 
 Object.values(actions).forEach((action) => {
   router.post(`${basic.user}${basic.form}/${action}`, validate.profile(action), userForm(action))

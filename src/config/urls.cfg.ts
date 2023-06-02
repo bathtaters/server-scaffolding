@@ -18,7 +18,7 @@ gui = {
     swap: '/swap',
     form: '/form',
     find: '/results',
-    token: '/regenToken',
+    token: '/tokenRegen',
   },
   admin: {
     prefix: '/admin',
@@ -27,7 +27,7 @@ gui = {
     logs:  '/logs',
     form:  '/form',
     find: '/results',
-    token: '/regenToken',
+    token: '/tokenRegen',
   },
 } as const
 

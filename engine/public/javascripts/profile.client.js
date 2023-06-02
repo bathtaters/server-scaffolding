@@ -8,8 +8,8 @@ $( 'input#_actionRemove' ).on('click', function(ev) {
 });
 
 /* Copy API Key to Clipboard (Hide if no Clipboard API) */
-$( function() { if (!navigator.clipboard) { $( '#copyToken' ).addClass('hidden'); } } );
-$( '#copyToken' ).on('click', function() {
+$( function() { if (!navigator.clipboard) { $( '#tokenCopy' ).addClass('hidden'); } } );
+$( '#tokenCopy' ).on('click', function() {
   if (!navigator.clipboard) { return window.alert('Browser does not support copying to clipboard'); }
   
   var token = $( '#token' ).text();
@@ -37,7 +37,7 @@ $( 'input#confirm, input#password' ).on('input', function() {
 
 
 /* Token regen confirmation */
-$( 'input#regenToken' ).on('click', function(ev) {
+$( 'input#tokenRegen' ).on('click', function(ev) {
   if(!window.confirm('WARNING! This will block any API requests using your old token, are you sure you want to do this?')) {
     return ev.preventDefault();
   }

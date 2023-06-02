@@ -7,8 +7,11 @@ $( 'input#_actionReset' ).on('click', function(ev) {
   }
 });
 
-/* Reset ID on 'clear' */
-$( 'input#clearForm' ).on('click', function() { $( 'input#id' ).val(""); });
+/* Reset ID & CopyToken on 'clear' */
+$( 'input#clearForm' ).on('click', function() {
+  $( 'input#id' ).val("");
+  $( '#tokenCopy' ).attr('disabled', true);
+});
 
 /* Select buttons on <ENTER> */
 $( 'form#editForm' ).on('keydown', function(ev) {
@@ -21,8 +24,12 @@ $( 'form#editForm' ).on('keydown', function(ev) {
 });
 
 /* Copy API Key to Clipboard (Hide if no Clipboard API) */
-$( function() { if (!navigator.clipboard) { $( 'a#copyToken' ).addClass('hidden'); } } );
-$( 'a#copyToken' ).on('click', function() {
+$( function() {
+  $( '#tokenCopy' ).attr('disabled', true);
+  if (!navigator.clipboard) { $( '#tokenCopy' ).addClass('hidden'); }
+});
+
+$( '#tokenCopy' ).on('click', function() {
   if (!navigator.clipboard) { return window.alert('Browser does not support copying to clipboard'); }
   
   var token = $( 'input#token' ).val();
@@ -50,6 +57,10 @@ $( 'tr.tableRow' ).on('click', function() {
     if (key !== 'role' && key !== 'access') {
       var elem = $('#' + key);
       var val = $(this).text();
+
+      if (key === 'token') {
+        $( '#tokenCopy' ).attr('disabled', false);
+      }
       
       if (elem.attr('type') === 'checkbox') {
         // Solo checkboxes
@@ -133,7 +144,7 @@ $( 'input#confirm, input#password' ).on('input', function() {
 });
 
 /* Regenerate API ID */
-$( '#_actionRegen' ).on('click', function() {
+$( '#tokenRegen' ).on('click', function() {
   var CSRF = window.LOCALS.formKeys.csrf;
 
   var idElem = $( '#primary-key input' );

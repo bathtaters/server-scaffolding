@@ -18,8 +18,7 @@ block form
             +checkboxes('access', accessList[0], 'Model Access', accessList[1], searchData ? searchData.access : schema.access.default)
     
     .col-sm
-      div(style='text-align:right;'): i: a#copyToken.small(href="#") Copy API Key
-      +buttonInput('token', 'readonly', 'Regen', schema.token.limits, searchData ? searchData.token : schema.token.default, regenURL, tableFields.token, tooltips.token)
+      +buttonInput('token', 'readonly', ['Regen','Copy'], schema.token.limits, searchData ? searchData.token : schema.token.default, regenURL, tableFields.token, tooltips.token, "token")
 
       +checkboxes('role', roles, tableFields.role, null, searchData ? searchData.role : schema.role.default)
 
