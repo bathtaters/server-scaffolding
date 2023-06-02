@@ -55,7 +55,7 @@ class User extends Model<UserDef, typeof title> {
 
   async checkPassword(username: SchemaOf<UserDef>['username'], password: string, role: RoleType) {
     if (!isPm2 && !(await this.count())) {
-      const data = await this.addAndReturn([{ username, password, role } as any]) // !!! REMOVE as any
+      const data = await this.addAndReturn([{ username, password, role }])
       logger.info(`Created initial user: ${data.username}`)
       return this.adaptData(adapterTypes.fromDB, data)
     }

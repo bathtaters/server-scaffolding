@@ -12,7 +12,7 @@ export const rateLimiter = { maxFails: 5, failWindow: 10 * 60 * 1000, autoUnlock
 
 export const definition /*: DefinitionSchema */ = {
   id: {
-    type: 'hex',
+    type: 'hex?',
     default: generateToken,
     limits: { min: 32, max: 32 },
   },

@@ -83,8 +83,8 @@ export function adaptSchemaEntry<T extends DefType>(def: Definition<T>): Definit
   }
   
   // Error checking
-  if (res.isPrimary && (expanded.isArray || expanded.isOptional || !res.db))
-    throw new Error(`SCHEMA ERROR - Primary ID must be serializable & in DB: ${res.db ? `"${def.type || toTypeString(expanded)}"` : 'db = false'}`)
+  if (res.isPrimary && (expanded.isArray || !res.db || (expanded.isOptional && typeof def.default !== 'function')))
+    throw new Error(`SCHEMA ERROR - Primary ID must be required, serializable & in DB: ${res.db ? `"${def.type || toTypeString(expanded)}"` : 'db = false'}`)
   
   return res
 }
