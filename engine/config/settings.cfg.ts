@@ -1,66 +1,86 @@
 import type { SettingsDefinitions } from '../types/settings.d'
+import { formEffects } from '../types/gui'
 import RegEx, { RegExp } from '../libs/regex'
 
 export let definitions: SettingsDefinitions = {
   NODE_ENV: {
+    type: 'string',
     default: 'development',
-    html: { type: ['development','production','secure-dev'], limits: { min: 'test'.length, max: 'development'.length } },
-    tooltip: 'Server environment',
+    html: ['development','production','secure-dev'],
+    limits: { min: 'test'.length, max: 'development'.length },
+    description: 'Server environment',
   },
   port: {
-    default: '8080',
-    html: { type: 'number', readonly: true, limits: { min: 1024, max: 49151 } },
-    tooltip: 'Server listen port (WARNING: Changing can break the site)',
+    type: 'int',
+    default: 8080,
+    html: 'number',
+    formEffect: formEffects.readonly,
+    limits: { min: 1024, max: 49151 },
+    description: 'Server listen port (WARNING: Changing can break the site)',
   },
   LOG_CONSOLE: {
+    type: 'string',
     default: 'info',
-    html: { type: ['none', 'error', 'warn', 'info', 'http', 'verbose'] },
-    tooltip: 'Log level for printing to console',
+    html: ['none', 'error', 'warn', 'info', 'http', 'verbose'],
+    description: 'Log level for printing to console',
   },
   LOG_FILE: {
+    type: 'string',
     default: 'warn',
-    html: { type: ['none', 'error', 'warn', 'info', 'http', 'verbose'] },
-    tooltip: 'Log level for saving to log file',
+    html: ['none', 'error', 'warn', 'info', 'http', 'verbose'],
+    description: 'Log level for saving to log file',
   },
   LOG_HTTP: {
+    type: 'string',
     default: 'common',
-    html: { type: ['none', 'tiny', 'short', 'dev', 'common', 'combined', 'debug'] },
-    tooltip: 'Log format for HTTP logging (Uses Morgan)',
+    html: ['none', 'tiny', 'short', 'dev', 'common', 'combined', 'debug'],
+    description: 'Log format for HTTP logging (Uses Morgan)',
   },
   TRUST_PROXY: {
+    type: 'string',
     default: process.env.NODE_ENV === 'production' ? 'true' : '0',
-    html: { type: 'text', limits: { min: 0, max: 4096 } },
-    tooltip: 'Trust-Proxy setting. Can be number of hops, true/false for last/first, "loopback" or specifc domains (comma seperated).',
+    html: 'text',
+    limits: { min: 0, max: 4096 },
+    description: 'Trust-Proxy setting. Can be number of hops, true/false for last/first, "loopback" or specifc domains (comma seperated).',
   },
   SESSION_SECRET: {
+    type: 'string',
     default: 'secret',
-    html: { type: 'password', limits: { min: 4, max: 2048 } },
-    tooltip: 'Secret phrase for user sessions (Changing will logout all users)',
+    html: 'password',
+    limits: { min: 4, max: 2048 },
+    description: 'Secret phrase for user sessions (Changing will logout all users)',
   },
   DB_SECRET: {
+    type: 'string',
     default: 'secret',
-    html: { type: 'password', readonly: true, limits: { min: 4, max: 2048 } },
-    tooltip: 'Secret phrase for database (WARNING: Changing requires all dbs/users reset)',
+    html: 'password',
+    formEffect: formEffects.readonly,
+    limits: { min: 4, max: 2048 },
+    description: 'Secret phrase for database (WARNING: Changing requires all dbs/users reset)',
   },
   DB_DIR: {
+    type: 'string',
     default: './.db',
-    html:  { type: 'text', limits: { min: 0, max: 2048 } },
-    tooltip:  'Path to database files (Nothing = [project folder]/.db)',
-    formDefault: '',
+    html:  'text',
+    formEffect: formEffects.hideDefault,
+    limits: { min: 0, max: 2048 },
+    description:  'Path to database files (Nothing = [project folder]/.db)',
   },
   LOG_DIR: {
+    type: 'string',
     default: './.logs',
-    html: { type: 'text', limits: { min: 0, max: 2048 } },
-    tooltip: 'Path to log files (Nothing = [project folder]/.logs)',
-    formDefault: '',
+    html: 'text',
+    formEffect: formEffects.hideDefault,
+    limits: { min: 0, max: 2048 },
+    description: 'Path to log files (Nothing = [project folder]/.logs)',
   },
 }
 
 export const updateRootPath = (staticRootPath: string) => {
   const regex = { path: RegEx(/%PATH%/g), root: RegEx(/^\.\//) }
-  definitions.DB_DIR.tooltip  = definitions.DB_DIR.tooltip  && definitions.DB_DIR.tooltip.replace( regex.path, definitions.DB_DIR.default  ?? '.')
-  definitions.LOG_DIR.tooltip = definitions.LOG_DIR.tooltip && definitions.LOG_DIR.tooltip.replace(regex.path, definitions.LOG_DIR.default ?? '.')
-  definitions.DB_DIR.default  = definitions.DB_DIR.default  && definitions.DB_DIR.default.replace( regex.root, staticRootPath + '/')
+  definitions.DB_DIR.description  =  definitions.DB_DIR.description &&  definitions.DB_DIR.description.replace(regex.path, definitions.DB_DIR.default  ?? '.')
+  definitions.LOG_DIR.description = definitions.LOG_DIR.description && definitions.LOG_DIR.description.replace(regex.path, definitions.LOG_DIR.default ?? '.')
+  definitions.DB_DIR.default  = definitions.DB_DIR.default  &&  definitions.DB_DIR.default.replace(regex.root, staticRootPath + '/')
   definitions.LOG_DIR.default = definitions.LOG_DIR.default && definitions.LOG_DIR.default.replace(regex.root, staticRootPath + '/')
 }
 

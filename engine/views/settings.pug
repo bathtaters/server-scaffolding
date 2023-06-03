@@ -20,7 +20,7 @@ block content
         each formCol in formSettings
           .col-sm
             each entry, key in formCol
-              +formInput(key, entry.html.type, entry.html.limits, settings[key], key, '', entry.tooltip, entry.html.readonly)
+              +formInput(key, entry.html, entry.limits, settings[key], key, '', entry.description, entry.formEffect === effect.readonly)
         if csrfToken
           span: +formInput(formKeys.csrf, 'hidden', null, csrfToken)
           

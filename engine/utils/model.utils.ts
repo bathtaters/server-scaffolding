@@ -15,7 +15,7 @@ import RegEx from '../libs/regex'
 import { formatDateLong, formatLong } from '../libs/date'
 import { getVal, isIn } from './common.utils'
 import { insertSQL, deleteSQL } from './db.utils'
-import { parseBoolean, parseArray, parseDate, toTypeString, expandTypeStr } from './validate.utils'
+import { parseBoolean, parseArray, parseDate, toTypeString, expandTypeStr, generateLimits } from './validate.utils'
 import { CONCAT_DELIM, defaultPrimaryType, getChildName } from '../config/models.cfg'
 
 // Initialize Parsers
@@ -30,6 +30,7 @@ export const definitionToValid = (def: DefinitionSchema[string], forceOptional =
 
   let val = { ...def, type: def.type || defaultPrimaryType }
   if (forceOptional) val.type = toTypeString({ ...expandTypeStr(val), isOptional: true })
+  if (Array.isArray(def.html) && !val.limits) val.limits = generateLimits(def.html)
   return val
 }
 

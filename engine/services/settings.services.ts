@@ -1,5 +1,5 @@
-import type { NestedObjectValue } from '../types/global.d'
-import type { EnvObject, SettingsDefinitions } from '../types/settings.d'
+import type { DefinitionSchema } from '../types/Model.d'
+import type { EnvObject } from '../types/settings.d'
 import { writeFile, readFile } from 'fs/promises'
 import { parse } from 'dotenv'
 import logger from '../libs/log'
@@ -7,6 +7,7 @@ import { getSettingsVars, stringifyEnv, filterOutProps, getChanged, createEscape
 import { debounce } from '../utils/common.utils'
 import { definitions, fileReadDebounceMs, escapeEnvMsg } from '../config/settings.cfg'
 import { envPath } from '../config/meta'
+import { formEffects } from '../types/gui'
 
 const settingsKeys = Object.keys(definitions) as (keyof typeof definitions)[]
 
@@ -20,12 +21,12 @@ const [ debouncedRead, forceNextRead ] = debounce(readFile, { interval: fileRead
 export const settingsDefaults = filterOutProps(
   Object.entries(definitions).reduce(
     (defs, [key, val]) =>
-      'formDefault' in val ? { ...defs, [key]: val.formDefault } :
-      'default' in val ? { ...defs, [key]: val.default } :
-        defs,
-      {} as NestedObjectValue<typeof definitions, 'formDefault'|'default'>
+      'default' in val && val.formEffect !== formEffects.hideDefault ?
+        { ...defs, [key]: String(val.default) } : defs,
+
+      {} as EnvObject
   ),
-  settingsKeys.filter((key) => definitions[key].html && definitions[key].html.readonly)
+  settingsKeys.filter((key) => definitions[key].formEffect === formEffects.readonly)
 )
 
 
@@ -55,15 +56,15 @@ export async function setSettings(settings: Partial<EnvObject>, session?: UserSe
 
 
 export async function getForm() {
-  const newForm: Partial<SettingsDefinitions>[] = [{}, {}],
+  const newForm: Partial<DefinitionSchema>[] = [{}, {}],
     currentVals = await getSettings(),
     splitForm = Math.ceil(settingsKeys.length / 2)
 
   settingsKeys.forEach((key, idx) => {
     if (!definitions[key].html) return
 
-    if (Array.isArray(definitions[key].html.type)) {
-      const valList = definitions[key].html.type as string[],
+    if (Array.isArray(definitions[key].html)) {
+      const valList = definitions[key].html as string[],
         currentVal = String(currentVals[key])
 
       if (currentVal && !valList.includes(currentVal)) valList.push(currentVal)

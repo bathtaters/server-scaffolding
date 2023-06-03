@@ -40,26 +40,13 @@ export const toTypeString = ({ typeBase, isOptional, isArray, hasSpaces }: Valid
   }` as ValidationType
 
 
-// *** HTML Form validation *** \\
-
-function generateLimits(strArray: string[]): Limits | undefined {
+/** Generate validation limits based on a pre-defined array of possible strings */
+export function generateLimits(strArray: string[]): Limits | undefined {
   if (!strArray.length) return undefined
 
   const sizes = strArray.map((str) => str.length)
   return { min: Math.min(...sizes), max: Math.max(...sizes) }
 }
-
-
-const htmlToValid = ({ type, limits }: FormDefinition['html']): ValidationBasic => ({
-  type: type === 'number' ? 'int' : 'string',
-  limits: !limits && Array.isArray(type) ? generateLimits(type) : limits
-})
-
-
-/** Get validation & limits from html object { key, type, limits } */
-export const formSettingsToValidate = <S extends Record<string, FormDefinition>>(settings: S) =>
-  mapObject(settings, ({ html }) => htmlToValid(html))
-
 
 
 

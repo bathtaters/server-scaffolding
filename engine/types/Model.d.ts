@@ -87,7 +87,7 @@ export type DefinitionNormal<T extends DefType = DefType> =
   & DefinitionBase<T extends ValidationType ? ExtractType<T> : T>
 
 /** Generic Model Schema as { key: Definition } */
-export type DefinitionSchema = Record<string, Definition>
+export type DefinitionSchema<Keys extends string = string> = Record<Keys, Definition>
 
 /** Model Schema normalized for storage in model */
 export type DefinitionSchemaNormal<Def extends DefinitionSchema = DefinitionSchema> = {

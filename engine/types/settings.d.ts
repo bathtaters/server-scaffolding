@@ -1,6 +1,7 @@
 import type { nodeEnv, settingsActions } from "./settings"
 import type { LogLevels, HttpLog, NoLog } from "./log.d"
 import type { FormDefinition } from "./gui.d"
+import type { DefinitionSchema, DefinitionSchemaNormal } from "./Model.d"
 
 export type NodeEnv = typeof nodeEnv[number]
 
@@ -24,8 +25,7 @@ export type EnvParsed = {
 }
 
 export type EnvObject = { [P in keyof EnvParsed & string]+?: string }
-export type SettingsDefinitions = Record<keyof EnvParsed & string, FormDefinition>
-
+export type SettingsDefinitions = DefinitionSchema<keyof EnvObject>
 
 export type SettingsActionFunc = (settings: Partial<EnvObject>, session: any) => Promise<void | (() => void)>
 
