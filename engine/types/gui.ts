@@ -56,38 +56,26 @@ export const pageSelect = {
     desc: { type: 'boolean?' },
 } as const
 
-/** Enum of HTML Input Types (These are passed to form.mixins.pug) */
-export const htmlTypes = {
+
+/** Inputs that return string types */
+export const htmlStringTypes = {
     /* Special Inputs */
-    id: "id", /* Uses type="number" */
     readonly: "readonly", /* Uses type="text" */
-    hidden: "hidden",
-    file: "file",
+    hidden:   "hidden",
+    // file:  "file", /* [unknown type, not tested] */
     
     /* String Inputs */
-    text: "text",
+    text:     "text",
     password: "password",
-    email: "email",
-    tel: "tel",
-    url: "url",
-    color: "color",
-    search: "search",
+    email:    "email",
+    tel:      "tel",
+    url:      "url",
+    color:    "color",
+    search:   "search",
     
-    /* Numeric Inputs */
-    number: "number",
-    range: "range",
-    
-    /* Multi-Select Inputs */
-    checkbox: "checkbox",
-    radio: "radio",
+    /* Multi-Select Single Inputs */
+    radio:  "radio",
     option: "option", /* Uses <option/select> */
-    
-    /* Date Inputs */
-    date: "date",
-    datetime: "datetime-local",
-    month: "month",
-    week: "week",
-    time: "time",
     
     /* Button Inputs [Disabled] */
     // button: "button",
@@ -95,6 +83,36 @@ export const htmlTypes = {
     // image: "image",
     // reset: "reset",
 } as const
+
+/* Numeric Inputs */
+export const htmlNumberTypes = {
+    id:     "id", /* Uses type="number" */
+    number: "number",
+    range:  "range",
+} as const
+
+/* Multi-Select Multi-Inputs */
+export const htmlBoolTypes = {
+    checkbox: "checkbox",
+} as const
+
+/* Date Inputs */
+export const htmlDateTypes = {
+    date:     "date",
+    datetime: "datetime-local",
+    month:    "month",
+    week:     "week",
+    time:     "time",
+} as const
+
+/** Enum of HTML Input Types (These are passed to form.mixins.pug) */
+export const htmlTypes = {
+    ...htmlStringTypes,
+    ...htmlNumberTypes,
+    ...htmlDateTypes,
+    ...htmlBoolTypes
+} as const
+
 
 const htmlFromValidation /*: Partial<Record<ValidationBase, typeof htmlTypes[keyof typeof htmlTypes]>> */ = {
     int:      htmlTypes.number,

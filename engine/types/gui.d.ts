@@ -1,7 +1,14 @@
-import type { htmlTypes, actions, htmlValidationDict, formData, pageSelect, metaField, formEffects } from './gui'
+import type {
+    htmlTypes, htmlStringTypes, htmlNumberTypes, htmlDateTypes, htmlBoolTypes,
+    htmlValidationDict, actions, formData, pageSelect, metaField, formEffects
+} from './gui'
 import type { Definition, SchemaOf } from './Model.d'
 
-export type HTMLType = typeof htmlTypes[keyof typeof htmlTypes]
+export type HTMLType       = typeof htmlTypes[keyof typeof htmlTypes]
+export type HTMLStringType = typeof htmlStringTypes[keyof typeof htmlStringTypes]
+export type HTMLNumberType = typeof htmlNumberTypes[keyof typeof htmlNumberTypes]
+export type HTMLDateType   = typeof htmlDateTypes[keyof typeof htmlDateTypes]
+export type HTMLBoolType   = typeof htmlBoolTypes[keyof typeof htmlBoolTypes]
 
 export type FormAction = typeof actions[keyof typeof actions]
 
