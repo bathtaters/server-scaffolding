@@ -7,7 +7,6 @@ import type { typeSuffixes } from './validate'
 import type { formEffects } from './gui'
 import type { MASK_STR, defaultPrimaryKey, defaultPrimaryType } from '../config/models.cfg'
 
-// TODO -- Organize types into namespaces
 
 /** Response types to expect from API */
 export namespace ApiResponse {

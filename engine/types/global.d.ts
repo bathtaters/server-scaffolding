@@ -106,6 +106,3 @@ export type TypeStr<T extends string> =
   T extends "function"  ? Function  :
   T extends "undefined" ? undefined :
     any
-
-
-// TODO -- add ts-reset
