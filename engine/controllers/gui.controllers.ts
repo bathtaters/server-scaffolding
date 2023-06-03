@@ -1,14 +1,13 @@
 import type { Middleware } from '../types/express.d'
 import type { GuiOptions, ModelGuiBase } from '../types/controllers.d'
+import { actions, type pageSelect } from '../types/gui'
 import { Role, anyAccess } from '../types/Users'
 import { adapterTypes } from '../types/Model'
-import { actions } from '../types/gui'
 
-import { matchedData } from 'express-validator'
 import Users from '../models/Users'
 import { getTableFields, varName } from '../utils/gui.utils'
 import { toPartialMatch } from '../utils/model.utils'
-import { labelsByAccess, actionURLs } from '../utils/form.utils'
+import { getFormData, labelsByAccess, actionURLs } from '../utils/form.utils'
 import { tableFields, tooltips, profileActions } from '../config/users.cfg'
 import { getChildPath } from '../config/models.cfg'
 import { noData } from '../config/errors.engine'
@@ -50,7 +49,7 @@ export function modelDb<M extends ModelGuiBase>(Model: M, {
   return {
     async model(req, res, next) {
       try {
-        const pageData = await Model.getPageData(matchedData(req), guiCfg.pageOptions)
+        const pageData = await Model.getPageData(getFormData<typeof pageSelect>(req), guiCfg.pageOptions)
 
         const access = req.user?.access?.get(Model.title)
 
@@ -70,7 +69,7 @@ export function modelDb<M extends ModelGuiBase>(Model: M, {
 
     async find(req, res, next) {
       try {
-        const searchData = await Model.adaptData(adapterTypes.fromUI, matchedData(req))
+        const searchData = await Model.adaptData(adapterTypes.fromUI, getFormData(req))
         const data = await Model.find(partialMatch ? toPartialMatch(searchData) : searchData)
         const uiData = await Model.adaptDataArray(adapterTypes.toUI, data)
 

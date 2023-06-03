@@ -1,5 +1,7 @@
+import type { DefinitionSchema, FormSchemaOf } from '../types/Model.d'
 import type { AccessBitMap } from '../types/Users.d'
 import type { FormAction } from '../types/gui.d'
+import { matchedData } from 'express-validator'
 import { ModelAccess } from '../types/Users'
 import { actions } from '../types/gui'
 import { parseBoolean } from '../utils/validate.utils'
@@ -22,6 +24,12 @@ export const actionURLs = <List extends FormAction = FormAction>(baseURL: string
   (actionList || Object.values(actions)).reduce(
     (urls, action) => Object.assign(urls, { [action]: baseURL + action.toLowerCase() })
   , {} as Record<List, string>)
+
+  
+/** Retrieve FormData from a validated request */
+export function getFormData<D extends DefinitionSchema>(req: Express.Request) {
+  return matchedData(req) as Record<string,any> & Partial<FormSchemaOf<D>>
+}
 
 
 /** Default filter for filterFormData & toQueryString */
@@ -50,7 +58,7 @@ const strOrNumOnly = (obj: any): obj is Record<string, string> => {
 }
 
 /** Convert object to queryString (Accepts stringified object, deletes null/empty values) */
-export const toQueryString = <T extends Record<string,any>>(obj: string | T, filter = defaultFilter<T>) => {
+export const toQueryString = <T extends Record<string,any>>(obj?: string | T, filter = defaultFilter<T>) => {
   if (!obj) return ''
   
   if (typeof obj === 'string') {

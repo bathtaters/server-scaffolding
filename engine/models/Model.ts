@@ -7,6 +7,7 @@ import type {
   ForeignKeyRef, ChildDefinitions, ChildKey, SkipChildren,
 } from '../types/Model.d'
 import type { CreateSchema, IfExistsBehavior, UpdateData, WhereData } from '../types/db.d'
+import type { PartialNull } from '../types/global.d'
 import logger from '../libs/log'
 import { childLabel, adapterTypes } from '../types/Model'
 import { ifExistsBehaviors } from '../types/db'
@@ -106,14 +107,20 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
    *    - size: Current page size
    *    - sizes: Available page sizes
    */
-  async getPageData(location: Partial<Page.Select<Def>>, { defaultSize = 5, sizeList = [], startPage = 1 }: Page.Options = {}): Promise<Page.Return<Def>> {
+  async getPageData(location: PartialNull<Page.Select<Def>>, { defaultSize = 5, sizeList = [], startPage = 1 }: Page.Options = {}): Promise<Page.Return<Def>> {
     const total = await this.count()
     const size = location.size || defaultSize
     const pageCount = Math.ceil(total / size)
     const page = Math.max(1, Math.min(location.page || startPage, pageCount))
     const sizes = pageCount > 1 || total > Math.min(...sizeList) ? appendAndSort(sizeList, size) : undefined
+
+    const pageData: Page.Select<Def> = {
+      page, size,
+      desc: location.desc || undefined,
+      sort: location.sort || undefined,
+    }
     
-    const rawData = await this.find(undefined, undefined, { ...location, page, size })
+    const rawData = await this.find(undefined, undefined, pageData)
     const data = await this.adaptDataArray(adapterTypes.toUI, rawData)
   
     return { data, page, pageCount, size, sizes }

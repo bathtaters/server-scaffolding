@@ -2,17 +2,17 @@ import type {} from '../middleware/auth.middleware' // Express.User type
 import type { Middleware } from '../types/express.d'
 import { ModelAccess, Role } from '../types/Users'
 
-import { matchedData } from 'express-validator'
 import Users from '../models/Users'
 import { modelDb } from './gui.controllers'
 import settingsActions from '../services/settings.form'
 import { getSettings, getForm, canUndo } from '../services/settings.services'
 import { getLogList, logFile } from '../services/log.services'
-import { actionURLs } from '../utils/form.utils'
+import { getFormData, actionURLs } from '../utils/form.utils'
 import { getAllLevels } from '../utils/log.utils'
 import { tableFields, tooltips } from '../config/users.cfg'
 import { colors, maxLogLine, trimLogMessage } from '../config/log.cfg'
 import { urlCfg } from '../src.import'
+import { missing } from '../config/errors.engine'
 
 const urls = urlCfg.gui.admin
 const logBaseURL = `${urls.prefix}${urls.logs}`
@@ -64,7 +64,8 @@ export const logList: Middleware = (req, res, next) =>
 
 
 export const logView: Middleware = (req, res, next) => {
-  const title = matchedData(req).filename
+  const title = getFormData(req).filename
+  if (typeof title !== 'string' || !title.length) throw missing()
 
   return logFile(title).then((logData) => 
     res.render('logView', {

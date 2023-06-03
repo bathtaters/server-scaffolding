@@ -1,14 +1,14 @@
 import type { GenericModel } from '../models/Model'
 import type { ApiResponse } from '../types/Model.d'
 import type { Endware } from '../types/express.d'
-import { matchedData } from 'express-validator'
-import * as errors from '../config/errors.engine'
+import { getFormData } from '../utils/form.utils'
 import { extractValue, getMatchingKey, getMatchingValue } from '../utils/common.utils'
+import * as errors from '../config/errors.engine'
 
 
 export const create = <M extends GenericModel>(Model: M): Endware<ApiResponse.Create> =>
   function create(req,res,next) {
-    const data = matchedData(req)
+    const data = getFormData(req)
     if (!data || !Object.keys(data).length) return next(errors.noData())
 
     return Model.addAndReturn([data])
@@ -19,7 +19,7 @@ export const create = <M extends GenericModel>(Model: M): Endware<ApiResponse.Cr
 
 export const read = <M extends GenericModel>(Model: M): Endware<ApiResponse.Read> =>
   async function read(req,res,next) {
-    const id = getMatchingValue(matchedData(req), Model.primaryId)
+    const id = getMatchingValue(getFormData(req), Model.primaryId)
 
     const data = await (id != null ? Model.get(id) : Model.find()).catch(next)
 
@@ -29,7 +29,7 @@ export const read = <M extends GenericModel>(Model: M): Endware<ApiResponse.Read
 
 export const update = <M extends GenericModel>(Model: M): Endware<ApiResponse.Update> =>
   async function update(req,res,next) {
-    const data = matchedData(req)
+    const data = getFormData(req)
     const id = extractValue(data, Model.primaryId)
 
     if (id == null) return next(errors.noID())
@@ -43,7 +43,7 @@ export const update = <M extends GenericModel>(Model: M): Endware<ApiResponse.Up
 
 export const remove = <M extends GenericModel>(Model: M): Endware<ApiResponse.Delete> =>
   async function remove(req,res,next) {
-    const id = getMatchingValue(matchedData(req), Model.primaryId)
+    const id = getMatchingValue(getFormData(req), Model.primaryId)
     if (id == null) return next(errors.noID())
 
     return Model.remove(id)
@@ -54,7 +54,7 @@ export const remove = <M extends GenericModel>(Model: M): Endware<ApiResponse.De
 
 export const swap = <M extends GenericModel>(Model: M): Endware<ApiResponse.SwapID> =>
   async function swap(req,res,next) {
-    const data = matchedData(req)
+    const data = getFormData(req)
     
     const idKey = getMatchingKey(data, Model.primaryId)
     if (!idKey) return next(errors.noID())

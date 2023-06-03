@@ -1,18 +1,19 @@
 import type { ModelActionBase } from '../types/controllers.d'
-import type { Middleware, Request } from '../types/express.d'
+import type { Endware, Middleware, Request } from '../types/express.d'
+import type { Feedback } from '../types/Model.d'
+import type { UserDef } from '../types/Users.d'
 import type { FormAction } from '../types/gui.d'
-import type { EnvObject } from '../types/settings.d'
+import type { EnvObject, SettingsDefinitions } from '../types/settings.d'
 import { adapterTypes } from '../types/Model'
 import { actions, metaField } from '../types/gui'
 import { Role } from '../types/Users'
 
-import { matchedData } from 'express-validator'
 import Users from '../models/Users'
 import { userFormCheck } from '../services/users.services'
 import modelActions from '../services/form.services'
 import settingsActions from '../services/settings.form'
 import { login as authLogin, logout as authLogout } from '../middleware/auth.middleware'
-import { filterFormData, toQueryString } from '../utils/form.utils'
+import { getFormData, filterFormData, toQueryString } from '../utils/form.utils'
 import { isBool } from '../utils/model.utils'
 import { isIn, sanitizeObject } from '../utils/common.utils'
 import { settingsKeys } from '../utils/settings.utils'
@@ -26,9 +27,9 @@ export const login = authLogin(urlCfg.landingPage.login, urlCfg.landingPage.logo
 
 export const logout = authLogout(urlCfg.landingPage.logout)
 
-export const tokenRegen: Middleware = (req,res,next) =>
-  Users.tokenRegen(matchedData(req)[Users.primaryId])
-    .then((r: any) => res.send(r))
+export const tokenRegen: Endware<Feedback> = (req,res,next) =>
+  Users.tokenRegen(getFormData<UserDef>(req)[Users.primaryId])
+    .then((r) => res.send(r))
     .catch(next)
 
 export const adminForm = form(Users, `${urlCfg.gui.admin.prefix}${urlCfg.gui.admin.user}`)
@@ -58,9 +59,8 @@ export function form(Model: ModelActionBase, redirectURL?: string, errorCheck?: 
     {} as Record<string,any>
   )
   
-  // TODO -- Add type to 'matchedData'?
   return (action: FormAction): Middleware => async (req,res,next) => {
-    let formData = filterFormData(matchedData(req), action === actions.find ? {} : boolBase)
+    let formData = filterFormData(getFormData(req), action === actions.find ? {} : boolBase)
 
     errorCheck?.(formData, req)
     
@@ -79,14 +79,14 @@ export function form(Model: ModelActionBase, redirectURL?: string, errorCheck?: 
 
 
 export const settingsForm: Middleware = (req,res,next) => {
-  const data = matchedData(req)
+  const data = getFormData<SettingsDefinitions>(req)
 
   const settings = sanitizeObject<EnvObject>(data, settingsKeys, false)
     , button = data[metaField.button]
     , page   = data[metaField.page]
 
   if (!button || !isIn(button, settingsActions))
-    return next(badAction(button))
+    return next(badAction(button ?? undefined))
 
   if (button === actions.update && !Object.keys(settings).length)
     return next(noData('settings'))
