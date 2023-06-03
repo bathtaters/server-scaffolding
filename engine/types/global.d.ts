@@ -12,9 +12,6 @@ export type Awaitable<T> = Promise<T> | T
 /** Substitute one element of a union with another */
 export type Sub<T, Replace, With> = Replace extends T ? Exclude<T, Replace> | With : T
 
-/** Convert top-level object keys to lowercase */
-export type LowerKeys<T extends object> = { [K in keyof T & string as Lowercase<K>]: T[K] }
-
 /** Applies "Partial" to all keys except for given ones */
 export type PartialExcept<T,K extends keyof any> = { [P in K as P extends keyof T ? P : never]: P extends keyof T ? T[P] : never }
   & Partial<Omit<T,K>>

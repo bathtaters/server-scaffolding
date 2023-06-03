@@ -1,4 +1,4 @@
-import type { ObjectOf, NestedObject, LowerKeys } from '../types/global.d'
+import type { ObjectOf, NestedObject } from '../types/global.d'
 import type { Middleware } from '../types/express.d'
 import RegEx, { RegExp, escapeRegexPattern } from '../libs/regex'
 
@@ -264,7 +264,7 @@ export function createCaseInsensitiveCopier<B extends Record<string,any>>(keyObj
   /** Copy an object, normalizing the case of its keys
    * @param obj - Object w/ any case keys
    * @returns Copy of object w/ correct case keys */
-  return function caseInsenitiveCopy<T extends Record<keyof B & string, any>>(obj: LowerKeys<T>): T {
+  return function caseInsenitiveCopy<T extends Record<keyof B & string, any>>(obj: T): T {
     return keyList.reduce((copy, key) => {
       const objKey = getMatchingKey(obj, key)
       return objKey === undefined ? copy : { ...copy, [key]: obj[objKey] }
