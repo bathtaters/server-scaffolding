@@ -1,5 +1,5 @@
 import type { ModelFormBase } from '../types/controllers.d'
-import { type ActionObject } from '../types/gui.d'
+import type { ActionObject } from '../types/gui.d'
 import { actions } from '../types/gui'
 import { noData, noAdd, noID } from '../config/errors.engine'
 import { isDate } from '../libs/date'
@@ -9,11 +9,11 @@ import { urlCfg } from '../src.import'
 const searchURL = urlCfg.gui.basic.find
 
 
-// Actions based on Form submit button label
+/** Actions based on Form submit button label */
 export default function modelActions<M extends ModelFormBase>(Model: M): ActionObject {
   return {
 
-    // SEARCH
+    /** SEARCH */
     [actions.find]: async (formData) => {
       if (!formData || !Object.keys(formData).length) return ''
       if (!Object.keys(formData).length) return ''
@@ -21,7 +21,7 @@ export default function modelActions<M extends ModelFormBase>(Model: M): ActionO
       return `${searchURL}?${new URLSearchParams(formData).toString()}`
     },
 
-    // ADD
+    /** ADD */
     [actions.create]: async (formData = {}) => {
       extractValue(formData, Model.primaryId)
       if (!formData || !Object.keys(formData).length) throw noData()
@@ -29,7 +29,7 @@ export default function modelActions<M extends ModelFormBase>(Model: M): ActionO
       if (!result) throw noAdd()
     },
 
-    // UPDATE
+    /** UPDATE */
     [actions.update]: async (formData = {}) => {
       const id = extractValue(formData, Model.primaryId)
       if (id == null) throw noID()
@@ -37,14 +37,14 @@ export default function modelActions<M extends ModelFormBase>(Model: M): ActionO
       return Model.update(id, formData).then(() => {})
     },
 
-    // REMOVE
+    /** REMOVE */
     [actions.delete]: async (formData = {}) => {
       const id = formData[Model.primaryId]
       if (id == null) throw noID()
       return Model.remove(id).then(() => {})
     },
 
-    // RESET
+    /** RESET */
     [actions.clear]: () => Model.create(true).then(() => {})
   }
 }
