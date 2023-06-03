@@ -339,8 +339,8 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
    */
   async custom(sql: string, params?: { [key: string]: any } | any[], raw?: boolean): Promise<unknown[]> {
     const result = await all(getDb(), sql, params)
-    return raw ? result.map(this._postDBsanitize)
-      : this.adaptDataArray(adapterTypes.fromDB, result) as Promise<unknown[]>
+    return raw ? result
+      : this.adaptDataArray(adapterTypes.fromDB, result.map(this._postDBsanitize)) as Promise<unknown[]>
   }
 
 
