@@ -7,8 +7,6 @@ import type { typeSuffixes } from './validate'
 import type { formEffects } from './gui'
 import type { MASK_STR, defaultPrimaryKey, defaultPrimaryType } from '../config/models.cfg'
 
-// TODO -- Improve HTML typing (Create 'multi-input' type (AKA only takes specific values))
-
 // TODO -- Organize types into namespaces
 
 /** Response types to expect from API */
@@ -36,8 +34,9 @@ type DefinitionBase<T> = {
    *      (Or <option>/<select> if this = "option")
    *   - number = <textarea> w/ this as 'rows' attribute
    *   - false = property is omitted from UI
+   *   - string[] = dropdown menu of these values
    *   - default: auto-generated based on type */
-  html: false | number | HTMLType,
+  html: false | number | HTMLType | (T extends string ? string[] : never),
 
   /** Data type for property in database
    *   - string = type line in Create Table
@@ -360,7 +359,7 @@ export type ViewSchemaOf<Def extends DefinitionSchema> = {
 /** Convert Definition Schema to GUI Form Schema */
 export type FormSchemaOf<Def extends DefinitionSchema> = Partial<{
   -readonly [K in keyof Def as IsInForm<Def[K]> extends true ? K : never]:
-    SHTMLType<Def[K]> | null
+    SHTMLType<Def[K]> | string | null
 } & FormData<DBSchemaOf<Def>>>
 
 /** Convert Definition Schema to Base Schema Keys */
@@ -425,7 +424,7 @@ type SDBType<D extends Definition> =
 
 /** Extract HTML Type from Definition */
 type SHTMLType<D extends Definition> =
-  D['html'] extends string | number
+  D['html'] extends string | number | string[]
     ? ExtractHTMLType<D['html']>
     : D['html'] extends false
       ? never
