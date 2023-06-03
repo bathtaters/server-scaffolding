@@ -1,6 +1,6 @@
 import type {
   SchemaGeneric, DefType, DefinitionNormal, DefinitionSchema, DBSchemaOf, DBSchemaKeys, 
-  DefaultAdapters, DefaultArrayAdapters, AdapterType, ForeignKeyRef, ExtendedClass,
+  DefaultAdapters, DefaultArrayAdapters, AdapterType, ForeignKeyRef, ExtendedClass, Sanitizer,
 } from '../types/Model.d'
 import type Model from '../models/Model'
 import type { GenericModel } from '../models/Model'
@@ -196,13 +196,20 @@ export const isDbKey = <Def extends DefinitionSchema>
     !idKey || Boolean(isIn(idKey, schema) && schema[idKey].db)
 
 
-export function schemaSanitizer<Def extends DefinitionSchema>({ schema, children }: SanitModel<Def> = {}) {
+/** Create an object sanitizer using keys from Model schema */
+export function createSchemaSanitizer<Def extends DefinitionSchema>({ schema, children }: SanitModel<Def> = {}): Sanitizer {
   const allowedKeys = schema && Object.keys(schema)
-    .filter((key) => schema[key].db)
-    .concat(Object.keys(children || {}))
-    .concat([whereNot, ...Object.keys(whereLogic)])
-
-  return <T extends SchemaGeneric>(data: T) => sanitizeObject(data, allowedKeys, true)
+  .filter((key) => schema[key].db)
+  .concat(Object.keys(children || {}))
+  .concat([whereNot, ...Object.keys(whereLogic)])
+  
+  /** Object sanitizer that uses keys from Model schema
+   * @param data - Object to be ingested into database
+   * @returns Copy of object with extraneous properties removed
+  */
+  return function sanitizeSchema<T extends SchemaGeneric>(data: T) {
+    return sanitizeObject(data, allowedKeys, true)
+  }
 }
 
 

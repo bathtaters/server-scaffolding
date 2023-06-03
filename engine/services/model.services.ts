@@ -2,14 +2,14 @@ import type Model from '../models/Model'
 import type {
   Definition, DefinitionSchema, DefinitionNormal, DefinitionSchemaNormal,
   AdapterType, AdapterData, AdapterIn, AdapterOut, AdapterDefinition, AdapterDefinitionLoose, 
-  ChildDefinitions, DefType, PrimaryIDOf, Sanitizer,
+  ChildDefinitions, DefType, PrimaryIDOf,
 } from '../types/Model.d'
 import type { UpdateValue } from '../types/db.d'
 import type { ValidationExpanded } from '../types/validate.d'
 import { childLabel, adapterTypes, childIndexType, extendedTypeDefaults, viewMetaKey } from '../types/Model'
 import { updateFunctions, whereLogic, whereNot } from '../types/db'
 import logger from '../libs/log'
-import { caseInsensitiveObject, getVal, hasDupes, isIn } from '../utils/common.utils'
+import { getVal, hasDupes, isIn } from '../utils/common.utils'
 import { dbFromType, dbFromExtended, htmlFromType, stripPrimaryDef, getDefaultAdapter, definitionToValid } from '../utils/model.utils'
 import { expandTypeStr, toTypeString } from '../utils/validate.utils'
 import { titleQuotes, checkInjection, getOpType } from '../utils/db.utils'
@@ -157,7 +157,7 @@ export function errorCheckModel(title: string, schema: DefinitionSchemaNormal) {
 
 /** Run selected adapters on schema data */
 export async function runAdapters<D extends DefinitionSchema, A extends AdapterType>
-  (adapterType: A, data: AdapterData<AdapterIn<D,A>>, model: AModel<D>, sanitizer?: Sanitizer): Promise<AdapterData<AdapterOut<D,A>>> {
+  (adapterType: A, data: AdapterData<AdapterIn<D,A>>, model: AModel<D>): Promise<AdapterData<AdapterOut<D,A>>> {
 
   let result: any = adapterType === adapterTypes.toUI ? { [viewMetaKey]: {} } : {}
 
@@ -193,10 +193,7 @@ export async function runAdapters<D extends DefinitionSchema, A extends AdapterT
     }
   }))
 
-  // Sanitize toDB since keys are used directly in SQL commands
-  return adapterType === adapterTypes.toDB && sanitizer ? sanitizer(result) :
-    adapterType === adapterTypes.fromDB ? caseInsensitiveObject(result) : // Fix for case-insensitive databases -- TODO: Integrate this into the loop above
-      result
+  return result
 }
 
 

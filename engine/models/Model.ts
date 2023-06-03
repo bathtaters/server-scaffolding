@@ -4,7 +4,7 @@ import type {
   TypeOfID, IDOf, PrimaryIDOf, IDOption, SQLOptions,
   Page, FindResult, SelectResult, Feedback,
   AdapterType, AdapterIn, AdapterOut, AdapterData, ModelListeners,
-  ForeignKeyRef, ChildDefinitions, ChildKey, SkipChildren, SchemaGeneric, Sanitizer, 
+  ForeignKeyRef, ChildDefinitions, ChildKey, SkipChildren,
 } from '../types/Model.d'
 import type { CreateSchema, IfExistsBehavior, UpdateData, WhereData } from '../types/db.d'
 import logger from '../libs/log'
@@ -14,8 +14,8 @@ import { openDb, getDb } from '../libs/db'
 import { all, get, run, reset, getLastEntry, multiRun } from '../services/db.services'
 import { adaptSchema, getPrimaryId, runAdapters, extractChildren, buildAdapters, errorCheckModel  } from '../services/model.services'
 import { appendAndSort, insertSQL, selectSQL, countSQL, updateSQL, deleteSQL, swapSQL } from '../utils/db.utils'
-import { caseInsensitiveObject, mapToField, isIn, getVal } from '../utils/common.utils'
-import { schemaSanitizer, childTableRefs, getSqlParams, childSQL, splitKeys } from '../utils/model.utils'
+import { createCaseInsensitiveCopier, mapToField, isIn, getVal } from '../utils/common.utils'
+import { createSchemaSanitizer, childTableRefs, getSqlParams, childSQL, splitKeys } from '../utils/model.utils'
 import { getChildName, getChildPath } from '../config/models.cfg'
 import { noID, noData, noEntry, noPrimary, noSize, badKey, multiAction, updatePrimary } from '../config/errors.engine'
 
@@ -27,12 +27,14 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
   private _adapters:     AdapterDefinition<Def>
   private _primaryId:    PrimaryIDOf<Def>
   private _isChildModel: boolean
-  private _sanitizer:    Sanitizer
-  listeners:             ModelListeners<Def>
 
   private   _defaults: DefaultSchemaOf<Def>
   private   _masked:   Array<keyof Def>
   protected _children: ChildDefinitions<Def>
+
+  private _preDBsanitize:  ReturnType<typeof createSchemaSanitizer>
+  private _postDBsanitize: ReturnType<typeof createCaseInsensitiveCopier>
+  listeners:               ModelListeners<Def>
 
   /** Promise that will resolve to TRUE once DB is connected and Model is created */
   readonly isInitialized: Promise<boolean>
@@ -64,7 +66,8 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
     this._adapters = buildAdapters(adapters, this._schema)
     this._defaults = mapToField(this._schema, 'default') as any
     this._masked   = Object.keys(this._schema).filter((key) => this._schema[key].isMasked)
-    this._sanitizer = schemaSanitizer(this)
+    this._preDBsanitize  = createSchemaSanitizer(this)
+    this._postDBsanitize = createCaseInsensitiveCopier(this._schema)
 
     errorCheckModel(this._title, this._schema)
 
@@ -326,7 +329,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
    */
   async custom(sql: string, params?: { [key: string]: any } | any[], raw?: boolean): Promise<unknown[]> {
     const result = await all(getDb(), sql, params)
-    return raw ? result.map(caseInsensitiveObject)
+    return raw ? result.map(this._postDBsanitize)
       : this.adaptDataArray(adapterTypes.fromDB, result) as Promise<unknown[]>
   }
 
@@ -338,7 +341,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
   async _countRaw(whereData: WhereData<DBSchemaOf<Def>> = {}): Promise<number> {
     const result = await get<{ count: number }>(
       getDb(),
-      ...countSQL(this.title, getSqlParams(this, whereData))
+      ...countSQL(this.title, getSqlParams(this, this._preDBsanitize(whereData)))
     )
     return result.count
   }
@@ -354,7 +357,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
     const sql = selectSQL(
       this.title,
       this.primaryId,
-      getSqlParams(this, where),
+      getSqlParams(this, where && this._preDBsanitize(where)),
       options.skipChildren ? [] : Object.keys(this.children),
       page?.sort,
       page?.desc,
@@ -363,7 +366,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
     )
     
     const result = await all(getDb(), ...sql)
-    return result.map(caseInsensitiveObject)
+    return result.map(this._postDBsanitize<any>)
   }
 
 
@@ -396,7 +399,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
       if (updated) dataArray = updated
     }
     
-    const keys = splitKeys(dataArray[0], this.children)
+    const keys = splitKeys(this._preDBsanitize(dataArray[0]), this.children)
     if (!keys.parent.length && !keys.children.length) throw noData()
     
     // Generate SQL
@@ -405,8 +408,8 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
 
     // Update Base DB
     let lastEntry: any
-    if (!returnLast && !missingPrimary) lastEntry = await run(getDb(), ...params)
-    else lastEntry = await getLastEntry(getDb(), ...params, this.title)
+    if (!returnLast && !missingPrimary) await run(getDb(), ...params)
+    else lastEntry = await getLastEntry(getDb(), ...params, this.title).then(this._postDBsanitize)
 
     if (!keys.children.length) return !returnLast || lastEntry
     
@@ -425,9 +428,11 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
   private async _update(data: UpdateData<SchemaOf<Def,false>>, whereData: WhereData<DBSchemaOf<Def>>) {
     
     // Adapt/Sanitize data
+    whereData = this._preDBsanitize(whereData)
     if (!Object.keys(whereData).length) throw noID()
+
     let updateData = await this.adaptData(adapterTypes.toDB, data)
-    if (!Object.keys(updateData).length) throw noData()
+    updateData = this._preDBsanitize(updateData)
 
     // Find matching entries
     let ids: DBSchemaOf<Def>[IDOf<Def>][] = [(whereData as any)[this.primaryId]] // simple method
@@ -445,7 +450,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
         // Run onUpdate callback here to avoid re-fetching 'currentData'
         const changed = await this.listeners.onUpdate(updateData, currentData)
         if (changed) updateData = changed
-        updateData = this._sanitizer(updateData)
+        updateData = this._preDBsanitize(updateData)
       }
     }
 
@@ -480,6 +485,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
   /** Execute DELETE command on one or more of ID values that match IDKEY (Or Primary ID if none provided)
    * (Returns TRUE/FALSE if successful) */
   private async _delete(whereData: WhereData<DBSchemaOf<Def>>) {
+    whereData = this._preDBsanitize(whereData)
     if (!Object.keys(whereData).length) throw noID()
 
     if (typeof this.listeners.onDelete === 'function') {
@@ -598,7 +604,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
   adaptData<A extends AdapterType>(adapterType: A, data: AdapterData<AdapterIn<Def,A>>): Promise<AdapterData<AdapterOut<Def,A>>>;
 
   adaptData<A extends AdapterType>(adapterType: A, data: AdapterData<AdapterIn<Def,A>>): Promise<AdapterData<AdapterOut<Def,A>>> {
-    return runAdapters(adapterType, data, this, this._sanitizer)
+    return runAdapters(adapterType, data, this)
   }
 
   /** Run adapters on full data array 

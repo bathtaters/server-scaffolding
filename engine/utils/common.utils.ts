@@ -1,4 +1,4 @@
-import type { ObjectOf, NestedObject } from '../types/global.d'
+import type { ObjectOf, NestedObject, LowerKeys } from '../types/global.d'
 import type { Middleware } from '../types/express.d'
 import RegEx, { RegExp, escapeRegexPattern } from '../libs/regex'
 
@@ -247,32 +247,20 @@ export function sanitizeObject<T extends object>(obj: T, allowedKeys?: (keyof T)
 }
 
 
-/** Create object w/ case insensitive keys */
-export function caseInsensitiveObject<O extends Record<string,any>>(object: O) {
-  return new Proxy(object, {
-    has(object: O, prop: string) {
-      return Boolean(getMatchingKey(object, prop))
-    },
-    
-    get(object: O, prop: string) {
-      const key = getMatchingKey(object, prop)
-      return key ? object[key] : undefined
-    },
+/** Create a function that will normalizing the case of an object's keys based off the keyObj
+ * @param keyObj - Example object with correct case keys
+ * @returns Function that will create a copy of an object similar to keyObj, normalizing the case of the keys */
+export function createCaseInsensitiveCopier<B extends Record<string,any>>(keyObj: B) {
+  const keyList = Object.keys(keyObj)
 
-    set(object: O, prop: string, val: O[keyof O]) {
-      const key = getMatchingKey(object, prop)
-      if (!key) return false
-      
-      object[key] = val
-      return true
+  /** Copy an object, normalizing the case of its keys
+   * @param obj - Object w/ any case keys
+   * @returns Copy of object w/ correct case keys */
+  return function caseInsenitiveCopy<T extends Record<keyof B & string, any>>(obj: LowerKeys<T>): T {
+    return keyList.reduce((copy, key) => {
+      const objKey = getMatchingKey(obj, key)
+      return objKey === undefined ? copy : { ...copy, [key]: obj[objKey] }
     },
-    
-    deleteProperty(object: O, prop: string) {
-      const key = getMatchingKey(object, prop)
-      if (!key) return false
-      
-      delete object[key]
-      return true
-    },
-  })
+    {} as T)
+  }
 }
