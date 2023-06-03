@@ -2,6 +2,9 @@ import type { DotenvParseOutput } from 'dotenv'
 import type { EnvParsed, EnvObject } from '../types/settings.d'
 import { definitions, escapeChars } from '../config/settings.cfg'
 
+/** List of all keys in Settings definition */
+export const settingsKeys = Object.keys(definitions) as (keyof EnvObject)[]
+
 /** Get keys from process.env */
 export const getSettingsVars = (keys: Array<keyof EnvParsed>, envObj: DotenvParseOutput) =>
   keys.reduce(

@@ -1,6 +1,7 @@
 import type { ModelActionBase } from '../types/controllers.d'
 import type { Middleware, Request } from '../types/express.d'
 import type { FormAction } from '../types/gui.d'
+import type { EnvObject } from '../types/settings.d'
 import { adapterTypes } from '../types/Model'
 import { actions, metaField } from '../types/gui'
 import { Role } from '../types/Users'
@@ -13,7 +14,8 @@ import settingsActions from '../services/settings.form'
 import { login as authLogin, logout as authLogout } from '../middleware/auth.middleware'
 import { filterFormData, toQueryString } from '../utils/form.utils'
 import { isBool } from '../utils/model.utils'
-import { isIn } from '../utils/common.utils'
+import { isIn, sanitizeObject } from '../utils/common.utils'
+import { settingsKeys } from '../utils/settings.utils'
 import { restartTimeout } from '../config/settings.cfg'
 import { badAction, noData } from '../config/errors.engine'
 import { urlCfg } from '../src.import'
@@ -77,18 +79,23 @@ export function form(Model: ModelActionBase, redirectURL?: string, errorCheck?: 
 
 
 export const settingsForm: Middleware = (req,res,next) => {
-  // TODO -- Use GUI metaFields instead of '_action, _pageData' literal keys, update to use a 'settings' Model
-  let { _action, _pageData, ...settings } = matchedData(req)
+  const data = matchedData(req)
 
-  if (!_action || !isIn(_action, settingsActions)) return next(badAction(_action))
+  const settings = sanitizeObject<EnvObject>(data, settingsKeys, false)
+    , button = data[metaField.button]
+    , page   = data[metaField.page]
 
-  if (_action === actions.update && !Object.keys(settings).length) return next(noData('settings'))
+  if (!button || !isIn(button, settingsActions))
+    return next(badAction(button))
+
+  if (button === actions.update && !Object.keys(settings).length)
+    return next(noData('settings'))
   
   let qryStr = ''
-  try { qryStr = toQueryString(_pageData) }
+  try { qryStr = toQueryString(page) }
   catch (err) { return next(err) }
 
-  return settingsActions[_action](settings, req.session)
+  return settingsActions[button](settings, req.session)
     .then((restart) => {
       if (typeof restart !== 'function') return res.redirect(settingsRedirect(qryStr))
 
