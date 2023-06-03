@@ -1,8 +1,6 @@
 import type express from 'express'
 import type { ParamsDictionary, Query as ParsedQuery } from 'express-serve-static-core'
 
-// TODO -- Implement stricter typing with routes and middleware
-
 export type GuiHandler<Params extends object = {}> = express.RequestHandler<Params, any, {},   {}>
 export type FormHandler<Body  extends object = {}> = express.RequestHandler<{},     any, Body, {}>
 
