@@ -49,6 +49,13 @@ export type AllOps = WhereOps | UpdateOps
 
 export type SQLParams = Array<[string, any] | OneOrNone<Record<WhereLogic, SQLParams>>>
 
+/** Metadata from run() in SQLite */
+export type SQLInfo = {
+    /** NOTE: Only reliable for INSERT statements */
+    lastID?: number,
+    /** NOTE: Only reliable for UPDATE/DELETE statements */
+    changes?: number,
+}
 
 
 /** Extract Type from SQLTypeFull string */

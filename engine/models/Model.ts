@@ -12,13 +12,13 @@ import logger from '../libs/log'
 import { childLabel, adapterTypes } from '../types/Model'
 import { ifExistsBehaviors } from '../types/db'
 import { openDb, getDb } from '../libs/db'
-import { all, get, run, reset, getLastEntry, multiRun } from '../services/db.services'
+import { all, get, run, reset, multiRun } from '../services/db.services'
 import { adaptSchema, getPrimaryId, runAdapters, extractChildren, buildAdapters, errorCheckModel  } from '../services/model.services'
 import { appendAndSort, insertSQL, selectSQL, countSQL, updateSQL, deleteSQL, swapSQL } from '../utils/db.utils'
 import { createCaseInsensitiveCopier, mapToField, isIn, getVal } from '../utils/common.utils'
 import { createSchemaSanitizer, childTableRefs, getSqlParams, childSQL, splitKeys } from '../utils/model.utils'
 import { getChildName, getChildPath } from '../config/models.cfg'
-import { noID, noData, noEntry, noPrimary, noSize, badKey, multiAction, updatePrimary } from '../config/errors.engine'
+import { noID, noData, noEntry, noPrimary, noSize, badKey, multiAction, updatePrimary, noAdd } from '../config/errors.engine'
 
 
 /** Base Model Class, each instance represents a separate model */
@@ -215,7 +215,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
    */
   async add(data: AddSchemaOf<Def>[], ifExists: IfExistsBehavior = 'default'): Promise<Feedback> {
     const success = await this._insert(data, ifExists, false)
-    return ({ success })
+    return ({ success: !!success })
   }
 
   /** Add entrie(s) to database, returning last entry added
@@ -223,8 +223,10 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
    * @param ifExists - How to handle non-unique entries (Default: default)
    * @returns Record of last entry (After adding to DB)
    */
-  addAndReturn(data: AddSchemaOf<Def>[], ifExists: IfExistsBehavior = 'default') {
-    return this._insert(data, ifExists, true)
+  async addAndReturn(data: AddSchemaOf<Def>[], ifExists: IfExistsBehavior = 'default') {
+    const lastEntry = await this._insert(data, ifExists, true)
+    if (!lastEntry) throw noAdd()
+    return lastEntry
   }
 
 
@@ -391,10 +393,10 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
 
   /** Execute INSERT command using DATA values, IFEXISTS behavior if matching record exists,
    * and returning last record if RETURNLAST is true (Otherwise it returns TRUE/FALSE if successful) */
-  private async _insert(data: AddSchemaOf<Def>[], ifExists: IfExistsBehavior, returnLast: false):   Promise<boolean>;
-  private async _insert(data: AddSchemaOf<Def>[], ifExists: IfExistsBehavior, returnLast: true):    Promise<SkipChildren<DBSchemaOf<Def>,Def>>;
-  private async _insert(data: AddSchemaOf<Def>[], ifExists: IfExistsBehavior, returnLast: boolean): Promise<SkipChildren<DBSchemaOf<Def>,Def>|boolean>;
-  private async _insert(data: AddSchemaOf<Def>[], ifExists: IfExistsBehavior, returnLast: boolean): Promise<SkipChildren<DBSchemaOf<Def>,Def>|boolean> {
+  private async _insert(data: AddSchemaOf<Def>[], ifExists: IfExistsBehavior, returnLast: false):   Promise<number>;
+  private async _insert(data: AddSchemaOf<Def>[], ifExists: IfExistsBehavior, returnLast: true):    Promise<SkipChildren<DBSchemaOf<Def>,Def>|undefined>;
+  private async _insert(data: AddSchemaOf<Def>[], ifExists: IfExistsBehavior, returnLast: boolean): Promise<SkipChildren<DBSchemaOf<Def>,Def>|undefined|number>;
+  private async _insert(data: AddSchemaOf<Def>[], ifExists: IfExistsBehavior, returnLast: boolean): Promise<SkipChildren<DBSchemaOf<Def>,Def>|undefined|number> {
     if (!data.length) throw noData('batch data')
 
     // Apply defaults, then adapt data
@@ -414,19 +416,34 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
     const missingPrimary = !keys.parent.includes(this.primaryId)
 
     // Update Base DB
-    let lastEntry: any
-    if (!returnLast && !missingPrimary) await run(getDb(), ...params)
-    else lastEntry = await getLastEntry(getDb(), ...params, this.title).then(this._postDBsanitize)
+    const { lastID } = await run(getDb(), ...params)
+    const changes = typeof lastID === 'number' ? dataArray.length : 0
 
-    if (!keys.children.length) return !returnLast || lastEntry
+    // Retrieve last entry
+    let lastEntry: SkipChildren<DBSchemaOf<Def>,Def> | undefined
+
+    if (returnLast || missingPrimary) {
+      if (typeof lastID !== 'number') throw noPrimary(this.title,'add')
+
+      const res = await get(getDb(), `SELECT * FROM ${this.title} WHERE rowid = ?`, [lastID])
+      if (res) lastEntry = this._postDBsanitize(res)
+
+      if (!keys.children.length) return lastEntry
+    }
+    else if (!keys.children.length) return changes
     
     // Get rowId if primaryId wasn't provided
-    if (missingPrimary && typeof lastEntry[this.primaryId] !== 'number') throw noPrimary(this.title,'add')
-    const primaryKey = !missingPrimary ? this.primaryId : lastEntry[this.primaryId] - dataArray.length
+    let primaryKey: number | string = this.primaryId
+
+    if (missingPrimary) {
+      const lastEntryID = (lastEntry as any)[this.primaryId]
+      if (typeof lastEntryID !== 'number') throw noPrimary(this.title,'add')
+      primaryKey = lastEntryID - changes
+    }
     
     // Update Child DBs
     await multiRun(getDb(), childSQL(this.title, dataArray, keys.children, primaryKey, ifExists))
-    return !returnLast || lastEntry
+    return returnLast ? lastEntry : changes
   }
 
 

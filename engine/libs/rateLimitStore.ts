@@ -2,7 +2,7 @@ import sqlite from 'sqlite3'
 import { join } from 'path'
 import { mkdirSync } from 'fs'
 import logger from './log'
-import { exec, all, run, get } from '../services/db.services'
+import { all, run, get } from '../services/db.services'
 import { throttle } from '../utils/common.utils'
 import { cleanupRateLimiter } from '../config/server.cfg'
 import { isRootInstance } from '../config/meta'
@@ -28,7 +28,7 @@ export default class SQLiteStore {
 
 		this.db = new sqlite.Database(isFile ? join(dir, db) : db, mode)
 
-		this.promise = exec(this.db, `CREATE TABLE IF NOT EXISTS ${this.table} (id PRIMARY KEY, hits, expires)`)
+		this.promise = run(this.db, `CREATE TABLE IF NOT EXISTS ${this.table} (id PRIMARY KEY, hits, expires)`)
 			
 		var self = this
 		this.promise.then(function() {

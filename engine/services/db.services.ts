@@ -1,46 +1,45 @@
 import type { Database } from '@journeyapps/sqlcipher'
 import type { ForeignKeyRef } from '../types/Model.d'
-import type { CreateSchema } from '../types/db.d'
+import type { CreateSchema, SQLInfo } from '../types/db.d'
 import { nullColumn } from '../types/db'
 import logger from '../libs/log'
 import { noDb, sqlError, sqlNotDB } from '../config/errors.engine'
 import { debugSQL } from '../config/models.cfg'
 
-// TODO -- add to ./libs/db, make into class called SQLite extends DB
-// TODO -- Simplify returning { lastID, changes } using 'this'
-
-type Params = { [key: string]: any } | any[]
-
-
-export function exec(db: Database | null, sql: string) {
-  debugSQL && logger.verbose(`<SQL> ${sql}`)
-
-  return new Promise<void>((res,rej) => {
-    if (!db) return rej(noDb())
-
-    db.exec('BEGIN; '+sql+'; COMMIT;', rollback(db, sql, rej, res))
-  })
-}
-
 
 /** Run multiple statements sequentially as a transaction, reject and rollback on error */
-export function multiRun(db: Database | null, statements: [sql: string, params: Params][]) {
+export function multiRun(db: Database | null, statements: [sql: string, params?: Params][]) {
   debugSQL && statements.forEach(([sql,params]) => logger.verbose(`<SQL> ${sql} ${JSON.stringify(params)}`))
 
-  return new Promise<void>((res,rej) => {
+  return new Promise<SQLInfo>((res,rej) => {
     if (!db) return rej(noDb())
     
+    let total: { lastID?: number, changes: number } = { changes: 0 }
+
     db.serialize(() => {
       db.run('BEGIN', rollback(db, 'BEGIN', rej))
+
       for (const [sql, params] of statements) {
-        db.run(sql, params, rollback(db, sql, rej))
+        db.run(
+          sql, params,
+          rollback(
+            db, sql, rej,
+            ({ lastID, changes = 0 }) => {
+              // Update totals
+              total.lastID   = lastID ?? total.lastID
+              total.changes += changes
+            }
+          )
+        )
       }
-      db.run('COMMIT', rollback(db, 'COMMIT', rej, res))
+
+      db.run('COMMIT', rollback(db, 'COMMIT', rej, () => res(total)))
     })
   })
 }
 
 
+/** Retrieve multiple rows of a SELECT statement */
 export function all<T = any>(db: Database | null, sql: string, params: Params = []) {
   debugSQL && logger.verbose(`<SQL> ${sql} ${JSON.stringify(params)}`)
 
@@ -52,17 +51,21 @@ export function all<T = any>(db: Database | null, sql: string, params: Params = 
 }
 
 
+/** Execute an INSERT, UPDATE or DELETE statement, returning info about the operation */
 export function run(db: Database | null, sql: string, params: Params = []) {
   debugSQL && logger.verbose(`<SQL> ${sql} ${JSON.stringify(params)}`)
 
-  return new Promise<void>((res,rej) => {
+  return new Promise<SQLInfo>((res,rej) => {
     if (!db) return rej(noDb())
 
-    db.run(sql, params, (err) => err ? rej(sqlError(err,sql,params)) : res())
+    db.run(sql, params, function(this: SQLInfo, err) {
+      return err ? rej(sqlError(err,sql,params)) : res(this)
+    })
   })
 }
 
 
+/** Retrieve the first row of a SELECT statement */
 export function get<T = any>(db: Database | null, sql: string, params: Params = []) {
   debugSQL && logger.verbose(`<SQL> ${sql} ${JSON.stringify(params)}`)
 
@@ -74,23 +77,7 @@ export function get<T = any>(db: Database | null, sql: string, params: Params = 
 }
 
 
-export function getLastEntry<T = any>(db: Database | null, sql: string, params: Params, table: string) {
-  debugSQL && logger.verbose(`<SQL> ${sql} ${JSON.stringify(params)}`)
-
-  return new Promise<T>((res,rej) => {
-    if (!db) return rej(noDb())
-
-    db.serialize(() => {
-      db.run(sql, params, (err) => err && rej(sqlError(err,sql,params)))
-      db.get(
-        `SELECT * FROM ${table} WHERE rowid = (SELECT last_insert_rowid())`, [],
-        (err, row) => err ? rej(sqlError(err,sql,params)) : res(row)
-      )
-    })
-  })
-}
-
-
+/** Build/Rebuild/Connect to a Database, using the defined tableSchema */
 export function reset<Tables extends string, Schema extends CreateSchema>(
   db: Database | null,
   tableSchema: { [table in Tables]: Schema },
@@ -138,7 +125,7 @@ export function reset<Tables extends string, Schema extends CreateSchema>(
     }
   }
 
-  return exec(db, drops.concat(creates).join('; '))
+  return multiRun(db, drops.concat(creates).map((sql) => [sql]))
 }
 
 
@@ -186,12 +173,15 @@ export function foreignKeys(db: Database | null, disable = false) {
 
 
 
-// HELPER
+// HELPERS
+
+/** Params type for SQL engine */
+type Params = { [key: string]: any } | any[]
 
 /** Rollback transaction on Error, if onSuccess function provided, it will be called on non error */
-function rollback(db: Database, errInfo: string, onError: Function, onSuccess?: Function) {
-  return (err: any) => {
-    if (!err) return onSuccess?.();
+function rollback(db: Database, errInfo: string, onError: (err: any) => any, onSuccess?: (info: SQLInfo) => any) {
+  return function (this: SQLInfo, err: any) {
+    if (!err) return onSuccess?.(this)
 
     if (err.code === 'SQLITE_NOTADB') onError(sqlNotDB())
     
