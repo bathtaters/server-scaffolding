@@ -12,9 +12,19 @@ block form
 
   .row
     each val, key in tableFields
-      if schema[key].html
+      if schema[key].formEffect === effect.hidden
+        span
+          +formInput(key, 'hidden', schema[key].limits, searchData ? searchData[key] : schema[key].default, val)
+          
+      else if schema[key].html && schema[key].formEffect !== effect.ignore
         .col-sm
-          +formInput(key, schema[key].html, schema[key].limits, searchData ? searchData[key] : schema[key].default, val)
+          +formInput(
+            key, schema[key].html, schema[key].limits,
+            searchData ? searchData[key] : schema[key].formEffect !== effect.hideDefault ? schema[key].default : null,
+            val, null,
+            schema[key].description,
+            schema[key].formEffect === effect.readonly
+          )
 
 
 block table

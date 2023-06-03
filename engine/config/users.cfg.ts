@@ -3,6 +3,7 @@ import { ModelAccess, Role } from '../types/Users'
 import { urlCfg } from '../src.import'
 import { CorsOrigin } from '../utils/users.cors'
 import { generateToken } from '../utils/auth.utils'
+import { formEffects } from '../types/gui'
 
 const urls = urlCfg.gui.admin
 
@@ -55,31 +56,31 @@ export const definition /*: DefinitionSchema */ = {
     type: 'int?',
     default: 0,
     limits: { min: 0, max: rateLimiter.maxFails + 1 },
-    skipForm: true,
+    formEffect: formEffects.ignore,
   },
   failTime: {
     type: 'datetime?',
-    skipForm: true,
+    formEffect: formEffects.ignore,
   },
   guiCount: {
     type: 'int?',
     default: 0,
     limits:  { min: 0, max: Number.MAX_SAFE_INTEGER  },
-    skipForm: true,
+    formEffect: formEffects.ignore,
   },
   guiTime: {
     type: 'datetime?',
-    skipForm: true,
+    formEffect: formEffects.ignore,
   },
   apiCount: {
     type: 'int?',
     default: 0,
     limits:  { min: 0, max: Number.MAX_SAFE_INTEGER  },
-    skipForm: true,
+    formEffect: formEffects.ignore,
   },
   apiTime: {
     type: 'datetime?',
-    skipForm: true,
+    formEffect: formEffects.ignore,
   },
   locked: {
     type: 'boolean',

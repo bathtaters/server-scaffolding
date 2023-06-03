@@ -9,7 +9,7 @@ import { useLocalCert, closeEvents, errorEvents } from '../config/server.cfg'
 import * as meta from '../config/meta'
 import { userServer, guiCfg, urlCfg, allModels } from '../src.import'
 import { viewMetaKey } from '../types/Model'
-import { metaField } from '../types/gui'
+import { formEffects, metaField } from '../types/gui'
 
 
 let server: ServerInfo = {
@@ -32,6 +32,7 @@ export default async function initializeServer(app: Express) {
   app.locals.urls     = urlCfg
   app.locals.metaKey  = viewMetaKey
   app.locals.formKeys = metaField
+  app.locals.effect   = formEffects
 
   // Start services
   if (!getDb()) await openDb()

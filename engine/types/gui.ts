@@ -16,6 +16,18 @@ export const metaField = {
     search: '_searchMode', // NOTE: THIS MUST ALSO BE UPDATED IN model/users CLIENT JS (update var 'IS_SEARCH') //
 } as const
 
+/** Effects for Form Display */
+export const formEffects = {
+    /** Doesn't appear in form at all */
+    ignore: 'ignore',
+    /** Gets saved/submitted in background, but is not displayed */
+    hidden: 'hidden',
+    /** Displays but is locked from editing */
+    readonly: 'readonly',
+    /** Don't show default value in form, but still uses it if field is blank */
+    hideDefault: 'hideDefault',
+} as const
+
 /** Meta fields in Form */
 export const formData = {
     /** Button clicked */

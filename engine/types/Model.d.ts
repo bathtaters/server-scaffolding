@@ -1,14 +1,13 @@
 import type { Awaitable, Flatten, Merge, Not, OneOrMore, PartialExcept } from './global.d'
-import type { ExtractHTMLType, FormData, HTMLType, ValidToHTML } from './gui.d'
+import type { ExtractHTMLType, FormData, FormEffect, HTMLType, ValidToHTML } from './gui.d'
 import type { BaseOfValid, ExtractType, IsArray, IsOptional, ValidationBase, ValidationBasic, ValidationExpanded, ValidationType } from './validate.d'
 import type { SQLTypeFull, ForeignKeyAction, UpdateData, WhereData, ExtractDBType, DBIsOptional, WhereValue, UpdateValue } from './db.d'
 import type { ExtendedType, adapterTypes, childIndexType, childLabel, viewMetaKey } from './Model'
 import type { typeSuffixes } from './validate'
+import type { formEffects } from './gui'
 import type { MASK_STR, defaultPrimaryKey, defaultPrimaryType } from '../config/models.cfg'
 
 // TODO -- Improve HTML typing (Create 'multi-input' type (AKA only takes specific values))
-
-// TODO -- Allow passing Generator function to Definition.default 
 
 // TODO -- Organize types into namespaces
 
@@ -52,16 +51,22 @@ type DefinitionBase<T> = {
    *   - default: false */
   isMasked?: boolean,
 
-  /** Don't include property in generated forms
-   *  (Used when property is created/set by side-effects)
-   *   - default: false */
-  skipForm?: boolean,
+  /** Change behavior in GUI Form
+   *   - ignore: Doesn't appear in form at all (Used when property is created/set by side-effects)
+   *   - hidden: Gets saved/submitted in background, but is not displayed
+   *   - readonly: Displays but is locked from editing
+   *   - hideDefault: Don't show default value in form, but still uses it if field is blank */
+  formEffect?: FormEffect,
 
   /** Property is primary key for database
    *   - Type must be string or numeric type
    *   - When no type is provided,
    *     it will be set as auto-incrementing int */
   isPrimary?: NonNullable<T> extends string | number ? boolean : false,
+
+  /** Description of property
+   *   - Appears as a tooltip in GUI Forms */
+  description?: string,
 }
 
 /** Class that constructs ExtendedType */
@@ -463,7 +468,7 @@ type IsInView<D extends Definition> =
 
 /** True/False indicating if definition will be editable in GUI */
 type IsInForm<D extends Definition> =
-  D['skipForm'] extends true
+  D['formEffect'] extends typeof formEffects.ignore
     ? false
     : D['html'] extends false ? false : true
 

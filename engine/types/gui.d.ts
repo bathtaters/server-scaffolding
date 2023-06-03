@@ -1,9 +1,11 @@
-import type { htmlTypes, actions, htmlValidationDict, formData, pageSelect, metaField } from './gui'
+import type { htmlTypes, actions, htmlValidationDict, formData, pageSelect, metaField, formEffects } from './gui'
 import type { Definition, SchemaOf } from './Model.d'
 
 export type HTMLType = typeof htmlTypes[keyof typeof htmlTypes]
 
 export type FormAction = typeof actions[keyof typeof actions]
+
+export type FormEffect = typeof formEffects[keyof typeof formEffects]
 
 export type PaginationData<Schema extends object = any> =
     Omit<SchemaOf<typeof pageSelect>,'id'|'sort'> & {
