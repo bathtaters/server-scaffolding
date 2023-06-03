@@ -56,7 +56,7 @@ $( 'input#tokenRegen' ).on('click', function(ev) {
     url:     $(this).attr('formaction'),
     data:    sendData,
     success: function(data) {
-        if (!data.success) { window.alert('Error regenerating API ID: '+((data.error && data.error.message) || data.error || 'Unknown error')); }
+        if (!data.changed) { window.alert('Error regenerating API ID: '+((data.error && data.error.message) || data.error || 'Unknown error')); }
         else { window.location.reload(); }
       },
     error:   function(jqXHR, textStatus, errorThrown) {

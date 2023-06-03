@@ -145,7 +145,7 @@ export type DefType = ValidationType | ExtendedClass<any>
 export type SchemaGeneric = Record<string, any>
 
 /** Generic return type for non-returning database operations */
-export type Feedback = { success: boolean }
+export type Feedback = { changed: number }
 
 /** Function that will sanitize given data, returning a new copy */
 export type Sanitizer = <T extends SchemaGeneric>(data: T) => T

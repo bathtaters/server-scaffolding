@@ -21,7 +21,7 @@ runTests() {
   local val1="TEST"
   local val2="NEW"
 
-  local update_res="{\"success\":true}"
+  local update_res="{\"changed\":"
 
   # CREATE -- readonly = fails (NO id/entry)
   local res=$([[ "$test_access" == *"w"* ]] && echo "" || echo "\"error\":")

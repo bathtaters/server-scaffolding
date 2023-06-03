@@ -130,7 +130,7 @@ $( '#_actionSwap' ).on('click', function() {
     url:     $(this).attr('formaction'),
     data:    sendData,
     success: function(data) {
-      if (!data.success) { window.alert('Error performing swap: '+((data.error && data.error.message) || data.error || 'Unknown error')); }
+      if (!data.changed) { window.alert('Error performing swap: '+((data.error && data.error.message) || data.error || 'Unknown error')); }
       window.location.reload();
     },
     error:   function(jqXHR, textStatus, errorThrown) {

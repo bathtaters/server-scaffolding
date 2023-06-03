@@ -37,8 +37,8 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
   private _postDBsanitize: ReturnType<typeof createCaseInsensitiveCopier>
   listeners:               ModelListeners<Def>
 
-  /** Promise that will resolve to TRUE once DB is connected and Model is created */
-  readonly isInitialized: Promise<boolean>
+  /** Promise that will resolve with number of tables in model once DB is connected and Model is created */
+  readonly isInitialized: Promise<number>
   private _tmpID = -0xFF /* Temporary ID to use for swapping */
 
   /** Create a DB connection to the given model
@@ -74,8 +74,8 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
 
     this.isInitialized = (async () => {
       if (!getDb()) { await openDb() }
-      const { success } = await this.create()
-      return success
+      const { changed } = await this.create()
+      return changed
     })()
   }
   
@@ -132,7 +132,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
 
   /** Create and/or connect to model in database
    * @param overwrite - If true, erase the table
-   * @returns Feedback object { success: true/false }
+   * @returns Feedback object { changed: number }
    */
   async create(overwrite?: boolean): Promise<Feedback> {
     
@@ -151,7 +151,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
     })
 
     await reset(getDb(), dbSchema, overwrite, indexes, refs)
-    return { success: true }
+    return { changed: 1 + Object.keys(refs).length }
   }
 
   /** Count the number of records of this model
@@ -211,11 +211,12 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
   /** Add entrie(s) to database
    * @param data     - Array of new entries as objects
    * @param ifExists - How to handle non-unique entries (Default: default)
-   * @returns Feedback object { success: true/false }
+   * @returns Feedback object { changed: number }
    */
   async add(data: AddSchemaOf<Def>[], ifExists: IfExistsBehavior = 'default'): Promise<Feedback> {
-    const success = await this._insert(data, ifExists, false)
-    return ({ success: !!success })
+    const changed = await this._insert(data, ifExists, false)
+    if (!changed) throw noAdd()
+    return ({ changed })
   }
 
   /** Add entrie(s) to database, returning last entry added
@@ -237,7 +238,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
    * @param data    - Key/Value object to update matching record to
    * @param options - (Optional) Update options
    * @param options.idKey    - (Default: Primary ID) Key of ID to lookup
-   * @returns Feedback object { success: true/false }
+   * @returns Feedback object { changed: number }
    */
   async update<O extends Record<string,any> & IDOption<Def>>(
     id: TypeOfID<Def, O['idKey']>,
@@ -266,12 +267,12 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
    * @param data    - Key/Value object to update matching record to
    * @param options - (Optional) Update options
    *                - No options on Default Model
-   * @returns Feedback object { success: true/false }
+   * @returns Feedback object { changed: number }
    */
   async batchUpdate(where: WhereData<SchemaOf<Def,false>>, data: UpdateData<SchemaOf<Def,false>>, options?: Record<string,any>): Promise<Feedback> {
     const whereData = await this.adaptData(adapterTypes.toDB, where)
-    const success = await this._update(data, whereData)
-    return { success }
+    const changed = await this._update(data, whereData)
+    return { changed }
   }
   
 
@@ -279,7 +280,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
    *    - Confirms that ID matches exactly 1 entry before removing
    * @param id    - ID value to remove
    * @param idKey - (Default: Primary ID) Key of ID to remove
-   * @returns Feedback object { success: true/false }
+   * @returns Feedback object { changed: number }
    */
   async remove<ID extends IDOf<Def> | undefined>(id: TypeOfID<Def, ID>, idKey?: ID): Promise<Feedback> {
     if (id == null) throw noID()
@@ -299,12 +300,12 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
    *              - Can also use { [whereOp/whereLogic]: value } instead of value
    *              - WhereOps are: $gt(e), $lt(e), $eq, $in (Partial match)
    *              - WhereLogic is { $and/$or: [ ...WhereData ] }, { $not: WhereData }
-   * @returns Feedback object { success: true/false }
+   * @returns Feedback object { changed: number }
    */
   async batchRemove(where: WhereData<SchemaOf<Def,false>>): Promise<Feedback> {
     const whereData = await this.adaptData(adapterTypes.toDB, where)
-    const success = await this._delete(whereData)
-    return { success }
+    const changed = await this._delete(whereData)
+    return { changed }
   }
 
 
@@ -313,7 +314,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
    * @param idA - ID value to swap from
    * @param idB - ID value to swap with
    * @param idKey - (Default: Primary ID) Key of ID A & B values
-   * @returns Feedback object { success: true/false }
+   * @returns Feedback object { changed: number }
    */
   async swap<ID extends IDOf<Def> | undefined>(idA: TypeOfID<Def,ID>, idB:TypeOfID<Def,ID>, idKey?: ID): Promise<Feedback> {
     if (idA == null || idA == null) throw noID()
@@ -321,8 +322,8 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
     const count = await this._countRaw({ [idKey || this.primaryId]: idA })
     if (!count) throw noEntry(idA)
 
-    const success = await this._swap(idA, idB, idKey)
-    return { success }
+    const changed = await this._swap(idA, idB, idKey)
+    return { changed }
   }
 
 
@@ -431,7 +432,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
       if (!keys.children.length) return lastEntry
     }
     else if (!keys.children.length) return changes
-    
+
     // Get rowId if primaryId wasn't provided
     let primaryKey: number | string = this.primaryId
 
@@ -486,12 +487,13 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
     const keys = splitKeys(updateData, this.children)
     if (!keys.parent.length && !keys.children.length) throw noData('update data after onChangeCallback')
 
+    let parents = 0, children = 0
     if (keys.parent.length) await run(getDb(), ...updateSQL(
       this.title,
       updateData,
       keys.parent,
       getSqlParams(this, whereData)
-    ))
+    )).then(({ changes }) => { parents = changes ?? 0 })
 
     if (keys.children.length) await multiRun(getDb(), childSQL(
       this.title,
@@ -500,9 +502,9 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
       this.primaryId,
       ifExistsBehaviors.abort,
       true,
-    ))
+    )).then(({ changes }) => { children = changes ?? 0 })
     
-    return true
+    return parents || (children && ids.length)
   }
 
 
@@ -518,8 +520,8 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
       if (updated) whereData = updated
     }
     
-    await run(getDb(), ...deleteSQL(this.title, getSqlParams(this, whereData)))
-    return true
+    const { changes } = await run(getDb(), ...deleteSQL(this.title, getSqlParams(this, whereData)))
+    return changes ?? 0
   }
 
 
@@ -532,14 +534,14 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
     
     if (idAdb == null || idBdb == null) throw noID()
 
-    await multiRun(getDb(), swapSQL(
+    const { changes } = await multiRun(getDb(), swapSQL(
       this.title,
       idKey || this.primaryId,
       idAdb, idBdb,
       this._tmpID,
       Object.keys(this.children))
     )
-    return true
+    return changes ?? 0
   }
 
   

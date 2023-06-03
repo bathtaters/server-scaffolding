@@ -139,9 +139,9 @@ upstream myserver {
 |`/`|`POST`|`{...data}`|`{ id }`|Create|
 |`/`|`GET`| |`[{...data}]`|Read all|
 |`/[id]`|`GET`| |`{...data}`|Read|
-|`/[id]`|`PUT`|`{...data}`|`{ success }`|Update|
-|`/[id]`|`DELETE`| |`{ success }`|Delete|
-|`/swap`|`POST`|`{ id, swap }`|`{ success }`|Swap IDs _(`swap` = ID)_|
+|`/[id]`|`PUT`|`{...data}`|`{ changed }`|Update|
+|`/[id]`|`DELETE`| |`{ changed }`|Delete|
+|`/swap`|`POST`|`{ id, swap }`|`{ changed }`|Swap IDs _(`swap` = ID)_|
 
 
 ---

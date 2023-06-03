@@ -155,8 +155,8 @@ class User extends Model<UserDef, typeof title> {
     let data: UpdateData<AddSchemaOf<UserDef>> = { [`${timestamp}Time`]: now() }
     if (!ignoreCounter) data[`${timestamp}Count`] = { $inc: 1 }
 
-    const { success } = await super.update(userData[this.primaryId], data)
-    return success
+    const { changed } = await super.update(userData[this.primaryId], data)
+    return changed
   }
 
 
