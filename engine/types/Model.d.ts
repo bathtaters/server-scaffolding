@@ -1,6 +1,6 @@
-import type { Awaitable, Flatten, Merge, Not, OneOrMore, PartialExcept } from './global.d'
-import type { HTMLTypeFull, ExtractHTMLType, FormData, FormEffect, ValidToHTML } from './gui.d'
-import type { BaseOfValid, ExtractType, IsArray, IsOptional, ValidationBase, ValidationBasic, ValidationExpanded, ValidationType } from './validate.d'
+import type { Awaitable, Flatten, Merge, Not, OneOrMore, PartialExcept, Sub } from './global.d'
+import type { HTMLTypeFull, FormData, FormEffect } from './gui.d'
+import type { BaseOfValid, ExtractType, IsOptional, ValidationBase, ValidationBasic, ValidationExpanded, ValidationType } from './validate.d'
 import type { SQLTypeFull, ForeignKeyAction, UpdateData, WhereData, ExtractDBType, DBIsOptional, WhereValue, UpdateValue } from './db.d'
 import type { ExtendedType, adapterTypes, childIndexType, childLabel, viewMetaKey } from './Model'
 import type { typeSuffixes } from './validate'
@@ -356,13 +356,13 @@ export type DBSchemaOf<Def extends DefinitionSchema> = Flatten<
 /** Convert Definition Schema to GUI View Schema (Allows passing additional data via the viewMetaKey) */
 export type ViewSchemaOf<Def extends DefinitionSchema> = {
   -readonly [K in keyof Def as IsInView<Def[K]> extends true ? K : never]:
-    SHTMLType<Def[K]> | (undefined extends SHTMLType<Def[K]> ? null : never)
+    SHTMLType<Def[K]> | string | (undefined extends SHTMLType<Def[K]> ? null : never)
 } & { [viewMetaKey]: Record<string,any> }
 
 /** Convert Definition Schema to GUI Form Schema */
 export type FormSchemaOf<Def extends DefinitionSchema> = Partial<{
   -readonly [K in keyof Def as IsInForm<Def[K]> extends true ? K : never]:
-    SHTMLType<Def[K]> | string | null
+    SHTMLType<Def[K]> | null
 } & FormData<DBSchemaOf<Def>>>
 
 /** Convert Definition Schema to Base Schema Keys */
@@ -405,39 +405,26 @@ export type TypeOfID<Def extends DefinitionSchema, ID extends IDOf<Def> | undefi
 
 /** Extract Base Type from Definition */
 type SBaseType<D extends Definition, Masked extends boolean = true> =
-  Masked | D['isMasked'] extends true
-    ? typeof MASK_STR
-    : D['isPrimary'] extends true
-      ? GetType<DefTypeStr<D['type']>>
-      : GetType<D['type']>
+  D['isMasked'] | Masked extends true ? typeof MASK_STR :
+  D['isPrimary']         extends true ? GetType<DefTypeStr<D['type']>>
+    : GetType<D['type']>
 
 
 /** Extract DB Type from Definition */
 type SDBType<D extends Definition> =
-  D['db'] extends string
-    ? ExtractDBType<D['db']>
-    : D['db'] extends false
-      ? never
-      : D['type'] extends ExtendedClass<any>
-        ? GetValueType<D['type']>
-        : Date extends GetType<D['type']>
-          ? Exclude<GetType<D['type']>, Date> | number
-          : GetType<D['type']>
+  D['db']   extends string             ? ExtractDBType<D['db']> :
+  D['db']   extends false              ? never :
+  D['type'] extends ExtendedClass<any> ? GetValueType<D['type']>
+    : Sub<SBaseType<D,false>, Date, number>
 
 
 /** Extract HTML Type from Definition */
 type SHTMLType<D extends Definition> =
-  D['html'] extends string | number | string[]
-    ? ExtractHTMLType<D['html']>
-    : D['html'] extends false
-      ? never
-      : D['type'] extends ValidationType
-        ? IsArray<D['type']> extends true
-          ? ExtractHTMLType<ValidToHTML<'array'>>
-          : ExtractHTMLType<ValidToHTML<BaseOfValid<DefTypeStr<D>>>>
-      : D['type'] extends ExtendedClass<any>
-        ? ReturnType<InstanceType<D['type']>['toString']>
-        : any
+  // D['html'] extends string | number | string[] ? ExtractHTMLType<D['html']> :
+  D['html'] extends false                      ? never :
+  D['type'] extends ExtendedClass<any>         ? ReturnType<InstanceType<D['type']>['toString']> :
+  D['type'] extends ValidationType             ? SBaseType<D,false>
+    : any
 
 
 /** Get Type from Definition.Type (string/Class) */
