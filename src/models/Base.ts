@@ -2,8 +2,8 @@ import Model from '../../engine/models/Model'
 import BitMapFactory from '../../engine/libs/BitMap'
 import { formEffects } from '../../engine/types/gui'
 
-/* --- Simple Model --- */
-export default new Model('base', {
+/* -- Model Definition (Shared by Simple & Advanced models) -- */
+const baseDefinition = {
   // Layout of Database object
   id: {
     // .id is automatically added as int primary key
@@ -45,30 +45,28 @@ export default new Model('base', {
     // Array size / Element num/char limits
     limits: { array: { max: 5 }, elem: { max: 100 } },
   },
-})
+} as const
 
-// TODO -- Test that this works w/ new Types
+
+/* --- Simple Model --- */
+export default new Model('base', baseDefinition)
+
+
 /* --- Advanced Model --- *\
-import { Feedback } from '../../engine/models/Model.d'
+const baseTitle = 'base'
 
-class BaseModel extends Model<Base> {
+class BaseModel extends Model<typeof baseDefinition, typeof baseTitle> {
   newProp: string
 
   constructor() {
-    super('base', {
-      data: {
-        type: "string*",
-        limits: { min: 0, max: 1000 },
-        default: "DEFAULT VALUE",
-      },
-    })
+    super(baseTitle, baseDefinition)
 
     // Additional initialization
     this.newProp = 'NEW'
   }
 
-  create(overwrite?: boolean): Promise<Feedback> {
-    // Override built-in method
+  override create(overwrite?: boolean) {
+    // Override built-in method (Must have same signature)
     return super.create(overwrite)
   }
 
