@@ -68,8 +68,8 @@ export const
       }
 
       if (suffix) msg += 'with '
-      msg += max == null ? `${suffix ? 'more' : 'larger'} than ${min}` :
-             min == null ? `${suffix ? 'less' : 'larger'} than ${max}` :
+      msg += max == null ? `${suffix ? '' : 'of '}at least ${min}` :
+             min == null ? `${suffix ? '' : 'of '}at most ${max}` :
                            `between ${min} & ${max}`
       return msg + suffix
     },
