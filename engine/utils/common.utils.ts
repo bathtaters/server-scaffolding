@@ -227,6 +227,26 @@ export const extractValue = <O extends Record<string|number,any>>(object: O, key
 }
 
 
+/** Iterate through object, copying each key in allowedKeys to a new object
+ * @param obj - Object to sanitize
+ * @param allowedKeys - (Default: all keys) List of keys to include in copy
+ * @param recursive - (Default: true) Recursively sanitize inner arrays/objects using same allowedKeys
+ * @returns Sanitized copy of the object */
+export function sanitizeObject<T extends object>(obj: T, allowedKeys?: (keyof T)[], recursive = true): T {
+  return (allowedKeys || Object.keys(obj) as (keyof T)[]).reduce(
+    (sanit, key) => {
+      if (!(key in obj))           return sanit
+      if (!recursive || !obj[key]) return { ...sanit, [key]: obj[key] }
+
+      if (Array.isArray(obj[key]))      return { ...sanit, [key]: (obj[key] as T[]).map((o) => sanitizeObject(o, allowedKeys, recursive)) }
+      if (typeof obj[key] === 'object') return { ...sanit, [key]: sanitizeObject(obj[key] as T, allowedKeys, recursive) }
+      return { ...sanit, [key]: obj[key] }
+    },
+    {} as T
+  )
+}
+
+
 /** Create object w/ case insensitive keys */
 export function caseInsensitiveObject<O extends Record<string,any>>(object: O) {
   return new Proxy(object, {
