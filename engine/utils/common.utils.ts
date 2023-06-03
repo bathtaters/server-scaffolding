@@ -18,6 +18,9 @@ export const isIn = <T extends object>(key: any, object: T): key is keyof T => k
 /** Type guard for object key accessor */
 export const getVal = <T extends object>(object: T, key: keyof any): T[keyof T] | undefined => (object as any)[key]
 
+/** Type guard for non-array/null objects */
+export const isObject = (obj: any): obj is Record<string,any> => typeof obj === 'object' && obj !== null && !Array.isArray(obj)
+
 /** Return number of 'def' value/0 if it is not a number */
 export const toNumber = (val: any, def = 0) => typeof val === 'number' ? val : def
 
@@ -238,9 +241,14 @@ export function sanitizeObject<T extends object>(obj: T, allowedKeys?: (keyof T)
       if (!(key in obj))           return sanit
       if (!recursive || !obj[key]) return { ...sanit, [key]: obj[key] }
 
-      if (Array.isArray(obj[key]))      return { ...sanit, [key]: (obj[key] as T[]).map((o) => sanitizeObject(o, allowedKeys, recursive)) }
-      if (typeof obj[key] === 'object') return { ...sanit, [key]: sanitizeObject(obj[key] as T, allowedKeys, recursive) }
-      return { ...sanit, [key]: obj[key] }
+      if (Array.isArray(obj[key]))      return {
+        ...sanit,
+        [key]: (obj[key] as any[]).map((o) => isObject(o) ? sanitizeObject(o as T, allowedKeys, recursive) : o)
+      }
+      return {
+        ...sanit,
+        [key]: isObject(obj[key]) ? sanitizeObject(obj[key] as T, allowedKeys, recursive) : obj[key]
+      }
     },
     {} as T
   )
