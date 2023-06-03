@@ -6,7 +6,7 @@ import type Model from '../models/Model'
 import type { GenericModel } from '../models/Model'
 import type { IfExistsBehavior, SQLParams, SQLSuffix, SQLType, SQLTypeFull, WhereData, WhereOps } from '../types/db.d'
 import type { ValidationBasic, ValidationExpanded } from '../types/validate.d'
-import type { HTMLType } from '../types/gui.d'
+import type { HTMLTypeFull } from '../types/gui.d'
 import { foreignKeyActions, sqlSuffixes, sqlTypes, whereLogic, whereNot, whereOp, whereOpPartial } from '../types/db'
 import { adapterTypes, childLabel, extendedAdapters, extendedTypeDefaults } from '../types/Model'
 import { htmlValidationDict } from '../types/gui'
@@ -253,7 +253,7 @@ export function dbFromExtended(extended: ExtendedClass<any>, isFloat = false): S
 
 
 /** Convert Model type to HTML input type */
-export function htmlFromType({ typeBase, isArray }: ValidationExpanded): HTMLType {
+export function htmlFromType({ typeBase, isArray }: ValidationExpanded): HTMLTypeFull {
   if (isArray) return htmlValidationDict.default
   return getVal(htmlValidationDict, typeBase) ?? htmlValidationDict.default
 }

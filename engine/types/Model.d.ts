@@ -1,5 +1,5 @@
 import type { Awaitable, Flatten, Merge, Not, OneOrMore, PartialExcept } from './global.d'
-import type { ExtractHTMLType, FormData, FormEffect, HTMLType, ValidToHTML } from './gui.d'
+import type { HTMLTypeFull, ExtractHTMLType, FormData, FormEffect, ValidToHTML } from './gui.d'
 import type { BaseOfValid, ExtractType, IsArray, IsOptional, ValidationBase, ValidationBasic, ValidationExpanded, ValidationType } from './validate.d'
 import type { SQLTypeFull, ForeignKeyAction, UpdateData, WhereData, ExtractDBType, DBIsOptional, WhereValue, UpdateValue } from './db.d'
 import type { ExtendedType, adapterTypes, childIndexType, childLabel, viewMetaKey } from './Model'
@@ -36,7 +36,7 @@ type DefinitionBase<T> = {
    *   - false = property is omitted from UI
    *   - string[] = dropdown menu of these values
    *   - default: auto-generated based on type */
-  html: false | number | HTMLType | (T extends string ? string[] : never),
+  html: false | HTMLTypeFull,
 
   /** Data type for property in database
    *   - string = type line in Create Table

@@ -40,12 +40,15 @@ export type ValidToHTML<T extends keyof typeof htmlValidationDict | string> = T 
     : typeof htmlValidationDict['default']
 
 
+/** Possible values for HTMLType */
+export type HTMLTypeFull = HTMLType | number | string[]
+
 /** Extract Type from HTMLType string */
-export type ExtractHTMLType<D extends HTMLType | number | string[] | undefined> = 
+export type ExtractHTMLType<D extends HTMLTypeFull | undefined> = 
     D extends undefined ? never : TypeOfHTML<D>
 
 /** Convert SQLTypes to Types */
-type TypeOfHTML<S extends HTMLType | number | undefined> = 
+type TypeOfHTML<S extends HTMLTypeFull | undefined> = 
     S extends never    ? any :
     S extends string[] ? S[number] :
     S extends number   ? string :
