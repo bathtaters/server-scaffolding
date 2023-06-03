@@ -13,7 +13,7 @@ import { htmlValidationDict } from '../types/gui'
 
 import RegEx from '../libs/regex'
 import { formatDateLong, formatLong } from '../libs/date'
-import { getVal, isIn } from './common.utils'
+import { getVal, isIn, sanitizeObject } from './common.utils'
 import { insertSQL, deleteSQL } from './db.utils'
 import { parseBoolean, parseArray, parseDate, toTypeString, expandTypeStr, generateLimits } from './validate.utils'
 import { CONCAT_DELIM, defaultPrimaryType, getChildName } from '../config/models.cfg'
@@ -196,22 +196,13 @@ export const isDbKey = <Def extends DefinitionSchema>
     !idKey || Boolean(isIn(idKey, schema) && schema[idKey].db)
 
 
-export function sanitizeSchemaData
-  <Def extends DefinitionSchema, T extends SchemaGeneric>
-  (data: T, { schema, children }: SanitModel<Def> = {}): T
-{
-  const validKeys = schema && Object.keys(schema)
+export function schemaSanitizer<Def extends DefinitionSchema>({ schema, children }: SanitModel<Def> = {}) {
+  const allowedKeys = schema && Object.keys(schema)
     .filter((key) => schema[key].db)
     .concat(Object.keys(children || {}))
+    .concat([whereNot, ...Object.keys(whereLogic)])
 
-  return Object.keys(data).reduce(
-    (obj, key) =>
-      !validKeys || validKeys.includes(key)             ? { ...obj, [key]: data[key]                           } :
-      key === whereNot && typeof data[key] === 'object' ? { ...obj, [key]: sanitizeSchemaData(data[key] || {}) } :
-      key in whereLogic && Array.isArray(data[key])     ? { ...obj, [key]: data[key].map(sanitizeSchemaData)   } :
-        obj,
-    {} as T
-  )
+  return <T extends SchemaGeneric>(data: T) => sanitizeObject(data, allowedKeys, true)
 }
 
 

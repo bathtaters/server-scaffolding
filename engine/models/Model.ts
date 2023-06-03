@@ -4,7 +4,7 @@ import type {
   TypeOfID, IDOf, PrimaryIDOf, IDOption, SQLOptions,
   Page, FindResult, SelectResult, Feedback,
   AdapterType, AdapterIn, AdapterOut, AdapterData, ModelListeners,
-  ForeignKeyRef, ChildDefinitions, ChildKey, SkipChildren, 
+  ForeignKeyRef, ChildDefinitions, ChildKey, SkipChildren, SchemaGeneric, Sanitizer, 
 } from '../types/Model.d'
 import type { CreateSchema, IfExistsBehavior, UpdateData, WhereData } from '../types/db.d'
 import logger from '../libs/log'
@@ -15,7 +15,7 @@ import { all, get, run, reset, getLastEntry, multiRun } from '../services/db.ser
 import { adaptSchema, getPrimaryId, runAdapters, extractChildren, buildAdapters, errorCheckModel  } from '../services/model.services'
 import { appendAndSort, insertSQL, selectSQL, countSQL, updateSQL, deleteSQL, swapSQL } from '../utils/db.utils'
 import { caseInsensitiveObject, mapToField, isIn, getVal } from '../utils/common.utils'
-import { sanitizeSchemaData, childTableRefs, getSqlParams, childSQL, splitKeys } from '../utils/model.utils'
+import { schemaSanitizer, childTableRefs, getSqlParams, childSQL, splitKeys } from '../utils/model.utils'
 import { getChildName, getChildPath } from '../config/models.cfg'
 import { noID, noData, noEntry, noPrimary, noSize, badKey, multiAction, updatePrimary } from '../config/errors.engine'
 
@@ -27,6 +27,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
   private _adapters:     AdapterDefinition<Def>
   private _primaryId:    PrimaryIDOf<Def>
   private _isChildModel: boolean
+  private _sanitizer:    Sanitizer
   listeners:             ModelListeners<Def>
 
   private   _defaults: DefaultSchemaOf<Def>
@@ -63,6 +64,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
     this._adapters = buildAdapters(adapters, this._schema)
     this._defaults = mapToField(this._schema, 'default') as any
     this._masked   = Object.keys(this._schema).filter((key) => this._schema[key].isMasked)
+    this._sanitizer = schemaSanitizer(this)
 
     errorCheckModel(this._title, this._schema)
 
@@ -443,7 +445,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
         // Run onUpdate callback here to avoid re-fetching 'currentData'
         const changed = await this.listeners.onUpdate(updateData, currentData)
         if (changed) updateData = changed
-        updateData = sanitizeSchemaData(updateData, this)
+        updateData = this._sanitizer(updateData)
       }
     }
 
@@ -596,7 +598,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
   adaptData<A extends AdapterType>(adapterType: A, data: AdapterData<AdapterIn<Def,A>>): Promise<AdapterData<AdapterOut<Def,A>>>;
 
   adaptData<A extends AdapterType>(adapterType: A, data: AdapterData<AdapterIn<Def,A>>): Promise<AdapterData<AdapterOut<Def,A>>> {
-    return runAdapters(adapterType, data, this)
+    return runAdapters(adapterType, data, this, this._sanitizer)
   }
 
   /** Run adapters on full data array 
