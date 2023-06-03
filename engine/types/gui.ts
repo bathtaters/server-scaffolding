@@ -10,10 +10,14 @@ export const actions = {
 
 /** Meta fields in Form */
 export const metaField = {
+    /** Contains value of button clicked to submit */
     button: '_action',
-    csrf:   '_csrf', // NOTE: THIS MUST ALSO BE UPDATED IN model/profile/users CLIENT JS (update var 'CSRF') //
+    /** Contains CSRF token */
+    csrf:   '_csrf',
+    /** Contains Page.Select data */
     page:   '_pageData',
-    search: '_searchMode', // NOTE: THIS MUST ALSO BE UPDATED IN model/users CLIENT JS (update var 'IS_SEARCH') //
+    /** Boolean indicating if searchMode was enabled/disabled */
+    search: '_searchMode',
 } as const
 
 /** Effects for Form Display */
