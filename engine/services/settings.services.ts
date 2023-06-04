@@ -21,8 +21,9 @@ const [ debouncedRead, forceNextRead ] = debounce(readFile, { interval: fileRead
 export const settingsDefaults = filterOutProps(
   Object.entries(definitions).reduce(
     (defs, [key, val]) =>
-      'default' in val && val.formEffect !== formEffects.hideDefault ?
-        { ...defs, [key]: String(val.default) } : defs,
+      'default' in val
+        ? { ...defs, [key]: val.formEffect === formEffects.hideDefault ? '' : String(val.default) }
+        : defs,
 
       {} as EnvObject
   ),
