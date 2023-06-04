@@ -1,16 +1,17 @@
-const server = require('../../server')
-const request = require('supertest-session')(server)
-
-const Users = require('../../models/Users')
-const { createUser } = require('../endpoint.utils')
+import server from '../../server'
+import supertest from 'supertest'
+import Users from '../../models/Users'
+import { Role } from '../../types/Users'
+import { type UserInfo, createUser, access } from '../endpoint.utils'
+const request = supertest.agent(server)
 
 const userPrefix = '/admin/users'
 
 describe('Test Users Form Post', () => {
-  let userInfo
-  beforeAll(() => {
-    const creds = { username: 'test', password: 'password', access: ['admin'] }
-    return createUser(creds).then(() => request.post('/login').send(creds))
+  let userInfo: UserInfo
+  beforeAll(async () => {
+    const creds = { username: 'test', password: 'password', role: new Role('admin') }
+    await createUser(creds).then(() => request.post('/login').send(creds))
   })
 
   test('User login works', async () => {
@@ -19,11 +20,12 @@ describe('Test Users Form Post', () => {
 
   test('POST /form Add', async () => {
     await request.post(`${userPrefix}/form/add`).expect(302).expect('Location',userPrefix)
-      .send({ username: "apiuser", access: ["api"] })
-    userInfo = await Users.get("apiuser", 'username')
+      .send({ username: "apiuser", role: ["api"] })
+
+    userInfo = await Users.get("apiuser", { idKey: 'username' })
     expect(userInfo).toBeTruthy()
     expect(userInfo.username).toBe("apiuser")
-    expect(userInfo.access).toBe(1)
+    expect(userInfo.role?.value).toBe(new Role('api').value)
   })
 
   test('POST /form Update', async () => {
@@ -33,11 +35,11 @@ describe('Test Users Form Post', () => {
     expect(userInfo.username).toBe("newuser")
   })
 
-  test('GUI/Admin access w/o password', async () => {
+  test('GUI/Admin role w/o password', async () => {
     await request.post(`${userPrefix}/form/update`).expect(400)
-      .send({ id: userInfo.id, access: ['admin'] })
+      .send({ id: userInfo.id, role: ['admin'] })
     await request.post(`${userPrefix}/form/update`).expect(400)
-      .send({ id: userInfo.id, access: ['gui','api'] })
+      .send({ id: userInfo.id, role: ['gui','api'] })
   })
 
   test('Password requires confirm', async () => {
@@ -45,58 +47,59 @@ describe('Test Users Form Post', () => {
       .send({ id: userInfo.id, password: "password123" })
     
     await request.post(`${userPrefix}/form/update`).expect(302).expect('Location',userPrefix)
-      .send({
-        id: userInfo.id,
-        password: "password123",
-        confirm: "password123",
-      })
-
-      const user = await Users.checkPassword("newuser", "password123")
-      expect(user.id).toBe(userInfo.id)
+      .send({ id: userInfo.id, password: "password123", confirm: "password123" })
+      
+      const user = await Users.checkPassword("newuser", "password123", userInfo.role ?? new Role('api'))
+      expect('fail' in user && user.fail).toBe(false)
+      expect('id' in user && user.id).toBe(userInfo.id)
   })
 
-  test('GUI/Admin access w/ password', async () => {
+  test('GUI/Admin role w/ password', async () => {
     await request.post(`${userPrefix}/form/update`).expect(302).expect('Location',userPrefix)
-      .send({ id: userInfo.id, access: ['admin'] })
+      .send({ id: userInfo.id, role: ['admin'] })
     userInfo = await Users.get(userInfo.id)
-    expect(userInfo.access).toBe(4)
+    expect(userInfo.role?.value).toBe(new Role('admin').value)
 
     await request.post(`${userPrefix}/form/update`).expect(302).expect('Location',userPrefix)
-      .send({ id: userInfo.id, access: ['gui','api'] })
+      .send({ id: userInfo.id, role: ['gui','api'] })
     userInfo = await Users.get(userInfo.id)
-    expect(userInfo.access).toBe(3)
+    expect(userInfo.role?.value).toBe(new Role('gui','api').value)
   })
 
   test('Set CORS array', async () => {
     await request.post(`${userPrefix}/form/update`).expect(302).expect('Location',userPrefix)
       .send({ id: userInfo.id, cors: "a,b,c" })
     userInfo = await Users.get(userInfo.id)
-    expect(userInfo.cors).toStrictEqual(["a","b","c"])
+    expect(userInfo.cors?.type).toBe('array')
+    expect(userInfo.cors?.value).toStrictEqual(["a","b","c"])
   })
 
   test('Set CORS RegEx', async () => {
     await request.post(`${userPrefix}/form/update`).expect(302).expect('Location',userPrefix)
       .send({ id: userInfo.id, cors: 'RegExp("abc")' })
     userInfo = await Users.get(userInfo.id)
-    expect(userInfo.cors).toHaveProperty('source','abc')
+    expect(userInfo.cors?.type).toBe('regex')
+    expect(userInfo.cors?.value).toHaveProperty('source','abc')
   })
   
   test('Update Model Access', async () => {
-    expect(userInfo.models).toEqual({ default: 3 })
+    expect(userInfo.access?.toJSON()).toBe(access('rw').toJSON())
+
     await request.post(`${userPrefix}/form/update`).expect(302).expect('Location',userPrefix)
-      .send({ id: userInfo.id, models: ['default-none'] })
+      .send({ id: userInfo.id, access: ['default-none'] })  
     userInfo = await Users.get(userInfo.id)
-    expect(userInfo.models).toEqual({ default: 0 })
+    expect(userInfo.access?.toJSON()).toBe(access('none').toJSON())
+
     await request.post(`${userPrefix}/form/update`).expect(302).expect('Location',userPrefix)
-      .send({ id: userInfo.id, models: ['default-read','default-write'] })
+      .send({ id: userInfo.id, access: ['default-read','default-write'] })
     userInfo = await Users.get(userInfo.id)
-    expect(userInfo.models).toEqual({ default: 3 })
+    expect(userInfo.access?.toJSON()).toBe(access('rw').toJSON())
   })
 
-  test('POST /regenToken', async () => {
-    const res = await request.post(`${userPrefix}/regenToken`).expect(200).expect('Content-Type', /json/)
+  test('POST /tokenRegen', async () => {
+    const res = await request.post(`${userPrefix}/tokenRegen`).expect(200).expect('Content-Type', /json/)
       .send({ id: userInfo.id })
-    expect(res.body).toEqual({ success: true })
+    expect(res.body).toEqual({ changed: 1 })
     
     const oldToken = userInfo.token
     userInfo = await Users.get(userInfo.id)
@@ -112,8 +115,8 @@ describe('Test Users Form Post', () => {
 
   test('POST /form Reset', async () => {
     await request.post(`${userPrefix}/form/reset`).expect(302).expect('Location',userPrefix)
-    userInfo = await Users.get()
-    expect(userInfo).toEqual([])
+    const users = await Users.find()
+    expect(users).toEqual([])
   })
 
 })

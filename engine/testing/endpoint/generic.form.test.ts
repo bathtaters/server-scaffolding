@@ -1,16 +1,21 @@
-const server = require('../../server')
-const request = require('supertest-session')(server)
-const { createUser, testModelData } = require('../endpoint.utils')
-jest.mock(require('../../src.path').modelsPath, () => [ require('../Test.model') ])
+import server from '../../server'
+import supertest from 'supertest'
+import { createUser, testModelData } from '../endpoint.utils'
+import { Role } from '../../types/Users'
+const request = supertest.agent(server)
+
+// TODO - Test ExtendedType
+// TODO - Test default as function
+// TODO - Object[] don't work (see generic.api.test)
 
 const { Model, testKey, idKey, prefix } = testModelData
 const creds = { username: 'test', password: 'password' }
 const formUrl = `${prefix.gui}/form/`
 
 describe('Test User Profile Form Post', () => {
-  let testId = 'NULL', otherId = 'NULL'
+  let testId: number | string = 'NULL', otherId: number | string = 'NULL'
   beforeAll(async () => {
-    await createUser({ ...creds, access: ['gui'] })
+    await createUser({ ...creds, role: new Role('gui') })
     await request.post('/login').send(creds)
   })
   test('User login works', async () => {
@@ -21,8 +26,7 @@ describe('Test User Profile Form Post', () => {
     await request.post(formUrl+'add').expect(302).expect('Location',prefix.gui)
       .send({ [testKey]: "test" })
     
-    testId = await Model.get()
-      .then((list) => (list && list[0] && list[0][idKey]) ?? 'NULL')
+    testId = await Model.find().then((list) => list[0]?.[idKey] ?? 'NULL')
     expect(testId).not.toBe('NULL')
     expect(await Model.get(testId)).toHaveProperty(testKey, "test")
   })
@@ -35,13 +39,14 @@ describe('Test User Profile Form Post', () => {
   })
 
   test('Swap Button', async () => {
-    otherId = await Model.add({ [testKey]: "other" }).then((data) => (data && data[idKey]) ?? 'NULL')
+    otherId = await Model.addAndReturn([{ [testKey]: "other" }])
+      .then((data) => (data && data[idKey]) ?? 'NULL')
     expect(otherId).not.toBe('NULL')
 
     const res = await request.post(`${prefix.gui}/swap`).expect(200).expect('Content-Type', /json/)
       .send({ [idKey]: testId, swap: otherId })
     
-    expect(res.body).toEqual({ success: true })
+    expect(res.body).toEqual({ changed: 2 })
     expect(await Model.get(testId)).toHaveProperty(testKey, "other")
     expect(await Model.get(otherId)).toHaveProperty(testKey, "new")
     testId = otherId
@@ -59,45 +64,45 @@ describe('Test User Profile Form Post', () => {
     let res = await request.post(`${prefix.gui}/swap`).expect(400).expect('Content-Type', /json/)
       .send({ [idKey]: testId, swap: 'test' })
     expect(res.body.error).toHaveProperty('name','ValidationError')
-    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^swap must be int/))
+    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^swap must be an int/))
     res = await request.post(`${prefix.gui}/swap`).expect(400).expect('Content-Type', /json/)
       .send({[idKey]: testId, swap: 12.34 })
     expect(res.body.error).toHaveProperty('name','ValidationError')
-    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^swap must be int/))
+    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^swap must be an int/))
   })
   test('VALIDATION - Int min/max', async () => {
     let res = await request.post(`${prefix.gui}/swap`).expect(400).expect('Content-Type', /json/)
       .send({ [idKey]: testId, swap: -12 })
     expect(res.body.error).toHaveProperty('name','ValidationError')
-    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^swap must be int/))
+    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^swap must be an int/))
     res = await request.post(`${prefix.gui}/swap`).expect(400).expect('Content-Type', /json/)
       .send({ [idKey]: testId, swap: 12345 })
     expect(res.body.error).toHaveProperty('name','ValidationError')
-    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^swap must be int/))
+    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^swap must be an int/))
   })
   test('VALIDATION - String type', async () => {
     let res = await request.post(formUrl+'update').expect(400)
       .send({ [idKey]: testId, name: { a: 1, b: 2, c: 3 } })
     expect(res.text).toMatch(/Validation Error/)
-    expect(res.text).toMatch(/name not a valid string/)
+    expect(res.text).toMatch(/name must be a string/)
     res = await request.post(formUrl+'update').expect(400)
       .send({ [idKey]: testId, name: 12345 })
     expect(res.text).toMatch(/Validation Error/)
-    expect(res.text).toMatch(/name not a valid string/)
+    expect(res.text).toMatch(/name must be a string/)
     res = await request.post(formUrl+'update').expect(400)
       .send({ [idKey]: testId, name: true })
     expect(res.text).toMatch(/Validation Error/)
-    expect(res.text).toMatch(/name not a valid string/)
+    expect(res.text).toMatch(/name must be a string/)
   })
   test('VALIDATION - String min/max', async () => {
     let res = await request.post(formUrl+'update').expect(400)
       .send({ [idKey]: testId, name: 'a' })
     expect(res.text).toMatch(/Validation Error/)
-    expect(res.text).toMatch(/name must be string/)
+    expect(res.text).toMatch(/name must be a string/)
     res = await request.post(formUrl+'update').expect(400)
       .send({ [idKey]: testId, name: 'b'.repeat(101) })
     expect(res.text).toMatch(/Validation Error/)
-    expect(res.text).toMatch(/name must be string/)
+    expect(res.text).toMatch(/name must be a string/)
   })
   test('VALIDATION - Boolean type', async () => {
     let res = await request.post(formUrl+'update').expect(400)
@@ -113,11 +118,11 @@ describe('Test User Profile Form Post', () => {
     let res = await request.post(formUrl+'update').expect(400)
       .send({ [idKey]: testId, number: 'test' })
     expect(res.text).toMatch(/Validation Error/)
-    expect(res.text).toMatch(/number must be float/)
+    expect(res.text).toMatch(/number must be a float/)
     res = await request.post(formUrl+'update').expect(400)
       .send({ [idKey]: testId, number: { a: 1, b: 2 } })
     expect(res.text).toMatch(/Validation Error/)
-    expect(res.text).toMatch(/number must be float/)
+    expect(res.text).toMatch(/number must be a float/)
     res = await request.post(formUrl+'update').expect(302).expect('Location',prefix.gui)
       .send({ [idKey]: testId, number: "12.34" })
     expect(await Model.get(testId)).toHaveProperty('number', 12.34)
@@ -126,11 +131,11 @@ describe('Test User Profile Form Post', () => {
     let res = await request.post(formUrl+'update').expect(400)
       .send({ [idKey]: testId, number: -1234 })
     expect(res.text).toMatch(/Validation Error/)
-    expect(res.text).toMatch(/number must be float/)
+    expect(res.text).toMatch(/number must be a float/)
     res = await request.post(formUrl+'update').expect(400)
       .send({ [idKey]: testId, number: 1234 })
     expect(res.text).toMatch(/Validation Error/)
-    expect(res.text).toMatch(/number must be float/)
+    expect(res.text).toMatch(/number must be a float/)
   })
   test('VALIDATION - Date type', async () => {
     let res = await request.post(formUrl+'update').expect(400)
@@ -166,7 +171,7 @@ describe('Test User Profile Form Post', () => {
     let res = await request.post(formUrl+'update').expect(400)
       .send({ [idKey]: testId, objectList: Array(21).fill('{}') })
     expect(res.text).toMatch(/Validation Error/)
-    expect(res.text).toMatch(/objectList must be array/)
+    expect(res.text).toMatch(/objectList must be an array/)
   })
   test('VALIDATION - Object type', async () => {
     let res = await request.post(formUrl+'update').expect(400)
@@ -200,8 +205,7 @@ describe('Test User Profile Form Post', () => {
     await request.post(formUrl+'add').expect(302).expect('Location',prefix.gui)
       .send({ name: "test" })
     
-    const newId = await Model.get()
-      .then((list) => (list && list[0] && list[0][idKey]) ?? 'NULL')
+    const newId = await Model.find().then((list) => list[0]?.[idKey] ?? 'NULL')
     expect(newId).not.toBe('NULL')
     expect(await Model.get(newId)).toEqual(expect.objectContaining({
       // Test defaults
@@ -210,3 +214,6 @@ describe('Test User Profile Form Post', () => {
     await Model.remove(newId)
   })
 })
+
+// MOCKS
+jest.mock('../../../src/models/_all')

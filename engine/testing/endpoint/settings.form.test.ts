@@ -1,14 +1,18 @@
-const server = require('../../server')
-const request = require('supertest-session')(server)
-
-const { readFile, writeFile } = require('fs/promises')
-const { createUser } = require('../endpoint.utils')
-const { envPath } = require('../../config/meta')
+import type { EnvObject } from '../../types/settings.d'
+import server from '../../server'
+import supertest from 'supertest'
+import { readFile, writeFile } from 'fs/promises'
+import { Role } from '../../types/Users'
+import { envPath } from '../../config/meta'
+import { createUser } from '../endpoint.utils'
+import { metaField } from '../../types/gui'
+import { settingsActions } from '../../types/settings'
+const request = supertest.agent(server)
 
 const settingsPrefix = '/admin/settings'
 
 describe('Test ENV Form Post', () => {
-  const settings = {
+  let settings: EnvObject = {
     NODE_ENV: "enviroment",
     port: "1234",
     LOG_CONSOLE: "logC",
@@ -23,7 +27,7 @@ describe('Test ENV Form Post', () => {
   
 
   beforeAll(() => {
-    const creds = { username: 'test', password: 'password', access: ['admin'] }
+    const creds = { username: 'test', password: 'password', role: new Role('admin') }
     return createUser(creds).then(() => request.post('/login').send(creds))
   })
 
@@ -38,7 +42,7 @@ describe('Test ENV Form Post', () => {
     settings.DB_SECRET = "testSecret"
 
     await request.post(`${settingsPrefix}/form`)
-      .send({ ...settings, _action: "Update" })
+      .send({ ...settings, [metaField.button]: settingsActions.update })
       .expect(302).expect('Location',settingsPrefix)
     
     expect(writeFile).toBeCalledTimes(1)
@@ -55,7 +59,7 @@ describe('Test ENV Form Post', () => {
     settings.LOG_DIR = "%5Cpath/to/log$"
 
     await request.post(`${settingsPrefix}/form`)
-      .send({ ...settings, _action: "Update" })
+      .send({ ...settings, [metaField.button]: settingsActions.update })
       .expect(302).expect('Location', settingsPrefix)
     
     expect(writeFile).toBeCalledTimes(1)
@@ -70,7 +74,7 @@ describe('Test ENV Form Post', () => {
     settings.LOG_DIR = ""
 
     await request.post(`${settingsPrefix}/form`)
-      .send({ ...settings, _action: "Default" })  
+      .send({ ...settings, [metaField.button]: settingsActions.default })  
       .expect(302).expect('Location', settingsPrefix)
       
     expect(writeFile).toBeCalledTimes(1)
@@ -91,7 +95,7 @@ describe('Test ENV Form Post', () => {
 
   test('POST /form Undo', async () => {
     await request.post(`${settingsPrefix}/form`)
-      .send({ ...settings, _action: "Undo" })
+      .send({ ...settings, [metaField.button]: settingsActions.undo })
       .expect(302).expect('Location', settingsPrefix)
     
     expect(writeFile).toBeCalledTimes(1)
@@ -106,22 +110,22 @@ describe('Test ENV Form Post', () => {
 
     try { while (true) {
       await request.post(`${settingsPrefix}/form`)
-        .send({ ...settings, _action: "Undo" })
+        .send({ ...settings, [metaField.button]: settingsActions.undo })
         .expect(302).expect('Location', settingsPrefix)
     }}
-    catch (err) {
+    catch (err: any) {
       expect(err.message).toContain('expected 302')
       expect(err.message).toContain('got 500')
     }
 
     await request.post(`${settingsPrefix}/form`)
-      .send({ ...settings, _action: "Undo" })
+      .send({ ...settings, [metaField.button]: settingsActions.undo })
       .expect(500)
   })
 
   test('POST /form Restart page', async () => {
     await request.post(`${settingsPrefix}/form`)
-      .send({ ...settings, _action: "Restart" })
+      .send({ ...settings, [metaField.button]: settingsActions.restart })
       .expect(418) // In TEST_ENV: Restart => <418>
   })
 
@@ -130,7 +134,7 @@ describe('Test ENV Form Post', () => {
     settings.LOG_CONSOLE = "newtest"
 
     await request.post(`${settingsPrefix}/form`)
-      .send({ ...settings, _action: "Restart" })
+      .send({ ...settings, [metaField.button]: settingsActions.restart })
       .expect(418) // In TEST_ENV: Restart => <418>
 
     expect(writeFile).toBeCalledTimes(1)
@@ -143,11 +147,4 @@ describe('Test ENV Form Post', () => {
 
 
 // MOCKS
-
-jest.mock('fs/promises', function() {
-  this.files = {}
-  return ({
-    writeFile: jest.fn((k, v) => Promise.resolve(this.files[k] = v)),
-    readFile:  jest.fn((k) => Promise.resolve(this.files[k] || '')),
-  })
-})
+jest.mock('fs/promises')

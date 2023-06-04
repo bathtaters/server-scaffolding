@@ -1,16 +1,19 @@
-const server = require('../../server')
-const request = require('supertest-session')(server)
-
-const Users = require('../../models/Users')
-const { createUser } = require('../endpoint.utils')
+import server from '../../server'
+import supertest from 'supertest'
+import { type UserInfo, createUser } from '../endpoint.utils'
+import Users from '../../models/Users'
+import { Role } from '../../types/Users'
+const request = supertest.agent(server)
 
 const profilePrefix = '/gui/profile'
 const creds = { username: 'test', password: 'password' }
 
 describe('Test User Profile Form Post', () => {
-  let userInfo
+  let userInfo: UserInfo
   beforeAll(async () => {
-    await createUser({ ...creds, access: ['gui'] }).then((info) => { userInfo = info })
+    // Create admin to avoid 'cannot delete only admin' error
+    await createUser({ username: 'admin', password: 'password', role: new Role('admin') })
+    await createUser({ ...creds, role: new Role('gui') }).then((info) => { userInfo = info })
     await request.post('/login').send(creds)
   })
 
@@ -39,14 +42,15 @@ describe('Test User Profile Form Post', () => {
         confirm: creds.password,
       })
     
-    const isPassword = await Users.checkPassword(creds.username, creds.password)
-    expect(isPassword.id).toBe(userInfo.id)
+    const isPassword = await Users.checkPassword(creds.username, creds.password, new Role('gui'))
+    expect('fail' in isPassword && isPassword.fail).toBe(false)
+    expect('id' in isPassword && isPassword.id).toBe(userInfo.id)
   })
 
-  test('POST /regenToken', async () => {
-    const res = await request.post(`${profilePrefix}/regenToken`).expect(200).expect('Content-Type', /json/)
+  test('POST /tokenRegen', async () => {
+    const res = await request.post(`${profilePrefix}/tokenRegen`).expect(200).expect('Content-Type', /json/)
       .send({ id: userInfo.id })
-    expect(res.body).toEqual({ success: true })
+    expect(res.body).toEqual({ changed: 1 })
     
     const oldToken = userInfo.token
     userInfo = await Users.get(userInfo.id)

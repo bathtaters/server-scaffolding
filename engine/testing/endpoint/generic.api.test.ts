@@ -1,13 +1,15 @@
-const server = require('../../server')
-const request = require('supertest')(server)
-const { getApiHeader, testModelData } = require('../endpoint.utils')
-jest.mock(require('../../src.path').modelsPath, () => [ require('../Test.model') ])
+import server from '../../server'
+import supertest from 'supertest'
+import { getApiHeader, testModelData } from '../endpoint.utils'
+const request = supertest.agent(server)
+
+// TODO - fix object[]: sending '{"a": 1}, {"b": 2}' or '{"a":1},{"b":2,"c":3}' fails
 
 const { Model, testKey, idKey, prefix } = testModelData
 
 describe('Test model API', () => {
-  let header, testId, swapId
-  beforeAll(() => getApiHeader().then((token) => header = token))
+  let header: Record<string,string>, testId: number, swapId: number
+  beforeAll(async () => { header = await getApiHeader() })
 
   test('User token works', async () => {
     await request.get(prefix.api).set(header).expect(200).expect('Content-Type', /json/)
@@ -51,7 +53,7 @@ describe('Test model API', () => {
   test('POST /swap', async () => {
     const swap = await request.post(`${prefix.api}/swap`).set(header).expect(200).expect('Content-Type', /json/)
       .send({ [idKey]: testId, swap: swapId })
-    expect(swap.body).toEqual({ success: true })
+    expect(swap.body).toEqual({ changed: 2 })
 
     const res = await request.get(prefix.api).set(header).expect(200).expect('Content-Type', /json/)
     expect(res.body).toHaveLength(2)
@@ -70,7 +72,7 @@ describe('Test model API', () => {
   test('UPDATE /[id]', async () => {
     const update = await request.put(`${prefix.api}/${testId}`).set(header).expect(200).expect('Content-Type', /json/)
       .send({ [testKey]: "new" })
-    expect(update.body).toEqual({ success: true })
+    expect(update.body).toEqual({ changed: 1 })
 
     const item = await Model.get(testId)
     expect(item[testKey]).toBe("new")
@@ -81,15 +83,15 @@ describe('Test model API', () => {
     let res = await request.put(`${prefix.api}/${testId}`).set(header).expect(400).expect('Content-Type', /json/)
       .send({ name: { a: 1, b: 2, c: 3 } })
     expect(res.body.error).toHaveProperty('name','ValidationError')
-    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^name not a valid string/))
+    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^name must be a string/))
     res = await request.put(`${prefix.api}/${testId}`).set(header).expect(400).expect('Content-Type', /json/)
       .send({ name: 12345 })
     expect(res.body.error).toHaveProperty('name','ValidationError')
-    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^name not a valid string/))
+    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^name must be a string/))
     res = await request.put(`${prefix.api}/${testId}`).set(header).expect(400).expect('Content-Type', /json/)
       .send({ name: true })
     expect(res.body.error).toHaveProperty('name','ValidationError')
-    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^name not a valid string/))
+    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^name must be a string/))
     res = await request.put(`${prefix.api}/${testId}`).set(header).expect(200).expect('Content-Type', /json/)
       .send({ name: 'valid' })
     expect(await Model.get(testId)).toHaveProperty('name', 'valid')
@@ -98,11 +100,11 @@ describe('Test model API', () => {
     let res = await request.put(`${prefix.api}/${testId}`).set(header).expect(400).expect('Content-Type', /json/)
       .send({ name: 'a' })
     expect(res.body.error).toHaveProperty('name','ValidationError')
-    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^name must be string/))
+    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^name must be a string/))
     res = await request.put(`${prefix.api}/${testId}`).set(header).expect(400).expect('Content-Type', /json/)
       .send({ name: 'b'.repeat(101) })
     expect(res.body.error).toHaveProperty('name','ValidationError')
-    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^name must be string/))
+    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^name must be a string/))
   })
   test('VALIDATION - Boolean type', async () => {
     let res = await request.put(`${prefix.api}/${testId}`).set(header).expect(400).expect('Content-Type', /json/)
@@ -121,31 +123,31 @@ describe('Test model API', () => {
     let res = await request.put(`${prefix.api}/${testId}`).set(header).expect(400).expect('Content-Type', /json/)
       .send({ testId: 'test' })
     expect(res.body.error).toHaveProperty('name','ValidationError')
-    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^testId must be int/))
+    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^testId must be an int/))
     res = await request.put(`${prefix.api}/${testId}`).set(header).expect(400).expect('Content-Type', /json/)
       .send({ testId: 12.34 })
     expect(res.body.error).toHaveProperty('name','ValidationError')
-    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^testId must be int/))
+    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^testId must be an int/))
   })
   test('VALIDATION - Int min/max', async () => {
     let res = await request.put(`${prefix.api}/${testId}`).set(header).expect(400).expect('Content-Type', /json/)
       .send({ testId: -12 })
     expect(res.body.error).toHaveProperty('name','ValidationError')
-    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^testId must be int/))
+    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^testId must be an int/))
     res = await request.put(`${prefix.api}/${testId}`).set(header).expect(400).expect('Content-Type', /json/)
       .send({ testId: 12345 })
     expect(res.body.error).toHaveProperty('name','ValidationError')
-    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^testId must be int/))
+    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^testId must be an int/))
   })
   test('VALIDATION - Float type', async () => {
     let res = await request.put(`${prefix.api}/${testId}`).set(header).expect(400).expect('Content-Type', /json/)
       .send({ number: 'test' })
     expect(res.body.error).toHaveProperty('name','ValidationError')
-    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^number must be float/))
+    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^number must be a float/))
     res = await request.put(`${prefix.api}/${testId}`).set(header).expect(400).expect('Content-Type', /json/)
       .send({ number: { a: 1, b: 2 } })
     expect(res.body.error).toHaveProperty('name','ValidationError')
-    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^number must be float/))
+    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^number must be a float/))
     res = await request.put(`${prefix.api}/${testId}`).set(header).expect(200).expect('Content-Type', /json/)
       .send({ number: "12.34" })
     expect(await Model.get(testId)).toHaveProperty('number', 12.34)
@@ -154,11 +156,11 @@ describe('Test model API', () => {
     let res = await request.put(`${prefix.api}/${testId}`).set(header).expect(400).expect('Content-Type', /json/)
       .send({ number: -1234 })
     expect(res.body.error).toHaveProperty('name','ValidationError')
-    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^number must be float/))
+    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^number must be a float/))
     res = await request.put(`${prefix.api}/${testId}`).set(header).expect(400).expect('Content-Type', /json/)
       .send({ number: 1234 })
     expect(res.body.error).toHaveProperty('name','ValidationError')
-    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^number must be float/))
+    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^number must be a float/))
   })
   test('VALIDATION - Date type', async () => {
     let res = await request.put(`${prefix.api}/${testId}`).set(header).expect(400).expect('Content-Type', /json/)
@@ -194,7 +196,7 @@ describe('Test model API', () => {
     let res = await request.put(`${prefix.api}/${testId}`).set(header).expect(400).expect('Content-Type', /json/)
       .send({ objectList: Array(21).fill('{}') })
     expect(res.body.error).toHaveProperty('name','ValidationError')
-    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^objectList must be array/))
+    expect(res.body.error).toHaveProperty('message',expect.stringMatching(/^objectList must be an array/))
   })
   test('VALIDATION - Object type', async () => {
     let res = await request.put(`${prefix.api}/${testId}`).set(header).expect(400).expect('Content-Type', /json/)
@@ -216,9 +218,9 @@ describe('Test model API', () => {
 
   test('DELETE /[id]', async () => {
     const del = await request.delete(`${prefix.api}/${swapId}`).set(header).expect(200).expect('Content-Type', /json/)
-    expect(del.body).toEqual({ success: true })
+    expect(del.body).toEqual({ changed: 1 })
 
-    const items = await Model.get()
+    const items = await Model.find()
     expect(items).toHaveLength(1)
     expect(items).toContainEqual(expect.objectContaining({ [idKey]: testId }))
   })
@@ -242,3 +244,6 @@ describe('Test model API', () => {
     await Model.remove(newId)
   })
 })
+
+// MOCKS
+jest.mock('../../../src/models/_all')
