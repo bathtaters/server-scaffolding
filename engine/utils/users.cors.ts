@@ -1,5 +1,5 @@
 import type { Cors, CorsType } from '../types/Users.d'
-import RegEx, { RegExp } from '../libs/regex'
+import RegEx, { type RegExp, isRegEx } from '../libs/regex'
 import logger from '../libs/log'
 import { ExtendedType } from '../types/Model'
 
@@ -13,17 +13,15 @@ const commaRegex = RegEx(/\s*,\s*/)
 
 // CORS library functions
 const regEx = {
-  stringify: (re: RegExp)  => `RegExp("${re.toString().slice(1, -1)}")`,
+  stringify: (re: RegExp)  => `RegExp("${re.source}")`,
   parse:     (str: string) => {
     const match = str.match(regExRegex)
-    if (match && match[1]) return RegEx(match[1])
+    if (match?.[1]) return RegEx(match[1])
     logger.warn(`Invalid RegExp ${str}`)
   },
-  canString: (re: any):   re is RegExp => typeof re?.compile === 'function',
+  canString: isRegEx,
   canParse:  (str: any): str is `RegExp(${string})` => typeof str === 'string' && regExRegex.test(str),
 }
-
-export function isRegEx(re: any) { return re && regEx.canString(re)}
 
 
 /** ExtendedType for CORS Access-Control-Allow-Origin header value */
