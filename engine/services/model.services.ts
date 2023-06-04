@@ -188,6 +188,7 @@ export async function runAdapters<D extends DefinitionSchema, A extends AdapterT
     
     // Catch any adapter errors - log errors & prevent crash on invalid values
     } catch (err: any) {
+      if (adapterType !== adapterTypes.fromDB) throw err
       err.name = `${key}.${adapterType}`
       logger.error(err)
     }
