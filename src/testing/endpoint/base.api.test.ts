@@ -2,15 +2,22 @@
 
 import supertest from 'supertest'
 import server from '../../../engine/server'
-import { testEndpoint } from '../test.imports'
-const request = supertest(server)
+import { getApiHeader } from '../../../engine/testing/endpoint.utils'
+const request = supertest.agent(server)
 
 const apiPrefix = '/api/base' // change 'base' to Model title
 
+const defaults = {
+  // Enter any default values here
+  data: 'DEFAULT VALUE',
+  extended: 1,
+  demoArray: [],
+}
+
+// Remove .skip to run tests
 describe.skip('Test Base model API', () => {
   let header: { Authorization: string }, testId: number
-  // @ts-ignore -- TODO: Fix when testing is typescript
-  beforeAll(() => testEndpoint.getApiHeader().then((token) => { header = token }))
+  beforeAll(() => getApiHeader().then((token) => { header = token }))
 
   test('Confirm login works', async () => {
     await request.get(apiPrefix).set(header).expect(200).expect('Content-Type', /json/)
@@ -30,8 +37,9 @@ describe.skip('Test Base model API', () => {
     const res = await request.get(`${apiPrefix}/${testId}`).set(header).expect(200).expect('Content-Type', /json/)
     expect(res.body).toEqual({
       // Expected fields (Including default values that will be auto set)
+      ...defaults,
       id: testId,
-      data: "test"
+      data: "test",
     })
   })
 
@@ -41,19 +49,20 @@ describe.skip('Test Base model API', () => {
         // Field(s) to update
         data: "new"
       })
-    expect(update.body).toEqual({ success: true })
+    expect(update.body).toEqual({ changed: 1 })
 
     const res = await request.get(`${apiPrefix}/${testId}`).set(header).expect(200).expect('Content-Type', /json/)
     expect(res.body).toEqual({
       // Confirm that only updated field(s) changed
+      ...defaults,
       id: testId,
-      data: "new"
+      data: "new",
     })
   })
 
   test('Delete (DELETE)', async () => {
     const del = await request.delete(`${apiPrefix}/${testId}`).set(header).expect(200).expect('Content-Type', /json/)
-    expect(del.body).toEqual({ success: true })
+    expect(del.body).toEqual({ changed: 1 })
 
     const res = await request.get(apiPrefix).set(header).expect(200).expect('Content-Type', /json/)
     expect(res.body).toHaveLength(0)
