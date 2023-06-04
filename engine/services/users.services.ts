@@ -26,7 +26,7 @@ export const userAdapters: AdapterDefinition<UserDef> = {
   
   [adapterTypes.fromUI]: {
     password: (password, data) => {
-      if ((data[metaField.button] === 'Add' || data[metaField.button] === 'Update')) {
+      if (!data[metaField.button] || data[metaField.button] === 'Add' || data[metaField.button] === 'Update') {
         if (!data.confirm) throw noConfirm()
         if (password !== data.confirm) throw badConfirm()
       }
