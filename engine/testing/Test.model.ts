@@ -1,37 +1,37 @@
-const Model = require('../models/Model.engine')
+import Model from '../models/Model'
 
-module.exports = new Model('test', {
+export default new Model('test', {
   testId: {
     isPrimary: true,
     limits: { min: 0, max: 1000 },
   },
   name: {
-    typeStr: "string",
+    type: "string",
     limits: { min: 2, max: 100 },
   },
   number: {
-    typeStr: "float",
+    type: "float",
     default: -1,
     limits: { min: -999, max: 999 },
   },
   comment: {
-    typeStr: "html?",
+    type: "html?",
     limits: { min: 0, max: 1000 },
   },
   isOn: {
-    typeStr: "boolean",
+    type: "boolean",
     default: true,
   },
   testDate: {
-    typeStr: "datetime?",
-    default: "2000-01-02T00:00",
+    type: "datetime?",
+    default: new Date("2000-01-02T00:00"),
   },
   numbers: {
-    typeStr: "int[]",
+    type: "int[]",
     limits: { array: { min: 0, max: 20 }, elem: { min: -10, max: 10 } },
   },
   objectList: {
-    typeStr: "object[]?",
+    type: "object[]",
     limits: { array: { max: 20 } },
   },
 })
