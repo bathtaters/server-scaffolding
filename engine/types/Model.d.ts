@@ -1,6 +1,6 @@
 import type { Awaitable, Flatten, Merge, Not, OneOrMore, PartialExcept, Sub } from './global.d'
 import type { HTMLTypeFull, FormData, FormEffect } from './gui.d'
-import type { BaseOfValid, ExtractType, IsOptional, ValidationBase, ValidationBasic, ValidationExpanded, ValidationType } from './validate.d'
+import type { BaseOfValid, ExtractType, IsArray, IsOptional, ValidationBase, ValidationBasic, ValidationExpanded, ValidationType } from './validate.d'
 import type { SQLTypeFull, ForeignKeyAction, UpdateData, WhereData, ExtractDBType, DBIsOptional, WhereValue, UpdateValue } from './db.d'
 import type { ExtendedType, adapterTypes, childIndexType, childLabel, viewMetaKey } from './Model'
 import type { typeSuffixes } from './validate'
@@ -464,7 +464,12 @@ type IsInForm<D extends Definition> =
 type GetOptional<D extends Definition> = D['type'] extends ValidationType ? IsOptional<D['type']> : true
 
 /** True/False indicating if Base Type is Optional (Including types with defaults) */
-type GetOptionalAdd<D extends Definition> = GetOptional<D> extends true ? true : HasDefault<D>
+type GetOptionalAdd<D extends Definition> =
+  GetOptional<D> extends true          ? true :
+  HasDefault<D> extends true           ? true :
+  D['type'] extends ExtendedClass<any> ? true :
+  D['type'] extends ValidationType     ? IsArray<D['type']> :
+    false
 
 /** True/False indicating if DB Type is Optional (Never indicates Key should not be included at all) */
 type GetOptionalDB<D extends Definition> =
