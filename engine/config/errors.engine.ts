@@ -94,9 +94,11 @@ invalidPort = (address: any, port: number) => new Error(
 const appendToError = <N extends number = number, P extends Record<string,any> = {}>(
   error: createError.HttpError<N>,
   { message = '', stack = '', ...errorProps }: P & { message?: string, stack?: string }
-) => ({
-  ...error,
-  ...errorProps,
-  message: `${error.message || ''}${error.message ? ' ' : ''}${message}`,
-  stack: `${error.stack || ''}${error.stack ? '\n' : ''}${stack}`,
-})
+) => createError(
+  error.status ?? error.statusCode ?? unknown().status, {
+    ...error,
+    ...errorProps,
+    message: `${error.message || ''}${error.message ? ' ' : ''}${message}`,
+    stack: `${error.stack || ''}${error.stack ? '\n' : ''}${stack}`,
+  }
+)
