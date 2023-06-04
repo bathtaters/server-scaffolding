@@ -59,34 +59,36 @@ export const adaptSchema = <Def extends DefinitionSchema>(schema: Def) =>
 
 /** Normalize a single Property's Definition */
 
-export function adaptSchemaEntry<T extends DefType>(def: Definition<T>): DefinitionNormal<T> {
+export function adaptSchemaEntry<T extends DefType>(entry: Definition<T>): DefinitionNormal<T> {
 
-  if (typeof def.type === 'function') {
-    if (def.isPrimary) throw new Error(`SCHEMA ERROR -- Primary ID cannot be an ExtendedType (${def.type.name})`)
+  if (typeof entry.type === 'function') {
+    if (entry.isPrimary) throw new Error(`SCHEMA ERROR -- Primary ID cannot be an ExtendedType (${entry.type.name})`)
 
     return {
       ...extendedTypeDefaults,
-      ...def,
+      ...entry,
       typeBase: undefined,
-      typeExtended: def.type,
-      db: def.db ?? dbFromExtended(def.type),
+      typeExtended: entry.type,
+      db: entry.db ?? dbFromExtended(entry.type),
     }
   }
 
-  const expanded = expandTypeStr(definitionToValid(def))
+  const expand = expandTypeStr(definitionToValid(entry))
 
-  const res = {
-    ...def,
-    ...expanded,
-    db:   def.db   ?? (!expanded.isArray &&   dbFromType(expanded, def.isPrimary)),
-    html: def.html ?? (!def.isPrimary    && htmlFromType(expanded)),
+  const norm = {
+    ...entry,
+    ...expand,
+    db:   entry.db   ?? (!expand.isArray  && dbFromType(expand, entry.isPrimary)),
+    html: entry.html ?? (!entry.isPrimary && htmlFromType(expand)),
   }
   
   // Error checking
-  if (res.isPrimary && (expanded.isArray || !res.db || (expanded.isOptional && typeof def.default !== 'function')))
-    throw new Error(`SCHEMA ERROR - Primary ID must be required, serializable & in DB: ${res.db ? `"${def.type || toTypeString(expanded)}"` : 'db = false'}`)
+  if (norm.isPrimary && (norm.isArray || !norm.db || (norm.isOptional && typeof norm.default !== 'function')))
+    throw new Error(`SCHEMA ERROR - Primary ID must be required, serializable & in DB: ${
+      norm.db ? `"${entry.type || toTypeString(expand)}"` : 'db = false'
+    }`)
   
-  return res
+  return norm
 }
 
 /** Replace non-false Missing Adapters with Default Adapters */
