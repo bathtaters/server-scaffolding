@@ -20,13 +20,6 @@ export const getAllLevels = (formattedLog: (LogObject | null)[]) => formattedLog
 )
 
 
-/** Check that a string is a valid logLevel, if not throw an error */
-export const isLogLevel = (logLevel: string, levelType = ''): logLevel is LogLevels => {
-  if (logLevel in logLevels) return true
-  throw new Error(`${levelType}LogLevel "${logLevel}" is not valid. Must be one of: "${Object.values(logLevels).join('", "')}"`)
-}
-
-
 /** Format log file time */
 const formatFileTime = (timestamp?: LogObject['timestamp']) => {
   if (typeof timestamp !== 'string' || !timestamp) return { full: '-', short: '-' }

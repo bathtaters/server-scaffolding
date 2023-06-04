@@ -3,7 +3,7 @@ import type { LogLevels } from '../types/log.d'
 import { logLevels } from '../types/log'
 import { readdir, readFile } from 'fs/promises'
 import { join, parse } from 'path'
-import { formatFileLog, getMaxEntry, isLogLevel } from '../utils/log.utils'
+import { formatFileLog, getMaxEntry } from '../utils/log.utils'
 import { logViewFileFilter } from '../config/log.cfg'
 import { logPath as fullLogPath } from '../config/meta'
 
@@ -40,10 +40,9 @@ export function getLogLevel(
   defaultLevel?: string,
   isConsole = false
 ): { level?: LogLevels, silent?: boolean } {
-  if (process.env.NODE_ENV === 'test' && testLevel && isLogLevel(testLevel,'Test'))
-    return isConsole ? { level: testLevel } : { silent: true }
+  if (process.env.NODE_ENV === 'test' && testLevel) logLevel = isConsole ? testLevel : silent[0]
 
-  if (!logLevel && defaultLevel && isLogLevel(defaultLevel,'Default')) logLevel = defaultLevel
+  if (!logLevel && defaultLevel && defaultLevel in logLevels) logLevel = defaultLevel
 
   if (typeof logLevel === 'string') logLevel = logLevel.toLowerCase()
 
