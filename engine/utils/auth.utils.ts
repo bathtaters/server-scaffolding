@@ -1,14 +1,12 @@
 import type { RoleType, UserDef } from '../types/Users.d'
 import type { DBSchemaOf } from '../types/Model.d'
-import hat from 'hat'
 import crypto from 'crypto'
 import { msAgo } from '../libs/date'
+import { generateSalt } from '../libs/random'
 import { encode, rateLimiter } from '../config/users.cfg'
 import { loginMessages as failureMsg } from '../config/errors.engine'
 
 export type PasswordCallback = (isMatch: boolean, userData: Partial<DBSchemaOf<UserDef>>) => Promise<void> | void
-
-export const generateToken = () => hat()
 
 export const isLocked = ({ failCount }: Partial<Pick<DBSchemaOf<UserDef>,'failCount'>>) =>
   (failCount || 0) + 1 >= rateLimiter.maxFails
@@ -23,7 +21,7 @@ const encrypt = (password: string, salt: string, iterations: number, keylen: num
   })
 
 export const encodePassword = async (password: string) => {
-  const salt = crypto.randomBytes(32).toString('base64url')
+  const salt = generateSalt()
   const pwkey = await encrypt(password, salt, encode.iters, encode.keylen, encode.digest)
   return { salt, pwkey: pwkey.toString('base64url') }
 }

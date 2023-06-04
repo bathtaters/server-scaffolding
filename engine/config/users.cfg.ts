@@ -1,8 +1,8 @@
-import RegEx from '../libs/regex'
 import { ModelAccess, Role } from '../types/Users'
+import RegEx from '../libs/regex'
+import { generateToken } from '../libs/random'
 import { urlCfg } from '../src.import'
 import { CorsOrigin } from '../utils/users.cors'
-import { generateToken } from '../utils/auth.utils'
 import { formEffects } from '../types/gui'
 
 const urls = urlCfg.gui.admin
