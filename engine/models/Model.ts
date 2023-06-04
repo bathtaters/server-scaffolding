@@ -493,7 +493,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
       updateData,
       keys.parent,
       getSqlParams(this, whereData)
-    )).then(({ changes }) => { parents = changes ?? 0 })
+    )).then(({ changes = 0 }) => { parents = changes })
 
     if (keys.children.length) await multiRun(getDb(), childSQL(
       this.title,
@@ -502,7 +502,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
       this.primaryId,
       ifExistsBehaviors.abort,
       true,
-    )).then(({ changes }) => { children = changes ?? 0 })
+    )).then(({ changes = 0 }) => { children = changes })
     
     return parents || (children && ids.length)
   }
@@ -520,8 +520,8 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
       if (updated) whereData = updated
     }
     
-    const { changes } = await run(getDb(), ...deleteSQL(this.title, getSqlParams(this, whereData)))
-    return changes ?? 0
+    const { changes = 0 } = await run(getDb(), ...deleteSQL(this.title, getSqlParams(this, whereData)))
+    return changes
   }
 
 
@@ -534,14 +534,15 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
     
     if (idAdb == null || idBdb == null) throw noID()
 
-    const { changes } = await multiRun(getDb(), swapSQL(
+    let { changes = 0 } = await multiRun(getDb(), swapSQL(
       this.title,
       idKey || this.primaryId,
       idAdb, idBdb,
       this._tmpID,
       Object.keys(this.children))
     )
-    return changes ?? 0
+    
+    return changes > 1 ? changes - 1 : changes // Swap requires changing to a temp ID, so - 1 from ops
   }
 
   
