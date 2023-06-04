@@ -8,8 +8,8 @@ import { rateLimits } from '../config/server.cfg'
 import { rateLimit as rateLimitError } from '../config/errors.engine'
 
 const storeOptions = {
-  dir: process.env.NODE_ENV !== 'test' ? dirname(dbPath) : undefined,
-  db: process.env.NODE_ENV === 'test'  ? ':memory:'      : 'sessions.db',
+  dir: process.env.NODE_ENV === 'test' ? undefined  : dirname(dbPath),
+  db:  process.env.NODE_ENV === 'test' ? ':memory:' : 'sessions.db',
 }
 
 const stores = {
