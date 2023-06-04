@@ -1,11 +1,11 @@
 import type {} from '../middleware/auth.middleware' // Express.User type
-import type { AdapterDefinition, DBSchemaOf, FormSchemaOf } from '../types/Model.d'
+import type { AdapterDefinition, FormSchemaOf } from '../types/Model.d'
 import type { UserDef } from '../types/Users.d'
 import { Role } from '../types/Users'
 import { adapterTypes, viewMetaKey } from '../types/Model'
 import { metaField } from '../types/gui'
 import { formatLong } from '../libs/date'
-import { generateToken, encodePassword } from '../utils/auth.utils'
+import { encodePassword } from '../utils/auth.utils'
 import { modifyOther, noConfirm, badConfirm } from '../config/errors.engine'
 import { toNumber } from '../utils/common.utils'
 
@@ -43,12 +43,6 @@ export const userAdapters: AdapterDefinition<UserDef> = {
     },
   },
 }
-
-export const addAdapter = (data: Omit<DBSchemaOf<UserDef>, 'id'|'token'>) => ({
-  id: generateToken(),
-  token: generateToken(),
-  ...data,
-})
 
 /** Safeguard non-admins from editing other user profiles */
 export function userFormCheck({ id }: FormSchemaOf<UserDef>, { user }: Express.Request) {

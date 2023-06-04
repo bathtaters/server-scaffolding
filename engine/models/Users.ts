@@ -6,7 +6,7 @@ import { adapterTypes } from '../types/Model'
 import Model from './Model'
 import logger from '../libs/log'
 import { now } from '../libs/date'
-import { addAdapter, userAdapters } from '../services/users.services'
+import { userAdapters } from '../services/users.services'
 import { projectedValue } from '../services/model.services'
 import { generateToken, testPassword, isLocked, isPastWindow } from '../utils/auth.utils'
 import { whereClause, whereValues } from '../utils/db.utils'
@@ -22,13 +22,9 @@ class User extends Model<UserDef, typeof title> {
 
   constructor() {
     super(title, definition, userAdapters)
+    this.listeners.onCreate = this._checkNewUsers.bind(this)
     this.listeners.onUpdate = this._updateCb.bind(this)
     this.listeners.onDelete = this.throwLastAdmins.bind(this)
-
-    this.listeners.onCreate = async (dataArray) => {
-      const updated = await this._addAdapter(dataArray)
-      return updated
-    }
   }
 
   override async get<O extends GetOptions>
@@ -160,24 +156,16 @@ class User extends Model<UserDef, typeof title> {
   }
 
 
-  private async _addAdapter(users: Omit<DBSchemaOf<UserDef>, 'id'|'token'>[]): Promise<DBSchemaOf<UserDef>[]> {
+  private async _checkNewUsers(users: Omit<DBSchemaOf<UserDef>, 'id'|'token'>[]) {
     for (const user of users) {
+      if (passwordRoles.intersects(user.role) && !user.password) throw noData('password for GUI access')
       await this.throwInvalidUsername(user.username)
     }
 
-    const userData = users.map((user) => {
-      const newUser = addAdapter(user)
-      if (passwordRoles.intersects(newUser.role) && !newUser.password)
-        throw noData('password for GUI access')
-      return newUser
-    })
-
-    if (userData.length > 1) {
+    if (users.length > 1) {
       const dupeIdx = hasDupes(users.map(({ username }) => username.toLowerCase()))
       if (dupeIdx) throw badUsername(users[dupeIdx - 1].username, usernameMessages.duplicate)
     }
-
-    return userData
   }
 
   private async _updateCb(newData: UpdateData<DBSchemaOf<UserDef>>, matchingData: DBSchemaOf<UserDef>[]) {
