@@ -18,6 +18,7 @@ import { defaultPrimaryKey, defaultPrimaryType, MASK_STR, SQL_ID } from '../conf
 
 const projectionFunctions = updateFunctions as any // valueType/funcType unable to easily index udpateFunctinos
 export function projectedValue<T>(currentValue: T, update: UpdateValue<T>): T {
+  if (typeof update === 'undefined') return currentValue
   if (typeof update !== 'object' || !update) return update
 
   const valueType = typeof currentValue,
