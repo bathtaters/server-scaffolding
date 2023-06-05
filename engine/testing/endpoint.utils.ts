@@ -18,6 +18,11 @@ export function createUser(userSettings: AddSchemaOf<UserDef>) {
   return Users.addAndReturn([userSettings]) as Promise<UserInfo>
 }
 
+/** Create an Admin, as a buffer to avoid 'Remove last admin' errors */
+export function createAdmin(username = '_failsafeAdmin') {
+  return createUser({ username, password: 'randompassword12', role: new Role('admin') })
+}
+
 /** Update userInfo with newInfo, both in the database and mutate userInfo object */
 export async function updateUser(userInfo: UserInfo, newInfo: UserInfo) {
   if (!userInfo[Users.primaryId]) throw new Error('Unable to update user, no ID provided')
