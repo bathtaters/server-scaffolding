@@ -348,7 +348,7 @@ export default class Model<Def extends DefinitionSchema, Title extends string> {
   // Base SQL //
 
   /** Run SELECT COUNT query using raw WHERE data */
-  async _countRaw(whereData: WhereData<DBSchemaOf<Def>> = {}): Promise<number> {
+  private async _countRaw(whereData: WhereData<DBSchemaOf<Def>> = {}): Promise<number> {
     const result = await get<{ count: number }>(
       getDb(),
       ...countSQL(this.title, getSqlParams(this, this._preDBsanitize(whereData)))
