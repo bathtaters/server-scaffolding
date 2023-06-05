@@ -110,6 +110,12 @@ export const allOps = [
     ...Object.values(updateOps).flatMap((op) => Object.keys(op)),
 ]
 
+export const allUpdateWhereKeys = [
+    ...allOps,
+    ...Object.keys(whereLogic),
+    whereNot,
+]
+
 /** Value to use to allow SQLite to insert null columns */
 export const nullColumn = '_nullInsertColumn'
 

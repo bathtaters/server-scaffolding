@@ -7,7 +7,7 @@ import type { GenericModel } from '../models/Model'
 import type { IfExistsBehavior, SQLParams, SQLSuffix, SQLType, SQLTypeFull, WhereData, WhereOps } from '../types/db.d'
 import type { ValidationBasic, ValidationExpanded } from '../types/validate.d'
 import type { HTMLTypeFull } from '../types/gui.d'
-import { foreignKeyActions, sqlSuffixes, sqlTypes, whereLogic, whereNot, whereOp, whereOpPartial } from '../types/db'
+import { allUpdateWhereKeys, foreignKeyActions, sqlSuffixes, sqlTypes, whereLogic, whereNot, whereOp, whereOpPartial } from '../types/db'
 import { adapterTypes, childLabel, extendedAdapters, extendedTypeDefaults } from '../types/Model'
 import { htmlValidationDict } from '../types/gui'
 
@@ -201,7 +201,7 @@ export function createSchemaSanitizer<Def extends DefinitionSchema>({ schema, ch
   const allowedKeys = schema && Object.keys(schema)
   .filter((key) => schema[key].db)
   .concat(Object.keys(children || {}))
-  .concat([whereNot, ...Object.keys(whereLogic)])
+  .concat(allUpdateWhereKeys)
   
   /** Object sanitizer that uses keys from Model schema
    * @param data - Object to be ingested into database
