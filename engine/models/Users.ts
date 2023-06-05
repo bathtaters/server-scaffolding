@@ -82,6 +82,7 @@ class User extends Model<UserDef, typeof title> {
       true,
     ) as { remains: number }[]
     
+    if (!admins.some(({ remains }) => remains === 0)) return false // User is not admin
     return !admins.filter(({ remains }) => remains).length
   }
 
@@ -146,7 +147,7 @@ class User extends Model<UserDef, typeof title> {
     timestamp?: TimestampType,
     ignoreCounter = false
   ) {
-    if (!timestamp || !isIn(this.primaryId, userData) || !userData[this.primaryId])
+    if (!timestamp || !userData[this.primaryId])
       return false
 
     let data: UpdateData<AddSchemaOf<UserDef>> = { [`${timestamp}Time`]: now() }
