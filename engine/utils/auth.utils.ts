@@ -12,8 +12,10 @@ export const isLocked = ({ failCount }: Partial<Pick<DBSchemaOf<UserDef>,'failCo
   (failCount || 0) + 1 >= rateLimiter.maxFails
 
 export const isPastWindow = ({ failTime, locked }: Partial<Pick<DBSchemaOf<UserDef>,'failTime'|'locked'>>) =>
-  failTime && (rateLimiter.autoUnlock || !locked) &&
+  !failTime || (
+    (rateLimiter.autoUnlock || !locked) &&
     msAgo(failTime) > rateLimiter.failWindow
+  )
 
 const encrypt = (password: string, salt: string, iterations: number, keylen: number, digest: string) =>
   new Promise<Buffer>((res, rej) => {
