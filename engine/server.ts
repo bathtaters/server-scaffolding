@@ -60,8 +60,8 @@ server.use(urlCfg.gui.basic.prefix, guiRoutes)
 server.use(urlCfg.gui.admin.prefix, adminRoutes)
 
 // Error Handling
-server.use([urlCfg.api.prefix, ...(guiCfg.jsonPaths || []), ...(jsonPaths || [])], jsonError)
-server.use(htmlError)
+server.use([urlCfg.api.prefix, ...(guiCfg.jsonPaths || []), ...(jsonPaths || [])], ...jsonError)
+server.use(...htmlError)
 
 // Start server
 initializeServer(server)

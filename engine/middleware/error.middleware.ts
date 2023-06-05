@@ -47,8 +47,8 @@ const sendAsHTML: Middleware = (req, res) => res.render('error', {
 })
 
 
-export const jsonError = [catchMissing, normalizeError, sendAsJSON]
-export const htmlError = [catchMissing, normalizeError, sendAsHTML]
+export const jsonError = [catchMissing, normalizeError, sendAsJSON] as const
+export const htmlError = [catchMissing, normalizeError, sendAsHTML] as const
 
 
 // Add error to Request object
