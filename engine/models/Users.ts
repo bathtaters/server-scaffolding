@@ -189,13 +189,13 @@ class User extends Model<UserDef, typeof title> {
     if (newData.username)
       await this.throwInvalidUsername(projectedValue(oldData.username, newData.username), oldData.id)
 
-    // Set/Reset lock
+    // Auto-change fail props on Set/Reset lock
     if (oldData.locked && !newLocked) {
-      newData.failCount = 0
-      newData.failTime = null
+      newData.failCount = newData.failCount ?? 0
+      newData.failTime  = newData.failTime  ?? null
     } else if (!oldData.locked && newLocked) {
-      newData.failCount = rateLimiter.maxFails
-      newData.failTime = now()
+      newData.failCount = newData.failCount ?? rateLimiter.maxFails
+      newData.failTime  = newData.failTime  ?? now()
     }
   }
 
