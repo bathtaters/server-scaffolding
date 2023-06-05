@@ -15,10 +15,9 @@ export default function loadLogMiddleware(httpFormat?: string): Middleware {
   if (!httpFormat) httpFormat = typeof process.env.LOG_HTTP === 'string' ? process.env.LOG_HTTP : definitions.LOG_HTTP.default
   if (!httpFormat || isMember(silent, httpFormat)) return (req,res,next) => next()
 
-  if (!isMember(Object.values(httpLog), httpFormat)) throw new Error(`Invalid HTTP Format for log middleware: ${httpFormat}`)
-
   // Normal Middleware
   if (!isMember(httpDebug, httpFormat)) {
+    if (!isMember(Object.values(httpLog), httpFormat)) throw new Error(`Invalid HTTP Format for log middleware: ${httpFormat}`)
     logger.verbose(httpMessage(httpFormat))
     return httpLogger(httpFormat, { stream })
   }
