@@ -1,78 +1,125 @@
-const shared = require('../../validators/shared.validators')
-const { checkSchema } = require('express-validator')
-const { filterDupes } = require('../../utils/common.utils')
-const { generateSchema, appendToSchema } = require('../../services/validate.services')
-const { deepCopy } = require('../test.utils')
-const { adaptSchemaEntry } = require('../../services/model.services')
+import type { ValidationOptions } from '../../types/validate.d'
+import { checkSchema } from 'express-validator'
+import { byObject, byModel, type ModelValBase } from '../../validators/shared.validators'
+import { generateSchema, appendToSchema } from '../../services/validate.services'
+import { filterDupes } from '../../utils/common.utils'
+import { deepCopy } from '../test.utils'
 
-const inputValues = [
+
+/** Example Model Schemas */
+const inputValues: ModelValBase[] = [
   {
+    primaryId: 'a',
     schema: {
-      a: { type: 'type1', limits: 'lims1' },
-      b: { type: 'type2', limits: 'lims2' },
+      a: {
+        typeBase: 'int',
+        limits: { min: 1 },
+        html: 'number',
+        db: 'INTEGER PRIMARY KEY',
+      },
+      b: {
+        typeBase: 'string',
+        isOptional: true,
+        limits: { max: 2 },
+        html: 'text',
+        db: 'TEXT NOT NULL',
+      },
     },
   },{
+    primaryId: 'd',
     schema: {
-      c: { type: 'type3', limits: 'lims3' },
-      d: { type: 'type4'},
+      c: {
+        typeBase: 'float',
+        isArray: true,
+        limits: { max: 3 },
+        html: 'text',
+        db: false,
+      },
+      d: {
+        typeBase: 'object',
+        html: 'hidden',
+        db: 'TEXT PRIMARY KEY',
+      },
     },
   },{
     primaryId: 'g',
     schema: {
-      e: { type: 'type5', html: 'html5' },
-      f: { type: 'type6', default: 'default6' },
-      g: { type: 'type7' },
+      e: {
+        typeBase: 'html',
+        isOptional: true,
+        html: false,
+        db: 'BLOB NOT NULL',
+      },
+      f: {
+        typeBase: 'date',
+        default: new Date(2001, 9, 10),
+        html: 'date',
+        db: 'INTEGER NOT NULL',
+      },
+      g: {
+        typeBase: 'float',
+        limits: { min: -6, max: 7 },
+        html: false,
+        db: 'REAL PRIMARY KEY',
+      },
     },
   }
+]
+
+/** Example Validation Options */
+const validOptions: ValidationOptions[] = [
+  { key: 'additC', type: 'float', isIn: ['query'] },
+  { key: 'additD', type: 'html?', isIn: ['cookies'] },
 ]
 
 
 // -- BY OBJECT tests -- //
 
 describe('byObject', () => {
-  it('uses adaptSchemaEntry', () => {
-    shared.byObject({ a: { val: 1 }, b: { val: '2' }})
-    expect(adaptSchemaEntry).toBeCalledTimes(2)
-    expect(adaptSchemaEntry).toBeCalledWith({ val: 1 })
-    expect(adaptSchemaEntry).toBeCalledWith({ val: '2' })
-  })
   it('uses appendToSchema', () => {
-    shared.byObject({ a: { val: 1 }, b: { val: '2' }})
+    byObject({ a: { type: 'b64?' }, b: { type: 'boolean[]' }})
     expect(appendToSchema).toBeCalledTimes(1)
-    expect(appendToSchema).toBeCalledWith(expect.anything(), [
+    expect(appendToSchema).toBeCalledWith(undefined, [
       expect.objectContaining({ key: 'a' }),
       expect.objectContaining({ key: 'b' }),
     ])
   })
   it('uses isIn for each entry', () => {
-    shared.byObject({ a: { val: 1 }, b: { val: '2' }}, ['IN'])
-    expect(appendToSchema).toBeCalledWith(expect.anything(), [
-      expect.objectContaining({ isIn: ['IN'] }),
-      expect.objectContaining({ isIn: ['IN'] }),
+    byObject({ a: { type: 'b64?' }, b: { type: 'boolean[]' }}, ['cookies'])
+    expect(appendToSchema).toBeCalledWith(undefined, [
+      expect.objectContaining({ isIn: ['cookies'] }),
+      expect.objectContaining({ isIn: ['cookies'] }),
     ])
   })
   it('forces optional', () => {
-    shared.byObject({ a: { val: 1 }, b: { val: '2' }}, ['IN'], { forceOptional: true })
-    expect(appendToSchema).toBeCalledWith(expect.anything(), [
-      expect.objectContaining({ isOptional: true }),
-      expect.objectContaining({ isOptional: true }),
+    byObject({ a: { type: 'b64' }, b: { type: 'boolean[]' }}, ['cookies'], { forceOptional: true })
+    expect(appendToSchema).toBeCalledWith(undefined, [
+      expect.objectContaining({ type: expect.stringMatching(/\?$/) }),
+      expect.objectContaining({ type: expect.stringMatching(/\?$/) }),
     ])
   })
   it('concats additional', () => {
-    shared.byObject({ a: { val: 1 }, b: { val: '2' }}, ['IN'], { additional: ['addit','ional'] })
-    expect(appendToSchema).toBeCalledWith(expect.anything(), [
+    const additional = deepCopy(validOptions)
+
+    byObject(
+      { a: { type: 'b64?' }, b: { type: 'boolean[]' }},
+      ['cookies'],
+      { additional }
+    )
+    expect(appendToSchema).toBeCalledWith(undefined, [
       expect.any(Object),
       expect.any(Object),
-      'addit', 'ional'
+      additional[0],
+      additional[1],
     ])
   })
   it('passes appendToSchema result to checkSchema', () => {
-    appendToSchema.mockReturnValueOnce('RESULT')
-    shared.byObject({ a: { val: 1 }, b: { val: '2' }})
+    (appendToSchema as jest.Mock).mockReturnValueOnce('RESULT')
+    byObject({ a: { type: 'b64?' }, b: { type: 'boolean[]' }})
     expect(checkSchema).toBeCalledWith('RESULT')
   })
   it('includes checkValidation & arraySchema', () => {
-    const ret = shared.byObject({ a: { val: 1 }, b: { val: '2' }})
+    const ret = byObject({ a: { type: 'b64?' }, b: { type: 'boolean[]' }})
     expect(ret).toEqual(expect.arrayContaining(['checkValidation']))
     expect(ret).toEqual(expect.arrayContaining(['arraySchema']))
   })
@@ -82,16 +129,16 @@ describe('byObject', () => {
 // -- BY MODEL tests -- //
 
 describe('byModel', () => {
-  let testModel
+  let testModel: ModelValBase[]
   beforeEach(() => { testModel = deepCopy(inputValues) })
 
   it('calls generateSchema forEach key', () => {
-    shared.byModel(testModel[0],['a','b'])
+    byModel(testModel[0],['a','b'])
     expect(generateSchema).toBeCalledTimes(2)
   })
 
   it('passes keys to generateSchema', () => {
-    shared.byModel(testModel[0],['a','b'])
+    byModel(testModel[0],['a','b'])
     expect(generateSchema).toHaveBeenNthCalledWith(1, 
       'a',
       expect.anything(),
@@ -108,34 +155,34 @@ describe('byModel', () => {
     )
   })
   it('passes types to generateSchema', () => {
-    shared.byModel(testModel[0],['a','b'])
+    byModel(testModel[0],['a','b'])
     expect(generateSchema).toHaveBeenNthCalledWith(1, 
       expect.anything(),
-      expect.objectContaining({ type: 'type1' }),
+      expect.objectContaining({ typeBase: 'int' }),
       expect.anything(),
       expect.anything(),
       expect.anything(),
     )
     expect(generateSchema).toHaveBeenNthCalledWith(2, 
       expect.anything(),
-      expect.objectContaining({ type: 'type2' }),
+      expect.objectContaining({ typeBase: 'string' }),
       expect.anything(),
       expect.anything(),
       expect.anything(),
     )
   })
   it('passes limits to generateSchema', () => {
-    shared.byModel(testModel[0],['a','b'])
+    byModel(testModel[0],['a','b'])
     expect(generateSchema).toHaveBeenNthCalledWith(1, 
       expect.anything(),
-      expect.objectContaining({ limits: 'lims1' }),
+      expect.objectContaining({ limits: { min: 1 } }),
       expect.anything(),
       expect.anything(),
       expect.anything(),
     )
     expect(generateSchema).toHaveBeenNthCalledWith(2, 
       expect.anything(),
-      expect.objectContaining({ limits: 'lims2' }),
+      expect.objectContaining({ limits: { max: 2 } }),
       expect.anything(),
       expect.anything(),
       expect.anything(),
@@ -143,42 +190,42 @@ describe('byModel', () => {
   })
 
   it('passes optionalBody to generateSchema', () => {
-    shared.byModel(testModel[0],['a','b'],{ optionalBody: 'opt' })
+    byModel(testModel[0],['a','b'],{ optionalBody: true })
     expect(generateSchema).toHaveBeenNthCalledWith(1, 
       expect.anything(),
       expect.anything(),
       expect.anything(),
-      'opt',
+      true,
       expect.anything(),
     )
     expect(generateSchema).toHaveBeenNthCalledWith(2, 
       expect.anything(),
       expect.anything(),
       expect.anything(),
-      'opt',
+      true,
       expect.anything(),
     )
   })
   it('passes partialMatch to generateSchema', () => {
-    shared.byModel(testModel[0],['a','b'],{ allowPartials: 'part' })
+    byModel(testModel[0],['a','b'],{ allowPartials: false })
     expect(generateSchema).toHaveBeenNthCalledWith(1, 
       expect.anything(),
       expect.anything(),
       expect.anything(),
       expect.anything(),
-      'part',
+      false,
     )
     expect(generateSchema).toHaveBeenNthCalledWith(2, 
       expect.anything(),
       expect.anything(),
       expect.anything(),
       expect.anything(),
-      'part',
+      false,
     )
   })
 
   it('builds isIn array for generateSchema', () => {
-    shared.byModel(testModel[0],['a','b'],{ params: ['a'] })
+    byModel(testModel[0],['a','b'],{ params: ['a'] })
     expect(generateSchema).toHaveBeenNthCalledWith(1, 
       expect.anything(),
       expect.anything(),
@@ -196,7 +243,7 @@ describe('byModel', () => {
   })
 
   it('force optional for primaryId or keys w/ defaults', () => {
-    shared.byModel(testModel[2],['e','f','g'],{ optionalBody: false })
+    byModel(testModel[2],['e','f','g'],{ optionalBody: false })
     expect(generateSchema).toBeCalledWith(
       'e',
       expect.anything(),
@@ -222,7 +269,7 @@ describe('byModel', () => {
   })
 
   it('ignores falsy keys', () => {
-    shared.byModel(testModel[0],0,{ params: ['a'] })
+    byModel(testModel[0],undefined,{ params: ['a'] })
     expect(generateSchema).toBeCalledWith(
       'a',
       expect.anything(),
@@ -233,9 +280,9 @@ describe('byModel', () => {
     expect(generateSchema).toBeCalledTimes(1)
   })
   it('"all" as key uses all keys w/ html value + primaryKey', () => {
-    shared.byModel(testModel[2],'all',{ params: ['g'] })
+    byModel(testModel[2],'all',{ params: ['g'] })
     expect(generateSchema).toBeCalledWith(
-      'e',
+      'f',
       expect.anything(),
       ['body'],
       expect.anything(),
@@ -250,26 +297,8 @@ describe('byModel', () => {
     )
     expect(generateSchema).toBeCalledTimes(2)
   })
-  it('converts key string to single-member array', () => {
-    shared.byModel(testModel[1],'d',{ params: 'c' })
-    expect(generateSchema).toBeCalledWith(
-      'c',
-      expect.anything(),
-      ['params'],
-      expect.anything(),
-      expect.anything(),
-    )
-    expect(generateSchema).toBeCalledWith(
-      'd',
-      expect.anything(),
-      ['body'],
-      expect.anything(),
-      expect.anything(),
-    )
-    expect(generateSchema).toBeCalledTimes(2)
-  })
   it('normalizes input objects to value arrays', () => {
-    shared.byModel(testModel[1],{ c3: 'c', d: 'd' },{ params: { c1: 'c', c2: 'c' }})
+    byModel(testModel[1],{ c3: 'c', d: 'd' },{ params: { c1: 'c', c2: 'c' }})
     expect(generateSchema).toBeCalledWith(
       'c',
       expect.anything(),
@@ -287,14 +316,14 @@ describe('byModel', () => {
     expect(generateSchema).toBeCalledTimes(2)
   })
   it('removes dupes from input object values', () => {
-    shared.byModel(testModel[1],{ c3: 'c', d: 'd' },{ params: { c1: 'c', c2: 'c' }})
+    byModel(testModel[1],{ c3: 'c', d: 'd' },{ params: { c1: 'c', c2: 'c' }})
     expect(filterDupes).toBeCalledTimes(2)
     expect(filterDupes).toBeCalledWith(['c','d'])
     expect(filterDupes).toBeCalledWith(['c','c'])
   })
   it('mixing input object with array', () => {
-    filterDupes.mockReturnValueOnce(['c'])
-    shared.byModel(testModel[1],['c','d'],{ params: { c1: 'c', c2: 'c' }})
+    (filterDupes as jest.Mock).mockReturnValueOnce(['c'])
+    byModel(testModel[1],['c','d'],{ params: { c1: 'c', c2: 'c' }})
     expect(generateSchema).toBeCalledWith(
       'c',
       expect.anything(),
@@ -313,30 +342,32 @@ describe('byModel', () => {
   })
   
   it('builds object of results', () => {
-    expect(shared.byModel(testModel[0],['a','b'],{ params: ['a'] }))
+    expect(byModel(testModel[0],['a','b'],{ params: ['a'] }))
       .toEqual(expect.arrayContaining([{ a: true, b: true }]))
   })
   it('includes checkValidation & arraySchema in result', () => {
-    expect(shared.byModel(testModel[0],['a','b'],{ params: ['a'] }))
+    expect(byModel(testModel[0],['a','b'],{ params: ['a'] }))
       .toEqual(expect.arrayContaining(['checkValidation']))
-    expect(shared.byModel(testModel[0],['a','b'],{ params: ['a'] }))
+    expect(byModel(testModel[0],['a','b'],{ params: ['a'] }))
       .toEqual(expect.arrayContaining(['arraySchema']))
   })
   it('results are renamed using input object keys', () => {
-    expect(shared.byModel(testModel[1],{ c3: 'c', d: 'd' },{ params: { c1: 'c', c2: 'c' }}))
+    expect(byModel(testModel[1],{ c3: 'c', d: 'd' },{ params: { c1: 'c', c2: 'c' }}))
       .toEqual(expect.arrayContaining([{ c1: true, c2: true, c3: true, d: true }]))
   })
 
   it('gets additional validation', () => {
-    appendToSchema.mockReturnValueOnce('RESULT')
-    expect(shared.byModel(testModel[0],['a'],{ additional: 'TEST' }))
+    (appendToSchema as jest.Mock).mockReturnValueOnce('RESULT')
+    const additional = deepCopy(validOptions)
+
+    expect(byModel(testModel[0],['a'],{ additional }))
       .toEqual(expect.arrayContaining(['RESULT']))
     expect(appendToSchema).toBeCalledTimes(1)
-    expect(appendToSchema).toBeCalledWith({ a: true },'TEST')
+    expect(appendToSchema).toBeCalledWith({ a: true },additional)
   })
 
   it('asQueryStr makes isIn = query', () => {
-    shared.byModel(testModel[0],['a','b'],{ asQueryStr: true, params: ['b'] })
+    byModel(testModel[0],['a','b'],{ asQueryStr: true, params: ['b'] })
     expect(generateSchema).toBeCalledWith(
       'a',
       expect.anything(),
@@ -357,14 +388,30 @@ describe('byModel', () => {
 
 // MOCKS
 
-jest.mock('express-validator', () => ({ checkSchema: jest.fn((r)=>[r]) }))
 jest.mock('../../middleware/validate.middleware', () => 'checkValidation')
-jest.mock('../../utils/common.utils', () => ({ filterDupes: jest.fn((o)=>o) }))
-jest.mock('../../utils/validate.utils', () => ({ toArraySchema: () => 'arraySchema' }))
+
+jest.mock('express-validator', () => ({
+  ...jest.requireActual('express-validator'),
+  checkSchema: jest.fn((r)=>[r])
+}))
+
+jest.mock('../../utils/validate.utils', () => ({
+  ...jest.requireActual('../../utils/validate.utils'),
+  toArraySchema: () => 'arraySchema'
+}))
+
+jest.mock('../../utils/common.utils', () => ({
+  ...jest.requireActual('../../utils/common.utils'),
+  filterDupes: jest.fn((o)=>o)
+}))
+
 jest.mock('../../services/model.services', () => ({
+  ...jest.requireActual('../../services/model.services'),
   adaptSchemaEntry: jest.fn((obj) => obj),
 }))
+
 jest.mock('../../services/validate.services', () => ({
+  ...jest.requireActual('../../services/validate.services'),
   generateSchema: jest.fn((key)=>({ [key]: true })),
   appendToSchema: jest.fn((obj) => obj),
 }))
