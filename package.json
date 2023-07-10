@@ -5,7 +5,7 @@
   "main": "./built/engine/server.js",
   "scripts": {
     "dev": "nodemon -x ts-node -e ts ./engine/server.ts",
-    "start": "pm2 start ecosystem.config.js && pm2 logs",
+    "start": "pm2 start ecosystem.config.js && pm2 monit",
     "stop": "pm2 delete ecosystem.config.js",
     "reload": "pm2 reload ecosystem.config.js && pm2 logs",
     "build": "tsc --build --clean && tsc --build",
