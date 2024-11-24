@@ -22,6 +22,7 @@ export const baseTypes = {
     ...numTypes,
     ...dateTypes,
     boolean:  "boolean",
+    interval: "interval",
     object:   "object",
     any:      "any",
 } as const
@@ -40,3 +41,8 @@ export const requestFields = {
     query:   "query",
     params:  "params",
 } as const
+
+export const intervalKeys = [
+    'years', 'months', 'days',
+    'hours', 'minutes', 'seconds', 'milliseconds'
+] as const

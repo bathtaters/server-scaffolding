@@ -3,7 +3,7 @@ import type { Limit, RequestField, ValidationExpanded, ValidationOptions } from 
 import { requestFields } from '../types/validate'
 import logger from '../libs/log'
 import { errorMsgs, dateOptions, ignoreDisableMin, defaultLimits } from "../config/validate.cfg"
-import { isBoolean, parseBoolean, toTypeString, hidingMin, expandTypeStr } from '../utils/validate.utils'
+import { isBoolean, parseBoolean, toTypeString, hidingMin, expandTypeStr, customInterval } from '../utils/validate.utils'
 import { concatUnique } from '../utils/common.utils'
 
 // Don't allow forcing optional
@@ -143,6 +143,10 @@ export function toValidationSchema(
     case 'boolean':
       ptr.custom = { options: isBoolean(), errorMessage }
       ptr.customSanitizer = { options: parseBoolean() }
+      break
+    case 'interval':
+      ptr.custom = { options: customInterval.validate, errorMessage },
+      ptr.customSanitizer = customInterval.sanitize
       break
     case 'datetime':
       ptr.isISO8601 = { options: dateOptions.time, errorMessage }
