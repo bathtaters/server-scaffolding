@@ -6,7 +6,7 @@ export const api = {
 } as const,
 
 gui = {
-  splashRedirect: RegEx(/\/index(?:\.html?)?|\/home(?:\.html?)?/),
+  splashRedirect: ['/index{.htm{l}}', '/home{.htm{l}}'] as string[],
   root: {
     login:  '/login',
     logout: '/logout',
