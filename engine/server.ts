@@ -37,7 +37,7 @@ userServer.setup && userServer.setup(server)
 
 // Server-level Middleware
 server.use(exitMiddleware(server))
-server.use(exceptRoute(urlCfg.api.prefix, helmet({ contentSecurityPolicy: { directives: guiCfg.guiCSP } })))
+server.use(exceptRoute(urlCfg.api.prefix, helmet(guiCfg.helmetOptions)))
 server.use(urlCfg.api.prefix, helmet())
 server.use(express.json())
 server.use(express.urlencoded())
