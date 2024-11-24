@@ -25,10 +25,10 @@ export const httpReq = (id: string, { headers, params, body, session, user, ips,
     id,
     headers,
     params,
-    body: { ...body },
+    body: body ? { ...body } : undefined,
     cookies: (session ? [{ type: 'session', ...session.cookie }] : []).concat(cookies || []).concat(signedCookies || []),
     user,
-    ips: ips.concat(ip)
+    ips: ips.concat(ip ?? [])
   })
 
 export const httpRes = (id: string, start: number, data: any, enc: BufferEncoding | undefined, headers: Record<string,any>, status: number) =>

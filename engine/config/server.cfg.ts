@@ -37,15 +37,15 @@ cleanupRateLimiter = 6 * 60 * 60 * 1000, // 6 hrs
 
 rateLimits = {
   api: {
-    max: 100,
+    limit: 100,
     windowMs: 60 * 1000,
   },
   gui: {
-    max: 1000,
+    limit: 1000,
     windowMs: 60 * 60 * 1000,
   },
   login: {
-    max: 100,
+    limit: 100,
     windowMs: 60 * 60 * 1000,
   },
 },

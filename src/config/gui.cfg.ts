@@ -37,9 +37,17 @@ jsonPaths = [
 ],
 
 // Helmet options
-guiCSP = {
-  defaultSrc: ["'self'"],
-  scriptSrc: ["'self'", jquery.src],
-  styleSrc: ["'self'", "'unsafe-inline'", minicss.href],
-  upgradeInsecureRequests: isSecure ? [] : null,
-}
+helmetOptions = {
+  crossOriginEmbedderPolicy: {
+    policy: "require-corp",
+  },
+  strictTransportSecurity: isSecure,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", jquery.src],
+      styleSrc: ["'self'", "'unsafe-inline'", minicss.href],
+      upgradeInsecureRequests: isSecure ? [] : null,
+    }
+  },
+} as const

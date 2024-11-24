@@ -3,7 +3,7 @@ import type { Limit, RequestField, ValidationExpanded, ValidationOptions } from 
 import { requestFields } from '../types/validate'
 import logger from '../libs/log'
 import { errorMsgs, dateOptions, ignoreDisableMin, defaultLimits } from "../config/validate.cfg"
-import { isBoolean, parseBoolean, toTypeString, hidingMin, expandTypeStr } from '../utils/validate.utils'
+import { isBoolean, parseBoolean, toTypeString, hidingMin, expandTypeStr, customInterval } from '../utils/validate.utils'
 import { concatUnique } from '../utils/common.utils'
 
 // Don't allow forcing optional
@@ -69,34 +69,41 @@ export function toValidationSchema(
   }}
   let ptr = schema[key]
 
+  // Skip validation of empty strings if empty strings are allowed
+  const zeroMin = typeBase === 'string' && limits && (limits.elem || limits)?.min === 0
+
   // Add validation for optionals/non-optionals
   if (isOptional) {
-    ptr.optional = { options: { nullable: true, checkFalsy: typeBase !== 'boolean' } }
+    ptr.optional = { options: { values: typeBase === 'string' && !zeroMin ? 'falsy' : 'null' } }
   } else {
     ptr.exists = { errorMessage: errorMsgs.exists() }
+    ptr.optional = { options: { values: typeBase === 'string' && !zeroMin ? 'falsy' : 'undefined' } }
   }
 
   // Handle validation for array elements
   if (isArray) {
     // Set/Update limits
-    let arrLimit: Limit | false | undefined;
-    [ arrLimit, limits ] = limits && (limits.array || limits.elem) ? [ limits.array, limits.elem ] : [ limits ]
-    
+    let arrLimit: Limit | false | undefined
+    if (limits && (limits.array || limits.elem)) {
+      [arrLimit, limits] = [limits.array, limits.elem]
+    } else {
+      [arrLimit, limits] = [limits, undefined]
+    }
     ptr.isArray = arrLimit === false ? { errorMessage: errorMsgs.invalid('array') } :
       { options: arrLimit || defaultLimits.array, errorMessage: errorMsgs.limit(arrLimit, 'array') }
     ptr.toArray = isOptional || undefined
     
     // Create entry & update ptr
     ptr = schema[key+'.*'] = { in: isIn, errorMessage: errorMsgs.type(typeBase) }
+
+    // Allow missing array elements
+    if (isArray === '?')
+      ptr.optional = { options: { nullable: true, checkFalsy: false } }
   }
 
   // Normalize and get default limits
   else if (limits && (limits.array || limits.elem)) limits = limits.elem
   if (!limits) limits = limits == null ? defaultLimits[typeBase] : undefined
-
-  // Allow empty strings (only if string minimum is >= 0)
-  if (!isOptional && !isArray && typeBase === 'string' && (!limits || !limits.min))
-    schema[key].optional = { options: { checkFalsy: true } }
 
   // Build options object base
   if (limits && disableMin && !ignoreDisableMin.includes(typeBase)) limits = hidingMin(limits) // Remove minimum
@@ -111,9 +118,10 @@ export function toValidationSchema(
     case 'b64url':
       if (typeBase !== 'html') ptr.isBase64 = { options: { urlSafe: typeBase === 'b64url' }, errorMessage }
       // pass to string
-    case 'uuid':
-    case 'hex':
-      if (typeBase === 'uuid') ptr.isUUID = { errorMessage }
+      case 'uuid':
+        if (typeBase === 'uuid') ptr.isUUID = { errorMessage }
+        // pass to string
+      case 'hex':
       if (typeBase === 'hex')  ptr.isHexadecimal = { errorMessage }
       // pass to string
     case 'string':
@@ -136,17 +144,24 @@ export function toValidationSchema(
       ptr.custom = { options: isBoolean(), errorMessage }
       ptr.customSanitizer = { options: parseBoolean() }
       break
+    case 'interval':
+      ptr.custom = { options: customInterval.validate, errorMessage },
+      ptr.customSanitizer = customInterval.sanitize
+      break
     case 'datetime':
       ptr.isISO8601 = { options: dateOptions.time, errorMessage }
       ptr.toDate = true
       break
     case 'date':
-      ptr.isDate = { options: dateOptions.date, errorMessage }
+      ptr.isISO8601 = { options: dateOptions.date, errorMessage }
       ptr.trim = true
       break
-    case 'object': ptr.isJSON = { options: { allow_primitives: false }, errorMessage }
-    case 'any':  // pass to default
-    default: break
+    case 'object':
+      ptr.isObject = { options: { strict: true }, errorMessage }
+      break
+    case 'any':
+    default:
+      break
   }
   return schema
 }

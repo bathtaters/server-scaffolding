@@ -13,7 +13,6 @@ export const create = <M extends GenericModel>(Model: M): Endware<ApiResponse.Cr
 
     return Model.addAndReturn([data])
       .then((entry) => res.send(entry))
-      .catch(next)
   }
 
 
@@ -21,7 +20,7 @@ export const read = <M extends GenericModel>(Model: M): Endware<ApiResponse.Read
   async function read(req,res,next) {
     const id = getMatchingValue(getFormData(req), Model.primaryId)
 
-    const data = await (id != null ? Model.get(id) : Model.find()).catch(next)
+    const data = await (id != null ? Model.get(id) : Model.find())
 
     return data ? res.send(data) : next(errors.noEntry(id || '[All]'))
   }
@@ -37,7 +36,6 @@ export const update = <M extends GenericModel>(Model: M): Endware<ApiResponse.Up
 
     return Model.update(id, data)
       .then((fdbk) => res.send(fdbk))
-      .catch(next)
   }
 
 
@@ -48,7 +46,6 @@ export const remove = <M extends GenericModel>(Model: M): Endware<ApiResponse.De
 
     return Model.remove(id)
       .then((fdbk) => res.send(fdbk))
-      .catch(next)
   }
 
 
@@ -61,5 +58,4 @@ export const swap = <M extends GenericModel>(Model: M): Endware<ApiResponse.Swap
     
     return Model.swap(data[idKey], data.swap)
       .then((fdbk) => res.send(fdbk))
-      .catch(next)
   }

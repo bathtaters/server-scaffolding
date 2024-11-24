@@ -1,13 +1,14 @@
-import type { baseTypes, typeSuffixes, requestFields, stringTypes, dateTypes, numTypes } from "./validate"
+import type { baseTypes, typeSuffixes, requestFields, stringTypes, dateTypes, numTypes, intervalKeys } from "./validate"
 
 /** Structure of Type value string */
 export type ValidationType = `${
     ValidationBase |
     `${typeof baseTypes.string}${typeof typeSuffixes.hasSpaces}` /* string* */
 }${
-    ""                             /*       No suffix     */ |
-    typeof typeSuffixes.isArray    /*    Array suffix: [] */ |
-    typeof typeSuffixes.isOptional /* Optional suffix: ?  */
+    ""                             /*        No suffix      */ |
+    typeof typeSuffixes.isArray    /*     Array suffix: []  */ |
+    typeof typeSuffixes.isOptArray /* Opt Array suffix: [?] */ |
+    typeof typeSuffixes.isOptional /*  Optional suffix: ?   */
 }`
 
 /** Convert ValidationBases to Types */
@@ -16,6 +17,7 @@ type TypeOfValid<S extends ValidationBase | undefined> =
     S extends StringType     ? string :
     S extends NumType        ? number :
     S extends DateType       ? Date :
+    S extends 'interval'     ? Interval :
     S extends 'object'       ? Record<string,any> :
     S extends 'boolean'      ? boolean :
     S extends ValidationBase ? any :
@@ -50,8 +52,10 @@ export type ValidationExpanded = Pick<ValidationBasic, 'limits'> & {
     /** If column is an array of <type>
      *   - This will auto-create and link a related table for this column
      *      unless "db" property is defined
-     *   - Parsed from typeStr as '[]' suffix */
-    isArray?:     boolean,
+     *   - Parsed from typeStr as '[]' or '[?]' (see below) suffix
+     *   - Value of '?' (Or [?] in typeStr) indicated that array indexes are allowed to be empty
+     * */
+    isArray?:     boolean | '?',
 
     /** If a string column will allow spaces & special characters
      *   - Parsed from typeStr as '*' suffix */
@@ -102,6 +106,12 @@ export type ExtractType<S extends ValidationType | undefined> =
 type StringType = typeof stringTypes[keyof typeof stringTypes]
 type DateType   = typeof dateTypes[keyof typeof dateTypes]
 type NumType    = typeof numTypes[keyof typeof numTypes]
+
+/** An object representing a length of time */
+export type Interval = Partial<Record<typeof intervalKeys[number], number>> & {
+    /** Optional function used when converting a specified object into a Postgres value */
+    toPostgres(): string;
+}
 
 /** Extract ValidationBase string from ValidationType */
 export type BaseOfValid<S extends ValidationType | undefined> =

@@ -51,7 +51,7 @@ export const settings: Middleware = async (req, res) =>
 
 
 // LOGS
-export const logList: Middleware = (req, res, next) =>
+export const logList: Middleware = (req, res) =>
   getLogList().then((logs) =>
     res.render('logList', {
       title: 'Logs',
@@ -60,10 +60,10 @@ export const logList: Middleware = (req, res, next) =>
       user: req.user?.username,
       isAdmin: Role.map.admin.intersects(req.user?.role),
     })
-  ).catch(next)
+  )
 
 
-export const logView: Middleware = (req, res, next) => {
+export const logView: Middleware = (req, res) => {
   const title = getFormData(req).filename
   if (typeof title !== 'string' || !title.length) throw missing()
 
@@ -77,5 +77,5 @@ export const logView: Middleware = (req, res, next) => {
       user: req.user?.username,
       isAdmin: Role.map.admin.intersects(req.user?.role),
     })
-  ).catch(next)
+  )
 }

@@ -8,7 +8,7 @@ import { varName } from '../utils/gui.utils'
 const defaultError = unknown()
 
 // Error string formatting
-const getName   = (err: HttpError) => err.name    || (httpErrs[err.status] || {}).name || 'Error'
+const getName   = (err: HttpError) => err.name    || (httpErrs as any)[err.status]?.name || 'Error'
 const getMsg    = (err: HttpError) => err.message || defaultError.message
 const getCode   = (err: HttpError) => err.status  || defaultError.status
 const formatErr = (err: HttpError) => err.stack   || `${err.name} <${err.status}>: ${err.message}`
