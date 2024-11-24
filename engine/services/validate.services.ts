@@ -95,6 +95,10 @@ export function toValidationSchema(
     
     // Create entry & update ptr
     ptr = schema[key+'.*'] = { in: isIn, errorMessage: errorMsgs.type(typeBase) }
+
+    // Allow missing array elements
+    if (isArray === '?')
+      ptr.optional = { options: { nullable: true, checkFalsy: false } }
   }
 
   // Normalize and get default limits

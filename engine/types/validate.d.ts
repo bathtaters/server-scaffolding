@@ -5,9 +5,10 @@ export type ValidationType = `${
     ValidationBase |
     `${typeof baseTypes.string}${typeof typeSuffixes.hasSpaces}` /* string* */
 }${
-    ""                             /*       No suffix     */ |
-    typeof typeSuffixes.isArray    /*    Array suffix: [] */ |
-    typeof typeSuffixes.isOptional /* Optional suffix: ?  */
+    ""                             /*        No suffix      */ |
+    typeof typeSuffixes.isArray    /*     Array suffix: []  */ |
+    typeof typeSuffixes.isOptArray /* Opt Array suffix: [?] */ |
+    typeof typeSuffixes.isOptional /*  Optional suffix: ?   */
 }`
 
 /** Convert ValidationBases to Types */
@@ -50,8 +51,10 @@ export type ValidationExpanded = Pick<ValidationBasic, 'limits'> & {
     /** If column is an array of <type>
      *   - This will auto-create and link a related table for this column
      *      unless "db" property is defined
-     *   - Parsed from typeStr as '[]' suffix */
-    isArray?:     boolean,
+     *   - Parsed from typeStr as '[]' or '[?]' (see below) suffix
+     *   - Value of '?' (Or [?] in typeStr) indicated that array indexes are allowed to be empty
+     * */
+    isArray?:     boolean | '?',
 
     /** If a string column will allow spaces & special characters
      *   - Parsed from typeStr as '*' suffix */

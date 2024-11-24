@@ -29,6 +29,7 @@ export const baseTypes = {
 export const typeSuffixes = {
     isOptional: "?",
     isArray:    "[]",
+    isOptArray: "[?]",
     hasSpaces:  "*",
 } as const
 

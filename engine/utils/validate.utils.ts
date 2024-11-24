@@ -10,7 +10,7 @@ import { mapObject, splitUnenclosed } from './common.utils'
 // *** TypeString Parse *** \\
 
 // Initialize Parsers
-const typeStrRegex = RegEx(/^([^[?*]+)(\?|\*|\[\])?(\?|\*|\[\])?(\?|\*|\[\])?$/)
+const typeStrRegex = RegEx(/^([^[?*]+)(\?|\*|\[\??\])?(\?|\*|\[\??\])?(\?|\*|\[\??\])?$/)
 const isBaseType = (str?: string): str is ValidationBase => !!str && Object.values<string>(baseTypes).includes(str)
 
 /** Decode validation types to { type, hasSpaces (*), isArray ([]), isOptional (?) }. 
@@ -26,7 +26,7 @@ export function expandTypeStr({ type, limits }: ValidationBasic): ValidationExpa
     typeBase: match[1],
     limits,
     isOptional : opts.includes(typeSuffixes.isOptional),
-    isArray    : opts.includes(typeSuffixes.isArray),
+    isArray    : opts.includes(typeSuffixes.isOptArray) ? '?' : opts.includes(typeSuffixes.isArray),
     hasSpaces  : opts.includes(typeSuffixes.hasSpaces),
   }
 }
@@ -35,7 +35,7 @@ export function expandTypeStr({ type, limits }: ValidationBasic): ValidationExpa
 export const toTypeString = ({ typeBase, isOptional, isArray, hasSpaces }: ValidationExpanded) =>
   `${typeBase}${
     hasSpaces  ? typeSuffixes.hasSpaces  : ''}${
-    isArray    ? typeSuffixes.isArray    : ''}${
+    isArray === '?' ? typeSuffixes.isOptArray : isArray ? typeSuffixes.isOptional : ''}${
     isOptional ? typeSuffixes.isOptional : ''
   }` as ValidationType
 
