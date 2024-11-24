@@ -10,7 +10,7 @@ export const loginPage: Middleware[] = [
   forwardOnAuth(urlCfg.landingPage.gui,   Role.map.gui  ),
   forwardOnAuth(urlCfg.landingPage.admin, Role.map.admin),
 
-  (req, res, next) => Users.count()
+  (req, res) => Users.count()
     .then((isUser) => 
       res.render('login', {
         title: 'Login',
@@ -21,8 +21,7 @@ export const loginPage: Middleware[] = [
         postURL: urlCfg.landingPage.logout,
         csrfToken: req.csrfToken?.(),
       })
-    )
-    .catch(next),
+    ),
 ]
 
 

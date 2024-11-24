@@ -27,10 +27,9 @@ export const login = authLogin(urlCfg.landingPage.login, urlCfg.landingPage.logo
 
 export const logout = authLogout(urlCfg.landingPage.logout)
 
-export const tokenRegen: Endware<Feedback> = (req,res,next) =>
+export const tokenRegen: Endware<Feedback> = (req,res) =>
   Users.tokenRegen(getFormData<UserDef>(req)[Users.primaryId])
     .then((r) => res.send(r))
-    .catch(next)
 
 export const adminForm = form(Users, `${urlCfg.gui.admin.prefix}${urlCfg.gui.admin.user}`)
 
@@ -59,21 +58,17 @@ export function form(Model: ModelActionBase, redirectURL?: string, errorCheck?: 
     {} as Record<string,any>
   )
   
-  return (action: FormAction): Middleware => async (req,res,next) => {
+  return (action: FormAction): Middleware => async (req,res) => {
     let formData = filterFormData(getFormData(req), action === actions.find ? {} : boolBase)
 
     errorCheck?.(formData, req)
     
     let pageData = ''
-    try {
-      formData = await Model.adaptData(adapterTypes.fromUI, formData as any)
-      pageData = toQueryString(formData[metaField.page])
-    }
-    catch (err) { return next(err) }
+    formData = await Model.adaptData(adapterTypes.fromUI, formData as any)
+    pageData = toQueryString(formData[metaField.page])
 
     return formActions[action](formData)
       .then((url) => res.redirect(`${redirectURL || defaultRedirect(Model.url)}${url || pageData}`))
-      .catch(next)
   }
 }
 
@@ -91,10 +86,7 @@ export const settingsForm: Middleware = (req,res,next) => {
   if (button === actions.update && !Object.keys(settings).length)
     return next(noData('settings'))
   
-  let qryStr = ''
-  try { qryStr = toQueryString(page) }
-  catch (err) { return next(err) }
-
+  const qryStr = toQueryString(page)
   return settingsActions[button](settings, req.session)
     .then((restart) => {
       if (typeof restart !== 'function') return res.redirect(settingsRedirect(qryStr))
@@ -102,5 +94,4 @@ export const settingsForm: Middleware = (req,res,next) => {
       res.render('delay', restartParams(req))
       return restart()
     })
-    .catch(next)
 }

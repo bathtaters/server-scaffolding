@@ -47,46 +47,41 @@ export function modelDb<M extends ModelGuiBase>(Model: M, {
   }
 
   return {
-    async model(req, res, next) {
-      try {
-        const pageData = await Model.getPageData(getFormData<typeof pageSelect>(req), guiCfg.pageOptions)
+    async model(req, res) {
+      const pageData = await Model.getPageData(getFormData<typeof pageSelect>(req), guiCfg.pageOptions)
 
-        const access = req.user?.access?.get(Model.title)
+      const access = req.user?.access?.get(Model.title)
 
-        return res.render(view, {
-          ...staticDbParams,
-          ...pageData,
-          buttons:   labelsByAccess(access),
-          user:      req.user?.username,
-          isAdmin:   Role.map.admin.intersects(req.user?.role),
-          csrfToken: req.csrfToken?.(),
-          canRead:   access?.intersects('read'),
-          canWrite:  access?.intersects('write'),
-        })
-      }
-      catch (err) { next(err) }
+      return res.render(view, {
+        ...staticDbParams,
+        ...pageData,
+        buttons:   labelsByAccess(access),
+        user:      req.user?.username,
+        isAdmin:   Role.map.admin.intersects(req.user?.role),
+        csrfToken: req.csrfToken?.(),
+        canRead:   access?.intersects('read'),
+        canWrite:  access?.intersects('write'),
+      })
     },
 
-    async find(req, res, next) {
-      try {
-        const searchData = await Model.adaptData(adapterTypes.fromUI, getFormData(req))
-        const data = await Model.find(partialMatch ? toPartialMatch(searchData) : searchData)
-        const uiData = await Model.adaptDataArray(adapterTypes.toUI, data)
+    async find(req, res) {
+      const searchData = await Model.adaptData(adapterTypes.fromUI, getFormData(req))
+      const data = await Model.find(partialMatch ? toPartialMatch(searchData) : searchData)
+      const uiData = await Model.adaptDataArray(adapterTypes.toUI, data)
 
-        const access = req.user?.access?.get(Model.title)
+      const access = req.user?.access?.get(Model.title)
 
-        return res.render(view, {
-          ...staticDbParams,
-          searchData,
-          data:      uiData,
-          buttons:   labelsByAccess(access),
-          user:      req.user?.username,
-          isAdmin:   Role.map.admin.intersects(req.user?.role),
-          csrfToken: req.csrfToken?.(),
-          canRead:   access?.intersects('read'),
-          canWrite:  access?.intersects('write'),
-        })
-      } catch (err) { next(err) }
+      return res.render(view, {
+        ...staticDbParams,
+        searchData,
+        data:      uiData,
+        buttons:   labelsByAccess(access),
+        user:      req.user?.username,
+        isAdmin:   Role.map.admin.intersects(req.user?.role),
+        csrfToken: req.csrfToken?.(),
+        canRead:   access?.intersects('read'),
+        canWrite:  access?.intersects('write'),
+      })
     },
   }
 }
