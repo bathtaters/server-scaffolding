@@ -77,7 +77,7 @@ export const isBoolean = (loose = boolOptions.loose) => !loose ?
   // Loose rules
   (val: any) => typeof val === 'string' ?
     boolStrings.includes(val.toLowerCase()) :
-    boolTypes.includes(typeof val)
+    (boolTypes as string[]).includes(typeof val)
 
 
 export const parseBoolean = (loose = boolOptions.loose) => !loose ?

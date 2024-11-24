@@ -4,7 +4,8 @@ import { nullColumn } from '../types/db'
 import RegEx from '../libs/regex'
 import { isIn } from '../utils/common.utils'
 
-const strictDatetime = true // Use strict date/time parsing
+// If true, check that date/time are seperated by a T & month/date are w/in legal range
+const strictDatetime = true
 
 export const defaultLimits: Partial<Record<TypeDef, Limit>> = {
   int:  { min: Number.MIN_SAFE_INTEGER, max: Number.MAX_SAFE_INTEGER },
@@ -24,7 +25,7 @@ export const
   } as const,
 
   dateOptions = {
-    date: { format: 'YYYY-MM-DD', strict: strictDatetime, delimiters: ['-'] },
+    date: { strict: strictDatetime, strictSeperator: true },
     time: { strict: strictDatetime, strictSeparator: strictDatetime },
   },
 
