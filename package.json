@@ -34,7 +34,7 @@
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "csurf": "^1.11.0",
-    "date-fns": "^2.29.1",
+    "date-fns": "^4.1.0",
     "dotenv": "^16.0.1",
     "express": "^5.0.1",
     "express-graceful-exit": "^0.5.2",
